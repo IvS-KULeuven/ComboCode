@@ -1,0 +1,11 @@
+### Parameters that are mutable throughout the modeling procedure,
+### after an MCMax iteration
+##########################################################################################################
+R_INNER_GAS
+R_INNER_DUST
+T_INNER_DUST
+DUST_TEMPERATURE_FILENAME
+KEYWORD_DUST_TEMPERATURE_TABLE
+NUMBER_INPUT_DUST_TEMP_VALUES
+TEMDUST_FILENAME
+DUST_TO_GAS

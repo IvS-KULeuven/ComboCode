@@ -1,0 +1,1173 @@
+# -*- coding: utf-8 -*-
+
+"""
+A simple interface to work with a database saved on the hard disk. 
+
+Author: Robin Lombaert
+
+"""
+
+import os
+import cPickle
+import time
+import subprocess
+from glob import glob
+
+from cc.tools.io import DataIO
+
+
+
+def getDbStructure(db_path,id_index=None,code=None):
+    
+    '''
+    Return id_index and code based on db_path, or id_index, or code.
+    
+    @param db_path: the path + filename of the database
+    @type db_path: string
+    
+    @keyword id_index: index of model id in the database entries, specify only 
+                       if you know what you're doing! default None is used if 
+                       the code keyword is used or the code is taken from the 
+                       database filename. 
+                       
+                       (default: None)
+    @type id_index: int
+    @keyword code: name of the (sub-) code for which the deletion is done 
+                   (pacs, mcmax, cooling, mline, sphinx), default None can be 
+                   used when id_index is given, or if the database filename 
+                   includes the codename you want to use deletion for
+                   
+                   (default: None)
+    @type code: string
+    
+    @return: The id_index and code are returned. The code can be None if 
+             id_index was already defined beforehand, in which case the precise
+             code doesn't matter, however the method will try to determine the 
+             code based on the filename
+    @rtype: (int,string)
+    
+    '''
+    
+    if id_index <> None and code <> None:
+        raise IOError('Either specify the code, or the id_index or none of ' +\
+                      'both.')
+    code_indices = dict([('cooling',1),('mcmax',1),('sphinx',2),('mline',2),\
+                         ('pacs',2)])
+    if id_index is None:
+        if code <> None:
+            id_index = code_indices[code.lower()]
+        else:
+            for k,v in code_indices.items():
+                if k.lower() in os.path.split(db_path)[1].lower():
+                    if id_index <> None:
+                        this_str = 'There is an ambiguity in the filename of'+\
+                                   ' the database. At least two of the codes'+\
+                                   ' are in the name.'
+                        raise ValueError(this_str)
+                    id_index = v
+                    code = k
+    if id_index is None:
+        this_str2 = 'Cannot figure out which code the database is used for. '+\
+                    'Please specify the "code" keyword.'
+        raise IOError(this_str2)
+    if code is None:
+        for k in code_indices.keys():
+                if k.lower() in os.path.split(db_path)[1].lower():
+                    if code <> None:
+                        print 'WARNING! There is an ambiguity in the ' + \
+                              'filename of the database. At least two of the'+\
+                              ' codes are in the name.'
+                    else:
+                        code = k
+    return id_index,code                             
+                             
+
+
+def deleteModel(model_id,db_path,id_index=None,code=None):
+    
+    '''
+    Delete a model_id from a database. A back-up is created!
+    
+    This method is only used by MCMax.py, which uses a database in the old 
+    format.
+    
+    @param model_id: the model_id
+    @type model_id: string
+    @param db_path: the path + filename of the database
+    @type db_path: string
+    
+    @keyword id_index: index of model id in the database entries, specify only 
+                       if you know what you're doing! default None is used if 
+                       the code keyword is used or if the code is taken from 
+                       the database filename.
+                       
+                       (default: None)
+    @type id_index: int
+    @keyword code: name of the (sub-) code for which the deletion is done 
+                   (pacs, mcmax, cooling, mline, sphinx), default None can be 
+                   used when id_index is given, or if the database filename 
+                   includes the codename you want to use deletion for
+                   
+                   (default: None)
+    @type code: string
+    
+    '''
+    
+    id_index,code = getDbStructure(db_path=db_path,id_index=id_index,code=code)
+    subprocess.call(['mv ' + db_path + ' ' + db_path+'old'],\
+                    shell=True,stdout=subprocess.PIPE)
+    gastronoom_db_old = open(db_path+'old','r')
+    gastronoom_db = open(db_path,'w')
+    print "Making the following change(s) to database at %s: \n"%db_path + \
+          "(Note that if nothing is printed, nothing happened and the model"+\
+          "id wasn't found.)"
+    i = 0
+    while True:
+        try:
+            model = cPickle.load(gastronoom_db_old)
+            if model_id == model[id_index]:
+                print 'Deleting model id %s from database at %s.'\
+                      %(model_id,db_path)
+                i += 1
+            else:
+                cPickle.dump(model,gastronoom_db)  
+        except EOFError:
+            print 'Done! %i models were deleted from the database.'%i
+            break
+    gastronoom_db_old.close()
+    gastronoom_db.close()
+
+
+
+def convertMCMaxDatabase(path_mcmax):
+    
+    '''
+    Convert MCMax database to the dict format.
+    
+    This change was made to speed up the use of the database and makes use of 
+    the Database() class.
+    
+    @param path_mcmax: the name of the MCMac subfolder.
+    @type path_mcmax: string
+    
+    '''
+    
+    print '** Converting MCMax database to dictionary format...'
+    mcmax_path = os.path.join(os.path.expanduser('~'),'MCMax',path_mcmax,\
+                              'MCMax_models.db')
+    
+    
+    
+def cleanSphinxDatabase(db_path):
+    
+    '''
+    Remove any transitions with a dictionary that includes the IN_PROGRESS key.
+    
+    @param db_path: full path to the database.
+    @type db_path: string
+    
+    '''
+    
+    if 'sphinx' not in db_path:
+        raise IOError('Database path is not related to a Sphinx database.')
+    sph_db = Database(db_path)
+    print '****************************************************************'
+    print '** Checking Sphinx database for in progress transitions now...'
+    for cool_id,ml_id_dict in sph_db.items():
+        for ml_id,trans_id_dict in ml_id_dict.items():
+            for trans_id,trans_dict in trans_id_dict.items():
+                for trans,this_trans_dict in trans_dict.items():
+                    if this_trans_dict.has_key('IN_PROGRESS'):
+                        del sph_db[cool_id][ml_id][trans_id][trans]
+                        sph_db.addChangedKey(cool_id)
+                        print 'Removed in progress transition %s with trans'+\
+                              'id %s.'%(trans,trans_id)
+    print '** Synchronizing the database...'
+    sph_db.sync()
+    print '** Done!'
+    print '****************************************************************'
+
+
+
+def coolingDbRetrieval(path_gastronoom,r_outer=None):
+    
+    '''    
+    Reconstruct a cooling database based on the mline database and the
+    GASTRoNOoM inputfiles.
+    
+    Only works if the water MOLECULE convenience keywords, the MOLECULE R_OUTER
+    and/or the MOLECULE ENHANCE_ABUNDANCE_FACTOR keywords were not adapted!
+    
+    @param path_gastronoom: The path_gastronoom to the output folder
+    @type path_gastronoom: string
+    
+    @keyword r_outer: The outer radius used for the cooling model, regardless
+                      of the outer_r_mode parameter.
+                      
+                      (default: None)
+    @type r_outer: float
+    
+    '''
+    
+    coolkeys_path = os.path.join(os.path.expanduser('~'),'ComboCode','CC',\
+                                 'Input_Keywords_Cooling.dat')
+    coolkeys = DataIO.readCols(coolkeys_path,make_float=0,make_array=0)[0]
+    extra_keys = ['ENHANCE_ABUNDANCE_FACTOR','MOLECULE_TABLE','ISOTOPE_TABLE',\
+                  'ABUNDANCE_FILENAME','NUMBER_INPUT_ABUNDANCE_VALUES',\
+                  'KEYWORD_TABLE',]
+    coolkeys = [k for k in coolkeys if k not in extra_keys]
+    cool_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                path_gastronoom,'GASTRoNOoM_cooling_models.db')
+    ml_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                              path_gastronoom,'GASTRoNOoM_mline_models.db')
+    subprocess.call(['mv %s %s_backupCoolDbRetrieval'\
+                     %(cool_db_path,cool_db_path)],shell=True)
+    cool_db = Database(db_path=cool_db_path)
+    ml_db = Database(db_path=ml_db_path)
+    for ml_id in ml_db.keys():
+        file_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                 path_gastronoom,'gastronoom_%s.inp'%ml_id)
+        input_dict = DataIO.readDict(file_path)
+        input_dict = dict([(k,v) for k,v in input_dict.items() 
+                                 if k in coolkeys])
+        cool_db[ml_id] = input_dict
+        if r_outer <> None:
+            cool_db[ml_id]['R_OUTER'] = r_outer
+    cool_db.sync()
+    
+
+
+class Database(dict):
+    
+    '''
+    A database class.
+    
+    The class creates and manages a dictionary saved to the hard disk. 
+    
+    It functions as a python dictionary with the extra option of synchronizing
+    the database instance with the dictionary saved on the hard disk. 
+    
+    No changes will be made to the hard disk copy, unless Database.sync() is 
+    called.
+    
+    Note that changes made on a deeper level than the (key,value) pairs of the 
+    Database (for instance in the case where value is a dict() type itself) 
+    will not be automatically taken into account when calling the sync() 
+    method. The key for which the value has been changed on a deeper level has 
+    to be added to the Database.__changed list by calling addChangedKey(key)
+    manually.
+    
+    Running the Database.sync() method will not read the database from the hard
+    disk if no changes were made or if changes were made on a deeper level 
+    only. In order to get the most recent version of the Database, without 
+    having made any changes, use the .read() method. Note that if changes were 
+    made on a deeper level, they will be lost.
+    
+    Example:
+    
+    >>> import os
+    >>> import Database
+    >>> filename = 'mytest.db'
+    >>> db = Database.Database(filename)
+    No database present at mytest.db. Creating a new one.
+    >>> db['test'] = 1
+    >>> db['test2'] = 'robin'
+    >>> db.sync()
+    >>> db2 = Database.Database(filename)
+    >>> print db2['test']
+    1
+    >>> print db2['test2'] 
+    robin
+    >>> db2['test'] = 2
+    >>> db2.sync()
+    >>> db.sync()
+    >>> print db['test']
+    1
+    >>> db.read()
+    >>> print db['test']
+    2
+    >>> del db2['test2']
+    >>> db2.sync()
+    >>> print db['test2']
+    robin
+    >>> db.read()
+    >>> print db['test2']
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    KeyError: 'test2'
+    >>> test_dict = dict()
+    >>> db['test'] = test_dict
+    >>> db.sync()
+    >>> db2.read()
+    >>> print db2['test']
+    {}
+    >>> db['test']['test'] = 1
+    >>> db.sync()
+    >>> db2.read()
+    >>> print db2['test']
+    {}
+    >>> db.addChangedKey('test')
+    >>> db.sync()
+    >>> db2.read()
+    >>> print db2['test']
+    {'test': 1}
+    >>> db.setdefault('test','defkey')
+    {'test': 1}
+    >>> db.setdefault('test3','defval')
+    'defval'
+    >>> db.sync()
+    >>> db2.read()
+    >>> print db2['test3']
+    defval
+    >>> os.system('rm %s'%filename)
+    0
+    '''
+    
+    
+    def __init__(self,db_path):
+        
+        '''
+        Initializing a Database class.
+        
+        Upon initialization, the class will read the dictionary saved at the 
+        db_path given as a dictionary.
+        
+        Note that cPickle is used to write and read these dictionaries.
+        
+        If no database exists at db_path, a new dictionary will be created.
+        
+        @param db_path: The path to the database on the hard disk.
+        @type db_path: string
+  
+        '''
+        
+        super(Database, self).__init__()
+        self.db_path = db_path
+        self.read()
+        self.__changed = []
+        self.__deleted = []
+      
+      
+      
+    def __delitem__(self,key):
+        
+        '''
+        Delete a key from the database.
+        
+        This deletion is also done in the hard disk version of the database 
+        when the sync() method is called. 
+        
+        This method can be called by using syntax:
+        del db[key]
+        
+        @param key: a dict key that will be deleted from the Database in memory
+        @type key: a type valid for a dict key
+        
+        '''
+        
+        self.__deleted.append(key)
+        return super(Database,self).__delitem__(key)
+        
+    
+    
+    
+    def __setitem__(self,key,value):
+        
+        '''
+        Set a dict key with value. 
+        
+        This change is only added to the database saved on the hard disk when
+        the sync() method is called. 
+        
+        The key is added to the Database.__changed list.
+        
+        This method can be called by using syntax:
+        db[key] = value
+        
+        @param key: a dict key that will be added to the Database in memory
+        @type key: a type valid for a dict key
+        @param key: value of the key to be added
+        @type value: any
+        
+        '''
+        
+        self.__changed.append(key)
+        return super(Database,self).__setitem__(key,value)
+        
+        
+        
+    def setdefault(self,key,*args):
+        
+        '''
+        Return key's value, if present. Otherwise add key with value default
+        and return. 
+        
+        Database.__changed is updated with the key if it is not present yet.
+        
+        @param key: the key to be returned and/or added.
+        @type key: any valid dict() key
+        @param args: A default value added to the dict() if the key is not 
+        present. If not specified, default defaults to None.
+        @type args: any type
+        @return: key's value or default
+                
+        '''
+        
+        if not self.has_key(key):
+            self.__changed.append(key)
+        return super(Database,self).setdefault(key,*args)
+        
+        
+            
+    def pop(self,key,*args):
+        
+        '''
+        If database has key, remove it from the database and return it, else 
+        return default. 
+    
+        If both default is not given and key is not in the database, a KeyError
+        is raised. 
+        
+        If deletion is successful, this change is only added to the database 
+        saved on the hard disk when the sync() method is called. 
+        
+        The key is added to the Database.__deleted list, if present originally.
+                
+        @param key: a dict key that will be removed from the Database in memory
+        @type key: a type valid for a dict key
+        @param args: value of the key to be returned if key not in Database
+        @type args: any
+        @return: value for key, or default
+        
+        '''
+        
+        if self.has_key(key):
+            self.__deleted.append(key)
+        return super(Database,self).pop(key,*args)
+        
+        
+    def popitem(self):
+        
+        '''
+        Remove and return an arbitrary (key, value) pair from the database.
+        
+        A KeyError is raised if the database has an empty dictionary.
+        
+        If removal is successful, this change is only added to the database 
+        saved on the hard disk when the sync() method is called. 
+        
+        The removed key is added to the Database.__deleted list.
+                
+        @return: (key, value) pair from Database
+        
+        '''
+        
+        (key,value) = super(Database,self).popitem()
+        self.__deleted.append(key)
+        return (key,value)
+            
+            
+        
+    def update(self,*args,**kwargs):
+        
+        '''
+        Update the database with new entries, as with a dictionary. 
+        
+        This update is not synched to the hard disk! Instead Database.__changed
+        includes the changed keys so that the next sync will save these changes
+        to the hard disk.
+        
+        @param args: A dictionary type object to update the Database.
+        @type args: dict()
+        @keyword kwargs: Any extra keywords are added as keys with their values.
+        @type kwargs: any type that is allowed as a dict key type.
+        
+        '''
+        
+        self.__changed.extend(kwargs.keys())
+        self.__changed.extend(args[0].keys())
+        return super(Database,self).update(*args,**kwargs)
+               
+               
+        
+    def read(self):
+        
+        '''
+        Read the database from the hard disk.
+        
+        Whenever called, the database in memory is updated with the version 
+        saved on the hard disk.
+        
+        Any changes made outside the session of this Database() instance will
+        be applied to the database in memory! 
+        
+        Any changes made to existing keys in current memory before calling 
+        read() will be undone! Use sync() instead of read if you want to keep
+        current changes inside the session. 
+        
+        If no database is present at the path given to Database() upon 
+        initialisation, a new Database is made by saving an empty dict() at the
+        requested location.        
+        
+        Reading and saving of the database is done by cPickle-ing the dict(). 
+        
+        '''
+        
+        try:
+            dbfile = open(self.db_path,'r')
+            while True:
+                try:
+                    db = cPickle.load(dbfile)
+                    break
+                except ValueError:
+                    print 'Loading database failed: ValueError ~ insecure '+\
+                          'string pickle. Waiting 10 seconds and trying again.' 
+                    time.sleep(10)
+            dbfile.close()
+            self.clear()
+            super(Database,self).update(db)
+        except IOError:
+            print 'No database present at %s. Creating a new one.'%self.db_path
+            self.__save()
+                
+                
+                
+    def sync(self):
+        
+        ''' 
+        Update the database on the harddisk and in the memory.
+         
+        The database is read anew, ie updated with the hard disk version to 
+        account for any changes made by a different program. Next, the changes
+        made to the database in memory are applied, before saving the database
+        to the hard disk again.
+        
+        Any items deleted from the database in memory will also be deleted from
+        the version saved on the hard disk!
+        
+        The keys that are changed explicitly are all listed in self.__changed,
+        to which entries can be added manually using the addChangedKey method, 
+        or automatically by calling .update(), .__setitem__() or .setdefault().
+        
+        '''
+        
+        if self.__changed or self.__deleted:
+            current_db = dict([(k,v) 
+                               for k,v in self.items() 
+                               if k in set(self.__changed)])
+            self.read()
+            self.__deleted = list(set(self.__deleted))
+            while self.__deleted:
+                try:
+                    super(Database,self).__delitem__(self.__deleted.pop())
+                except KeyError:
+                    pass
+            super(Database,self).update(current_db)
+            self.__save()
+            self.__changed = []
+    
+    
+    
+    def __save(self):
+        
+        '''
+        Save a database. 
+        
+        Only called by Database() internally. Use sync() to save the Database
+        to the hard disk.
+        
+        Reading and saving of the database is done by cPickle-ing the dict(). 
+        
+        '''
+        
+        backup_file = ''
+        if os.path.isfile(self.db_path):
+            i = 0
+            backup_file =  '%s_backup%i'%(self.db_path,i)
+            while os.path.isfile(backup_file):
+                i += 1
+                backup_file = '%s_backup%i'%(self.db_path,i)
+            subprocess.call(['cp %s %s'%(self.db_path,backup_file)],\
+                            shell=True)
+        dbfile = open(self.db_path,'w')
+        cPickle.dump(self,dbfile)
+        dbfile.close()
+        if backup_file and os.path.isfile(backup_file):
+            subprocess.call(['rm %s'%(backup_file)],shell=True)
+    
+    
+    def addChangedKey(self,key):
+        
+        '''
+        Add a key to the list of changed keys in the database.
+        
+        This is useful if a change was made to an entry on a deeper level, 
+        meaning that the __set__() method of Database() is not called directly.
+        
+        If the key is not added to this list manually, it will not make it into
+        the database on the hard disk when calling the sync() method.
+        
+        @param key: the key you want to include in the next sync() call.
+        @type key: string
+        
+        '''
+        
+        self.__changed.append(key)
+    
+    
+    
+    def getDeletedKeys(self):
+        
+        '''
+        Return a list of all keys that have been deleted from the database in
+        memory.
+        
+        @return: list of keys
+        @rtype: list
+        '''
+        
+        return self.__deleted
+    
+    
+    
+    def getChangedKeys(self):
+        
+        '''
+        Return a list of all keys that have been changed in the database in
+        memory.
+        
+        @return: list of keys
+        @rtype: list
+        '''
+        
+        return self.__changed
+
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()        
+
+
+
+def convertPacsDbToDictDb(db_path):
+    
+    '''
+    ***OBSOLETE***
+    
+    Convert an old PACS database to the new dictionary based format. 
+    
+    Keeps the old db in existence!
+    
+    This change was made to speed up the use of the database and makes use of 
+    the Database() class.
+    
+    @param db_path: Path to the PACS database
+    @type db_path: string
+    
+    '''
+    subprocess.call([' '.join(['mv',db_path,db_path+'_old'])],shell=True)
+    pacs_db_old = open(db_path+'_old','r')      
+    pacs_db_new = open(db_path,'w')      
+    old_db = []
+    while True:
+        try:
+            model = cPickle.load(pacs_db_old)
+            old_db.append(model)
+        except EOFError:
+            break  
+    new_db = dict()
+    for entry in old_db:
+        trans_list = entry[0]
+        filename = entry[1]
+        pacs_id = entry[2]
+        model_id = entry[3]
+        if not new_db.has_key(pacs_id): 
+            new_db[pacs_id] = dict([('filenames',[])])
+        new_db[pacs_id]['trans_list'] = trans_list
+        new_db[pacs_id]['filenames'].append(filename)
+        new_db[pacs_id]['cooling_id'] = model_id
+    cPickle.dump(new_db,pacs_db_new)
+    pacs_db_old.close()
+    pacs_db_new.close()
+    
+
+    
+def convertGastronoomDatabases(path_gastronoom):
+    
+    '''
+    ***OBSOLETE***
+    
+    Convert all GASTRoNOoM databases (cooling, mline, sphinx) to the dict
+    format.
+    
+    This change was made to speed up the use of the database and makes use of 
+    the Database() class.
+       
+    @param path_gastronoom: the name of the GASTRoNOoM subfolder.
+    @type path_gastronoom: string
+    
+    '''
+    
+    cooling_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                path_gastronoom,'GASTRoNOoM_cooling_models.db')
+    convertCoolingDb(path=cooling_path)
+    mline_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                              path_gastronoom,'GASTRoNOoM_mline_models.db')
+    convertMlineDb(path=mline_path)
+    sphinx_paths = glob(os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                    path_gastronoom,'models','GASTRoNOoM*.db'))
+    convertSphinxDb(paths=sphinx_paths,path_gastronoom=path_gastronoom)
+    print '** Done!'
+    print '*******************************'
+
+
+    
+def convertCoolingDb(path):
+    
+    '''
+    ***OBSOLETE***
+    
+    Convert the cooling db from list to dictionary format.
+    
+    This change was made to speed up the use of the database and makes use of 
+    the Database() class.
+    
+    @param path: the full path to the db
+    @type path: string
+    
+    '''
+    
+    print '** Converting Cooling database to dictionary format...'    
+    subprocess.call([' '.join(['mv',path,path+'_old'])],shell=True)
+    cool_db_old = open(path+'_old','r')      
+    old_db = []
+    while True:
+        try:
+            model = cPickle.load(cool_db_old)
+            old_db.append(model)
+        except EOFError:
+            break  
+    cool_db_old.close()
+    new_db = dict()
+    for entry in old_db:
+        command_list = entry[0]
+        model_id = entry[1]
+        new_db[model_id] = command_list
+    saveDatabase(db_path=path,db=new_db)
+    
+
+    
+def convertMlineDb(path):
+    
+    '''
+    ***OBSOLETE***
+    
+    Convert the mline db from list to dictionary format.
+        
+    This change was made to speed up the use of the database and makes use of 
+    the Database() class.
+    
+    @param path: the full path to the db
+    @type path: string
+    
+    '''
+    
+    print '** Converting Mline database to dictionary format...'
+    subprocess.call([' '.join(['mv',path,path+'_old'])],shell=True)
+    ml_db_old = open(path+'_old','r')      
+    old_db = []
+    while True:
+        try:
+            model = cPickle.load(ml_db_old)
+            old_db.append(model)
+        except EOFError:
+            break  
+    ml_db_old.close()
+    new_db = dict()
+    for entry in old_db:
+        molecule = entry[0]
+        molec_dict = entry[1]
+        molec_id = entry[2]
+        model_id = entry[3]
+        if not new_db.has_key(model_id): 
+            new_db[model_id] = dict()
+        if not new_db[model_id].has_key(molec_id): 
+            new_db[model_id][molec_id] = dict()
+        new_db[model_id][molec_id][molecule] = molec_dict
+    saveDatabase(db_path=path,db=new_db)
+    
+    
+    
+def convertSphinxDb(paths,path_gastronoom):
+    
+    '''
+    ***OBSOLETE***
+    
+    Convert the sphinx db from list to dictionary format.
+    
+    This change was made to speed up the use of the database and makes use of 
+    the Database() class.
+    
+    @param paths: list of all full paths to the dbs
+    @type paths: list[string]
+    @param path_gastronoom: the name of the GASTRoNOoM subfolder.
+    @type path_gastronoom: string
+    
+    '''
+    
+    #[subprocess.call([' '.join(['mv',path,path+'_old'])],shell=True)
+    #        for path in paths]
+    print '** Converting Sphinx database to dictionary format...'
+    old_db = []
+    for path in paths:
+        sph_db_old = open(path,'r')
+        while True:
+            try:
+                model = cPickle.load(sph_db_old)
+                old_db.append(model)
+            except EOFError:
+                break 
+        sph_db_old.close()
+    new_db = dict()
+    for entry in old_db:
+        transition = entry[0]
+        trans_dict = entry[1]
+        trans_id = entry[2]
+        molec_id = entry[3]
+        model_id = entry[4]
+        if not new_db.has_key(model_id): 
+            new_db[model_id] = dict()
+        if not new_db[model_id].has_key(molec_id): 
+            new_db[model_id][molec_id] = dict()
+        if not new_db[model_id][molec_id].has_key(trans_id): 
+            new_db[model_id][molec_id][trans_id] = dict()
+        new_db[model_id][molec_id][trans_id][transition] = trans_dict
+    new_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                            path_gastronoom,'GASTRoNOoM_sphinx_models.db')
+    saveDatabase(db_path=new_path,db=new_db)
+
+
+
+def updateCoolingOpas(path_gastronoom):
+    
+    '''
+    ***OBSOLETE***
+    
+    Update cooling database at path_gastronoom with the new opacity keys.
+    
+    This method was used when the conversion from a single input opacity file in
+    GASTRoNOoM to an inputparameter filename for these opacities was made.
+    
+    @param path_gastronoom: the name of the GASTRoNOoM subfolder.
+    @type path_gastronoom: string
+    
+    '''
+    
+    print '** Converting cooling database opacity entries.'
+    cooling_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                path_gastronoom,'GASTRoNOoM_cooling_models.db')
+    subprocess.call([' '.join(['mv',cooling_path,cooling_path+\
+                               '_old_opakeys'])],shell=True)
+    old_db = getDatabase(db_path=cooling_path+'_old_opakeys')
+    new_db = dict()
+    new_db.update(old_db)
+    for model_id in new_db.keys():    
+        if not old_db[model_id]['#OPA_FILE'] \
+                and not old_db[model_id]['#TEMDUST_FILE']:
+            new_db[model_id]['TEMDUST_FILENAME'] = '"temdust.kappa"'
+            new_db[model_id]['USE_NEW_DUST_KAPPA_FILES'] = 0
+        elif old_db[model_id]['#OPA_FILE'] \
+                and old_db[model_id]['#TEMDUST_FILE']:
+            new_db[model_id]['TEMDUST_FILENAME'] = '"%s"'\
+                    %os.path.split(old_db[model_id]['#TEMDUST_FILE'])[1]
+            new_db[model_id]['USE_NEW_DUST_KAPPA_FILES'] = 1        
+        elif not old_db[model_id]['#OPA_FILE'] \
+                and old_db[model_id]['#TEMDUST_FILE'] \
+                    == '/home/robinl/GASTRoNOoM/src/data/qpr_files/'+\
+                       'temdust_silicates.kappa':
+            new_db[model_id]['TEMDUST_FILENAME'] = '"temdust.kappa"'
+            new_db[model_id]['USE_NEW_DUST_KAPPA_FILES'] = 0        
+        else:
+            subprocess.call([' '.join(['mv',cooling_path+'_old_opakeys',\
+                    cooling_path])],shell=True)        
+            raise ValueError('Something fishy is going on... Discrepant OPA' +\
+                             ' and TEMDUST files for %s!'%model_id)
+        del new_db[model_id]['#OPA_FILE']
+        del new_db[model_id]['#TEMDUST_FILE']
+    saveDatabase(db_path=cooling_path,db=new_db)          
+    gast_data = os.path.join(os.path.expanduser('~'),'GASTRoNOoM','src','data')
+    qpr_ori = os.path.join(gast_data,'qpr_files','qpr_silicates_jus1992.dat') 
+    if os.path.isfile(qpr_ori):
+        print '** Copying original opacity files... Remember to copy qpr.dat'+\
+              ' and temdust.kappa to your VIC account as well!'
+        qpr = os.path.join(gast_data,'qpr.dat')
+        temdust = os.path.join(gast_data,'temdust.kappa')
+        temd_ori = os.path.join(gast_data,'qpr_files',\
+                                'temdust_silicates.kappa')
+        subprocess.call([' '.join(['cp',qpr_ori,qpr])],shell=True)
+        subprocess.call([' '.join(['cp',temd_ori,temdust])],shell=True)
+    print '** Done!'
+    print '*******************************'
+         
+
+"""
+##############################
+## FIND FIRST COOLING MODEL ##
+############################## 
+   
+def getStartPosition(gastronoom_db,model_id):
+   '''Get the start position in the db based on the cooling model_id, to speed up the cross-checking procedure.
+   
+   Input:   gastronoom_db = File object, the opened database
+      model_id=string, the cooling model_id that you are searching for.
+   Output:  start_position, the db will HAVE TO BE reset to this position, the position is -1 if the id hasn't been found
+   '''
+   try:
+      while True:
+         last_position = gastronoom_db.tell()
+         model = cPickle.load(gastronoom_db)
+         if str(model[-1]) == model_id:             #Find the first position of the cooling model_id occurrence, and remember it for repositioning the file object once a check has been done.
+            start_position = last_position
+            break
+   except EOFError:
+      start_position = -1
+   return start_position
+
+##############################
+#CONVERT OLD SPHINX DATABASE##
+##############################
+
+def convertOldSphinxDbToNew(path):
+   '''Convert an old Sphinx database to the new cooling model_id specific database format. Keeps the old db in existence!'''
+   gastronoom_db_old = open(os.path.join(os.path.expanduser('~'),'GASTRoNOoM',path,\
+                                 'GASTRoNOoM_sphinx_models.db'),'r')     
+   while True:   
+      try:
+         model = cPickle.load(gastronoom_db_old)
+         this_cooling_id = model[-1]
+         gastronoom_db = open(os.path.join(os.path.expanduser('~'),'GASTRoNOoM',path,'models',\
+                                          'GASTRoNOoM_sphinx_%s.db'%this_cooling_id),'a')
+         cPickle.dump(model,gastronoom_db)  
+         gastronoom_db.close()
+      except EOFError:
+         print 'Database conversion finished.'
+         gastronoom_db_old.close()
+         break
+
+##############################
+#REMOVE OBS INFO FROM  MCMAX DB
+##############################     
+
+def removeObsInfoMCMaxDb(path):
+   '''Convert an old MCMax database that includes observation information (ie ray tracing )to a new database without it.
+   Keeps the old db in existence!
+   
+   Input:   path=string, path where the database is saved (ie path_mcmax). Db is assumed to be called MCMax_models.db!
+   '''
+   subprocess.call([' '.join(['mv',os.path.join(os.path.expanduser('~'),'MCMax',path,'MCMax_models.db'),\
+                              os.path.join(os.path.expanduser('~'),'MCMax',path,'MCMax_models_old_obsinfo.db')])],shell=True)
+   mcmax_db_old = open(os.path.join(os.path.expanduser('~'),'MCMax',path,'MCMax_models_old_obsinfo.db'),'r')     
+   mcmax_db_new = open(os.path.join(os.path.expanduser('~'),'MCMax',path,'MCMax_models.db'),'a')     
+   while True:   
+      try:
+         model = cPickle.load(mcmax_db_old)
+         model[0] = [m for m in model[0] if m != os.path.join(os.path.expanduser('~'),'MCMax','src','Spec.out')]
+         cPickle.dump(model,mcmax_db_new)  
+      except EOFError:
+         print 'Database conversion finished.'
+         mcmax_db_old.close()
+         mcmax_db_new.close()
+         break
+
+##############################
+#CONVERT OLD MCMAX DATABASE ##
+##############################     
+      
+def convertOldMCMaxDbToNew(path):
+   '''Convert an old MCMax database to the new database based on actual inputfiles instead of command line options.
+   Keeps the old db in existence!
+   
+   Input:   path=string, path where the database is saved. Db is assumed to be called MCMax_models.db!'''
+   subprocess.call([' '.join(['mv',os.path.join(os.path.expanduser('~'),'MCMax',path,'MCMax_models.db'),\
+                              os.path.join(os.path.expanduser('~'),'MCMax',path,'MCMax_models_old.db')])],shell=True)
+   mcmax_db_old = open(os.path.join(os.path.expanduser('~'),'MCMax',path,'MCMax_models_old.db'),'r')     
+   mcmax_db_new = open(os.path.join(os.path.expanduser('~'),'MCMax',path,'MCMax_models.db'),'a')     
+   while True:   
+      try:
+         model = cPickle.load(mcmax_db_old)
+         model[0] = [m.replace('-s ','') for m in model[0]]
+         abun_lines = [(i,m.split()) for i,m in enumerate(model[0]) if m[:4] == 'abun']
+         n = len(abun_lines)
+         for i,m in abun_lines:
+            model[0][i] = m[0]
+            model[0][i+n:i+n] = [m[1]]
+         cPickle.dump(model,mcmax_db_new)  
+      except EOFError:
+         print 'Database conversion finished.'
+         mcmax_db_old.close()
+         mcmax_db_new.close()
+         break
+         
+
+def updateDatabase(db_path,db):
+    
+    ''' 
+    Update the database saved on the harddisk. The database is read again, 
+    updated and then saved to ensure no data recently added to the database are
+    lost.
+        
+    Input:    db_path=string, the path to the database.
+        db=dict, the new version of the database.
+    Output:  current_db=dict(), the current version of the db is returned.
+    
+    '''
+    
+    current_db = getDatabase(db_path=db_path)
+    current_db.update(db)
+    saveDatabase(db_path=db_path,db=current_db)
+    return current_db
+
+##############################
+## SAVE GASTRONOOM DATABASE ##
+##############################
+
+def saveDatabase(db_path,db):
+    '''Save a database.
+    
+    Input:    db_path=string, the path to the database.
+        db=dict, the new version of the database.
+    '''
+    dbfile = open(db_path,'w')
+    cPickle.dump(db,dbfile)
+    dbfile.close()
+
+##############################
+### GET GASTRONOOM DATABASE###
+##############################
+
+def getDatabase(db_path):
+    
+    '''
+    Return a database.
+    
+    Input:    db_path=string, the path to the database.
+    '''
+    try:
+        dbfile = open(db_path,'r')
+        while True:
+            try:
+                db = cPickle.load(dbfile)
+                break
+            except ValueError:
+                print 'Loading database failed: ValueError ~ insecure string pickle. Waiting 10 seconds and trying again.' 
+                time.sleep(10)
+        dbfile.close()
+        return db
+    except IOError:
+        return dict()
+        
+
+
+
+def browseDatabase(db_path,model_id,code=None,id_index=None,conditional=None,cond_index=None):
+    '''Browse a database and return the entry from it based on the id.
+    
+    Input:    db_path=str, the filepath to the database to browse
+        model_id=str, the model_id (molec specific in case of sphinx and mline, general if cooling)
+        OPTIONAL id_index=int, default=None, index of model id in the database entries, specify only if you know what you're doing! 
+            default None is used if the code keyword is used or the code is taken from the database filename. 
+        OPTIONAL code=string, default=None, name of the (sub-) code for which the db is browsed (pacs, mcmax, cooling, mline, sphinx),
+            default None can be used when id_index is given, or if the database filename includes the codename
+        OPTIONAL conditional=anything, default=None, if an extra condition is imposed for one part of the db entry, cond_id has to be
+            specified.
+        OPTIONAL cond_index=int, default=None, index of the conditional term in the db entry, must be specified if conditional is not None
+    Output:  dict giving the input parameters
+    '''
+    if (conditional is None and cond_index <> None) or (conditional <> None and cond_index is None):
+        raise IOError('If a conditional term is added, its database index must be given as well; and vice versa. Aborting.')
+    id_index,code = getDbStructure(db_path=db_path,code=code,id_index=id_index)
+    star_db = open(db_path,'r')
+    try:
+        while True:
+            entry = cPickle.load(star_db)
+            if model_id == entry[id_index]:
+                if conditional <> None:
+                    if entry[cond_index] == conditional:
+                        star_db.close()
+                        break
+                    else:
+                        pass
+                else:
+                    star_db.close()
+                    break
+    except EOFError:
+        star_db.close()
+        raise EOFError('The %s you requested, is not available in the %s database.'%(model_id,code is None and 'requested' or code))
+    return entry
+
+##############################
+#ADD PARAMETER TO MODEL IN DB#
+##############################
+
+def addParameterToModel(model_id,database_path,parameter,value):
+    '''Add a single parameter to a model's parameter dictionary in a database. A backup of the old database is made!
+    
+    Input:    model_id=string, the model_id you're referring to
+        database_path=string, the database
+        parameter=string, name of the parameter as it appears in the inputfile for the respective code
+        value=int/float/..., the value of the parameter
+    '''
+    subprocess.call(['mv ' + database_path + ' ' + database_path+'old'],shell=True,stdout=subprocess.PIPE)
+    gastronoom_db_old = open(database_path+'old','r')
+    gastronoom_db = open(database_path,'w')
+    print 'Making a change to database at %s'%database_path
+    while True:
+        try:
+            model = cPickle.load(gastronoom_db_old)
+            if model_id == model[1]:
+                print 'Adding the %s parameter with value %s to the dictionary of the model with id %s.'%(parameter,str(value),model_id)
+                new_dict = model[0]
+                new_dict[parameter] = value
+                model = [new_dict,model_id]
+            cPickle.dump(model,gastronoom_db)  
+        except EOFError:
+            break
+    gastronoom_db_old.close()
+    gastronoom_db.close()
+    
+
+
+def addParameterToMCMaxDb(database_path,parameter,value,last_par):
+    
+    '''
+    Add a single parameter to all models' parameter dictionaries in an MCMax database, if it is not yet present. A backup of the old database is made!
+    
+    Input:    database_path=string, the database
+        parameter=string, name of the parameter as it appears in the inputfile for the respective code
+        value=int/float/..., the value of the parameter
+        last_par=string, the parameter is inserted after this parameter
+    '''
+    subprocess.call(['mv ' + database_path + ' ' + database_path+'old'],shell=True,stdout=subprocess.PIPE)
+    gastronoom_db_old = open(database_path+'old','r')
+    gastronoom_db = open(database_path,'w')
+    print 'Making a change to database at %s'%database_path
+    while True:
+        try:
+            model = cPickle.load(gastronoom_db_old)
+            model_id = model[1]
+            new_dict = model[0]
+            keys = [entry.split('=')[0] for entry in new_dict]
+            index = keys.index(last_par)+1
+            if keys[index] != parameter:    
+                print 'Adding the %s parameter with value %s to the dictionary of the model with id %s.'%(parameter,str(value),model_id)
+                new_dict[index:index] = ['%s=%s'%(parameter,str(value))]
+            model = [new_dict,model_id]
+            cPickle.dump(model,gastronoom_db)
+        except EOFError:
+            break
+    gastronoom_db_old.close()
+    gastronoom_db.close()
+    
+
+"""

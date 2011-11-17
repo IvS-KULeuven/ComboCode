@@ -1,0 +1,10 @@
+### Parameters that are mutable throughout the modeling procedure,
+### after a GASTRoNOoM iteration
+##########################################################################################################
+DRIFT
+V_EXP_DUST
+DENSTYPE
+DENSFILE
+DUST_TO_GAS
+DUST_TO_GAS_ITERATED
+DUST_TO_GAS_CHANGE_ML_SP

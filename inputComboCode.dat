@@ -1,0 +1,376 @@
+###########################
+### INPUT FOR COMBOCODE ###
+###########################
+####################################################################################################################
+############## GENERAL INPUT
+####################################################################################################################
+#-- Which codes to run
+GASTRONOOM=0                                # Put to 0 if no GASTRoNOoM is needed
+MCMAX=0                                 # Put to 0 if no MCMax is needed
+SPHINX=1                            # Run Sphinx or not
+
+#-- Output folder management
+PATH_GASTRONOOM=test                          # Path in ~/GASTRoNOoM/. for models to be stored       
+PATH_MCMAX=test                 # Path in ~/MCMax/. for models to be stored              
+LN_PATH_GASTRONOOM=                 # Leave empty or remove if you don't want to use it! Create path_gastronoom in this folder, and refer to it with a symbolic link from the main GASTRoNOoM folder instead of making the folder there
+LN_PATH_MCMAX=                 # Leave empty or remove if you don't want to use it! Create path_mcmax in this folder, and refer to it with a symbolic link from the main MCMax folder instead of making the folder there
+
+#-- Number of iterations?
+ITERATIONS=2                                # Number of iterations for running MCMax and/or GASTRoNOoM, automatically 1 if mcmax=0, or gastronoom=0
+PLOT_ITERATIVE=0                            # Compare results between each step for one parameter set (Only for MCMax at the moment)
+
+#-- VIC supercomputer
+VIC=0                               # Run Sphinx on VIC3
+VIC_ACCOUNT=vsc30226                # Account on VIC3 supercluster
+VIC_TIME_PER_SPHINX=30                 # Pre-allocated time in minutes per Sphinx single line calculation
+VIC_CREDITS=                       # Credits account to be charged, leave open or remove for making use of your own personal credits.
+
+#-- PACS convolution and plotting
+PATH_PACS=/home/robinl/Data/PACS/         # Path to PACS data, leave empty if not relevant/no dust data are used. Data will be taken from path_pacs/star_name/cont_subtracted/.  The star_name does not have to be specified.
+PACS_REDO_CONVOLUTION=0                  # Re-do the convolution of sphinx output to PACS resolution (fi if the data has changed, sphinx convolution output depends on the wavelength list in the data lists)
+PACS_SEARCHSTRING=oversampling2           #searchstring used when looking for data, all data that include this string will be taken so make it unique
+PACS_OVERSAMPLING=2                       # The oversampling factor of the PACS data, this should also be included in the filenames of the data
+
+#-- SPIRE convolution and plotting
+PATH_SPIRE=/home/robinl/Data/SPIRE/         # Path to Spire data, leave empty if not relevant/no dust data are used. Data will be taken from path_spire/star_name/cont_subtracted/.  The star_name does not have to be specified.
+SPIRE_SEARCHSTRING=oversampling2           #searchstring used when looking for data, all data that include this string will be taken so make it unique
+SPIRE_RESOLUTION=2                       # The resolution of the SPire spectrum in cm^-1
+
+#-- SED data selection and plotting
+PATH_SED=/home/robinl/MCMax/Data/    #Path to the Data folder where the text files with SED data are stored. Leave open if no data are to be plotted.
+
+#-- Statistics module [PACS only]
+STATISTICS=0                        # Calculate basic statistics, for now only for PACS
+STAT_TOLERANCE=1                    # Tolerance for the data wavelength grid, when selecting peak values in PACS data for comparison with model values. The tolerance is a factor >= 1 multiplied by the local wavelength resolution, after which the max flux is taken from that range.
+STAT_SIGMA=3                        # sigma for sigma clipping of data/model peak ratios when determining chi-squared values, remove this parameter if no sigma clipping is needed
+STAT_MODE=chi2                      # The method used for statistics in PeakStats.py. Can be chi2, chi_abs or log10_severecut
+
+#-- Various settings for this CC session
+REPLACE_DB_ENTRY=0                  # Be very careful with putting this keyword to 1! If a model in a database is found (usually cooling or mcmax), it is replaced by a newly calculated model (also with a new model_id). Any mline, sphinx or pacs models stemming from the same cooling id will also be deleted!!!!
+UPDATE_SPEC=0                       # Update .spec files for GASTRoNOoM based on the available line lists
+APPEND_RESULTS=0                    # Append model ids of transitions in the grid to the inputfile, regardless if they've been calculated this run or not. By default this is off, since model ids are already appended if successfully calculated *this* run. This switch adds id's even if transitions are pulled from the database.
+WRITE_DUST_DENSITY=0                # Write away separate density files for MCMax models (see Star.writeDensity()) --- The opacity file is now written away fully as input for GASTRoNOoM, so can be read from there.
+PRINT_MODEL_INFO=1                  # Print extra model info at the end of a CC session. Is off automatically for grids > 20 models
+DO_ICE_FIT=0                        # When fitting water ice to an SED, a zoom in of the three micron feature as well as model fits after continuum subtraction are shown. 
+
+####################################################################################################################
+############### STELLAR & CIRCUMSTELLAR PARAMETERS 
+####################################################################################################################
+# Star
+####################
+STAR_NAME=llpeg                         # Stellar Name (lower cases, no spaces, only SIMBAD name is accepted, greek letters written in full, omicron = o)
+T_STAR=2400                             # Stellar temperature [K]
+M_STAR=1.0                          # Stellar mass [Msol]
+L_STAR=11000                            # Stellar luminosity [Lsol]
+DISTANCE=1300                           # Distance to object [pc]           
+STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody, MARCS for a MARCS spectrum and FILE for a custom file, and then STARFILE has to be filled in, otherwise it's ignored)
+STARFILE=                           # Only relevant if STARTYPE=FILE, name of file in ~/ComboCode/StarFiles/. Two columns: one with wavelength in micron, one with flux in Jy.
+
+####################
+# GAS SHELL Parameters
+####################
+ABUN_C=6.0e-4                       # Carbon abundance                                               GASTRoNOoM  
+ABUN_O=4.0e-4                       # Oxygen abundance                                               GASTRoNOoM  
+RATIO_12C_TO_13C=8               # 12C/13C ratio                                                  GASTRoNOoM  
+RATIO_16O_TO_17O=600            #16O/17O ratio
+RATIO_16O_TO_18O=200            #16O/18O ratio
+F_H2O=3.5e-4                     #n(H2O)/n(H2) at Rstar
+OPR=3                              #ortho-2-para water ratio
+
+#R_INNER_GAS                           # The gas inner radius can be defined separately from the dust inner radius if needed, removing CC's consistent aspect of this
+#R_INNER_DUST_MODE=ABSOLUTE       # When determining dust inner radius, ABSOLUTE (default) is for taking density > 10**-50, RELATIVE is for taking density[i] > 0.01*density[i+1] as dust inner radius
+OUTER_R_MODE=MAMON                  # Use outer radius (FIXED), else [CO] relative abund.(MAMON)      GASTRoNOoM  
+RHALF_FAC=1                         # Factor used to change RHALF as given by Mamon et al. (1988)     GASTRoNOoM  
+R_OUTER_GAS=18000                   # Outer radius of the gas shell [R_STAR], if NOT Mamon            GASTRoNOoM  
+
+#-- Water specific molecule information
+R_OUTER_H2O=0              #If included, all water is given this outer radius in mline and sphinx, as if the molecule had this outer radius in the MOLECULE=***** definition
+SET_KEYWORD_CHANGE_ABUNDANCE_H2O=0         #If included, all water is given this par in mline and sphinx, as if the molecule had this parameter in the MOLECULE=***** definition
+CHANGE_FRACTION_FILENAME_H2O=''             #If included, all water is given this par in mline and sphinx, as if the molecule had this parameter in the MOLECULE=***** definition, don't include < '' > 
+SET_KEYWORD_CHANGE_TEMPERATURE_H2O=0             #If included, all water is given this par in mline and sphinx, as if the molecule had this parameter in the MOLECULE=***** definition
+NEW_TEMPERATURE_FILENAME_H2O=''             #If included, all water is given this par in mline and sphinx, as if the molecule had this parameter in the MOLECULE=***** definition, don't include < '' > 
+ENHANCE_ABUNDANCE_FACTOR_H2O=0         #If included, all water is given this par in mline and sphinx, as if the molecule had this parameter in the MOLECULE=***** definition
+ABUNDANCE_FILENAME_H2O=''              #If included, all water is given this par in mline and sphinx, as if the molecule had this parameter in the MOLECULE=***** definition, don't include < '' > 
+
+#-- OH maser shell radius
+#R_OH1612_AS=                           #The OH 1612MHz maser shell radius in arcseconds, used to give info at end of modeling and for plotting abundance plots. 
+
+VEL_INFINITY_GAS=14.0                   # expected terminal velocity [km/s]                                       GASTRoNOoM  
+STOCHASTIC_VEL_GAS=1.5                      # Stochastic velocity [km/s]                                                  GASTRoNOoM  
+
+TEMPERATURE_MODE_GAS=cooling        # Use temperature power law (cooling/epsilon)                         GASTRoNOoM  
+TEMPERATURE_EPSILON_GAS=0.5         # EPSILON, for GAS temperature power law, whole CSE if eps2 is 0!    if mode is cooling, then this is the power for the inner region before the inner radius              GASTRoNOoM  
+#TEMPERATURE_EPSILON2_GAS=0.5         # EPSILON2, for GAS temperature power law, from radius_epsilon2 onward!             GASTRoNOoM  
+#RADIUS_EPSILON2_GAS=10              #Only relevant if TEMP_EPS2 is non zero
+#TEMPERATURE_EPSILON3_GAS=0.5         # EPSILON3, for GAS temperature power law, from radius_epsilon3 onward!             GASTRoNOoM  
+#RADIUS_EPSILON3_GAS=10              #Only relevant if TEMP_EPS3 is non zero
+
+DUST_TO_GAS_INITIAL=0.2e-3          # Dust-to-gass mass ratio, initial guess only!                   GASTRoNOoM  
+#DUST_TO_GAS_CHANGE_ML_SP=0     #If commented, the empiric d2g ratio is used. If 0, the cooling d2g ratio is used! Can also have any value given here. Changes d2g ratio in mline and sphinx. 
+
+#DENSTYPE=%                    #If commented, MASSLOSS is used in first iteration, then density distribution from GASTRoNOoM. Put to MASSLOSS if you do not want to use the density from GASTRoNOoM
+#DUST_TEMPERATURE_FILENAME=%   #If commented, T-distribution from MCMax is used, if left open a power law is used, if a filename that file is used for the temperature distribution
+
+#TEMDUST_FILENAME=            #Only relevant if USE_NEW_DUST_KAPPA_FILES=1, temdust.kappa for original (or leave open), other filename (micron | q_ext/a) for own kappa's. File has to be in the DATA_DIRECTORY (~/GASTRoNOoM/src/data/) Is handled automatically if left out
+#USE_NEW_DUST_KAPPA_FILES=       # Uncomment and put equal to 0 for original qpr.dat/temdust.kappa usage, otherwise leave out or put equal to 1
+
+MDOT_MODE=CONSTANT               # Modus of mass-loss prescription (CONSTANT/2STEP/SINUS/PERIODIC/OTHER)  -- Only CONSTANT and OTHER are implemented
+MDOT_GAS=1.40e-5                 # Gas mass loss rate [Msol/yr] - used to compute v(r) in case of variable mass loss   GASTRoNOoM  
+#USE_DENSITY_NON_CONSISTENT=1   # change density according to your mass loss function, this is off by default
+
+#Extra in case of MDOT_MODE=OTHER
+#RADIAL GRID POINT ID NUMBER (INTEGER)     RADIUS(R_STAR)    MDOT      EXPONENT
+#In order to calculate grids of parameters (not in definition of "radial grid" here) for the mdot structure, reset the grid point id number to 1 at some point and add the next set after it (order of appearance is important here!)
+#R_POINTS_MASS_LOSS=1      7    1.e-20   1.
+#R_POINTS_MASS_LOSS=2      8    3.5e-6   1.
+#R_POINTS_MASS_LOSS=1      5    2.e-20   1.
+#R_POINTS_MASS_LOSS=2      10    7.0e-6   1.
+
+####################
+# ATMOSPHERIC Models - Uncomment extra options if USE_MARCS=1, can use multiple options here as well.
+# Only used when STARTYPE = MARCS
+# NOT YET implemented
+####################
+#MARCS_TYPE=st                               # Type of MARCS spectrum; st  standard (not for giants),          MCMax  
+#                                             # mc  moderately CN cycled (12c/13C ~ 20), hc  heavily CN cycled (12C/13C ~4)
+
+####################################################################################################################
+############# NUMERICAL & CODING & STABILITY PARAMETERS for GASTRoNOoM
+####################################################################################################################
+CHECK_TAU_STEP=0.1                  # check.par.in sphinx if step in tau not too large                    GASTRoNOoM  
+STEP_RS_RIN=1.d+12                  # Step in  radius in DLSODA from RSTAR to RINNER                      GASTRoNOoM  
+STEP_RIN_ROUT=5.e+13                    # Step in  radius in DLSODA from RINNER to ROUT                       GASTRoNOoM  
+
+
+####################
+# DUST Particle Parameters  0 = particle type is ignored, "A_" is reserved for dust species abundances
+# Values should be separated by ";", first value of every "A_" add up to the total dust content, second value of every "A_"
+# adds up to the total dust content, etc. No actual gridding is possible. Any lists here included must have same length.
+####################
+A_AMSIL=0                           # Amorphous Silicates based on o Ceti's SED                           MCMax  
+A_AL2O3=0                                   # Amorphous Al2O3, Corundum at wl < 5 micron                          MCMax  
+A_FE=0.05                                       # Metallic Iron                                                               MCMax  
+A_FORS=0                        # Crystalline Silicate  Forsterite                                        MCMax  
+A_ENST=0                            # Crystalline Silicate  Enstatite                                         MCMax  
+A_MELI=0                                    # Crystalline Silicate  Melilite                                          MCMax  
+A_AMC=0.47                                      # Amorphous Carbon                                                            MCMax  
+A_MGS=0.18                                      # Magnesium Sulfide                                                           MCMax  
+A_SIC=0.3                                       # Silicon Carbide                                                             MCMax  
+A_GRAPH=0                                   # Graphite                                                                        MCMax  
+A_H2O=0                                     # Water Ice                                                                       MCMax  
+
+####################
+# DUST T ranges (T_MAX_DUSTTYPE, T_MIN_DUSTTYPE) can be given for any dust type, normal gridding is again possible
+####################
+#T_DESA_SPECIES=                            # Coefficients to calculate sublimation temp, normally standard in code       MCMax  
+#T_DESB_SPECIES=                            # If explicitly stated, include both of them! (see Kama et al 2009)
+
+#T_MIN_SPECIES=                         # Minimum required temperature for some dust species                              MCMax  
+#T_MAX_SPECIES=                         # Maximum allowed temperature for some dust species (sublimation
+                                                # temperature is standard in dust input! only include if specific T_MAX is needed
+#T_MIN_MGS=500
+
+#R_MIN_SPECIES=                         # Minimum radius at which dust species can exist (in R_STAR)                  MCMax  
+#R_MAX_SPECIES=                         # Maximum radius at which dust species can exist (in R_STAR)                  MCMax  
+
+####################
+# DUST SHELL Parameters
+####################
+MDOT_DUST=1.6e-7                    # Dust mass-loss rate [Msol/yr]                                           MCMax  
+#V_EXP_DUST=                        # The dust expansion velocity. Is calculated from VEL_INFINITY_GAS+DRIFT if not given here
+R_OUTER_DUST=2000                       # Outer radius of dust shell [R_STAR]                                 MCMax  
+#R_INNER_DUST=27               #Only define this if you want to fix the inner radius for both MCMax and GASTRoNOoM, or if you're running GASTRoNOoM without MCMax, in CC R_INNER_GAS = R_INNER_DUST, if used consistently !
+#R_INNER_DUST_AU=27               #R_INNER_DUST in AU, Do not pass R_INNER_DUST if this parameter is given as it overwrites
+#R_OUTER_DUST_AU=2000                  # R_OUTER_DUST in AU  Do not pass R_OUTER_DUST if this parameter is given as it overwrites
+#R_OUTER_MULTIPLY=                #Give this for the outer radius, if you want the outer radius to be a multiple of the inner radius (fi outer radius = 1.5*inner radius) (R_OUTER_DUST and R_OUTER_DUST_AU overwrite this)
+POWER_T_DUST=0.45                           # power for T_DUST power law (T_STAR(R_STAR/2r)^power) when R_MAX is calced from T_MIN
+T_CONTACT=0                                 # 1 for Thermal Contact between Dust Particles, 0 for no TC       MCMax  
+TDESITER=1                          # 1 to destroy high temperature dust, is put to 0 automatically if 
+                                    # an inner dust radius is given, in which case it's not sensible to use this option
+SCATTYPE='ISOTROPIC'                     #'FULL' voor aggregaten en wanneer anisotropic scattering van belang wordt, anders 'ISOTROPIC'
+
+PHOTON_COUNT=5000                   # Number of photons used in Monte Carlo simulation               MCMax  
+RT_SED=1                         # Put to 0 if no ray tracing for SED (ie MC spectra are OK), if multiple  1;0 (based on MCMax/src/Spec.out, and not changing the angle)                 MCMax  
+REDO_OBS=0                    # CC checks if ray tracing for the SED has been done already, but this can be circumvented by putting this to 1, and then the observation output is produced regardless 
+IMAGE=0                       # Put to 1 if you want to make images based on MCMax/src/Image.out (ie change this file if you want different images), always runs, regardless of REDO_OBS 
+IMAGE_NOSOURCE=0              #Remove the central source from the image
+
+###################
+# MCMax radial and theta grid, grid refinement (modeling, not observation file output)
+###################
+NRAD=300                                    # Number of radial grid points
+NTHETA=2                                    # Number of theta grid points
+
+NSPAN=10                                    # Grid refinement radial  number of cells
+NLEV=10                                     # Grid refinement radial  number of cell splits
+NTSPAN=0                                    # Grid refinement theta  number of cells
+NTLEV=0                                     # Grid refinement theta  number of cell splits
+
+###################
+# MCMax wavelength grid  wavelength grid, and specifying a subgrid
+###################
+LAM1=0.1                                    # Starting wavelength (in micron)                                         MCMax  
+LAM2=3000                                   # Ending wavelength (in micron)                                           MCMax  
+NLAM=400                                        # number of steps                                                                 MCMax  
+
+ZLAM1=5                                     # Starting wavelength subgrid (must be > than LAM1)(in micron)    MCMax  
+ZLAM2=80                                    # Ending wavelength subgrid (must be < than LAM2)(in micron)      MCMax  
+NZLAM=300                                   # Step size subgrid (must be < than N_LAM)                            MCMax  
+                                                # If no subgrid is desired, put the numbers equal to the main grid numbers
+
+#####################################################################
+# MOLECULAR PARAMETERS FOR WHICH WE WANT TO DO MLINE
+# Sequence for input is (not formatted):
+#       Molecule_name NY_LOW NY_UP N_IMPACT N_IMPACT_EXTRA ABUN_MOLEC ABUN_MOLEC_RINNER ABUN_MOLEC_RE RMAX_MOLEC ITERA USE_COLLIS_RADIAT_SWITCH R_OUTER ABUNDANCE_FILENAME ENHANCE_ABUNDANCE_FACTOR CHANGE_FRACTION_FILENAME SET_KEYWORD_CHANGE_ABUNDANCE NEW_TEMPERATURE_FILENAME SET_KEYWORD_CHANGE_TEMPERATURE
+# Note that the same molecule can be passed twice, then a model grid will be created
+# taking one of the two for one model, and the other for the second model
+## Molecule_name = short hand molecule notation
+## NY_LOW = number of levels in ground-state of molecule
+## NY_UP = number of levels in first-vibrational state of molecule
+## NLINE =" number of (allowed) radiative transitions in molecule 
+## N_IMPACT = number of depth points in radius mesh
+## N_IMPACT_EXTRA = number of depth points in radius mesh (< N_IMPACT) which specifically will be used properly sample variable mass-loss. In case of constant mass loss, take 0   
+## ABUN_MOLEC = abundance at stellar radius, abun will decrease gradually toward abun_molec_rinner at r_inner
+## ABUN_MOLEC_RINNER = abundance at r_inner, will decrease gradually to abun_molec_re at rmax_molec
+## ABUN_MOLEC_RE =abundance at rmax_molec, abun from willacy and millar is scaled to this value between rmax_molec and r_outer
+## RMAX_MOLEC = two grid points for abun between r_star and r_outer, this is the middle 
+##            The above 4 parameters are not relevant for water (para+ortho), 12co and 13co: always include dummy value however!
+## ITERA = Number of mline iterations, set to 0 for LTE (SiO has to have 0 here, cuz not enough collision rates available)
+## LTE_REQUEST = Run mline in LTE mode
+## USE_COLLIS_RADIAT_SWITCH = set to 1 if one wants to use the collision-radiative switching method of Hummer and Voels (1988)
+## R_OUTER = outer radius for this molecule in R_STAR, if 0 the standard R_OUTER value is taken from the input list (which could also be "MAMON")
+##          Note that for cooling the standard input values are always taken, whereas for mline/sphinx the values listed here are taken. CO should always have 0 here, or the precise fixed value from the standard input!
+## ABUNDANCE_FILENAME = IF you want to include a custom abundance profile for this molecule, give the filename here. Always must have a value, but is only used if the next parameter is not zero.
+##                if just filename, it is taken from ~/GASTRoNOoM/CustomAbundances, otherwise state the full path. first column radius in cm, second column abundance molecule versus H2 abundance
+## ENHANCE_ABUNDANCE_FACTOR = scale the explicit abundance profile from a file with this factor. Put to 1 for no extra scaling. Put to 0 if you do not want to use a file for the abundance
+##                These two parameters are ignored for isotopologues and para water, as the abundances for these are determined from the main isotopologue and the scaling factors (OPR, RATIO_12C_TO_13C, RATIO_16O_TO_17O)
+## CHANGE_FRACTION_FILENAME = the filename for the above, only relevant if nonzero, but must be included (fraction values with which the values from
+##                           cooling are multiplied to be then used in mline and sphinx; units are [cm, unitless fraction values])
+## SET_KEYWORD_CHANGE_ABUNDANCE = 0 or 1: change the abundance after cooling (in samling.f and init_mline.f)
+## NEW_TEMPERATURE_FILENAME = the filename for the above, only relevant if nonzero, but must be included (filename with other temperature values to be used in mline and sphinx. Units are [cm,K])
+## SET_KEYWORD_CHANGE_TEMPERATURE = 0 or 1: change the temperature after cooling (in samling.f)
+##########################################################################
+MOLECULE=12C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+MOLECULE=13C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=1H1H16O     45  45  648 50  0  1.0e-20  1.0e-20  1.0e-20  50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=p1H1H16O    45  45  644 50  0  1.0e-20  1.0e-20  1.0e-20  50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=32S16O      70  0   156 50  0  1.0e-11   1.0e-11   1.0e-11   50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=32S16O16O   198 0   855 50  0  1.0e-13  1.0e-13   1.0e-13   50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=28Si32S     144 144 571 50  0  1.0e-6  1.0e-6   1.0e-6   50.  0   1 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=28Si16O     151 151 600 50  0  5.0e-6  5.0e-6   5.0e-6   100.  0   1 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=12C32S      41  41  160 50  0  5.0e-7  5.0e-7   5.0e-7   50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=1H12C14N    126 0   301 50  0  1.0e-9  1.0e-9   1.0e-9   50.  0 1 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=1H1H12C16O  40  0   104 50  0  1.0e-13 1.0e-13   1.0e-31   50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=1H1H18O      45  45  541 50  0  1.0e-20  1.0e-20  1.0e-20  50. 200  0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=p1H1H18O     45  45  504 50  0  1.0e-20  1.0e-20  1.0e-20  50. 200  0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=1H1H17O      45  40  453 50  0  1.0e-20  1.0e-20  1.0e-20  50. 0  1 0 0  idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=p1H1H17O     45  31  362 50  0  1.0e-20  1.0e-20  1.0e-20  50. 0  1 0 0  idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+
+###################
+# GASTRoNOoM Line Contributions
+###################
+LC_FILENAME=           #Include this if you want to make source function plots, ned to specify transitions in the TRANSITION= format from below, cannot all included, which would be too many. Leave open, empty, or delete altogether if you don't want these plots.
+                     #Just a filename takes it from ~/GASTRoNOoM/LineContributions, otherwise give the full explicit path
+
+###################
+# GASTRoNOoM line lists
+###################
+LINE_LISTS=1                        # Get molecular transitions from line lists, in addition to the data,
+                                    # if 1 line lists are generated automatically, if 2 line list is taken from log file
+                                    # if 2 a filename is required, but other keywords are ignored for LL
+                                    # Syntax: TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
+LL_FILE=h2o_iktau_hifi.dat          # if LINE_LISTS is 2, otherwise it is ignored
+LL_MAX=218                          # If LINE_LISTS, the max (rest) wavelength for the transitions
+LL_MIN=50                           # If LINE_LISTS, the min (rest) wavelength for the transitions
+LL_UNIT=MICRON                      # The spectral unit of min and max for LINE_LISTS
+LL_TELESCOPE=PACS                   # Telescope for which the lines are to be searched, use ';' if multiple telescopes, in case of
+                                    # PACS, just add PACS and not PACS;PACS-H2O if both molecules are requested. This is taken 
+                                    # care of automatically.
+LL_OFFSET=0.0                       # If auto line listing is used, this gives the offset. Default is 0.0
+N_QUAD=100                          # Number of impact par. in quadrature int(Inu pdp)               GASTRoNOoM  
+                                    # N_QUAD is always the same for all lines requested if LINE_LISTS=1 or if an auto-search for data is done
+                                    # n_quad is otherwise included in TRANSITION input lines or in the input files if LINE_LISTS=2 
+USE_MASER_IN_SPHINX=0               #Use correct masering opacities in Sphinx
+
+##################
+# Plotting line lists    Note that the searchstring for searching pacs data is given by PACS_SEARCHSTRING
+##################
+LL_PATH=/home/robinl/LineLists      # path to line lists
+LL_CDMS=1                            #Pull data from CDMS
+LL_JPL=0                            #Pull data from JPL
+LL_LAMDA=0                          #Pull data from LAMDA
+LL_MIN_STRENGTH=0                   # Minimum integrated line intensity for inclusion in line list plot, in log10 scale, put to 0 to include ALL lines
+LL_MAX_EXC=0                        #Max excitation energy
+LL_MOLECULES=16O1H&1H12C14N     #List the molecules for line listing
+
+###################
+# LOOKING FOR GAS DATA ---- auto search always happens, but if no data are desired, change the data path to something 
+#                       arbitrary explicitly. Anything added below here with according keywords will always be ADDED
+#                       to the collection of data found by the auto search
+# Syntax: TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
+###################
+TRANSITION=12C16O 0 2 0 0 0 1 0 0 JCMT 0.0 100
+TRANSITION=12C16O 0 1 0 0 0 0 0 0 JCMT 0.0 100
+
+####################################################################################################################
+###DATA PARAMETERS
+####################################################################################################################
+DATA_MOL=0                                          # Put to 0 if no data are to be plotted in GASTRoNOoM and no auto-search is done
+PATH_GAS_DATA=/home/elvired/allspectra/     # Path for gas data, leave empty if not relevant/no gas data are used other than pacs, default is /home/elvired/allspectra/
+
+####################################
+#-- The following plot input is not required to run. Only include those that you need, if you want to plot something.
+#-- Any plot method can be activated by putting PLOT_GAS/DUST_[METHOD] to 1. 
+#-- Customisation of the plot can be done by giving the cfg file for Plottin2.plotCols() to the CFG_GAS/DUST_[METHOD] parameter
+####################################
+#-- Plot input: Gas
+
+PLOT_GAS_TRANSITIONS_OLD=0              # Plot separate gas transitions compared to their resolved data counterparts, still uses IDL, cfg file doesnt work for this
+
+PLOT_GAS_TRANSITIONS=0              # Plot the transitions separately after convolution with the beam profile, in Tmb as calculated by sphinx. For PACS the intrinsic fluxes are plotted
+CFG_GAS_TRANSITIONS=                #
+
+PLOT_GAS_SPIRE=0                     # Plot the SPIRE spectrum with convolved Sphinx model
+CFG_GAS_SPIRE=                       
+
+PLOT_GAS_PACS=0                     # Plot the Pacs spectrum with convolved Sphinx model
+CFG_GAS_PACS=                       
+
+PLOT_GAS_PACS_FULL=0                # Plot the full PACS spectrum without splitting up in subbands
+CFG_GAS_PACS_FULL=
+
+PLOT_GAS_TEMP=0                     # Plot the gas temperature profile
+CFG_GAS_TEMP=
+
+PLOT_GAS_VELOCITY=0                 # Plot the gas velocity profile
+CFG_GAS_VELOCITY=   
+
+PLOT_GAS_ABUNDANCE_PROFILES=0       # Plot abundance profiles for molecules
+CFG_GAS_ABUNDANCE_PROFILES=
+
+PLOT_GAS_LINE_CONTRIBUTIONS=0       # Plot the line contribution of a molecular transition (see LC keywords in the main body of the CC inputfile)
+CFG_GAS_LINE_CONTRIBUTIONS=
+
+PLOT_GAS_LINE_LISTS=0               # Plot line lists taken from a spectroscopic database (see LL keywords in the main body of the CC inputfile)
+CFG__GAS_LINE_LISTS=
+
+PLOT_GAS_PACS_SEGMENTS=0            # Plot segments of a PACS spectrum, either with line list labels or labels based on the sphinx transitions that have been modeled. Segments are defined by wavelength ranges given in the file PLOT_GAS_PACS_SEGMENTS_PATH defined in this inputfile. Requires PLOT_GAS_PACS or PLOT_GAS_LINE_LISTS to be on
+PLOT_GAS_PACS_SEGMENTS_PATH=
+CFG_GAS_PACS_SEGMENTS=
+
+
+#-- Plot input: Dust
+PLOT_DUST_SED=0                     # Plot the SED with data as defined in ~/ComboCode/Data/Dust.dat
+CFG_DUST_SED=
+
+PLOT_DUST_TEMP=0                    # Plot the dust temperature profile, as well as the standard power law for dust temperature
+CFG_DUST_TEMP=
+
+PLOT_DUST_TEMP_SPECIES=0            # Plot the dust temperature profiles of all dust species seperately. Does not work if T_CONTACT == 1
+CFG_DUST_TEMP_SPECIES=
+
+PLOT_DUST_OPACITIES=0               # Plot the dust opacities as used by MCMax
+CFG_DUST_OPACITIES=
+
+PLOT_DUST_EXTINCTION=0              # Plot the dust extinction efficiencies as used by GASTRoNOoM
+CFG_DUST_EXTINCTION=
