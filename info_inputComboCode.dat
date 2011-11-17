@@ -1,0 +1,149 @@
+########################################################################################################################
+### 
+###Input Syntax:
+### no value		 									: CC tries to calculate the value itself and updates the value through the 
+###														  iteration
+### % 													: As if there was no value given, dummy for including a 'normal' model in 
+###														  a grid, only works for semicolons and NOT-MANDATORY input (see info file)
+### 1 value  											: unchanged throughout the modeling
+### 2-5 values separated by COMMAs  			: grid [min,max,number gridpoints including boundaries OPTIONAL
+###														  (default 2), 1 for logspace/0 for no logspace OPTIONAL (default 0)], 
+###														  1 for int/0 for float OPTIONAL (default 1),
+###														  Any information cannot be omitted if it occurs before the last included
+###														  option in the list; e.g. if int option is explicitly stated all
+###														  other information has to be given as well!
+### 2 or more values separated by SEMICOLONS : explicit grid declaration
+### 2 or more values separated by COLONS     : Explicit declaration of model parameters; no grid! The first parameter 
+###                                            in every such defined parameter belongs to the first model, the second
+###                                            belongs to the second model, and so on.
+###                                            All such declared parameters must have the same amount of values.
+### 2 or more values separated by AMPERSANDS	: multiple values relevant for 1 model/star (such as multiple molecules)
+### 2 or more (even) values (value*integer&value*integer&...) :  multiple values relevant, with certain multiplicity,
+###																				  can be used with & and with ; but never mix the two! 
+###																				  if used, always include the delimiter chosen, if it is 
+###																				  normally not present, end the line with it
+###
+#######################################################################################################################
+
+
+
+*** Not completely updated. See inputComboCode.dat for a list of required and optional (not complete) parameters ***
+
+INFO for the inputComboCode.dat file, concerning input parameters.
+
+
+MANDATORY IMMUTABLE INPUT: 
+	- Has to be explicitly given at all times and is never changed during modeling
+	- Includes:
+				
+		* M_STAR:						stellar mass, used by GASTRoNOoM only for now [M_SOLAR]
+		* T_STAR:						stellar effective temperature, used in Stefan-Boltzmann equation [K]
+		* DISTANCE: 					stellar distance with respect of the local standard of rest [pc]
+		* L_STAR:						stellar luminosity, used in Stefan-Boltzmann equation [L_SOLAR]
+		
+		* MDOT_DUST:					Dust mass-loss rate [Msol/yr]											
+		* MDOT_GAS:						Gas mass loss rate [Msol/yr] - used to compute v(r) in case of variable mass loss
+		* OUTER_R_MODE:		      Use outer radius (FIXED), else [CO] relative abund. (MAMON)
+		* R_OUTER_DUST:				Outer radius of dust shell [R_STAR]  								
+		* POWER_T_DUST=0.4			T_DUST power law (T_STAR(R_STAR/2r)^power)
+		* STOCHASTIC_VEL_GAS:		Stochastic velocity [km/s]											
+		* T_CONTACT:					1 for Thermal Contact between Dust Particles, 0 for no TC 	
+		* TEMPERATURE_EPSILON_GAS: EPSILON, for GAS temperature power law, whole CSE!					
+		* TEMPERATURE_MODE_GAS:    Use temperature power law (cooling/epsilon)						
+		* USE_MARCS: 					1 if a MARCS spectrum has to be used for the stellar atmosphere, 0 for standard BB
+
+		* VEL_INFINITY_GAS: 			expected terminal velocity [km/s]										
+
+		* ABUN_C:                 	Carbon abundance															
+		* ABUN_O:                 	Oxygen abundance															
+		* RATIO_12C_TO_13C:	      12C/13C ratio																
+		* MOLECULE:						molecule+isotope declaration 1 value OR multiple values (exactly as many as 
+											there are molecules) syntax: 0608.012016&0608.013016 for instance
+		* NY_LOW:  						number of levels in ground-state of molecule						
+		* NY_UP: 						number of levels in first-vibrational state of molecule		
+		* NLINE:   						number of (allowed) radiative transitions in molecule  		
+		* N_IMPACT:   					number of depth points in radius mesh								
+		* N_IMPACT_EXTRA: 			number of depth points in radius mesh (< N_IMPACT) which specifically will be used 
+											to properly sample variable mass-loss, in case of constant mass loss, take 0   
+
+		* A_SPECIES: 					For every dust species in the inputfile! must be all be present, 0 or a value
+		
+	
+####################################################################################################################
+###OTHER PARAMETERS
+###		-- These are included in the code, but if a new star is used or wrong value in code, it can be changed here
+###		-- Are taken from a list based on the SIMBAD name of the star.
+###		-- Contact Robin to add the new star and/or values
+###		-- Some values are calculated automatically after iteration or from basic data set. They can be overridden by 
+###			by stating them explicitly here. They will remain unchanged throughout the modeling in that case
+####################################################################################################################
+
+OPTIONAL IMMUTABLE INPUT
+	- CAN be explicitly stated and is NEVER changed during model. 
+	- Includes:
+		* PATH_GAS_DATA:				Where to find the transition data, default=~/GASTRoNOoM/Data, any entries starting 
+											with '_' will be ignored when looking for data
+		* PATH_DUST_DATA: 			Where to find the transition data, default=~/MCMax/Data, 'Data' must be
+											the last part of the dirname, extinction_curves will replace Data when the code looks
+											for extinction_curve files
+		* PATH_COMBOCODE:          Path for ComboCode specific results and inputfiles
+
+		* A_K: 							Interstellar Extinction Coefficient (standard list included in code)
+		* DENSFILE: 					Only include if DENSTYPE is given and == "'FILE'", 
+											file doesn't change throughout modeling
+		* DENSTYPE: 					Density structure datatype: "'MASSLOSS'", "'FILE'", if included it is fixed throughout
+											modeling, if not included it tries the "'FILE'" type by checking if a viable GASTRoNOoM
+											model is present. If "'FILE'", also include DENSFILE keyword, which also doesn't change
+											If DENSFILE is not included, a keyword for LAST_GASTRONOOM_MODEL HAS to be present,
+											or an error will occur.
+		* DRIFT: 						Drift velocity. Is zero if not given the first run of MCMax, then taken from 
+											results of GASTRoNOoM model for average particle size of 0.1 micron [km/s]
+		* LAT:							Galactic Latitude Star (standard list included in code) [degrees]
+		* LONG:							Galactic Longitude Star (standard list included in code) [degrees]
+		* MARCS_TYPE: 					Type of MARCS spectrum; st: standard (not for giants), mc: moderately CN cycled 
+											(12c/13C ~ 20), hc: heavily CN cycled (12C/13C ~4) (standard in code: st)
+		* MARCS_KERNEL: 				Rebinning MARCS spectrum with this kernel; for now	NOT flux conservative! 
+											(standard in code: 110)
+		* RHALF_FAC:		      	Factor used to change RHALF as given by Mamon et al. (1988) only if OUTER_R_MODE=MAMON
+		* R_INNER:						Inner radius of the CSE at the dust formation region, is calculated from last MCMax 
+											model, or is taken to be 1 R_STAR if this model is not yet calculated, but can be 
+											explicitly stated as well, in case there is a 'hole' in the inner CSE [R_STAR]
+		* R_MIN_SPECIES:				Minimum radius at which dust species can exist [R_STAR]				
+		* R_MAX_SPECIES:				Maximum radius at which dust species can exist [R_STAR]				
+		* R_OUTER_GAS: 	         Outer radius of the gas shell [R_STAR], if NOT Mamon		
+		* R_STAR:						Calculated from Stefan-Boltzmann's equation [R_SOLAR]
+		* EXTRA_PLOTS:					Show extra plots, such as dust temp stratification, extinction efficiencies, etc, is 0
+											standard
+		* SPEC_DENS_DUST: 			Specific dust density (average) used by GASTRoNOoM, corresponding to input extinction
+											efficiencies, is calculated from present dust species and their abundances (+ specific
+											densities of species from dust input file), OR taken to be 3.3 g/cm3 if no extinction
+											efficiencies have yet been calculated by MCMax (ie for standard qpr.dat JUS&TIE)[g/cm^3]
+		* STAR_NAME:					One of the names in the star input file, if data has to be included for a star
+		* T_DESA_SPECIES:  			Coefficient to determine density-dependent sublimation temperature, is included in
+											DUST input and should not be given here unless really necessary
+		* T_DESB_SPECIES: 			Coefficient to determine density-dependent sublimation temperature, is included in
+											DUST input and should not be given here unless really necessary
+		* T_INNER_DUST:				Dust temperature at inner radius, is normally taken to be the highest dust condensation
+											temperature of the dust species that are present [K]
+		* T_MAX_SPECIES:				Maximum allowed temperature for some species [K], usually this is the sublimation 
+											temperature, which is determined automatically, but can always be stated explicitly. 
+		* T_MIN_SPECIES:				Minimum required temperature for some dust species [K]
+		* V_LSR:							Stellar velocity with respect to the Local Standard of Rest (standard list 
+											included in code) [km/s]
+		* V_EXP_DUST:					Dust terminal velocity, is calculated from drift and gas terminal velocity [km/s]
+		
+####################################################################################################################
+###OTHER PARAMETERS
+### 		-- These will be changed by the code as the iteration continues
+####################################################################################################################
+
+OPTIONAL MUTABLE INPUT:
+	- CAN be explicitly given and is treated as a starting value, implying that its value may change during modeling.
+	- Includes:
+		* LAST_GASTRONOOM_MODEL: 	give a starting GASTRoNOoM model that can serve as input for MCMax, will change 
+											after next GASTRoNOoM iteration [model_id]
+		* LAST_MCMAX_MODEL:  		give a starting MCMax model that can serve as input for GASTRoNOoM, will change 
+											after next MCMax iteration [model_id]
+
+
+
