@@ -20,7 +20,6 @@ import operator
 from cc.data import Data
 from cc.tools.io import Database
 from cc.tools.io import DataIO
-from cc.modeling.codes import Gastronoom
 from cc.tools.numerical import Interpol
 from cc.modeling.objects import Molecule
 from cc.modeling.objects import Transition
@@ -61,83 +60,6 @@ def powerRfromT(T,T_STAR,R_STAR=1.0,power=0.5):
     """
     
     return (float(T_STAR)/float(T))**(1/float(power))*float(R_STAR)
-
-
-
-def getInputData(path=os.path.join(os.path.expanduser('~'),'ComboCode','Data'),\
-                 keyword='STAR_NAME',filename='Star.dat',remove_underscore=0,\
-                 make_float=1,start_index=1):
-    
-    """
-    Search ComboCode Input Data files for parameters.
-
-    @keyword path: CC data path
-    
-                   (default: ~/ComboCode/Data/)
-    @type path: string
-    @keyword keyword: the type of information required, always equal to one of 
-                      the keywords present in the "Data" of ComboCode, and 
-                      automatically also a Star dict keyword
-                      
-                      (default: STAR_NAME)
-    @type keyword: string
-    @keyword filename: filename in PATH_COMBOCODE/Data/ that includes wanted 
-                       information
-                       
-                       (default: 'Star.dat')
-    @type filename: string
-    @keyword remove_underscore: remove the underscores from the entries and 
-                                replace them by spaces.
-                                
-                                (default: 0)
-    @type remove_underscore: bool
-    @keyword make_float: set to 0, if no floats are desired at all. If 1, all
-                         entries will be converted to floats and on failure,
-                         the string is returned instead
-                         
-                         (default: 1)
-    @type make_float: bool
-    @keyword start_index: Start search for keyword at this value
-     
-                          (default: 1)
-    @type start_index: int
-
-    @return: The requested data from the CC input
-    @rtype: list
-     
-    """
-    
-    data = [line 
-              for line in DataIO.readFile(os.path.join(path,filename),' ')
-              if ''.join(line).strip()]
-    i = int(start_index)
-    while ' '.join(data[i-1]).upper().find(keyword) == -1:
-        i += 1
-    data_index = [line.strip('#') 
-                  for line in data[i-1]
-                  if line.strip('#')].index(keyword)
-    try:
-        end_index = i
-        while data[end_index][0][0] != '#':
-            end_index += 1
-    except IndexError:
-        end_index = None
-    try:
-        if not make_float: 
-            raise ValueError
-        else: 
-            return [float(line[data_index]) 
-                    for line in data[i:end_index] 
-                    if line[0]]
-    except ValueError:
-        if remove_underscore: 
-            return [line[data_index].replace('_',' ') 
-                    for line in data[i:end_index] 
-                    if line[0]]
-        else: 
-            return [line[data_index] 
-                    for line in data[i:end_index] 
-                    if line[0]]
 
 
 
@@ -242,7 +164,7 @@ class Star(dict):
 
         self.path_combocode = path_combocode
         dust_path = os.path.join(self.path_combocode,'Data')
-        self.species_list = getInputData(path=dust_path,\
+        self.species_list = DataIO.getInputData(path=dust_path,\
                                          keyword='SPECIES_SHORT',\
                                          filename='Dust.dat')
         self.path_gastronoom = path_gastronoom        
@@ -863,7 +785,7 @@ class Star(dict):
 
 
 
-    def getTempProfile(self):
+    def getDustTemperature(self):
          
         '''
         Return the dust temperature profile from the file made for GASTRoNOoM.
@@ -890,7 +812,7 @@ class Star(dict):
         
          
          
-    def getTempPowerLaw(self,power):
+    def getDustTemperaturePowerLaw(self,power):
         
         '''
         Return a dust temperature power law of the form as suggested by 
@@ -923,7 +845,7 @@ class Star(dict):
     
     
     
-    def getTempSpecies(self):
+    def getDustTemperatureSpecies(self):
          
         ''' 
         Return the temperature profiles of all species included in Star object.
@@ -951,7 +873,7 @@ class Star(dict):
                  for r,t,sp in zip(radii,temps,self['DUST_LIST'])]
         temps = [t[t<=self['T_DES_%s'%sp]] 
                  for t,sp in zip(temps,self['DUST_LIST'])]
-        plot_names = getInputData(path=os.path.join(self.path_combocode,\
+        plot_names = DataIO.getInputData(path=os.path.join(self.path_combocode,\
                                                     'Data'),\
                                   keyword='SPECIES_PLOT_NAME',\
                                   filename='Dust.dat')
@@ -959,7 +881,30 @@ class Star(dict):
                 for d in self['DUST_LIST']]
         return radii,temps,keys
 
-
+    
+    
+    def getGasVelocity(self):
+        
+        '''
+        Give the velocity profile of the gas read from a GASTRoNOoM model.
+        
+        @return: The radius (in cm) and velocity (in cm/s) profile
+        @rtype: (array,array)
+        
+        '''
+                
+        fgr_file = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                self.path_gastronoom,'models',\
+                                self['LAST_GASTRONOOM_MODEL'],\
+                                'coolfgr_all%s.dat'\
+                                %self['LAST_GASTRONOOM_MODEL'])
+        rad = DataIO.getGastronoomOutput(filename=fgr_file,keyword='RADIUS',\
+                                         return_array=1)
+        vel = DataIO.getGastronoomOutput(filename=fgr_file,keyword='VEL',\
+                                         return_array=1)
+        return (rad,vel)
+        
+        
 
     def calcTLR(self):  
         
@@ -1006,7 +951,7 @@ class Star(dict):
         
         if not self.has_key(missing_key):
             self[missing_key] \
-                = getInputData(path=os.path.join(self.path_combocode,'Data'),\
+                = DataIO.getInputData(path=os.path.join(self.path_combocode,'Data'),\
                                keyword=missing_key,\
                                remove_underscore=missing_key == \
                                                     'STAR_NAME_PLOTS')\
@@ -1347,7 +1292,7 @@ class Star(dict):
         """
         
         try:
-            self['STAR_INDEX'] = getInputData(path=os.path.join(\
+            self['STAR_INDEX'] = DataIO.getInputData(path=os.path.join(\
                                                         self.path_combocode,\
                                                         'Data'))\
                                              .index(self['STAR_NAME'])
@@ -1404,7 +1349,7 @@ class Star(dict):
                                           for species in self['DUST_LIST']
                                           for species_short,spec_dens in zip(\
                                             self.species_list,\
-                                            getInputData(path=os.path.join(\
+                                            DataIO.getInputData(path=os.path.join(\
                                                   self.path_combocode,'Data'),\
                                                          keyword='SPEC_DENS',\
                                                          filename='Dust.dat'))
@@ -1710,21 +1655,21 @@ class Star(dict):
                 self['T_DESB_' + species] = 10.0**(-4)
             except KeyError:
                 species_index = self.species_list.index(species)
-                species_tdesa = getInputData(path=os.path.join(\
+                species_tdesa = DataIO.getInputData(path=os.path.join(\
                                                   self.path_combocode,'Data'),\
                                              keyword='T_DESA',\
                                              filename='Dust.dat')\
                                             [species_index]
                 if species_tdesa:
                     self['T_DESA_' + species] = 10.0**(4)\
-                        *getInputData(path=os.path.join(self.path_combocode,\
+                        *DataIO.getInputData(path=os.path.join(self.path_combocode,\
                                                         'Data'),\
                                      keyword='T_DESB',filename='Dust.dat')\
                                     [species_index]/species_tdesa
                     self['T_DESB_' + species] = 10.0**(4)/species_tdesa
                 else:
                     self['T_DESA_' + species] = 10.0**(4)\
-                        /getInputData(path=os.path.join(self.path_combocode,\
+                        /DataIO.getInputData(path=os.path.join(self.path_combocode,\
                                                         'Data'),\
                                       keyword='T_DES',filename='Dust.dat')\
                                      [species_index]
@@ -1760,7 +1705,7 @@ class Star(dict):
         inputfile = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                 self.path_gastronoom,'models',self['LAST_GASTRONOOM_MODEL'],\
                 'coolfgr_all' + self['LAST_GASTRONOOM_MODEL'] + '.dat')
-        drift = Gastronoom.getGastronoomOutput(inputfile,keyword='VDRIFT')  
+        drift = DataIO.getGastronoomOutput(inputfile,keyword='VDRIFT')  
         opa_gs_max = 2.5e-1
         opa_gs_min = 5.0e-3
         return array(drift)/sqrt(0.25)*1.25\
@@ -1801,8 +1746,8 @@ class Star(dict):
                                              self['LAST_GASTRONOOM_MODEL'],\
                                              'coolfgr_all%s.dat'\
                                              %self['LAST_GASTRONOOM_MODEL'])
-                    radius = Gastronoom.getGastronoomOutput(inputfile)
-                    gas_vel = Gastronoom.getGastronoomOutput(inputfile,\
+                    radius = DataIO.getGastronoomOutput(inputfile)
+                    gas_vel = DataIO.getGastronoomOutput(inputfile,\
                                                              keyword='VEL')
                     avgdrift = self.getAverageDrift()             
                     self['DENSTYPE'] = "SHELLFILE"
@@ -1901,7 +1846,7 @@ class Star(dict):
                 #- the short names, since if len() is 2, it comes from 
                 #- PlottingSession.setPacsFromDb
                 molec_indices \
-                    = [getInputData(path=os.path.join(self.path_combocode,\
+                    = [DataIO.getInputData(path=os.path.join(self.path_combocode,\
                                                       'Data'),\
                                     keyword='MOLEC_TYPE',\
                                     filename='Molecule.dat',make_float=0)\
@@ -1909,14 +1854,14 @@ class Star(dict):
                        for molec in self['MOLECULE']]
                 molecules_long = [molec[0] for molec in self['MOLECULE']]
                 self['MOLECULE'] \
-                    = [[getInputData(path=os.path.join(self.path_combocode,\
+                    = [[DataIO.getInputData(path=os.path.join(self.path_combocode,\
                                                        'Data'),\
                                      keyword='TYPE_SHORT',\
                                      filename='Molecule.dat')[index]] \
                         + [molec[1]] 
                        for molec,index in zip(self['MOLECULE'],molec_indices)]
                 self['TRANSITION'] \
-                    = [[getInputData(path=os.path.join(self.path_combocode,\
+                    = [[DataIO.getInputData(path=os.path.join(self.path_combocode,\
                                                        'Data'),\
                                      keyword='TYPE_SHORT',\
                                      filename='Molecule.dat')\

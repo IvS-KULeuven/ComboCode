@@ -13,6 +13,102 @@ import types
 import subprocess
 import time
 
+
+
+def checkEntryInfo(input_list,number_of_keys,info_type):
+    
+    '''
+    Specific input keywords for ComboCode (currently: MOLECULE, TRANSITION,
+    R_POINTS_MASS_LOSS) require multiple arguments separated by a space. This 
+    method sorts those arguments and checks if the format is OK.
+    
+    The method returns a tuple or a list of these arguments depending on 
+    multiplicity of input, and the need to create a grid for the parameter.
+    
+    @param input_list: argument strings for one of the special CC input keys.
+    @type input_list: list[string]
+    @param number_of_keys: the number of arguments expected
+    @type number_of_keys: int
+    @param info_type: MOLECULE, TRANSITION or R_POINTS_MASS_LOSS
+    @type info_type: string
+    @return: the sorted arguments for the requested info_type. The output is 
+             given as a list or a tuple, depending on if this gridded parameter
+             or not, respectively.
+    @rtype: list[tuple(list[string])] or tuple(list[string])
+    
+    '''
+    
+    if not info_type in ('MOLECULE','R_POINTS_MASS_LOSS','TRANSITION'):
+        raise KeyError('The info_type keyword is unknown. Should be ' + \
+                       'MOLECULE, TRANSITION or R_POINTS_MASS_LOSS.')
+    input_list = [line.split() for line in input_list]
+    if set([len(line) for line in input_list]) != set([number_of_keys]):
+        print 'Number of keys should be: %i'%number_of_keys
+        print '\n'.join(['%i  for  %s'%(len(line),line) for line in input_list])
+        raise IOError('Input for one of the %s lines has wrong number of ' + \
+                      'values. Double check, and abort.'%info_type)
+    else:
+        #- if MOLECULE: only molecule string, 
+        #- if R_POINTS_MASS_LOSS: only grid id number, 
+        #- if TRANSITION: everything except last entry (n_quad)
+        entries = [info_type in ('MOLECULE','R_POINTS_MASS_LOSS') \
+                        and line[0] or ' '.join(line[0:-1]) 
+                   for line in input_list]  
+        unique_entries = set(entries)
+        #- ie the defining parameter is never multiply defined ! 
+        #- Hence, only a single set of parameters is used here.
+        if len(unique_entries) == len(entries):        
+            if info_type == 'R_POINTS_MASS_LOSS':
+                input_list = ['  '.join(il[1:]) for il in input_list]
+            return tuple(input_list)
+        else:
+            if info_type == 'TRANSITION':
+                indices = [i 
+                           for i,entry in enumerate(entries) 
+                           if entries.count(entry) > 1]
+                print 'Identical transition(s) in the transition list: Doubl'+\
+                      'es will not be removed even if N_QUAD is the same too!'
+                for i in indices:
+                    print 'At index %i:  %s' %(i,entries[i])
+                raw_input('Abort if identical transitions are not expected.')
+            if info_type == 'R_POINTS_MASS_LOSS':
+                #- This will be a list of R_POINTS_MASS_LOSS sets, where each 
+                #- set is defined as a list of radial grid point parameters
+                final = []  
+                while input_list:
+                    if int(input_list[0][0]) != 1:
+                        raise IOError('The grid point ID numbers for the ' + \
+                                      'R_POINTS_MASS_LOSS keywords do not ' + \
+                                      'follow a correct order. Use ID = 1 ' + \
+                                      'as a reset for new set of grid points.')
+                    final.append([input_list.pop(0)])
+                    while input_list and int(input_list[0][0]) != 1:
+                        final[-1].append(input_list.pop(0))
+                #- Remove the grid point ID numbers, not relevant anymore
+                #- put the rest back into a string
+                final = [tuple(['  '.join([num 
+                                           for i,num in enumerate(this_point) 
+                                           if i != 0]) 
+                                for this_point in this_set]) 
+                         for this_set in final]      
+                return final
+            final = [[line 
+                      for line,entry in zip(input_list,entries) 
+                      if entries.count(entry) == 1]]
+            multiples = set([entry 
+                             for entry in entries 
+                             if entries.count(entry) != 1])
+            for entry in multiples:
+                this_input = [line 
+                              for this_entry,line in zip(entries,input_list) 
+                              if this_entry == entry]
+                final = [this_list + [extra_line] 
+                         for extra_line in this_input 
+                         for this_list in final]
+            return [tuple(final_list) for final_list in final]
+
+
+
 from cc.tools.io import DataIO
 from cc.tools.numerical import Gridding
 from cc.managers import ModelingManager
@@ -36,7 +132,11 @@ class ComboCode(object):
     The interface with which to run the ComboCode package.
     
     '''
-    
+
+
+
+
+
     def __init__(self,inputfilename):
         
         '''
@@ -221,10 +321,10 @@ class ComboCode(object):
         path_sed = self.processed_input.pop('PATH_SED',None)
         if path_sed:
             cc_path = os.path.join(self.path_combocode,'Data')
-            star_index = Star.getInputData(cc_path).index(self.star_name)
-            ak = Star.getInputData(path=cc_path,keyword='A_K')[star_index]
-            longitude = Star.getInputData(path=cc_path,keyword='LONG')[star_index]
-            latitude = Star.getInputData(path=cc_path,keyword='LAT')[star_index]
+            star_index = DataIO.getInputData(cc_path).index(self.star_name)
+            ak = DataIO.getInputData(path=cc_path,keyword='A_K')[star_index]
+            longitude = DataIO.getInputData(path=cc_path,keyword='LONG')[star_index]
+            latitude = DataIO.getInputData(path=cc_path,keyword='LAT')[star_index]
             if abs(longitude) < 5.0 and abs(latitude) < 5.0:
                 gal_position = 'GC'
             else:
@@ -766,140 +866,46 @@ class ComboCode(object):
                                          if star.has_key(rs)])
                     print ''
     
-        if star['LAST_GASTRONOOM_MODEL']:
-            print 'Requested GASTRoNOoM parameters for %s:'%star['LAST_GASTRONOOM_MODEL']
-            print '%s = %s'%('DENSFILE',star['DENSFILE'])
-            print '%s = %f R_solar = %f AU'%('R_STAR',star['R_STAR'],star['R_STAR']*star.r_solar/star.au)
-            print '%s = %f R_STAR'%('R_OUTER_GAS',star['R_OUTER_EFFECTIVE'])
-            print '%s = %f R_STAR'%('R_INNER_GAS',star['R_INNER_GAS'])
-            print '%s = %f'%('DUST_TO_GAS_INITIAL',star['DUST_TO_GAS_INITIAL'])
-            print '%s = %f'%('DUST_TO_GAS_ITERATED',star['DUST_TO_GAS_ITERATED'])
-            print '%s (semi-empirical) = %f'%('DUST_TO_GAS',star['DUST_TO_GAS'])
-            if star['DUST_TO_GAS_CHANGE_ML_SP']: print '%s = %s'%('DUST_TO_GAS_CHANGE_ML_SP',star['DUST_TO_GAS_CHANGE_ML_SP'])
-            print '%s = %f'%('[N_H2O/N_H2]',star['F_H2O'])
-            print '%s = %.2f R_STAR = %.2e cm'%('R_OH1612_NETZER',star['R_OH1612_NETZER'],star['R_OH1612_NETZER']*star.r_solar*star['R_STAR'])
-            if star['R_OH1612_AS']: 
-                print '%s = %.2f R_STAR = %.2e cm'%('R_OH1612_OBS',star['R_OH1612'],star['R_OH1612']*star.r_solar*star['R_STAR'])
-                print '-----------------------------------'
-                if star.has_key('R_DES_H2O') or star.has_key('R_DES_CH2O') or star.has_key('R_DES_AH2O'):
-                    (nh2o,nh2o_ice,nh2,nh2o_full,nh2_full) = wa.getWaterInfo(star)
-                    print 'Ice shell water VAPOUR column density [cm-2]:'
-                    print '%.3e'%nh2o
-                    print 'Ice shell H2 column density [cm-2]:'
-                    print '%.3e'%nh2
-                    print 'Total water vapour abundance (ortho + para) wrt H2:'
-                    print '%.3e'%(nh2o/nh2)
-                    print 'Ice shell water ICE MOLECULAR column density [cm-2]:'
-                    print '%.3e'%nh2o_ice
-                    print 'Minimum required water vapour abundance N(H2O)/N(H2) for this ice column density:'
-                    print '%.3e'%(nh2o_ice/nh2)
-                    print 'Ice/vapour fraction in ice shell:'
-                    print '%.2f'%(nh2o_ice/nh2o)
-                    print 
-                    print 'FULL shell water VAPOUR column density [cm-2]:'
-                    print '%.3e'%nh2o_full
-                    print 'Total water vapour abundance (ortho + para) wrt H2:'
-                    print '%.3e'%(nh2o_full/nh2_full)
-                    print 
-                else:
-                    print 'No water ice present in dust model.'
+                if star['LAST_GASTRONOOM_MODEL']:
+                    print 'Requested GASTRoNOoM parameters for %s:'%star['LAST_GASTRONOOM_MODEL']
+                    print '%s = %s'%('DENSFILE',star['DENSFILE'])
+                    print '%s = %f R_solar = %f AU'%('R_STAR',star['R_STAR'],star['R_STAR']*star.r_solar/star.au)
+                    print '%s = %f R_STAR'%('R_OUTER_GAS',star['R_OUTER_EFFECTIVE'])
+                    print '%s = %f R_STAR'%('R_INNER_GAS',star['R_INNER_GAS'])
+                    print '%s = %f'%('DUST_TO_GAS_INITIAL',star['DUST_TO_GAS_INITIAL'])
+                    print '%s = %f'%('DUST_TO_GAS_ITERATED',star['DUST_TO_GAS_ITERATED'])
+                    print '%s (semi-empirical) = %f'%('DUST_TO_GAS',star['DUST_TO_GAS'])
+                    if star['DUST_TO_GAS_CHANGE_ML_SP']: 
+                        print '%s = %s'%('DUST_TO_GAS_CHANGE_ML_SP',star['DUST_TO_GAS_CHANGE_ML_SP'])
+                    print '%s = %f'%('[N_H2O/N_H2]',star['F_H2O'])
+                    print '%s = %.2f R_STAR = %.2e cm'%('R_OH1612_NETZER',star['R_OH1612_NETZER'],star['R_OH1612_NETZER']*star.r_solar*star['R_STAR'])
+                    if star['R_OH1612_AS']: 
+                        print '%s = %.2f R_STAR = %.2e cm'%('R_OH1612_OBS',star['R_OH1612'],star['R_OH1612']*star.r_solar*star['R_STAR'])
+                        print '-----------------------------------'
+                        if star.has_key('R_DES_H2O') or star.has_key('R_DES_CH2O') or star.has_key('R_DES_AH2O'):
+                            (nh2o,nh2o_ice,nh2,nh2o_full,nh2_full) = wa.getWaterInfo(star)
+                            print 'Ice shell water VAPOUR column density [cm-2]:'
+                            print '%.3e'%nh2o
+                            print 'Ice shell H2 column density [cm-2]:'
+                            print '%.3e'%nh2
+                            print 'Total water vapour abundance (ortho + para) wrt H2:'
+                            print '%.3e'%(nh2o/nh2)
+                            print 'Ice shell water ICE MOLECULAR column density [cm-2]:'
+                            print '%.3e'%nh2o_ice
+                            print 'Minimum required water vapour abundance N(H2O)/N(H2) for this ice column density:'
+                            print '%.3e'%(nh2o_ice/nh2)
+                            print 'Ice/vapour fraction in ice shell:'
+                            print '%.2f'%(nh2o_ice/nh2o)
+                            print 
+                            print 'FULL shell water VAPOUR column density [cm-2]:'
+                            print '%.3e'%nh2o_full
+                            print 'Total water vapour abundance (ortho + para) wrt H2:'
+                            print '%.3e'%(nh2o_full/nh2_full)
+                            print 
+                        else:
+                            print 'No water ice present in dust model.'
         print '************************************************'
         
-
-
-
-def checkEntryInfo(input_list,number_of_keys,info_type):
-    
-    '''
-    Specific input keywords for ComboCode (currently: MOLECULE, TRANSITION,
-    R_POINTS_MASS_LOSS) require multiple arguments separated by a space. This 
-    method sorts those arguments and checks if the format is OK.
-    
-    The method returns a tuple or a list of these arguments depending on 
-    multiplicity of input, and the need to create a grid for the parameter.
-    
-    @param input_list: argument strings for one of the special CC input keys.
-    @type input_list: list[string]
-    @param number_of_keys: the number of arguments expected
-    @type number_of_keys: int
-    @param info_type: MOLECULE, TRANSITION or R_POINTS_MASS_LOSS
-    @type info_type: string
-    @return: the sorted arguments for the requested info_type. The output is 
-             given as a list or a tuple, depending on if this gridded parameter
-             or not, respectively.
-    @rtype: list[tuple(list[string])] or tuple(list[string])
-    
-    '''
-    
-    if not info_type in ('MOLECULE','R_POINTS_MASS_LOSS','TRANSITION'):
-        raise KeyError('The info_type keyword is unknown. Should be ' + \
-                       'MOLECULE, TRANSITION or R_POINTS_MASS_LOSS.')
-    input_list = [line.split() for line in input_list]
-    if set([len(line) for line in input_list]) != set([number_of_keys]):
-        print 'Number of keys should be: %i'%number_of_keys
-        print '\n'.join(['%i  for  %s'%(len(line),line) for line in input_list])
-        raise IOError('Input for one of the %s lines has wrong number of ' + \
-                      'values. Double check, and abort.'%info_type)
-    else:
-        #- if MOLECULE: only molecule string, 
-        #- if R_POINTS_MASS_LOSS: only grid id number, 
-        #- if TRANSITION: everything except last entry (n_quad)
-        entries = [info_type in ('MOLECULE','R_POINTS_MASS_LOSS') \
-                        and line[0] or ' '.join(line[0:-1]) 
-                   for line in input_list]  
-        unique_entries = set(entries)
-        #- ie the defining parameter is never multiply defined ! 
-        #- Hence, only a single set of parameters is used here.
-        if len(unique_entries) == len(entries):        
-            if info_type == 'R_POINTS_MASS_LOSS':
-                input_list = ['  '.join(il[1:]) for il in input_list]
-            return tuple(input_list)
-        else:
-            if info_type == 'TRANSITION':
-                indices = [i 
-                           for i,entry in enumerate(entries) 
-                           if entries.count(entry) > 1]
-                print 'Identical transition(s) in the transition list: Doubl'+\
-                      'es will not be removed even if N_QUAD is the same too!'
-                for i in indices:
-                    print 'At index %i:  %s' %(i,entries[i])
-                raw_input('Abort if identical transitions are not expected.')
-            if info_type == 'R_POINTS_MASS_LOSS':
-                #- This will be a list of R_POINTS_MASS_LOSS sets, where each 
-                #- set is defined as a list of radial grid point parameters
-                final = []  
-                while input_list:
-                    if int(input_list[0][0]) != 1:
-                        raise IOError('The grid point ID numbers for the ' + \
-                                      'R_POINTS_MASS_LOSS keywords do not ' + \
-                                      'follow a correct order. Use ID = 1 ' + \
-                                      'as a reset for new set of grid points.')
-                    final.append([input_list.pop(0)])
-                    while input_list and int(input_list[0][0]) != 1:
-                        final[-1].append(input_list.pop(0))
-                #- Remove the grid point ID numbers, not relevant anymore
-                #- put the rest back into a string
-                final = [tuple(['  '.join([num 
-                                           for i,num in enumerate(this_point) 
-                                           if i != 0]) 
-                                for this_point in this_set]) 
-                         for this_set in final]      
-                return final
-            final = [[line 
-                      for line,entry in zip(input_list,entries) 
-                      if entries.count(entry) == 1]]
-            multiples = set([entry 
-                             for entry in entries 
-                             if entries.count(entry) != 1])
-            for entry in multiples:
-                this_input = [line 
-                              for this_entry,line in zip(entries,input_list) 
-                              if this_entry == entry]
-                final = [this_list + [extra_line] 
-                         for extra_line in this_input 
-                         for this_list in final]
-            return [tuple(final_list) for final_list in final]
-
 
 
 if __name__ == "__main__":

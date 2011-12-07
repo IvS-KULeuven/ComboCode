@@ -10,7 +10,6 @@ Author: R. Lombaert
 import os 
 import re
 
-from cc.modeling.objects import Star
 from cc.tools.io import DataIO
 from cc.tools.io import Database
 from cc.tools.io import Radiat
@@ -249,27 +248,27 @@ class Molecule():
         self.n_impact = int(n_impact)
         self.n_impact_extra = int(n_impact_extra)
         self.path_combocode = path_combocode
-        self.molecule_index = Star.getInputData(keyword='TYPE_SHORT',\
+        self.molecule_index = DataIO.getInputData(keyword='TYPE_SHORT',\
                                 path=os.path.join(self.path_combocode,'Data'),\
                                 filename='Molecule.dat').index(self.molecule)
-        self.molecule_full = Star.getInputData(keyword='MOLEC_TYPE',\
+        self.molecule_full = DataIO.getInputData(keyword='MOLEC_TYPE',\
                                 path=os.path.join(self.path_combocode,'Data'),\
                                 filename='Molecule.dat',make_float=0)\
                              [self.molecule_index]
-        self.molecule_short = Star.getInputData(keyword='NAME_SHORT',\
+        self.molecule_short = DataIO.getInputData(keyword='NAME_SHORT',\
                                 path=os.path.join(self.path_combocode,'Data'),\
                                 filename='Molecule.dat')[self.molecule_index]
-        self.molecule_plot = Star.getInputData(keyword='NAME_PLOT',\
+        self.molecule_plot = DataIO.getInputData(keyword='NAME_PLOT',\
                                 path=os.path.join(self.path_combocode,'Data'),\
                                 filename='Molecule.dat')[self.molecule_index]
-        self.spec_indices = Star.getInputData(keyword='SPEC_INDICES',\
+        self.spec_indices = DataIO.getInputData(keyword='SPEC_INDICES',\
                                 path=os.path.join(self.path_combocode,'Data'),\
                                 filename='Molecule.dat')[self.molecule_index]
-        self.use_indices_dat = Star.getInputData(keyword='USE_INDICES_DAT',\
+        self.use_indices_dat = DataIO.getInputData(keyword='USE_INDICES_DAT',\
                                 path=os.path.join(self.path_combocode,'Data'),\
                                 filename='Molecule.dat')[self.molecule_index]
         if self.use_indices_dat:
-             self.indices_index = Star.getInputData(start_index=4,\
+             self.indices_index = DataIO.getInputData(start_index=4,\
                                 path=os.path.join(self.path_combocode,'Data'),\
                                 keyword='MOLECULE',filename='Indices.dat')\
                                 .index('_'.join([self.molecule,\
@@ -322,7 +321,7 @@ class Molecule():
             path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM','src',\
                                 'data')
             if self.use_indices_dat:
-                f = Star.getInputData(path=os.path.join(self.path_combocode,\
+                f = DataIO.getInputData(path=os.path.join(self.path_combocode,\
                                                         'Data'),\
                                       keyword='INDICES',\
                                       filename='Indices.dat',\
@@ -505,7 +504,7 @@ class Molecule():
         '''
         
         factors = [factor == '1' and 1 or float(getattr(self,factor.lower())) 
-                   for factor in Star.getInputData(\
+                   for factor in DataIO.getInputData(\
                                         path=os.path.join(self.path_combocode,\
                                                           'Data'),\
                                         keyword='ABUN_FACTOR',\

@@ -17,8 +17,9 @@ import operator
 
 from cc.tools.numerical import Interpol
 from cc.tools.io import DataIO
-from cc.modeling.objects import Star
 from cc.plotting import Plotting2
+
+
 
 def normalizeSed(sed):
     
@@ -99,8 +100,8 @@ class Sed(object):
         '''
         
         cc_path = os.path.join(self.path_combocode,'Data')
-        all_data_types = Star.getInputData(path=cc_path,keyword='DATA_TYPES',\
-                                           filename='Dust.dat')
+        all_data_types = DataIO.getInputData(path=cc_path,keyword='DATA_TYPES',\
+                                             filename='Dust.dat')
         searchpath = os.path.join(self.path,'*_%s.dat'%self.star_name)
         data_list = [os.path.split(f)[1].replace('_%s.dat'%self.star_name,'') 
                      for f in glob(searchpath)] 

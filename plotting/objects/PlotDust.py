@@ -72,7 +72,8 @@ class PlotDust(PlottingSession):
         
         Includes data preparation on the spot.
         
-        @param star_grid: list of Star() models to plot
+        @param star_grid: list of Star() models to plot. If star_grid is [], 
+                          only data are plotted.
         @type star_grid: list[Star()]
         
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
@@ -99,14 +100,14 @@ class PlotDust(PlottingSession):
         print '** Creating SED plot.'
         ccpath = os.path.join(self.path_combocode,'Data')
         data_labels = dict([(dt,(n,ls))
-                            for n,dt,ls in zip(Star.getInputData(path=ccpath,\
+                            for n,dt,ls in zip(DataIO.getInputData(path=ccpath,\
                                                         keyword='PLOT_NAMES',\
                                                         filename='Dust.dat',\
                                                         remove_underscore=1),\
-                                               Star.getInputData(path=ccpath,\
+                                               DataIO.getInputData(path=ccpath,\
                                                         keyword='DATA_TYPES',\
                                                         filename='Dust.dat'),\
-                                               Star.getInputData(path=ccpath,\
+                                               DataIO.getInputData(path=ccpath,\
                                                         keyword='LINE_TYPES',\
                                                         filename='Dust.dat'))])
         
@@ -122,14 +123,24 @@ class PlotDust(PlottingSession):
                                 self.path,'stars',self.star_name,self.plot_id,\
                                 os.path.split(self.inputfilename)[1])],\
                             shell=True)
-        plot_title='SED %s'%star_grid[0]['STAR_NAME_PLOTS']
+        plot_title='SED %s'%self.star_name_plots
         
         #- prepare and collect data, keytags and line types
         keytags = []
         data_x = []
         data_y = []
         line_types = []
-        for k,(w,f) in spec.data.items():
+        for k,(w,f) in sorted([datatype 
+                               for datatype in spec.data.items()
+                               if 'PHOT' not in datatype[0].upper()]):
+             keytags.append(data_labels[k][0])
+             data_x.append(spec.data[k][0])
+             data_y.append(spec.data[k][1])
+             line_types.append(data_labels[k][1])
+        
+        for k,(w,f) in sorted([datatype 
+                               for datatype in spec.data.items()
+                               if 'PHOT' in datatype[0].upper()]):
              keytags.append(data_labels[k][0])
              data_x.append(spec.data[k][0])
              data_y.append(spec.data[k][1])
@@ -139,7 +150,10 @@ class PlotDust(PlottingSession):
         model_ids = [s['LAST_MCMAX_MODEL'] 
                      for s in star_grid
                      if s['LAST_MCMAX_MODEL']]
-        rt_sed = star_grid[0]['RT_SED']
+        #- Only if the model_ids list is not empty, MCMax models are available
+        #- Otherwise the ray tracing keyword is unnecessary.
+        if model_ids: 
+            rt_sed = star_grid[0]['RT_SED']
         for model_id in model_ids:
              w,f = MCMax.readModelSpectrum(self.path,model_id,rt_sed)
              data_x.append(w)
@@ -216,13 +230,13 @@ class PlotDust(PlottingSession):
         temps = []
         keytags = []
         for star in star_grid:
-            rad,temp,key = star.getTempProfile() 
+            rad,temp,key = star.getDustTemperature() 
             radii.append(rad)
             temps.append(temp)
             keytags.append(key)
         if powerlaw:      #take T_STAR from the logfile of model in models
             for power in powerlaw:
-                rad,temp,key = star_grid[0].getTempPowerLaw(power)
+                rad,temp,key = star_grid[0].getDustTemperaturePowerLaw(power)
                 radii.append(rad)
                 temps.append(temp)
                 keytags.append(key)
@@ -296,7 +310,7 @@ class PlotDust(PlottingSession):
         plot_filenames = []
         for star in star_grid:
             if not int(star['T_CONTACT']):
-                radii,temps,keytags = star.getTempSpecies()
+                radii,temps,keytags = star.getDustTemperatureSpecies()
             else:
                 include_total = 1
                 print 'Thermal contact is on. Plotting the total ' + \
@@ -304,7 +318,7 @@ class PlotDust(PlottingSession):
                       'for the species are available.'
                 radii, temps, keytags = [], [], []
             if include_total:
-                rad, temp, key = star.getTempProfile()
+                rad, temp, key = star.getDustTemperature()
                 radii.append(rad[rad>star['R_INNER_GAS']\
                                 *star.r_solar*star['R_STAR']])
                 temps.append(temp[rad>star['R_INNER_GAS']\
@@ -312,7 +326,7 @@ class PlotDust(PlottingSession):
                 keytags.append(key)
             if powerlaw:
                 for power in powerlaw:
-                     rad,temp,key = star.getTempPowerLaw(power)
+                     rad,temp,key = star.getDustTemperaturePowerLaw(power)
                      radii.append(rad)
                      temps.append(temp)
                      keytags.append(key)
@@ -400,12 +414,12 @@ class PlotDust(PlottingSession):
                           'only, not yet implemented.')
         filenames = []
         if not star_grid and not models:
-            species_index = [Star.getInputData(keyword='SPECIES_SHORT',\
+            species_index = [DataIO.getInputData(keyword='SPECIES_SHORT',\
                                     filename='Dust.dat',\
                                     path=os.path.join(self.path_combocode,\
                                                       'Data')).index(sp)
                              for sp in species]
-            filename_species = [Star.getInputData(keyword='PART_FILE',\
+            filename_species = [DataIO.getInputData(keyword='PART_FILE',\
                                     filename='Dust.dat',\
                                     path=os.path.join(self.path_combocode,\
                                                       'Data'))[i] 
@@ -645,7 +659,7 @@ pars_units = dict([('T_STAR',('T_{*}','K','%i')),\
                                 ('KEYWORD_DUST_TEMPERATURE_TABLE',('Consistent T_{d}','','%i')),\
                                 ('NUMBER_INPUT_DUST_TEMP_VALUES',('len(T_d)','','%i')),\
                                 ('MOLECULE',('Molecule','','%s'))])
-        dust_species = Star.getInputData(path=os.path.join(self.path_combocode,'Data'),keyword='SPECIES_SHORT',\
+        dust_species = DataIO.getInputData(path=os.path.join(self.path_combocode,'Data'),keyword='SPECIES_SHORT',\
                                                     filename='Dust.dat')
         pars_units.update(dict([('A_' + species,('A_{' + species + '}','','%.2f')) for species in dust_species]))
         pars_units.update(dict([('T_DESA_' + species,('T_{desA,' + species + '}','','%.3f')) for species in dust_species]))

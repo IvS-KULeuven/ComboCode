@@ -12,7 +12,7 @@ from scipy.integrate import trapz
 from scipy import average
 import math
 
-from cc.modeling.codes import Gastronoom
+from cc.tools.io import DataIO
 
 
 
@@ -91,9 +91,9 @@ def getWaterColDens(model_id,path_gastronoom,rin,rout,opr):
     rdelta = (rout-rin)/2.
     filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                path_gastronoom,'models',model_id,'coolfgr_all%s.dat'%model_id)
-    rad = Gastronoomn.getGastronoomOutput(filename=filename,keyword='RADIUS',\
+    rad = DataIO.getGastronoomOutput(filename=filename,keyword='RADIUS',\
                                    return_array=1)
-    nh2o = Gastronoom.getGastronoomOutput(filename=filename,keyword='n(h2o)',\
+    nh2o = DataIO.getGastronoomOutput(filename=filename,keyword='n(h2o)',\
                                     return_array=1)
     nh2o_sel = nh2o[abs(rad - rmed ) <= rdelta]
     rad_sel = rad[abs(rad - rmed ) <= rdelta]

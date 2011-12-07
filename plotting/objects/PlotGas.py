@@ -18,10 +18,9 @@ from cc.tools.io import DataIO
 from cc.modeling.objects import Transition
 from cc.plotting import Plotting2
 from cc.tools.io import LineList
-from cc import ComboCode
+from cc.ComboCode import checkEntryInfo
 from cc.data.instruments import Pacs
 from cc.modeling.objects import Star
-from cc.modeling.codes import Gastronoom
 
 
 
@@ -77,7 +76,7 @@ class PlotGas(PlottingSession):
                                       code='GASTRoNOoM',\
                                       inputfilename=inputfilename)
         self.star_name_gastronoom = \
-                Star.getInputData(path=os.path.join(self.path_combocode,\
+                DataIO.getInputData(path=os.path.join(self.path_combocode,\
                                                     'Data'),\
                                   keyword='STAR_NAME_GASTRONOOM')\
                                  [self.star_index]
@@ -232,16 +231,9 @@ class PlotGas(PlottingSession):
         plot_filenames = []
         for i,star in enumerate(star_grid):
             if star['LAST_GASTRONOOM_MODEL']:    
-                fgr_file = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                        self.path,'models',\
-                                        star['LAST_GASTRONOOM_MODEL'],\
-                                        'coolfgr_all%s.dat'\
-                                        %star['LAST_GASTRONOOM_MODEL'])
-                radius = array(Gastronoom.getGastronoomOutput(\
-                                    filename=fgr_file,keyword='RADIUS'))\
-                               /star['R_STAR']/star.r_solar
-                vel = array(Gastronoom.getGastronoomOutput(filename=fgr_file,\
-                                                         keyword='VEL'))/10.**5
+                radius,vel = star.getGasVelocity()
+                radius = radius/star['R_STAR']/star.r_solar
+                vel = vel/10.**5
                 avgdrift = star.getAverageDrift()/10.**5
                 plot_filename = os.path.join(os.path.expanduser('~'),\
                                              'GASTRoNOoM',self.path,'stars',\
@@ -256,7 +248,8 @@ class PlotGas(PlottingSession):
                 plot_filenames.append(Plotting2.plotCols(x=radius,\
                                         y=[vel,avgdrift],cfg=cfg,\
                                         filename=plot_filename,\
-                                        xaxis='R (R$_*$)',yaxis='v (km/s)',\
+                                        xaxis='R (R$_*$)',\
+                                        yaxis=r'$v$ (km s$^{-1}$)',\
                                         plot_title=plot_title,\
                                         key_location=(0.0,0.0),\
                                         keytags=['Velocity',\
@@ -314,7 +307,7 @@ class PlotGas(PlottingSession):
             valid_sg = [star 
                         for star in star_grid 
                         if star['LAST_GASTRONOOM_MODEL']]
-            radii = [Gastronoom.getGastronoomOutput(\
+            radii = [DataIO.getGastronoomOutput(\
                         filename=os.path.join(os.path.expanduser('~'),\
                              'GASTRoNOoM',self.path,'models',\
                              star['LAST_GASTRONOOM_MODEL'],\
@@ -324,7 +317,7 @@ class PlotGas(PlottingSession):
                      for star in valid_sg]
             radii_rstar = [rads/star['R_STAR']/star.r_solar 
                                 for rads,star in zip(radii,valid_sg)]
-            temp = [Gastronoom.getGastronoomOutput(\
+            temp = [DataIO.getGastronoomOutput(\
                                 filename=os.path.join(os.path.expanduser('~'),\
                                               'GASTRoNOoM',self.path,\
                                               'models',\
@@ -460,7 +453,7 @@ class PlotGas(PlottingSession):
 
     def plotTransitions(self,star_grid,cfg='',no_data=0,vg_factor=3,\
                         telescope_label=1,sort_freq=0,sort_molec=0,\
-                        no_models=0):
+                        no_models=0,limited_axis_labels=0):
         
         """ 
         Plotting beam convolved line profiles in Tmb for both model and data if 
@@ -495,6 +488,11 @@ class PlotGas(PlottingSession):
                                   
                             (default: 0)
         @type no_models: bool
+        @keyword limited_axis_labels: Remove axis labels not at the left or at 
+                                      the bottom of the tiled plot
+                                      
+                                      (default: 0)
+        @type limited_axis_labels: bool
         
         """
         
@@ -524,6 +522,8 @@ class PlotGas(PlottingSession):
             sort_molec = int(cfg_dict['sort_molec'])
         if cfg_dict.has_key('no_models'):
             no_models = int(cfg_dict['no_models'])
+        if cfg_dict.has_key('limited_axis_labels'):
+            limited_axis_labels = cfg_dict['limited_axis_labels']
         if cfg_dict.has_key('keytags'):
             keytags = cfg_dict['keytags']
             pacs_keytags = keytags
@@ -560,7 +560,7 @@ class PlotGas(PlottingSession):
         
         def createTilePlots(trans_list,x_dim,y_dim,no_data,intrinsic,\
                             vg_factor,keytags,telescope_label,no_models,cfg,\
-                            star_grid):
+                            star_grid,limited_axis_labels):
             
             '''
             Create a tiled plot for a transition list.
@@ -597,6 +597,11 @@ class PlotGas(PlottingSession):
             @type telescope_label: bool
             @param no_models: Only show data for the non-PACS lines.
             @type no_models: bool
+            @param limited_axis_labels: Remove axis labels not at the left or 
+                                        at the bottom of the tiled plot
+                                      
+                                        (default: 0)
+            @type limited_axis_labels: bool
             @return: The data list with dictionaries for every tile is returned
             @rtype: list[dict]
 
@@ -668,11 +673,6 @@ class PlotGas(PlottingSession):
                         ddict['labels'].append((telescope_string,0.75,0.90))
                     ddict['xmax'] = v_lsr + vg_factor * vg
                     ddict['xmin'] = v_lsr - vg_factor * vg
-                    print [max(array(yi)[(array(xi) <= ddict['xmax'])* \
-                                             (array(xi) >= ddict['xmin'])]) 
-                                         for xi,yi in zip(ddict['x'],\
-                                                          ddict['y'])
-                                         if list(yi)]
                     if [yi for yi in ddict['y'] if list(yi)]:
                         ddict['ymax'] = max([max(array(yi)[(array(xi) <= ddict['xmax'])* \
                                                 (array(xi) >= ddict['xmin'])]) 
@@ -685,6 +685,17 @@ class PlotGas(PlottingSession):
                                                               ddict['y'])
                                              if list(yi)])
                     if not no_data: ddict['histoplot'] = [0]
+                    if limited_axis_labels:
+                        if j%x_dim == 0:
+                            ddict['yaxis'] = intrinsic \
+                                                and r'$F_\nu$ (Jy)' \
+                                                or '$T_\mathrm{mb}$ (K)'
+                        else: 
+                            ddict['yaxis'] = ''
+                        if j in xrange(n_subplots-x_dim,n_subplots):
+                            ddict['xaxis'] = r'$v$ (km s$^{-1}$)'
+                        else:
+                            ddict['xaxis'] = ''
                     data.append(ddict)
                     if not trans_list:
                         break
@@ -728,13 +739,15 @@ class PlotGas(PlottingSession):
                                   no_data=no_data,cfg=cfg,star_grid=star_grid,\
                                   x_dim=x_dim,y_dim=y_dim,keytags=keytags,\
                                   intrinsic=0,no_models=no_models,\
-                                  telescope_label=telescope_label)
+                                  telescope_label=telescope_label,\
+                                  limited_axis_labels=limited_axis_labels)
         if pacs_list:  
              createTilePlots(trans_list=pacs_list,vg_factor=vg_factor,\
                                   no_data=1,cfg=cfg,star_grid=star_grid,\
                                   intrinsic=1,keytags=pacs_keytags,\
                                   x_dim=x_dim,y_dim=y_dim,\
-                                  telescope_label=telescope_label,no_models=0)
+                                  telescope_label=telescope_label,no_models=0,\
+                                  limited_axis_labels=limited_axis_labels)
         
 
 
@@ -907,7 +920,7 @@ class PlotGas(PlottingSession):
         plot_filenames = []
         for star in star_grid:
             if star['LAST_GASTRONOOM_MODEL']:    
-                radii = [Gastronoom.getGastronoomOutput(\
+                radii = [DataIO.getGastronoomOutput(\
                                 filename=os.path.join(os.path.expanduser('~'),\
                                       'GASTRoNOoM',self.path,'models',\
                                       molec.getModelId(),'cool1%s_%s.dat'\
@@ -915,7 +928,7 @@ class PlotGas(PlottingSession):
                                 return_array=1)
                          for molec in star['GAS_LIST'] 
                          if molec.getModelId()]
-                h2_ab = [array(Gastronoom.getGastronoomOutput(\
+                h2_ab = [array(DataIO.getGastronoomOutput(\
                                 filename=os.path.join(os.path.expanduser('~'),\
                                         'GASTRoNOoM',self.path,'models',\
                                         molec.getModelId(),'cool1%s_%s.dat'\
@@ -923,7 +936,7 @@ class PlotGas(PlottingSession):
                                 keyword='N(H2)'))
                          for molec in star['GAS_LIST'] 
                          if molec.getModelId()]
-                molec_ab = [array(Gastronoom.getGastronoomOutput(\
+                molec_ab = [array(DataIO.getGastronoomOutput(\
                                 filename=os.path.join(os.path.expanduser('~'),\
                                         'GASTRoNOoM',self.path,'models',\
                                         molec.getModelId(),'cool1%s_%s.dat'\
@@ -1006,124 +1019,89 @@ class PlotGas(PlottingSession):
             
             
 
-    def plotLineContributions(self,star_grid=[],models=[],transitions=[],\
-                              trans_filename='',normalized=1,cfg='',do_sort=1):
+    def plotLineContributions(self,star_grid,normalized=1,cfg='',do_sort=1,\
+                              include_velocity=1):
         
         '''
-        Plot the source function as function of impact parameter.
+        Plot the source function as function of impact parameter for every 
+        transition.
         
-        @keyword star_grid: List of Star() instances. If default, model ids 
-                            have to be given.
-                                  
-                            (default: [])
+        @param star_grid: The model parameter sets
         @type star_grid: list[Star()]
-        @keyword models: The model ids, only required if star_grid is []
-        
-                         (default: [])
-        @type models: list[string]
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                           
                       (default: '')
         @type cfg: string
-        @keyword transitions: the transitions that you wish to include, 
-                              if default, the transitions are read from a file,
-                              in classical TRANSITION CC input format
-                              
-                              (default: [])
-        @type transitions: list[Transition()]
-        @keyword trans_filename: the filename that includes the TRANSITIONS, is
-                                 default if the transitions are passed 
-                                 explicitly, file is in 
-                                 ~/GASTRoNOoM/path_gastronoom/LineContributions/. 
-                                 if just a filename is given, but can also take
-                                 an explicit path
-                                 
-                                 (default: '')
-        @type trans_filename: string
         @keyword normalized: plot the normalized source functions as opposed 
                              to not normalized
                              
                              (default: 1)
         @type normalized: bool
         @keyword do_sort: Sort the transition list according to wavelength. If 
-                          off, the original order given in the trans_file is 
+                          off, the original order given in the CC input file is 
                           kept
                           
                           (default: 1)
         @type do_sort: bool
+        @keyword include_velocity: Include the velocity profile on the plot
+                          
+                                   (default: 0)
+        @type include_velocity: bool
         
         '''
         
         print '***********************************'
         print '** Plotting Line Contributions'
-        if not star_grid and models:
-            print 'plotLineContributions for model_ids not yet implemented.'
-            return
-            #star_grid = self.makeStars(models=models)
-        elif (not models and not star_grid) or (models and star_grid):
-            print '** Input is undefined or doubly defined. Aborting.'
-            return
-        if not transitions:
-            if star_grid[0].has_key('LC_FILENAME') and star_grid[0]['LC_FILENAME']:
-                trans_filename = star_grid[0]['LC_FILENAME']
-            if not trans_filename:
-                print '** No transitions requested for plotting line ' + \
-                      'contributions. Continuing...'
-                return
-            #- if just a filename the default folder is added, otherwise the 
-            #- full path as given is taken
-            trans_filename = os.path.split(trans_filename)[0] \
-                                and trans_filename \
-                                or os.path.join(os.path.expanduser('~'),\
-                                                'GASTRoNOoM',\
-                                                'LineContributions',\
-                                                trans_filename)
-            transitions = [line.split('=')[1] 
-                           for line in DataIO.readFile(trans_filename)
-                           if not line[0] == '#']
-            transitions = ComboCode.checkEntryInfo(transitions,12,\
-                                                   'TRANSITION')
         if cfg:
              cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
         else:
              cfg_dict = dict()
         if cfg_dict.has_key('do_sort'):
              do_sort = int(cfg_dict['do_sort'])
+        if cfg_dict.has_key('normalized'):
+             normalized = int(cfg_dict['normalized'])
+        if cfg_dict.has_key('include_velocity'):
+             include_velocity = int(cfg_dict['include_velocity'])
         DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
                                                 'GASTRoNOoM',self.path,'stars',\
                                                 self.star_name,self.plot_id,\
                                                 'LineContributions'))
         normalized = int(normalized)
         for i,star in enumerate(star_grid):
-            trans_sel = [Transition.makeTransition(star,trans)
-                         for trans in transitions
-                         if Transition.makeTransition(star,trans) <> None]
+            extra_pars = dict()
             if do_sort:
-                 these_transitions = sorted([trans 
-                                             for trans in star['GAS_LINES'] 
-                                             if trans.getModelId() \
-                                                and trans in trans_sel],\
-                                            key=lambda x:x.wavelength)
+                transitions = sorted([trans 
+                                      for trans in star['GAS_LINES'] 
+                                      if trans.getModelId()],\
+                                     key=lambda x:x.wavelength)
             else:
-                 these_transitions = sorted([trans 
-                                             for trans in star['GAS_LINES'] 
-                                             if trans.getModelId() \
-                                                and trans in trans_sel],\
-                                            key=lambda x:trans_sel.index(x))
-            [trans.readSphinx() for trans in these_transitions]
-            radii = [trans.sphinx.getImpact() for trans in these_transitions]
+                transitions = sorted([trans 
+                                      for trans in star['GAS_LINES'] 
+                                      if trans.getModelId()],\
+                                     key=lambda x:trans_sel.index(x))
+            if include_velocity:
+                radius,vel = star.getGasVelocity()
+                radius = radius/star['R_STAR']/star.r_solar
+                vel = vel/10.**5
+                extra_pars['twiny_x'] = [radius]
+                extra_pars['twiny_y'] = [vel]
+                extra_pars['twiny_keytags'] = [r'$v_\mathrm{g}$']
+                extra_pars['twiny_key_location'] = (0.1,0.1)
+                extra_pars['twinyaxis'] = r'$v_\mathrm{g}$ (km s$^{-1}$)' 
+            [trans.readSphinx() for trans in transitions]
+            radii = [trans.sphinx.getImpact() for trans in transitions]
             linecontribs =  [normalized \
                                 and list(trans.sphinx.getNormalizedIntensity())\
                                 or list(trans.sphinx.getWeightedIntensity())
-                             for trans in these_transitions]
+                             for trans in transitions]
             plot_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                          self.path,'stars',self.star_name,\
                                          self.plot_id,'LineContributions',\
                                          'linecontrib_%s_%i'\
                                          %(star['LAST_GASTRONOOM_MODEL'],i))
             keytags=['%s: %s'%(trans.molecule.molecule,trans.makeLabel())
-                     for trans in these_transitions]
+                     for trans in transitions]
             ymin = normalized and -0.2 or None
             ymax = normalized and 1.1 or None
             plot_title = '%s: Line Contributions for %s'\
@@ -1136,7 +1114,7 @@ class PlotGas(PlottingSession):
                 plot_title=plot_title,keytags=keytags,extension='.png',\
                 xlogscale=1,figsize=(20,10),fontsize_axis=26,fontsize_title=22,\
                 key_location=(0.80,0.),fontsize_ticklabels=22,\
-                fontsize_key=12,linewidth=3,ymin=ymin,ymax=ymax)
+                fontsize_key=12,linewidth=3,ymin=ymin,ymax=ymax,**extra_pars)
             print '** Plot can be found at:'
             print plot_filename
             print '***********************************'                            
@@ -1284,7 +1262,7 @@ class PlotGas(PlottingSession):
                                 'PACS_results','PACS_spectrum_full')
         tiles = sorted(tiles,key = lambda x: x['x'][0][0])
         filename = Plotting2.plotTiles(data=tiles,filename=filename,cfg=cfg,\
-                                       keytags=keytags,line_label_color=1,\
+                                       line_label_color=1,\
                                        line_label_spectrum=1,fontsize_label=30,\
                                        line_label_lines=1,no_line_label_text=1,\
                                        dimensions=\

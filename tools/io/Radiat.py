@@ -13,7 +13,6 @@ Author: R. Lombaert
 import os 
 
 from cc.tools.io import DataIO
-from cc.modeling.objects import Star
 
 
 
@@ -51,7 +50,7 @@ class Radiat():
         self.molecule = molecule
         self.path = path
         if use_indices_dat:
-            f = Star.getInputData(path=os.path.join(\
+            f = DataIO.getInputData(path=os.path.join(\
                                         self.molecule.path_combocode,'Data'),\
                                   keyword='RADIAT',filename='Indices.dat',\
                                   start_index=4)[self.molecule.indices_index]

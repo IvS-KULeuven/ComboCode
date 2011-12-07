@@ -14,6 +14,141 @@ import types
 
 
 
+def getGastronoomOutput(filename,keyword='RADIUS',begin_index=0,\
+                        return_array=0,key_index=0):
+    
+    """
+    Search GASTRoNOoM output for relevant envelope information.
+
+    @param filename: The filename of the relevant output GASTRoNOoM file
+    @type filename: string
+    
+    @keyword keyword: the type of information required, always equal to one of 
+                      the keywords present in the outputfiles of GASTRoNOoM
+                      
+                      (default: 'RADIUS')
+    @type keyword: string
+    @keyword begin_index: start looking for keyword at row with begin_index
+                    
+                          (default: 0)
+    @type begin_index: int
+    @keyword return_array: Return a scipy array rather than a python list
+    
+                           (default: 0)
+    @type return_array: bool
+    @keyword key_index: If 0 it is automatically determined, otherwise this is 
+                        the column index
+                        
+                        (default: 0)
+    @type key_index: int
+    
+    @return: The requested data from the GASTRoNOoM output
+    @rtype: list/array
+   
+    """
+    
+    keyword = keyword.upper()
+    data = readFile(filename,' ')
+    data_col_1 = [d[0] for d in data]
+    key_i = findString(begin_index,data_col_1)
+    key_j = findFloat(key_i,data_col_1)
+    if not key_index:
+        keys = ' '.join([' '.join(d).replace('\n','') 
+                         for d in data[key_i:key_j]]).split()
+        key_index = [key[:len(keyword)].upper() for key in keys].index(keyword)
+    #- Data never start on the first line
+    #- Starting from 1st float, all floats into list, until EOF OR end of block
+    data_i = key_j
+    #- Data may end at EOF or before a new block of data (sphinx fi)
+    data_j = findString(data_i,data_col_1)     
+    if return_array:
+        return array([float(line[key_index]) 
+                      for line in data[data_i:data_j]])
+    else:   
+        return [float(line[key_index]) 
+                for line in data[data_i:data_j]]
+
+
+
+def getInputData(path=os.path.join(os.path.expanduser('~'),'ComboCode','Data'),\
+                 keyword='STAR_NAME',filename='Star.dat',remove_underscore=0,\
+                 make_float=1,start_index=1):
+    
+    """
+    Search ComboCode Input Data files for parameters. 
+    
+    Includes files such as Dust.dat, Star.dat, Indices.dat, Molecule.dat.
+
+    @keyword path: CC data path
+    
+                   (default: ~/ComboCode/Data/)
+    @type path: string
+    @keyword keyword: the type of information required, always equal to one of 
+                      the keywords present in the "Data" of ComboCode, and 
+                      automatically also a Star dict keyword
+                      
+                      (default: STAR_NAME)
+    @type keyword: string
+    @keyword filename: filename in PATH_COMBOCODE/Data/ that includes wanted 
+                       information
+                       
+                       (default: 'Star.dat')
+    @type filename: string
+    @keyword remove_underscore: remove the underscores from the entries and 
+                                replace them by spaces.
+                                
+                                (default: 0)
+    @type remove_underscore: bool
+    @keyword make_float: set to 0, if no floats are desired at all. If 1, all
+                         entries will be converted to floats and on failure,
+                         the string is returned instead
+                         
+                         (default: 1)
+    @type make_float: bool
+    @keyword start_index: Start search for keyword at this value
+     
+                          (default: 1)
+    @type start_index: int
+
+    @return: The requested data from the CC input
+    @rtype: list
+     
+    """
+    
+    data = [line 
+            for line in readFile(os.path.join(path,filename),' ')
+            if ''.join(line).strip()]
+    i = int(start_index)
+    while ' '.join(data[i-1]).upper().find(keyword) == -1:
+        i += 1
+    data_index = [line.strip('#') 
+                  for line in data[i-1]
+                  if line.strip('#')].index(keyword)
+    try:
+        end_index = i
+        while data[end_index][0][0] != '#':
+            end_index += 1
+    except IndexError:
+        end_index = None
+    try:
+        if not make_float: 
+            raise ValueError
+        else: 
+            return [float(line[data_index]) 
+                    for line in data[i:end_index] 
+                    if line[0]]
+    except ValueError:
+        if remove_underscore: 
+            return [line[data_index].replace('_',' ') 
+                    for line in data[i:end_index] 
+                    if line[0]]
+        else: 
+            return [line[data_index] 
+                    for line in data[i:end_index] 
+                    if line[0]]
+
+
+
 def readFile(filename,delimiter=None,replace_spaces=1):
     
     """
@@ -50,6 +185,7 @@ def readFile(filename,delimiter=None,replace_spaces=1):
     return [line 
             for line in splitLines(lines,delimiter,replace_spaces) 
             if ' '.join(line)]
+
 
 
 def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
@@ -129,11 +265,12 @@ def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
                 v = v.strip('[').strip(']')
                 newv = []
                 while v.find('(') != -1:
-                    tu = tuple(v[v.find('(')+1:v.find(')')].split(','))
-                    newv.append(tu)
+                    tu = v[v.find('(')+1:v.find(')')].split(',')
+                    tu = tuple([convertString(t) for t in tu])
+                    newv.append(len(tu) != 1 and tu or tu[0])
                     v = v[v.find(')')+1:].lstrip(',')
                 if not newv:
-                    newv = v.split(',')
+                    newv = [convertString(t) for t in v.split(',')]
                 if newv == ['']:
                     newv = []
                 if convert_floats:
@@ -148,6 +285,9 @@ def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
                                                      convert_int=convert_ints))
                     newv = converted
                 newdict[k] = newv
+            elif v == 'None':
+                newdict[k] = None
+                
     return newdict
                 
               
@@ -170,8 +310,28 @@ def convertInt(number):
     
     return float(number)%1 != 0 and float(number) or int(number)
        
-        
-        
+
+
+def convertString(string):
+    
+    '''
+    Convert a string to a string, where 'None' is converted to None.
+    
+    @param string: The string to be converted.
+    @type string: string
+    
+    @return: The new string (identical to input) or None
+    @rtype: string
+    
+    '''
+    
+    if string == 'None':
+        return None
+    else:
+        return string
+
+
+
 def convertFloat(string,nans=0,convert_int=0):
     
     '''

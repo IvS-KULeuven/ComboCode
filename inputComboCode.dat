@@ -267,12 +267,6 @@ MOLECULE=13C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.
 #MOLECULE=p1H1H17O     45  31  362 50  0  1.0e-20  1.0e-20  1.0e-20  50. 0  1 0 0  idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 
 ###################
-# GASTRoNOoM Line Contributions
-###################
-LC_FILENAME=           #Include this if you want to make source function plots, ned to specify transitions in the TRANSITION= format from below, cannot all included, which would be too many. Leave open, empty, or delete altogether if you don't want these plots.
-                     #Just a filename takes it from ~/GASTRoNOoM/LineContributions, otherwise give the full explicit path
-
-###################
 # GASTRoNOoM line lists
 ###################
 LINE_LISTS=1                        # Get molecular transitions from line lists, in addition to the data,
@@ -348,7 +342,7 @@ CFG_GAS_VELOCITY=
 PLOT_GAS_ABUNDANCE_PROFILES=0       # Plot abundance profiles for molecules
 CFG_GAS_ABUNDANCE_PROFILES=
 
-PLOT_GAS_LINE_CONTRIBUTIONS=0       # Plot the line contribution of a molecular transition (see LC keywords in the main body of the CC inputfile)
+PLOT_GAS_LINE_CONTRIBUTIONS=0       # Plot the line contribution of molecular transitions
 CFG_GAS_LINE_CONTRIBUTIONS=
 
 PLOT_GAS_LINE_LISTS=0               # Plot line lists taken from a spectroscopic database (see LL keywords in the main body of the CC inputfile)

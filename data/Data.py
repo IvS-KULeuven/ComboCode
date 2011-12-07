@@ -141,14 +141,14 @@ def doConvolution(x_in,y_in,x_out,widths,factor=5,oversampling=1):
    
     x_in,y_in,x_out,widths = array(x_in),array(y_in),array(x_out),array(widths)
     y_out = []
-    print 'Convolving for x_out between %.2f micron and %.2f micron.' \
-          %(x_out[0],x_out[-1])
+    print 'Convolving for x_out between %.2f micron and %.2f micron with oversampling %i.' \
+          %(x_out[0],x_out[-1],int(oversampling))
     #- Convert FWHM's to sigma for the gaussians
     sigma = [fwhm/(2.*sqrt(2.*log(2.))) for fwhm in widths]
     #- Define the binsizes of the bins that will be integrated, i.e. the 
     #- apparent resolution of x_out 
     binsize = [w/oversampling for w in widths]
-    for fwhm,delta_bin,sigi,xi_out in zip(widths,binsize,sigma,x_out):
+    for delta_bin,sigi,xi_out in zip(binsize,sigma,x_out):
         yi_in = y_in[abs(x_in-xi_out)<=factor*sigi]   
         #- if not empty: continue, else add 0
         if list(yi_in) and set(yi_in) != set([0.0]):
@@ -185,6 +185,8 @@ def convolveArray(xx, yy=None, sigma=3):
     Convolves an intensity-versus-velocity profile with
     an instrumental Gaussian profile of width 'sigma'
 
+    by Kristof Smolders
+    
     @param xx: x values 
     @type xx: array
     

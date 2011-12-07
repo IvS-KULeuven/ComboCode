@@ -18,8 +18,7 @@ import scipy
 from cc.tools.io import DataIO
 from cc.data.instruments.Instrument import Instrument
 from cc.tools.io import Database
-from cc.data.Data import Data
-from cc.modeling.objects import Star
+from cc.data import Data
 
 
 
@@ -295,7 +294,6 @@ class Pacs(Instrument):
                 sphinx_convolved = Data.doConvolution(\
                                         x_in=sphinx_wave,y_in=sphinx_flux,\
                                         x_out=self.data_wave_list[i_file],\
-                                        conv_type='gauss',\
                                         widths=self.data_delta_list[i_file],\
                                         oversampling=self.oversampling)
                 DataIO.writeCols(filename=\
@@ -312,7 +310,7 @@ class Pacs(Instrument):
         #- 1) grab model flux and wavelength, data flux and wavelengthm, 
         #-    instrument intrinsic resolution and wavelength
         #- 2) scan model fluxes with gaussian window of variable sigma, 
-        #-    which is equal to intrinsic resolution at gaussian center
+        #-    which is equal to intrinsic resolution at gaussian center0
         #-    and gaussian center at wavelengths in the data arrays, 
         #-    which may or may not be spaced by the intrinsic resolution;
         #-    take sigma = intrinsic_resolution/delta(lambda) * len(lambda)
@@ -338,11 +336,11 @@ class Pacs(Instrument):
         @rtype: (list[list],list[list])
         
         '''
-        reso_wave_list = [Star.getInputData(path=os.path.split(filename)[0],\
+        reso_wave_list = [DataIO.getInputData(path=os.path.split(filename)[0],\
                                           filename=os.path.split(filename)[1],\
                                           keyword='WAVE='+str(order))
                           for order in range(1,4)]
-        reso_delta_list = [Star.getInputData(path=os.path.split(filename)[0],\
+        reso_delta_list = [DataIO.getInputData(path=os.path.split(filename)[0],\
                                           filename=os.path.split(filename)[1],\
                                           keyword='ORDER='+str(order))
                            for order in range(1,4)]

@@ -14,7 +14,7 @@ import operator
 
 from cc.tools.io import DataIO
 from cc.statistics.Statistics import Statistics
-from xx.plotting import Plotting2
+from cc.plotting import Plotting2
 
 
 

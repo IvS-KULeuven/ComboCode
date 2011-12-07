@@ -15,7 +15,6 @@ from glob import glob
 
 from cc.tools.io import DataIO
 from cc.modeling.ModelingSession import ModelingSession
-from cc.modeling.objects import Star
 from cc.tools.io import Database
 
 
@@ -306,8 +305,8 @@ class MCMax(ModelingSession):
                                     #print line[0].upper() + ' not found in inputComboCode.dat. Taking standard value from inputMCMax.dat: ' + line[1] + '.'
         
         #Following five keywords are only added if the corresponding abundance is present, ie not zero
-        dust_list = Star.getInputData(path=os.path.join(self.path_combocode,'Data'),keyword='SPECIES_SHORT',filename='Dust.dat')
-        kappas = Star.getInputData(path=os.path.join(self.path_combocode,'Data'),keyword='PART_FILE',filename='Dust.dat')
+        dust_list = DataIO.getInputData(path=os.path.join(self.path_combocode,'Data'),keyword='SPECIES_SHORT',filename='Dust.dat')
+        kappas = DataIO.getInputData(path=os.path.join(self.path_combocode,'Data'),keyword='PART_FILE',filename='Dust.dat')
         
         self.command_list.extend(['abun%.2i=%s'%(index+1,star['A_' + species]) 
                                   for index,species in enumerate(star['DUST_LIST'])])

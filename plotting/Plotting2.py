@@ -10,7 +10,7 @@ Author: R. Lombaert
 import pylab as pl
 import math
 import types
-from scipy import array
+from scipy import array, zeros
 from scipy import argmax
 
 from cc.tools.io import DataIO
@@ -61,6 +61,15 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                  
                  line_labels: (string,x-pos,same type-integer (eg molecule fi))
                  for label indicating emission lines, default []
+                 
+                 xaxis: name of x axis (TeX enabled), if keyword not included 
+                 here, the method's xaxis is used. If not wanted, use empty 
+                 string
+                 
+                 yaxis: name of y axis (TeX enabled), if keyword not included 
+                 here, the method's yaxis is used. If not wanted, use empty 
+                 string
+                 
     @type data: list[dict]
     @param dimensions: The number of tiles in the x and y direction is given:
                        (x-dim,y-dim)
@@ -149,6 +158,10 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                                
                                  (default: 0)
     @type no_line_label_text: bool
+    #@keyword short_label_lines: The label lines are short and at the top of plot
+                                
+                                 (default:0)
+    @type short_label_lines: bool   
     @keyword line_label_spectrum: linelabels are set at the top and bottom of 
                                   the spectrum, as for PACS spectra
                                   
@@ -230,6 +243,11 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
     
                        (default: 0.9)
     @type ws_right: float
+    @keyword landscape: Save the plot in landscape orientation
+    
+                        (default: 0)
+    @type landscape: bool
+    
     @return: the plotfilename with extension is returned
     @rtype: string
     
@@ -268,6 +286,9 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
     line_label_spectrum=kwargs.get('line_label_spectrum',0)  
     no_line_label_text=kwargs.get('no_line_label_text',0)
     size_ticklines=kwargs.get('size_ticklines',10)
+    landscape = kwargs.get('landscape',0)
+    short_label_lines = kwargs.get('short_label_lines',0)
+    
     if extension[0] != '.':  extension = '.' + extension
     if filename <> None:     filename = filename + extension
 
@@ -315,6 +336,10 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
             ddict['ymax'] = None
         if not ddict.has_key('line_labels'):
             ddict['line_labels'] = []
+        if not ddict.has_key('xaxis'):
+            ddict['xaxis'] = xaxis
+        if not ddict.has_key('yaxis'):
+            ddict['yaxis'] = yaxis
             
     pl.rc('text', usetex=True)
     pl.rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
@@ -365,8 +390,8 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                 sub.set_xscale('log')
             if ylogscale:
                 sub.set_yscale('log')
-            pl.ylabel(yaxis,fontsize=fontsize_axis)
-            pl.xlabel(xaxis,fontsize=fontsize_axis)
+            pl.ylabel(ddict['yaxis'],fontsize=fontsize_axis)
+            pl.xlabel(ddict['xaxis'],fontsize=fontsize_axis)
             ax = pl.gca()
             if ddict['labels']:
                 for s,x,y in ddict['labels']:
@@ -379,7 +404,8 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                               line_label_lines=line_label_lines,\
                               baseline_line_labels=baseline_line_labels,\
                               fontsize_label=fontsize_label,\
-                              no_line_label_text=no_line_label_text)
+                              no_line_label_text=no_line_label_text,\
+                              short_label_lines=short_label_lines)
             if removeYvalues:
                 ax.set_yticks([])
             for label in ax.xaxis.get_ticklabels() + ax.yaxis.get_ticklabels():
@@ -406,7 +432,8 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
     if show_plot or filename is None:
         pl.show()
     if filename <> None:
-        pl.savefig(filename)
+        pl.savefig(filename,\
+                   orientation=(landscape and 'landscape' or 'portrait'))
     pl.close('all')
     return filename
     
@@ -456,6 +483,18 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                    
                    (default: [])
     @type yerr: list[list/arrays/...]
+    @keyword twiny_x: If a second list of datasets has to be plotted with a 
+                      different yaxis, include the second x axis data here. 
+                      Only works for two different y axes, with a single x axis.
+    
+                      (default: [])
+    @type twiny_x: list[array]
+    @keyword twiny_y: If a second list of datasets has to be plotted with a 
+                      different yaxis, include the second y axis data here. 
+                      Only works for two different y axes, with a single x axis.
+     
+                      (default: [])
+    @type twiny_y: list[array]
     @keyword inputfiles: list of filenames with two up to six input columns 
                          (x|y) or (x|y|xerr) or (x|y|xerr|yerr) or 
                          (x|y|xerr_low|xerr_up|yerr_low|yerr_up)
@@ -503,6 +542,12 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                     
                     (default: r'$F_\\nu (Jy)$')
     @type yaxis: string
+    @keyword twinyaxis: name of twin y axis (TeX enabled) if twinx and twiny
+                        are not empty. If this is None then the twiny_x and 
+                        twin_y are ignored. Also ignored if number_subplots!=1
+                    
+                        (default: None)
+    @type twinyaxis: string
     @keyword plot_title: plot title (TeX enabled), if empty string no title is 
                          used
                         
@@ -536,6 +581,10 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                       
                       (default: [])
     @type keytags: list[string] 
+    @keyword twiny_keytags: as keytags, but only if twinyaxis <> None.
+                          
+                            (default: [])
+    @type twiny_keytags: list[string] 
     @keyword size_ticklines: The relative size of the tick lines
                               
                              (default: 10)
@@ -575,6 +624,10 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                                
                                  (default: 0)
     @type no_line_label_text: bool
+    @keyword short_label_lines: The label lines are short and at the top of plot
+                                
+                                (default:0)
+    @type short_label_lines: bool    
     @keyword linewidth: width of all the lines in the plot
                         
                         (default: 1)
@@ -611,11 +664,16 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                    
                    (default: None)
     @type ymax: float
-    @keyword cutX: Split Xvalues over number_subplots
-                   not used if number_subplot==1
+    @keyword twiny_ymin: if default then autoscaling is done, otherwise min y 
+                         value for the twiny axis
                    
-                   (default: 0)
-    @type cutX: bool
+                         (default: None)
+    @type twiny_ymin: float
+    @keyword twiny_ymax: if default then autoscaling is done, otherwise min y 
+                         value for the twiny axis
+                   
+                         (default: None)
+    @type twiny_ymax: float
     @keyword transparent: for a transparent background
                           
                           (default: 0)
@@ -661,6 +719,10 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                             - 2,3,4: "triple crosses" in different angular 
                                      orientations
     @type line_types: list[string]
+    @keyword twiny_line_types: As line_types, but for the twiny data.
+    
+                              (default: [])
+    @type twiny_line_types: list[string]
     @keyword horiz_lines: a list of y-coords to put full black horizontal lines
                         
                           (default: [])
@@ -695,6 +757,11 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     
                        (default: 0.9)
     @type ws_right: float
+    @keyword landscape: Save the plot in landscape orientation
+    
+                        (default: 0)
+    @type landscape: bool
+    
     @return: the plotfilename with extension is returned
     @rtype: string
 
@@ -708,8 +775,13 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     number_subplots=kwargs.get('number_subplots',1)
     figsize=kwargs.get('figsize',(20.*math.sqrt(2.), 20.))
     show_plot=kwargs.get('show_plot',0)
+    twiny_x = kwargs.get('twiny_x',[])
+    twiny_y = kwargs.get('twiny_y',[])
     xaxis=kwargs.get('xaxis',r'$\lambda$\ ($\mu m$)')
     yaxis=kwargs.get('yaxis',r'$F_\nu$ ($Jy$)')
+    xerr=kwargs.get('xerr',[])
+    yerr=kwargs.get('yerr',[])
+    twinyaxis=kwargs.get('twinyaxis',None)
     plot_title=kwargs.get('plot_title','')
     fontsize_key=kwargs.get('fontsize_key',16)
     fontsize_axis=kwargs.get('fontsize_axis',24)
@@ -719,6 +791,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     bold_ticklabels=kwargs.get('bold_ticklabels',0)
     size_ticklines=kwargs.get('size_ticklines',10)
     keytags=kwargs.get('keytags',[])
+    twiny_keytags=kwargs.get('twiny_keytags',[])
     labels=kwargs.get('labels',[])
     linewidth=kwargs.get('linewidth',1)
     err_linewidth=kwargs.get('err_linewdth',1)
@@ -729,11 +802,13 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     xmax=kwargs.get('xmax',None)
     ymin=kwargs.get('ymin',None)
     ymax=kwargs.get('ymax',None)
-    cutX=kwargs.get('cutX',0)
+    twiny_ymin=kwargs.get('ymin',None)
+    twiny_ymax=kwargs.get('ymax',None)
     transparent=kwargs.get('transparent',0)
     removeYvalues=kwargs.get('removeYvalues',0)
     histoplot=kwargs.get('histoplot',[])
     line_types=kwargs.get('line_types',[])
+    twiny_line_types=kwargs.get('twiny_line_types',[])
     baseline_line_labels=kwargs.get('baseline_line_labels',0)
     line_labels=kwargs.get('line_labels',[])
     line_label_color=kwargs.get('line_label_color',0)
@@ -748,7 +823,8 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     ws_top = kwargs.get('ws_top',0.9)
     ws_left = kwargs.get('ws_left',0.125)
     ws_right = kwargs.get('ws_right',0.9)
-    
+    landscape = kwargs.get('landscape',0)
+    short_label_lines = kwargs.get('short_label_lines',0)
     if extension[0] != '.':  extension = '.' + extension
     if filename <> None:     filename = filename + extension
     if inputfiles:
@@ -836,62 +912,77 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                   ':',':',':',':',':',':',':']
     colors = ['r','b','k','g','m','y','c']
     extra_line_types = [ls + col for ls,col in zip(linestyles,6*colors)]
-    if type(line_types) is types.StringType:
-        line_types=[line_types]
-    elif not type(line_types) is types.ListType:
-        line_types=[]
-    if len(line_types) == 1:
-        line_types *= len(x)
-    elif not line_types or len(line_types) != len(x):
-        line_types =     [lp for xi,lp in zip(x,extra_line_types)]
-    ilp = 0
-    extra_line_types = [extra  for extra in extra_line_types 
-                               if extra not in line_types]
-    line_types = [lp and lp or extra_line_types.pop(0) 
-                        for lp in line_types]
+    line_types,extra_line_types = setLineTypes(x,line_types,extra_line_types)
+    if twinyaxis <> None:
+        twiny_line_types,extra_line_types = setLineTypes(twiny_x,\
+                                                         twiny_line_types,\
+                                                         extra_line_types)
+    if number_subplots != 1: twinyaxis = None
     for i in xrange(number_subplots):
         sub = pl.subplot(number_subplots, 1, i+1)
         these_data = []
-        if number_subplots != 1 and cutX:
+        #- Only if number_subplots is not 1, this splitting
+        #- of data is done. Otherwise, normal plots are made.
+        if number_subplots != 1:
             [these_data.append(\
                 [xi[abs(xi-(xi[0]+(2*(i+1)-1)*delta/2.)) <= delta/2.],\
-                yi[abs(xi-(xi[0]+(2*(i+1)-1)*delta/2.)) <= delta/2.],\
-                lp,\
-                xerri <> None \
+                 yi[abs(xi-(xi[0]+(2*(i+1)-1)*delta/2.)) <= delta/2.],\
+                 lp,\
+                 xerri <> None \
                     and (type(xerri[0]) is not types.ListType \
-                            and list(xerri[abs(xi-(xi[0]+(2*(i+1)-1)*delta/2.))\
-                                    <= delta/2.]) \
-                            or [list(xerrii[abs(xi-(xi[0]+(2*(i+1)-1)*delta/2.))\
-                                    <= delta/2.])
-                                for xerrii in xerri]) \
+                        and list(xerri[abs(xi-(xi[0]+(2*(i+1)-1)*delta/2.))\
+                                       <= delta/2.]) \
+                        or [list(xerrii[abs(xi-(xi[0]+(2*(i+1)-1)*delta/2.))\
+                                        <= delta/2.])
+                            for xerrii in xerri]) \
                     or None,\
-                yerri <> None \
+                 yerri <> None \
                     and (type(xerri[0]) is not types.ListType \
-                            and list(yerri[abs(xi-(xi[0]+(2*(i+1)-1)*delta/2.))\
-                                    <= delta/2.]) \
-                            or [list(yerrii[abs(xi-(xi[0]+(2*(i+1)-1)*delta/2.))\
-                                    <= delta/2.])
-                                for yerrii in yerri]) \
+                        and list(yerri[abs(xi-(xi[0]+(2*(i+1)-1)*delta/2.))\
+                                       <= delta/2.]) \
+                        or [list(yerrii[abs(xi-(xi[0]+(2*(i+1)-1)*delta/2.))\
+                                        <= delta/2.])
+                            for yerrii in yerri]) \
                     or None])
              for xi,yi,lp,xerri,yerri in zip(x,y,line_types,xerr,yerr) 
              if list(yi)]
-        elif number_subplots == 1 and cutX:
-            print 'Multiple subplots not yet supported, for different data types'
-            return
         else:
             [these_data.append([xi,yi,lp,xerri,yerri]) 
              for xi,yi,lp,xerri,yerri in zip(x,y,line_types,xerr,yerr)
              if list(yi)]
         no_err = []
+        legends = []
         for xi,yi,lp,xerri,yerri in these_data:
             if xerri is None and yerri is None:
-                no_err.extend([xi,yi,lp])
+                legends.append(sub.plot(xi,yi,lp,linewidth=linewidth))
             else:
-                sub.errorbar(x=xi,y=yi,xerr=xerri,yerr=yerri,fmt=lp,\
-                             ecolor=splitLineStyle(lp)[1],\
-                             elinewidth=err_linewidth,\
-                             linestyle=lp,linewidth=linewidth)
-        sub.plot(linewidth=linewidth,*no_err)
+                legends.append(sub.plot(xi,yi,lp,linewidth=linewidth))
+                if xerri <> None: 
+                    sub.errorbar(x=xi,y=yi,xerr=xerri,fmt=None,\
+                                 ecolor='k',\
+                                 xlolims=set(xerri[:1]) == set([0]) and 1 or 0,\
+                                 xuplims=set(xerri[:0]) == set([0]) and 1 or 0,\
+                                 #splitLineStyle(lp)[1],\
+                                 elinewidth=10,\
+                                 barsabove=True)
+                if yerri <> None:
+                    lls = yerri[0]
+                    uls = yerri[1]
+                    
+                    for (ll,ul,xii,yii) in zip(lls,uls,xi,yi):
+                        if ll != 0 or ul != 0:
+                            print ll, ul
+                            sub.errorbar(x=[xii],y=[yii],yerr=[[ll],[ul]],\
+                                         ecolor='k',\
+                                         lolims=lp=='-r',\
+                                         uplims=lp=='-b',\
+                                         #splitLineStyle(lp)[1],\
+                                         capsize=10,\
+                                         elinewidth=2,\
+                                         barsabove=False)
+                    
+                             
+        #legends.append(sub.plot(linewidth=linewidth,*no_err))
         sub.autoscale_view(tight=True,scaley=False)
         if xlogscale:
             sub.set_xscale('log')
@@ -909,15 +1000,18 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                           line_label_lines=line_label_lines,\
                           baseline_line_labels=baseline_line_labels,\
                           fontsize_label=fontsize_label,\
-                          no_line_label_text=no_line_label_text)
+                          no_line_label_text=no_line_label_text,\
+                          short_label_lines=short_label_lines)
         pl.ylabel(yaxis,fontsize=fontsize_axis)
         if i == 0:
             pl.title(plot_title,fontsize=fontsize_title)  
             if keytags:
-                these_tags = [keys for keys,yi in zip(keytags,y) if list(yi)]
-                lg = pl.legend(tuple(these_tags),loc=key_location,prop=\
-                     pl.matplotlib.font_manager.FontProperties(size=fontsize_key))
-                lg.legendPatch.set_alpha(0.0)
+                keytags = [keys for keys,yi in zip(keytags,y) if list(yi)]
+            #if keytags:
+                #these_tags = [keys for keys,yi in zip(keytags,y) if list(yi)]
+                #lg = pl.legend(tuple(these_tags),loc=key_location,prop=\
+                     #pl.matplotlib.font_manager.FontProperties(size=fontsize_key))
+                #lg.legendPatch.set_alpha(0.0)
         if i == number_subplots-1:
             pl.xlabel(xaxis,fontsize=fontsize_axis)
         ax = pl.gca()
@@ -959,10 +1053,43 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
             pl.ylim(ymin=ymin) # min([min(xi) for xi in x])
         if ymax <> None:
             pl.ylim(ymax=ymax)
+        if twinyaxis <> None:
+            sub2 = sub.twinx()
+            twindata = []
+            [twindata.extend([xi,yi,lp])
+             for xi,yi,lp in zip(twiny_x,twiny_y,twiny_line_types)
+             if list(yi)]
+            legends.append(sub2.plot(linewidth=linewidth,*twindata))
+            sub2.autoscale_view(tight=True,scaley=False)
+            if twiny_ymin <> None:
+                pl.ylim(ymin=twiny_ymin) # min([min(xi) for xi in x])
+            if twiny_ymax <> None:
+                pl.ylim(ymax=twiny_ymax)
+            if twiny_keytags:
+                these_tags = [keys 
+                              for keys,yi in zip(twiny_keytags,twiny_y) 
+                              if list(yi)]
+                keytags.extend(these_tags)
+            sub2.set_ylabel(twinyaxis,fontsize=fontsize_axis)
+            for label in sub2.xaxis.get_ticklabels() + sub2.yaxis.get_ticklabels():
+                label.set_fontsize(fontsize_ticklabels)
+                if bold_ticklabels:
+                    label.set_fontweight('bold')
+            for tl in sub2.get_xticklines() + sub2.get_yticklines():
+                tl.set_markersize(size_ticklines)
+                tl.set_markeredgewidth(1.2)
+            for tl in sub2.yaxis.get_minorticklines() + sub2.xaxis.get_minorticklines():
+                tl.set_markersize(size_ticklines/2.)
+                tl.set_markeredgewidth(1.2)
+        if i == 0 and keytags:
+            lg = pl.legend(legends,keytags,loc=key_location,prop=\
+                  pl.matplotlib.font_manager.FontProperties(size=fontsize_key))
+            lg.legendPatch.set_alpha(0.0)
     if show_plot or filename is None:
         pl.show()
     if filename <> None:
-        pl.savefig(filename)
+        pl.savefig(filename,\
+                   orientation=(landscape and 'landscape' or 'portrait'))
     pl.close('all')
     return filename
     #pylab.setp(ax.get_xticklabels(), visible=False)
@@ -971,11 +1098,52 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     #bx.set_ylabel(yaxis, fontsize=fontsize_axis)
     #cx.set_xlabel(xaxis, fontsize=fontsize_axis)
     
+
+
+def setLineTypes(x,line_types,extra_line_types):
     
+    '''
+    Set the line types for this plot. 
+    
+    If they are given as input, nothing is changed.
+    
+    If the input is wrong, they are given by default values. 
+    
+    Zeroes in the input are also replaced by defaults.
+    
+    @param x: The datasets to be plotted
+    @type x: list[array]
+    @param line_types: The input value for the line_types
+    @type line_types: list[string]
+    @param extra_line_types: The pool of extra line_types, which is destroyed
+                             as defaults are used.
+    @type extra_line_types: list[string]
+    
+    @return: The set line types and default pool of line types (possibly 
+             smaller than the input value)
+    @rtype: (list[string],list[string])
+    
+    '''
+    
+    if type(line_types) is types.StringType:
+        line_types=[line_types]
+    elif not type(line_types) is types.ListType:
+        line_types=[]
+    if len(line_types) == 1:
+        line_types *= len(x)
+    elif not line_types or len(line_types) != len(x):
+        line_types = [lp for xi,lp in zip(x,extra_line_types)]
+    extra_line_types = [extra  for extra in extra_line_types 
+                               if extra not in line_types]
+    line_types = [lp and lp or extra_line_types.pop(0) 
+                  for lp in line_types]
+    return (line_types,extra_line_types)
+    
+                  
     
 def setLineLabels(line_labels,line_label_spectrum,fontsize_label,y_pos,\
                   line_label_color,line_label_lines,baseline_line_labels,\
-                  no_line_label_text):
+                  no_line_label_text,short_label_lines):
     
     '''
     Set the line labels in a plot. 
@@ -1000,6 +1168,8 @@ def setLineLabels(line_labels,line_label_spectrum,fontsize_label,y_pos,\
     @param no_line_label_text: Don't show text for line labels, only lines are
                                shown if requested.
     @type no_line_label_text: bool
+    @param short_label_lines: The label lines are short and at the top of plot
+    @type short_label_lines: bool
     
     ''' 
     
@@ -1033,9 +1203,10 @@ def setLineLabels(line_labels,line_label_spectrum,fontsize_label,y_pos,\
     if line_label_lines:
         for label,x_pos,index in line_labels:
             pl.axvline(x=x_pos,\
-                       ls=linestyles[7+index],\
+                       ymin=short_label_lines and 0.8 or 0,\
+                       ls=linestyles[not short_label_lines and 7+index or index],\
                        c=line_label_color and colors[(index+1)%7] or 'k',\
-                       linewidth=1)
+                       linewidth=2)
                        
     
     
@@ -1067,7 +1238,7 @@ def makeHistoPlot(x,y,indices=[]):
     '''
     Convert x and y data into input for an unbinned 'histogram' plot.
     
-    (by PdG)
+    (by Pieter de Groote)
     
     @param x: input x-values
     @type x: list[array/list]

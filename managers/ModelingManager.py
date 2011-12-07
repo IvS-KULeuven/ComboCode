@@ -189,10 +189,9 @@ class ModelingManager():
                 print '** Iteration # ' + str(i + 1)
                 #- Initiate a gas session which is used for every iteration
                 if i == 0: 
-                    gas_session = Gastronoom(iterative=self.iterative,\
+                    gas_session = Gastronoom(vic=self.vic,\
                                         path_combocode=self.path_combocode,\
                                         path_gastronoom=self.path_gastronoom,\
-                                        vic=self.vic,\
                                         cool_db=self.cool_db,\
                                         ml_db=self.ml_db,\
                                         sph_db=self.sph_db,\

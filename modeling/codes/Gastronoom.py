@@ -16,63 +16,7 @@ from scipy import array
 
 from cc.tools.io import DataIO
 from cc.modeling.ModelingSession import ModelingSession
-from cc.modeling.objects import Molecule
-
- 
-
-def getGastronoomOutput(filename,keyword='RADIUS',begin_index=0,\
-                        return_array=0,key_index=0):
-    
-    """
-    Search GASTRoNOoM output for relevant envelope information.
-
-    @param filename: The filename of the relevant output GASTRoNOoM file
-    @type filename: string
-    
-    @keyword keyword: the type of information required, always equal to one of 
-                      the keywords present in the outputfiles of GASTRoNOoM
-                      
-                      (default: 'RADIUS')
-    @type keyword: string
-    @keyword begin_index: start looking for keyword at row with begin_index
-                    
-                          (default: 0)
-    @type begin_index: int
-    @keyword return_array: Return a scipy array rather than a python list
-    
-                           (default: 0)
-    @type return_array: bool
-    @keyword key_index: If 0 it is automatically determined, otherwise this is 
-                        the column index
-                        
-                        (default: 0)
-    @type key_index: int
-    
-    @return: The requested data from the GASTRoNOoM output
-    @rtype: list/array
-   
-    """
-    
-    keyword = keyword.upper()
-    data = DataIO.readFile(filename,' ')
-    data_col_1 = [d[0] for d in data]
-    key_i = DataIO.findString(begin_index,data_col_1)
-    key_j = DataIO.findFloat(key_i,data_col_1)
-    if not key_index:
-        keys = ' '.join([' '.join(d).replace('\n','') 
-                         for d in data[key_i:key_j]]).split()
-        key_index = [key[:len(keyword)].upper() for key in keys].index(keyword)
-    #- Data never start on the first line
-    #- Starting from 1st float, all floats into list, until EOF OR end of block
-    data_i = key_j
-    #- Data may end at EOF or before a new block of data (sphinx fi)
-    data_j = DataIO.findString(data_i,data_col_1)     
-    if return_array:
-        return array([float(line[key_index]) 
-                      for line in data[data_i:data_j]])
-    else:   
-        return [float(line[key_index]) 
-                for line in data[data_i:data_j]]
+from cc.modeling.objects.Molecule import Molecule
 
 
 
@@ -604,12 +548,12 @@ class Gastronoom(ModelingSession):
         if star.getMolecule('1H1H16O') <> None:
             h2o_dict = star.getMolecule('1H1H16O').makeDict()
         else:            
-            h2o_dict = Molecule.Molecule('1H1H16O',45,45,648,50,\
+            h2o_dict = Molecule('1H1H16O',45,45,648,50,\
                     path_combocode=self.path_combocode).makeDict()
         if star.getMolecule('12C16O') <> None:
             co_dict = star.getMolecule('12C16O').makeDict()
         else:
-            co_dict = Molecule.Molecule('12C16O',61,61,240,50,\
+            co_dict = Molecule('12C16O',61,61,240,50,\
                     path_combocode=self.path_combocode).makeDict()
         
         #- The check for abundance profiles for both h2o & co (it is impossible 
