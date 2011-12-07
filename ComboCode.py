@@ -133,10 +133,6 @@ class ComboCode(object):
     
     '''
 
-
-
-
-
     def __init__(self,inputfilename):
         
         '''

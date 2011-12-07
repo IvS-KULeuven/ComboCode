@@ -18,7 +18,6 @@ from cc.tools.io import DataIO
 from cc.modeling.objects import Transition
 from cc.plotting import Plotting2
 from cc.tools.io import LineList
-from cc.ComboCode import checkEntryInfo
 from cc.data.instruments import Pacs
 from cc.modeling.objects import Star
 
