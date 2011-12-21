@@ -119,18 +119,23 @@ class ModelingManager():
         
         '''
         
-        cool_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+        if self.gastronoom:
+            cool_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                     self.path_gastronoom,\
                                     'GASTRoNOoM_cooling_models.db')
-        ml_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+            ml_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                   self.path_gastronoom,\
                                   'GASTRoNOoM_mline_models.db')
-        sph_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+            sph_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                   self.path_gastronoom,\
                                   'GASTRoNOoM_sphinx_models.db')
-        self.cool_db = Database.Database(db_path=cool_db_path)
-        self.ml_db = Database.Database(db_path=ml_db_path)
-        self.sph_db = Database.Database(db_path=sph_db_path)        
+            self.cool_db = Database.Database(db_path=cool_db_path)
+            self.ml_db = Database.Database(db_path=ml_db_path)
+            self.sph_db = Database.Database(db_path=sph_db_path)       
+        if self.mcmax:
+            mcmax_db_path = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                         self.path_mcmax,'MCMax_models.db')
+            self.mcmax_db = Database.Database(db_path=mcmax_db_path)
         if self.replace_db_entry:
             pacs_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                         self.path_gastronoom,'stars',\
@@ -165,10 +170,12 @@ class ModelingManager():
                 print '** Iteration # ' + str(i+1)
                 #- Initiate a dust session which is used for every iteration
                 if i == 0: 
-                     dust_session = MCMax(path_combocode=self.path_combocode,\
+                    dust_session = MCMax(path_combocode=self.path_combocode,\
                                         path_mcmax=self.path_mcmax,\
+                                        db=self.mcmax_db,\
                                         replace_db_entry=self.replace_db_entry)
                 dust_session.doMCMax(star)
+                self.mcmax_db.sync()
                 
                 #- If last iteration, ray trace.
                 if i+1 == self.iterations or self.iterative:
@@ -180,9 +187,11 @@ class ModelingManager():
                 
                 #- add/change MUTABLE input keys, which MAY be overwritten by
                 #- the input file inputComboCode.dat
-                star.removeMutableMCMax(dust_session.mutable,self.var_pars)
-                star.update(self.input_dict)
-            
+                #- Only relevant if a model match was found/calculated.
+                if dust_session.model_id:
+                    star.removeMutableMCMax(dust_session.mutable,self.var_pars)
+                    star.update(self.input_dict)
+                
             if self.gastronoom:    
                 print '***********************************'
                 print '** Starting GASTRoNOoM calculation.'
@@ -228,6 +237,7 @@ class ModelingManager():
             if self.sphinx: self.trans_bool_list.append(gas_session.trans_bools)
         
         #- remember if mcmax was ran, or rather the model taken from the db.
+        #- In first or second iteration, doesn't matter.
         if self.mcmax:
             self.done_mcmax_list.append(dust_session.done_mcmax)
         

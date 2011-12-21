@@ -103,12 +103,12 @@ class PlottingManager():
                 self.dust_cfg[k.replace('_DUST','',1)] = v
         self.mcmax = mcmax
         self.gastronoom = gastronoom
-        self.sed=sed
         if self.mcmax: 
             self.plotter_dust = PlotDust.PlotDust(star_name=star_name,\
                                                 path_combocode=path_combocode,\
                                                 path_mcmax=path_mcmax,\
-                                                inputfilename=inputfilename)
+                                                inputfilename=inputfilename,
+                                                sed=sed)
         else: 
             self.plotter_dust = None
         if self.gastronoom or self.gas_pars.has_key('PLOT_LINE_LISTS'):
@@ -150,26 +150,14 @@ class PlottingManager():
             return
         if self.mcmax:
             for k in self.dust_pars:
-                if k == 'PLOT_SED':
-                     self.plotter_dust.plotSed(star_grid=star_grid,\
-                                        spec=self.sed,\
-                                        cfg=self.dust_cfg.has_key('CFG_SED') \
-                                                and self.dust_cfg['CFG_SED'] \
-                                                or '')
-                else:
-                     method_name = 'plot' + \
-                                   ''.join([w.capitalize() 
-                                            for w in k.replace('PLOT_','')\
-                                                      .split('_')])
-                     thisMethod = getattr(self.plotter_dust,method_name)
-                     thisMethod(star_grid=star_grid,\
-                                cfg=self.dust_cfg\
-                                        .get(k.replace('PLOT_','CFG_'),''))
+                method_name = 'plot' + \
+                              ''.join([w.capitalize() 
+                                       for w in k.replace('PLOT_','')\
+                                                 .split('_')])
+                thisMethod = getattr(self.plotter_dust,method_name)
+                thisMethod(star_grid=star_grid,\
+                           cfg=self.dust_cfg.get(k.replace('PLOT_','CFG_'),''))
         if self.gastronoom:
-            if self.gas_pars.pop('PLOT_PACS_SEGMENTS',0):
-                path_segments = self.gas_pars.pop('PLOT_PACS_SEGMENTS_PATH','')
-            else:
-                path_segments = ''
             for k in self.gas_pars:
                 method_name = 'plot' + \
                               ''.join([w.capitalize() 
@@ -178,12 +166,3 @@ class PlottingManager():
                 thisMethod = getattr(self.plotter_gas,method_name)
                 thisMethod(star_grid=star_grid,\
                            cfg=self.gas_cfg.get(k.replace('PLOT_','CFG_'),''))
-                if method_name == 'plotPacs' and path_segments:
-                    self.plotter_gas.plotPacsSegments(star_grid=star_grid,\
-                            pacs_segments_path=path_segments,mode='sphinx',\
-                            cfg=self.gas_cfg.get('CFG_PACS_SEGMENTS',''))
-                elif method_name == 'plotLineLists' and path_segments:    
-                    self.plotter_gas.plotPacsSegments(star_grid=star_grid,\
-                            pacs_segments_path=path_segments,mode='ll',\
-                            cfg=self.gas_cfg.get('CFG_PACS_SEGMENTS',''))
-                

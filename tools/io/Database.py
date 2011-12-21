@@ -17,129 +17,9 @@ from cc.tools.io import DataIO
 
 
 
-def getDbStructure(db_path,id_index=None,code=None):
-    
-    '''
-    Return id_index and code based on db_path, or id_index, or code.
-    
-    @param db_path: the path + filename of the database
-    @type db_path: string
-    
-    @keyword id_index: index of model id in the database entries, specify only 
-                       if you know what you're doing! default None is used if 
-                       the code keyword is used or the code is taken from the 
-                       database filename. 
-                       
-                       (default: None)
-    @type id_index: int
-    @keyword code: name of the (sub-) code for which the deletion is done 
-                   (pacs, mcmax, cooling, mline, sphinx), default None can be 
-                   used when id_index is given, or if the database filename 
-                   includes the codename you want to use deletion for
-                   
-                   (default: None)
-    @type code: string
-    
-    @return: The id_index and code are returned. The code can be None if 
-             id_index was already defined beforehand, in which case the precise
-             code doesn't matter, however the method will try to determine the 
-             code based on the filename
-    @rtype: (int,string)
-    
-    '''
-    
-    if id_index <> None and code <> None:
-        raise IOError('Either specify the code, or the id_index or none of ' +\
-                      'both.')
-    code_indices = dict([('cooling',1),('mcmax',1),('sphinx',2),('mline',2),\
-                         ('pacs',2)])
-    if id_index is None:
-        if code <> None:
-            id_index = code_indices[code.lower()]
-        else:
-            for k,v in code_indices.items():
-                if k.lower() in os.path.split(db_path)[1].lower():
-                    if id_index <> None:
-                        this_str = 'There is an ambiguity in the filename of'+\
-                                   ' the database. At least two of the codes'+\
-                                   ' are in the name.'
-                        raise ValueError(this_str)
-                    id_index = v
-                    code = k
-    if id_index is None:
-        this_str2 = 'Cannot figure out which code the database is used for. '+\
-                    'Please specify the "code" keyword.'
-        raise IOError(this_str2)
-    if code is None:
-        for k in code_indices.keys():
-                if k.lower() in os.path.split(db_path)[1].lower():
-                    if code <> None:
-                        print 'WARNING! There is an ambiguity in the ' + \
-                              'filename of the database. At least two of the'+\
-                              ' codes are in the name.'
-                    else:
-                        code = k
-    return id_index,code                             
-                             
-
-
-def deleteModel(model_id,db_path,id_index=None,code=None):
-    
-    '''
-    Delete a model_id from a database. A back-up is created!
-    
-    This method is only used by MCMax.py, which uses a database in the old 
-    format.
-    
-    @param model_id: the model_id
-    @type model_id: string
-    @param db_path: the path + filename of the database
-    @type db_path: string
-    
-    @keyword id_index: index of model id in the database entries, specify only 
-                       if you know what you're doing! default None is used if 
-                       the code keyword is used or if the code is taken from 
-                       the database filename.
-                       
-                       (default: None)
-    @type id_index: int
-    @keyword code: name of the (sub-) code for which the deletion is done 
-                   (pacs, mcmax, cooling, mline, sphinx), default None can be 
-                   used when id_index is given, or if the database filename 
-                   includes the codename you want to use deletion for
-                   
-                   (default: None)
-    @type code: string
-    
-    '''
-    
-    id_index,code = getDbStructure(db_path=db_path,id_index=id_index,code=code)
-    subprocess.call(['mv ' + db_path + ' ' + db_path+'old'],\
-                    shell=True,stdout=subprocess.PIPE)
-    gastronoom_db_old = open(db_path+'old','r')
-    gastronoom_db = open(db_path,'w')
-    print "Making the following change(s) to database at %s: \n"%db_path + \
-          "(Note that if nothing is printed, nothing happened and the model"+\
-          "id wasn't found.)"
-    i = 0
-    while True:
-        try:
-            model = cPickle.load(gastronoom_db_old)
-            if model_id == model[id_index]:
-                print 'Deleting model id %s from database at %s.'\
-                      %(model_id,db_path)
-                i += 1
-            else:
-                cPickle.dump(model,gastronoom_db)  
-        except EOFError:
-            print 'Done! %i models were deleted from the database.'%i
-            break
-    gastronoom_db_old.close()
-    gastronoom_db.close()
-
-
-
-def convertMCMaxDatabase(path_mcmax):
+def convertMCMaxDatabase(path_mcmax,\
+                         path_combocode=os.path.join(os.path.expanduser('~'),\
+                                                     'ComboCode')):
     
     '''
     Convert MCMax database to the dict format.
@@ -150,11 +30,71 @@ def convertMCMaxDatabase(path_mcmax):
     @param path_mcmax: the name of the MCMac subfolder.
     @type path_mcmax: string
     
+    @keyword path_combocode: CC home folder
+    
+                             (default: /home/robinl/ComboCode/')
+    @type path_combocode: string
+
     '''
     
     print '** Converting MCMax database to dictionary format...'
-    mcmax_path = os.path.join(os.path.expanduser('~'),'MCMax',path_mcmax,\
-                              'MCMax_models.db')
+    db_path = os.path.join(os.path.expanduser('~'),'MCMax',path_mcmax,\
+                           'MCMax_models.db')
+    i = 0
+    backup_file = '%s_backup%i'%(db_path,i)
+    while os.path.isfile(backup_file):
+        i += 1
+        backup_file = '%s_backup%i'%(db_path,i)
+    subprocess.call(['mv %s %s'%(db_path,backup_file)],\
+                    shell=True,stdout=subprocess.PIPE)
+    mcmax_db = open(backup_file,'r')
+    old_db = []
+    try:
+        while True:
+            model = cPickle.load(mcmax_db)
+            old_db.append(model)
+    except EOFError:
+        print '** End of old database reached.'
+    finally:
+        mcmax_db.close()
+    db = Database(db_path)
+    for commands,model_id in old_db:
+        photon_count = DataIO.convertFloat(commands.pop(0),convert_int=1)
+        commands = [c.split('=') for c in commands]
+        commanddict = dict([(k,DataIO.convertFloat(v,convert_int=1)) 
+                            for k,v in commands 
+                            if k[0:4] not in ['opac','part','abun',\
+                                              'Tdes','minr','maxr']])
+        #- Correcting erroneous input entries in the old version
+        if commanddict.has_key('densfile'):
+            commanddict['densfile'] = "'%s'"%commanddict['densfile']
+        if not commanddict.has_key('FLD'):
+            commanddict['FLD'] = '.false.'
+        if not commanddict.has_key('randomwalk'):
+            commanddict['randomwalk'] = '.true.'
+        
+        commanddict['photon_count'] = photon_count
+        speciespars = [(k,DataIO.convertFloat(v,convert_int=1)) 
+                       for k,v in commands 
+                       if k[0:4] in ['opac','part','abun',\
+                                     'Tdes','minr','maxr']]       
+        commanddict['dust_species'] = dict()
+        i = 0 
+        while speciespars:
+            i += 1
+            this_species = dict()
+            for k,v in speciespars:
+                if int(k[-2:]) == i:
+                    if k[:4] == 'part' or k[:4] == 'opac':
+                        speciesfile = v.strip("'")
+                    else:
+                        this_species[k.strip('%.2i'%i)] = v
+            commanddict['dust_species'][os.path.split(speciesfile)[1]] \
+                = this_species
+            speciespars = [(k,v) for k,v in speciespars 
+                           if int(k[-2:]) != i]
+        db[model_id] = commanddict
+    db.sync()   
     
     
     
@@ -649,6 +589,127 @@ if __name__ == "__main__":
     doctest.testmod()        
 
 
+"""
+def getDbStructure(db_path,id_index=None,code=None):
+    
+    '''
+    Return id_index and code based on db_path, or id_index, or code.
+    
+    @param db_path: the path + filename of the database
+    @type db_path: string
+    
+    @keyword id_index: index of model id in the database entries, specify only 
+                       if you know what you're doing! default None is used if 
+                       the code keyword is used or the code is taken from the 
+                       database filename. 
+                       
+                       (default: None)
+    @type id_index: int
+    @keyword code: name of the (sub-) code for which the deletion is done 
+                   (pacs, mcmax, cooling, mline, sphinx), default None can be 
+                   used when id_index is given, or if the database filename 
+                   includes the codename you want to use deletion for
+                   
+                   (default: None)
+    @type code: string
+    
+    @return: The id_index and code are returned. The code can be None if 
+             id_index was already defined beforehand, in which case the precise
+             code doesn't matter, however the method will try to determine the 
+             code based on the filename
+    @rtype: (int,string)
+    
+    '''
+    
+    if id_index <> None and code <> None:
+        raise IOError('Either specify the code, or the id_index or none of ' +\
+                      'both.')
+    code_indices = dict([('cooling',1),('mcmax',1),('sphinx',2),('mline',2),\
+                         ('pacs',2)])
+    if id_index is None:
+        if code <> None:
+            id_index = code_indices[code.lower()]
+        else:
+            for k,v in code_indices.items():
+                if k.lower() in os.path.split(db_path)[1].lower():
+                    if id_index <> None:
+                        this_str = 'There is an ambiguity in the filename of'+\
+                                   ' the database. At least two of the codes'+\
+                                   ' are in the name.'
+                        raise ValueError(this_str)
+                    id_index = v
+                    code = k
+    if id_index is None:
+        this_str2 = 'Cannot figure out which code the database is used for. '+\
+                    'Please specify the "code" keyword.'
+        raise IOError(this_str2)
+    if code is None:
+        for k in code_indices.keys():
+                if k.lower() in os.path.split(db_path)[1].lower():
+                    if code <> None:
+                        print 'WARNING! There is an ambiguity in the ' + \
+                              'filename of the database. At least two of the'+\
+                              ' codes are in the name.'
+                    else:
+                        code = k
+    return id_index,code                             
+                             
+
+
+def deleteModel(model_id,db_path,id_index=None,code=None):
+    
+    '''
+    Delete a model_id from a database. A back-up is created!
+    
+    This method is only used by MCMax.py, which uses a database in the old 
+    format.
+    
+    @param model_id: the model_id
+    @type model_id: string
+    @param db_path: the path + filename of the database
+    @type db_path: string
+    
+    @keyword id_index: index of model id in the database entries, specify only 
+                       if you know what you're doing! default None is used if 
+                       the code keyword is used or if the code is taken from 
+                       the database filename.
+                       
+                       (default: None)
+    @type id_index: int
+    @keyword code: name of the (sub-) code for which the deletion is done 
+                   (pacs, mcmax, cooling, mline, sphinx), default None can be 
+                   used when id_index is given, or if the database filename 
+                   includes the codename you want to use deletion for
+                   
+                   (default: None)
+    @type code: string
+    
+    '''
+    
+    id_index,code = getDbStructure(db_path=db_path,id_index=id_index,code=code)
+    subprocess.call(['mv ' + db_path + ' ' + db_path+'old'],\
+                    shell=True,stdout=subprocess.PIPE)
+    gastronoom_db_old = open(db_path+'old','r')
+    gastronoom_db = open(db_path,'w')
+    print "Making the following change(s) to database at %s: \n"%db_path + \
+          "(Note that if nothing is printed, nothing happened and the model"+\
+          "id wasn't found.)"
+    i = 0
+    while True:
+        try:
+            model = cPickle.load(gastronoom_db_old)
+            if model_id == model[id_index]:
+                print 'Deleting model id %s from database at %s.'\
+                      %(model_id,db_path)
+                i += 1
+            else:
+                cPickle.dump(model,gastronoom_db)  
+        except EOFError:
+            print 'Done! %i models were deleted from the database.'%i
+            break
+    gastronoom_db_old.close()
+    gastronoom_db.close()
+
 
 def convertPacsDbToDictDb(db_path):
     
@@ -817,7 +878,15 @@ def convertSphinxDb(paths,path_gastronoom):
     '''
     
     #[subprocess.call([' '.join(['mv',path,path+'_old'])],shell=True)
-    #        for path in paths]
+    #        for path in paths]if model[0] == self.command_list:
+                if self.replace_db_entry and 0:
+                    mcmax_db.close()
+                    Database.deleteModel(model_id=str(model[1]),db_path=os.path.join(os.path.expanduser('~'),'MCMax',self.path,'MCMax_models.db'))
+                    raise EOFError
+                else:
+                    print '** MCMax model has been calculated before with ID ' + str(model[1]) + '.'
+                    self.model_id = model[1]
+                break
     print '** Converting Sphinx database to dictionary format...'
     old_db = []
     for path in paths:
@@ -911,7 +980,6 @@ def updateCoolingOpas(path_gastronoom):
     print '*******************************'
          
 
-"""
 ##############################
 ## FIND FIRST COOLING MODEL ##
 ############################## 

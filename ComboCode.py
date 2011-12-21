@@ -358,7 +358,7 @@ class ComboCode(object):
         
         multi_keys = ['MOLECULE','TRANSITION','R_POINTS_MASS_LOSS']
         input_dict = DataIO.readDict(self.inputfilename,convert_floats=1,\
-                                     multi_keys=multi_keys)
+                                     convert_ints=1,multi_keys=multi_keys)
         #-- keywords in multi_keys require different method
         self.processed_input = dict()
         self.multiplicative_grid = dict()
@@ -877,30 +877,30 @@ class ComboCode(object):
                     print '%s = %.2f R_STAR = %.2e cm'%('R_OH1612_NETZER',star['R_OH1612_NETZER'],star['R_OH1612_NETZER']*star.r_solar*star['R_STAR'])
                     if star['R_OH1612_AS']: 
                         print '%s = %.2f R_STAR = %.2e cm'%('R_OH1612_OBS',star['R_OH1612'],star['R_OH1612']*star.r_solar*star['R_STAR'])
-                        print '-----------------------------------'
-                        if star.has_key('R_DES_H2O') or star.has_key('R_DES_CH2O') or star.has_key('R_DES_AH2O'):
-                            (nh2o,nh2o_ice,nh2,nh2o_full,nh2_full) = wa.getWaterInfo(star)
-                            print 'Ice shell water VAPOUR column density [cm-2]:'
-                            print '%.3e'%nh2o
-                            print 'Ice shell H2 column density [cm-2]:'
-                            print '%.3e'%nh2
-                            print 'Total water vapour abundance (ortho + para) wrt H2:'
-                            print '%.3e'%(nh2o/nh2)
-                            print 'Ice shell water ICE MOLECULAR column density [cm-2]:'
-                            print '%.3e'%nh2o_ice
-                            print 'Minimum required water vapour abundance N(H2O)/N(H2) for this ice column density:'
-                            print '%.3e'%(nh2o_ice/nh2)
-                            print 'Ice/vapour fraction in ice shell:'
-                            print '%.2f'%(nh2o_ice/nh2o)
-                            print 
-                            print 'FULL shell water VAPOUR column density [cm-2]:'
-                            print '%.3e'%nh2o_full
-                            print 'Total water vapour abundance (ortho + para) wrt H2:'
-                            print '%.3e'%(nh2o_full/nh2_full)
-                            print 
-                        else:
-                            print 'No water ice present in dust model.'
-        print '************************************************'
+                    print '-----------------------------------'
+                    if star.has_key('R_DES_H2O') or star.has_key('R_DES_CH2O') or star.has_key('R_DES_AH2O'):
+                        (nh2o,nh2o_ice,nh2,nh2o_full,nh2_full) = wa.getWaterInfo(star)
+                        print 'Ice shell water VAPOUR column density [cm-2]:'
+                        print '%.3e'%nh2o
+                        print 'Ice shell H2 column density [cm-2]:'
+                        print '%.3e'%nh2
+                        print 'Total water vapour abundance (ortho + para) wrt H2:'
+                        print '%.3e'%(nh2o/nh2)
+                        print 'Ice shell water ICE MOLECULAR column density [cm-2]:'
+                        print '%.3e'%nh2o_ice
+                        print 'Minimum required water vapour abundance N(H2O)/N(H2) for this ice column density:'
+                        print '%.3e'%(nh2o_ice/nh2)
+                        print 'Ice/vapour fraction in ice shell:'
+                        print '%.2f'%(nh2o_ice/nh2o)
+                        print 
+                        print 'FULL shell water VAPOUR column density [cm-2]:'
+                        print '%.3e'%nh2o_full
+                        print 'Total water vapour abundance (ortho + para) wrt H2:'
+                        print '%.3e'%(nh2o_full/nh2_full)
+                        print 
+                    else:
+                        print 'No water ice present in dust model.'
+                print '************************************************'
         
 
 

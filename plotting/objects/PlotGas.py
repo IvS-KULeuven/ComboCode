@@ -82,7 +82,7 @@ class PlotGas(PlottingSession):
         self.pacs = pacs
         self.spire = spire
         self.sphinx_flux_list = []
-        
+
         
         
     def makeExec(self,star,i,sphinx_id):
@@ -251,16 +251,20 @@ class PlotGas(PlottingSession):
                                         yaxis=r'$v$ (km s$^{-1}$)',\
                                         plot_title=plot_title,\
                                         key_location=(0.0,0.0),\
-                                        keytags=['Velocity',\
+                                        keytags=['Gas Velocity',\
                                                  'Grain-size Weighted Drift'],\
                                         xlogscale=1))
-        if plot_filenames:    
+        if plot_filenames and plot_filenames[0][-4:] == '.pdf':    
             new_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                         self.path,'stars',self.star_name,\
                                         self.plot_id,'velocity_profiles.pdf')
             DataIO.joinPdf(old=sorted(plot_filenames),new=new_filename)
             print '** Plots can be found at:'
             print new_filename
+            print '***********************************' 
+        elif plot_filenames:
+            print '** Plots can be found at:'
+            print '\n'.join(plot_filenames)
             print '***********************************' 
         else:
             print '** No GASTRoNOoM models were calculated successfully. '+\
@@ -1356,7 +1360,7 @@ class PlotGas(PlottingSession):
 
 
 
-    def plotPacsSegments(self,star_grid,pacs_segments_path,mode='sphinx',\
+    def plotPacsSegments(self,star_grid,pacs_segments_path='',mode='sphinx',\
                          include_sphinx=None,no_data=0,cfg=''):
         
         '''
@@ -1370,16 +1374,18 @@ class PlotGas(PlottingSession):
                 
         @param star_grid: star models for which PACS data will be fetched, 
         @type star_grid: list(Star())
-        @param pacs_segments_path: The path to the file listing pairs of 
-                                   wavelength ranges for plotting the segments
-        @type pacs_segments_path: string
         
+        @keyword pacs_segments_path: The path to the file listing pairs of 
+                                     wavelength ranges for plotting the 
+                                     segments. This par can be passed through 
+                                     the cfg file as well. 
+        @type pacs_segments_path: string
         @keyword mode: the mode in which this method is used, the string is  
                        added to the outputfilename, can be 'sphinx' or 'll' for
                        now, determines the type of line labels. 'll' gives line
                        labels generated from a spectroscopic database. 'sphinx'
                        gives line labels for all transitions in all Star 
-                       objects in star_grid
+                       objects in star_grid. Can be passed through the cfg file.
                          
                        (default: sphinx)
         @type mode: string
@@ -1399,6 +1405,15 @@ class PlotGas(PlottingSession):
         
         '''
         
+        if cfg:
+            cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
+        else:
+            cfg_dict = dict()
+        if cfg_dict.has_key('mode'):
+            mode = cfg_dict['mode']
+        if cfg_dict.has_key('pacs_segments_path'):
+            pacs_segments_path = cfg_dict['pacs_segments_path']
+        
         if mode == 'll':
             xmins=[min(wave_list) for wave_list in self.pacs.data_wave_list]
             xmaxs=[max(wave_list) for wave_list in self.pacs.data_wave_list]
@@ -1415,11 +1430,17 @@ class PlotGas(PlottingSession):
         else:
             print 'Mode for plotting PACS segments not recognized. Aborting...'
             return
+        
         if self.pacs is None:
             print 'No PACS data found for plotting PACS segments. Aborting...'
             return
+        elif not pacs_segments_path:
+            print 'No pacs_segments_path given. Pass in the cfg file or in ' +\
+                  'the method call. Aborting...' 
+            return
         else:
             self.setSphinx(star_grid)
+        
         if include_sphinx is None:
             include_sphinx = self.sphinx_flux_list and 1 or 0
         print '** Plotting spectral segments.'
@@ -1430,14 +1451,14 @@ class PlotGas(PlottingSession):
                      enumerate(zip(self.pacs.data_wave_list,\
                                    self.pacs.data_flux_list,\
                                    self.pacs.data_filenames)):
-                flux = flux[abs(wave-((wmax+wmin)/2.))<=delta]
-                if not include_sphinx: sphinx_flux = []
-                else: 
-                    sphinx_flux = \
-                          [f[abs(wave-((wmax+wmin)/2.))<=delta] 
-                           for f in self.sphinx_flux_list[i_file] if list(f)]
-                wave = wave[abs(wave-((wmax+wmin)/2.))<=delta]
-                if list(wave):
+                if wmin > wave[0] and wmax < wave[-1]:
+                    flux = flux[abs(wave-((wmax+wmin)/2.))<=delta]
+                    if not include_sphinx: sphinx_flux = []
+                    else: 
+                        sphinx_flux = \
+                            [f[abs(wave-((wmax+wmin)/2.))<=delta] 
+                            for f in self.sphinx_flux_list[i_file] if list(f)]
+                    wave = wave[abs(wave-((wmax+wmin)/2.))<=delta]
                     plot_filename = os.path.join(os.path.expanduser('~'),\
                           'GASTRoNOoM',self.path,'stars',self.star_name,\
                           self.plot_id,\
@@ -1448,8 +1469,7 @@ class PlotGas(PlottingSession):
                                         ('histoplot',not no_data \
                                                         and [0] \
                                                         or []),\
-                                        ('filename',plot_filename),\
-                                        ('baseline_line_labels',1)])
+                                        ('filename',plot_filename)])
                     plot_filename = Plotting2.plotCols(\
                         x=[wave]*(len(sphinx_flux)+(not no_data and 1 or 0)),\
                         y=no_data and sphinx_flux or [flux]+sphinx_flux,\

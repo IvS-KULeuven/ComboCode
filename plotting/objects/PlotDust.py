@@ -27,7 +27,7 @@ class PlotDust(PlottingSession):
     
     """
     
-    def __init__(self,star_name='model',\
+    def __init__(self,star_name='model',sed=None,\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode'),\
                  path_mcmax='runTestDec09',inputfilename=None):
@@ -54,7 +54,13 @@ class PlotDust(PlottingSession):
                                 
                                 (default: None)
         @type inputfilename: string
-
+        @keyword sed: an Sed object needed for plotting the SED. None if not 
+                      plotting an Sed, but just dust parameters such as \
+                      temperature
+                            
+                      (default: None)
+        @type sed: Sed()
+        
         '''
 
         super(PlotDust, self).__init__(star_name=star_name,\
@@ -62,10 +68,11 @@ class PlotDust(PlottingSession):
                                        path=path_mcmax,\
                                        code='MCMax',\
                                        inputfilename=inputfilename)
+        self.sed = sed
                 
 
 
-    def plotSed(self,star_grid,spec=None,cfg='',iterative=0):
+    def plotSed(self,star_grid,cfg='',iterative=0,no_models=0):
         
         """ 
         Creating an SED with 1 or more models and data. 
@@ -81,8 +88,6 @@ class PlotDust(PlottingSession):
                         
                       (default: '')
         @type cfg: string
-        @keyword spec: The SED of the star
-        @type spec: Sed()
         @keyword iterative: add an extra suffix to the filename for each 
                             iteratively calculated model, with this number 
                             giving the model muber (index in star_grid), 
@@ -90,14 +95,25 @@ class PlotDust(PlottingSession):
                                   
                             (default: 0)
         @type iterative: int
+        @keyword no_models: Only show data.
+                                  
+                            (default: 0)
+        @type no_models: bool
                 
         """
         
-        if spec is None:
-             print 'No PATH_SED given. Cannot plot SED. Aborting...'
-             return
+        if self.sed is None:
+            print 'No PATH_SED given. Cannot plot SED. Aborting...'
+            return
         print '***********************************'
         print '** Creating SED plot.'
+        
+        if cfg:
+            cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
+        else:
+            cfg_dict = dict()
+        if cfg_dict.has_key('no_models'):
+            no_models = cfg_dict['no_models']
         ccpath = os.path.join(self.path_combocode,'Data')
         data_labels = dict([(dt,(n,ls))
                             for n,dt,ls in zip(DataIO.getInputData(path=ccpath,\
@@ -131,19 +147,19 @@ class PlotDust(PlottingSession):
         data_y = []
         line_types = []
         for k,(w,f) in sorted([datatype 
-                               for datatype in spec.data.items()
+                               for datatype in self.sed.data.items()
                                if 'PHOT' not in datatype[0].upper()]):
              keytags.append(data_labels[k][0])
-             data_x.append(spec.data[k][0])
-             data_y.append(spec.data[k][1])
+             data_x.append(self.sed.data[k][0])
+             data_y.append(self.sed.data[k][1])
              line_types.append(data_labels[k][1])
         
         for k,(w,f) in sorted([datatype 
-                               for datatype in spec.data.items()
+                               for datatype in self.sed.data.items()
                                if 'PHOT' in datatype[0].upper()]):
              keytags.append(data_labels[k][0])
-             data_x.append(spec.data[k][0])
-             data_y.append(spec.data[k][1])
+             data_x.append(self.sed.data[k][0])
+             data_y.append(self.sed.data[k][1])
              line_types.append(data_labels[k][1])
         
         #- Collect model data as well as keytags and set line types
@@ -152,13 +168,15 @@ class PlotDust(PlottingSession):
                      if s['LAST_MCMAX_MODEL']]
         #- Only if the model_ids list is not empty, MCMax models are available
         #- Otherwise the ray tracing keyword is unnecessary.
+        if no_models:
+            model_ids = []
         if model_ids: 
             rt_sed = star_grid[0]['RT_SED']
         for model_id in model_ids:
-             w,f = MCMax.readModelSpectrum(self.path,model_id,rt_sed)
-             data_x.append(w)
-             data_y.append(f)
-             keytags.append(model_id.replace('_','\_'))
+            w,f = MCMax.readModelSpectrum(self.path,model_id,rt_sed)
+            data_x.append(w)
+            data_y.append(f)
+            keytags.append(model_id.replace('_','\_'))
         line_types += [0]*len(star_grid)
         keytags = [tag.replace('#','') for tag in keytags]
         try:

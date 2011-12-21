@@ -308,7 +308,7 @@ def convertInt(number):
     
     '''
     
-    return float(number)%1 != 0 and float(number) or int(number)
+    return float(number)%1 != 0 and float(number) or int(float(number))
        
 
 

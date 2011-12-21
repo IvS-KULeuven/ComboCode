@@ -901,7 +901,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     fig.subplots_adjust(right=ws_right)
     fig.subplots_adjust(left=ws_left)
     if transparent: 
-        fig.patch.set_alpha(0.5)
+        fig.patch.set_alpha(0.7)
     # Tunes the subplot layout 
     #fig.subplots_adjust(**adjustprops)                                                                            
     linestyles = ['-','-','-','-','-','-','-',\
@@ -971,7 +971,6 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                     
                     for (ll,ul,xii,yii) in zip(lls,uls,xi,yi):
                         if ll != 0 or ul != 0:
-                            print ll, ul
                             sub.errorbar(x=[xii],y=[yii],yerr=[[ll],[ul]],\
                                          ecolor='k',\
                                          lolims=lp=='-r',\
@@ -1023,10 +1022,10 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                 ax.axhline(y=y_coord, linewidth=2, ls='--',color='k')
         if horiz_rect:
             for y1,y2,col in horiz_rect:
-                ax.axhspan(y1,y2,facecolor=str(col),alpha=0.5)
+                ax.axhspan(y1,y2,facecolor=str(col),alpha=0.8)
         if vert_rect:
             for x1,x2,col in vert_rect:
-                ax.axvspan(x1,x2,facecolor=str(col),alpha=0.5)
+                ax.axvspan(x1,x2,facecolor=str(col),alpha=0.8)
         if labels:
             for s,x,y in labels:
                 pl.text(x,y,s,transform=ax.transAxes,fontsize=fontsize_label)
@@ -1044,7 +1043,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
             tl.set_markeredgewidth(1.2)
         pl.axes(ax) 
         if transparent:
-            ax.patch.set_alpha(0.6)
+            ax.patch.set_alpha(0.5)
         if xmin <> None:
             pl.xlim(xmin=xmin) # min([min(xi) for xi in x])
         if xmax <> None:

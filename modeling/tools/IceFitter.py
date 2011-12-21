@@ -124,7 +124,8 @@ class IceFitter(object):
         f_in = list(f[(w>2.6) * (w<2.85)]) + list(f[(w>3.3) * (w<3.7)])
         w_cont = w[(w>2.6)*(w<3.7)]
         f_ori = f[(w>2.6)*(w<3.7)]
-        f_cont = Interpol.fitFunction(w_in,f_in,w_cont,'power')
+        f_cont = Interpol.fitFunction(x_in=w_in,y_in=f_in,x_out=w_cont,\
+                                      func='power')
         
         self.cont_division[dtype] = dict()
         self.cont_division[dtype]['w_ice'] = w_cont

@@ -8,6 +8,7 @@ Author: R. Lombaert
 """
 
 import os
+from time import gmtime
 
 from cc.tools.io import DataIO
 
@@ -61,7 +62,20 @@ class ModelingSession(object):
                                                 self.code,self.path,'models'))
         
 
+
+    def makeNewId(self):
         
+        '''
+        Make a new model_id based on the current UTC in seconds since 1970.
+        
+        '''
+        
+        return 'model_%.4i-%.2i-%.2ih%.2i-%.2i-%.2i' \
+                %(gmtime()[0],gmtime()[1],gmtime()[2],\
+                  gmtime()[3],gmtime()[4],gmtime()[5])
+                  
+                  
+                  
     def setCommandKey(self,comm_key,star,key_type,star_key=None,\
                       alternative=None,make_int=0):
         
@@ -125,4 +139,73 @@ class ModelingSession(object):
                     return True
                 else:
                     return False
-                    
+
+
+
+    def compareCommandLists(self,this_list,modellist,code,ignoreAbun=0,\
+                            extra_dict=None):
+        
+        """
+        Comparing a command_list with a database entry.
+        
+        @param this_list: parameters in this modeling session
+        @type this_list: dict
+        @param modellist: parameters from database model
+        @type modellist: dict
+        @param code: The GASTRoNOoM subcode
+        @type code: string
+        
+        @keyword ignoreAbun: only relevant for mline: ignore the 4 abundance 
+                             parameters (such as for co)
+                             
+                             (default: 0)
+        @type ignoreAbun: bool
+        @keyword extra_dict: if not None this gives extra dictionary entries 
+                             to be used in the comparison on top of this_list.
+                             The extra entries are assumed present in modellist
+                             otherwise the comparison will return False.
+                             
+                             (default: None)
+        @type extra_dict: dict
+        
+        @return: Comparison between the two parameter sets
+        @rtype: bool
+        
+        """
+        
+        model_bool_list = []
+        if extra_dict <> None: this_list.update(extra_dict)
+        if code == 'mcmax':
+            keywords = set(this_list.keys()+modellist.keys())
+            if 'dust_species' in keywords:
+                keywords.remove('dust_species')
+        else:
+            keywords = getattr(self,code + '_keywords')
+        if code == 'mline' and ignoreAbun:
+            keywords = [key 
+                        for key in keywords 
+                        if key not in ['ABUN_MOLEC','ABUN_MOLEC_RINNER',\
+                                       'ABUN_MOLEC_RE','RMAX_MOLEC']]
+        for keyword in keywords:
+            try:
+                try:
+                    try:
+                        val = float(this_list[keyword])
+                    except TypeError:
+                        raise ValueError
+                    delta = not val and 1e-10 or 0.001*val
+                    model_bool_list.append\
+                        (val - delta < float(modellist[keyword]) < val + delta)
+                except ValueError:
+                    model_bool_list.append\
+                        (this_list[keyword]==modellist[keyword])
+            except KeyError:
+                if keyword not in this_list.keys() \
+                        and keyword not in modellist.keys():
+                    model_bool_list.append(True)
+                else:
+                    model_bool_list.append(False)
+        if False not in model_bool_list: 
+            return True
+        else: 
+            return False

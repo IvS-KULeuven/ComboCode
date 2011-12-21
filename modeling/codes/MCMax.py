@@ -8,8 +8,6 @@ Author: R. Lombaert
 """
 
 import os
-from time import gmtime
-import cPickle
 import subprocess
 from glob import glob
 
@@ -162,13 +160,19 @@ class MCMax(ModelingSession):
     
     """
     
-    def __init__(self,path_mcmax='runTest',replace_db_entry=0,
+    def __init__(self,path_mcmax='runTest',replace_db_entry=0,db=None,
+                 path_kappas=os.path.join(os.path.expanduser('~'),'MCMax',\
+                                          'src'),\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
         
         """ 
         Initializing an instance of ModelingSession.
         
+        @keyword db: the MCMax database
+        
+                          (default: None)
+        @type db: Database()
         @keyword replace_db_entry: replace an entry in the MCMax database with 
                                    a newly calculated model with a new model id 
                                    (for instance if some general data not 
@@ -182,8 +186,12 @@ class MCMax(ModelingSession):
         @type path_mcmax: string
         @keyword path_combocode: CC home folder
         
-                                 (default: /home/robinl/ComboCode/')
+                                 (default: /home/<user>/ComboCode/')
         @type path_combocode: string
+        @keyword path_kappas: kappas folder
+        
+                              (default: /home/<user>/MCMax/src/')
+        @type path_kappas: string
         
         """
         
@@ -192,16 +200,25 @@ class MCMax(ModelingSession):
                                     replace_db_entry=replace_db_entry)
         DataIO.testFolderExistence(os.path.join(os.path.expanduser("~"),\
                                    'MCMax',self.path,'data_for_gastronoom'))
+        self.db = db
+        self.path_kappas = path_kappas
         self.done_mcmax = False
         
         #- Read standard input file with all parameters that should be included
+        #- as well as some dust specific information
         inputfilename = os.path.join(os.path.expanduser("~"),'MCMax','src',\
                                      'inputMCMax.dat')
-        self.standard_inputfile = [line
-                                   for line in DataIO.readFile(inputfilename)]
-        self.standard_inputfile = [line.split('=') 
-                                   for line in self.standard_inputfile 
-                                   if line[0] != '*']
+        self.standard_inputfile = DataIO.readDict(inputfilename,\
+                                                  convert_floats=1,\
+                                                  convert_ints=1,\
+                                                  comment_chars=['#','*'])
+        path_cc = os.path.join(self.path_combocode,'Data')
+        self.dust_list = DataIO.getInputData(path=path_cc,\
+                                             keyword='SPECIES_SHORT',\
+                                             filename='Dust.dat')
+        self.dust_files = DataIO.getInputData(path=path_cc,\
+                                              keyword='PART_FILE',\
+                                              filename='Dust.dat')
         
         
 
@@ -223,7 +240,120 @@ class MCMax(ModelingSession):
                           remove_source=star['IMAGE_NOSOURCE'])
 
 
+            
+    def setCommandKey(self,comm_key,star,star_key=None,alternative=None):
+        
+        '''
+        Try setting a key in the command_list from a star instance. 
+        
+        If the key is unknown, it is left open and will be filled in from the 
+        standard gastronoom inputfile.
+        
+        @param comm_key: the name of the keyword in the command list
+        @type comm_key: string
+        @param star: Parameter set for this session
+        @type star: Star()
+        
+        @keyword star_key: the name of the keyword in Star() (minus '_%s'
+                           %key_type (DUST or GAS), which is added as well in a 
+                           second attempt if the first without the addition is 
+                           not found). If None, it's equal to comm_key
+                           
+                           (default: None)
+        @type star_key: string
+        @keyword alternative: a default value passed from the standard 
+                              inputfile that is used if the keyword or the 
+                              keyword + '_%s'%key_type is not found in Star().
+                              
+                              (default: None)
+        @type alternative: string
+        
+        @return: Success? 
+        @rtype: bool
+        
+        '''    
+        
+        keyword_int_list = ['nrad','ntheta','nspan','nlev','ntspan','ntlev',\
+                            'nlam','nzlam','tmaxiter','nbw']
+        if comm_key.lower() in keyword_int_list: make_int = 1
+        else: make_int = 0     
+        return super(MCMax, self).setCommandKey(comm_key,star,'DUST',\
+                                                star_key,alternative,\
+                                                make_int)
 
+
+
+    def compareCommandLists(self,this_list,modellist):
+        
+        """
+        Comparing a command_list with a database entry.
+        
+        @param this_list: parameters in this modeling session
+        @type this_list: dict
+        @param modellist: parameters from database model
+        @type modellist: dict
+        
+        @return: Comparison between the two parameter sets
+        @rtype: bool
+        
+        """
+        
+        #- Run the modelingsession entry of this method, then if True check
+        #- the dust species entry in the command list
+        keybools = super(MCMax, self).compareCommandLists(this_list=this_list,\
+                                                          modellist=modellist,\
+                                                          code='mcmax')
+        if keybools:
+            #- Check the dust species entries 
+            this_dust = this_list['dust_species']
+            model_dust = modellist['dust_species']
+            if sorted(this_dust.keys()) != sorted(model_dust.keys()):
+                return False
+            else:
+                dustbools = []
+                for species in this_dust.keys():
+                    dustbools.append(super(MCMax,self)\
+                        .compareCommandLists(this_list=this_dust[species],\
+                                             modellist=model_dust[species],\
+                                             code='mcmax'))
+                if False in dustbools:
+                    return False
+                else:
+                    return True
+        else:
+            return False
+        
+        
+        
+    def checkDatabase(self):
+
+        """
+        Checking cooling database.
+        
+        @return: The presence of the MCMax model in the database
+        @rtype: bool
+        
+        """
+        
+        for model_id,cool_dict in self.db.items():
+            model_bool = self.compareCommandLists(self.command_list.copy(),\
+                                                  cool_dict)
+            if model_bool:
+                if self.replace_db_entry: 
+                    print 'Replacing MCMax database entry for old ID %s.'\
+                          %model_id
+                    del self.db[model_id]
+                    return False
+                else:
+                    print 'MCMax model has been calculated ' + \
+                          'before with ID %s.'%model_id
+                    self.model_id = model_id
+                    return True
+        print 'No match found in MCMax database. Calculating new model.'
+        return False
+        
+        
+            
     def doMCMax(self,star):
         
         """
@@ -234,152 +364,140 @@ class MCMax(ModelingSession):
         
         """
 
-        print '***********************************'
-        
-        #Create command for running mcmax for every STAR instance
+        print '***********************************'                                       
+        #- Create the input dictionary for this MCMax run
         print '** Making input file for MCMax'
-        self.command_list = []
-        for line in self.standard_inputfile:                                                      ## R_SOLAR = 0.004652 AU
-            if line[0].upper()=='STARTYPE':
-                if star['STARTYPE'] == 'BB':
-                    self.command_list.append('%s=%s' %('Tstar',str(float(star['T_STAR']))))
-                    self.command_list.append('%s=%s' %('Rstar',str(float(star['R_STAR']))))  
-                elif star['STARTYPE'] == 'MARCS':
-                    #self.command_list.append("%s='%s'" %(line[0],star['STARTYPE']))
-                    #self.command_list.append("%s='%s'" %('starfile',os.path.join(os.path.expanduser('~'),self.path_combocode,\
-                    #                                                                'StarFiles',star['STARFILE'])))
-                    #self.command_list.append("%s=%s" %('Lstar',star['L_STAR']))
-                    ##if self.prepMarcs(starParsList[i][0],marcstypestr,vlsr,MARCS_kernel,useMARCS):      #Returns a boolean,makes a file with data (see self.command_list for format)
-                    #self.command_list = [string for string in self.command_list if string.find('Tstar') == -1 and string.find('Rstar') == 1]
-                    #self.command_list.extend([" startype='FILE'",'_'.join("starfile='marcs",star['MARCS_TYPE'],star['MARCS_KERNEL'],star['T_STAR']) + ".dat'",'Lstar=' + str(star['L_STAR']) + 'd0'])
-                    raise IOError('STARTYPE=MARCS not yet supported.')
-                elif star['STARTYPE'] == 'FILE':
-                    self.command_list.append("%s='%s'" %(line[0],star['STARTYPE']))
-                    self.command_list.append("%s='%s'" %('starfile',os.path.join(os.path.expanduser('~'),self.path_combocode,\
-                                                                                 'StarFiles',star['STARFILE'])))
-                    self.command_list.append("%s=%s" %('Lstar',star['L_STAR']))
-            elif line[0].upper()=='RIN':
-                if int(star['TDESITER']): 
-                    pass
-                    #self.command_list.append('%s=%s' %(line[0],str(float(star['R_STAR'])*0.004652)))
-                else:
-                    self.command_list.append('%s=%s' %(line[0],str(float(star['R_INNER_DUST'])*float(star['R_STAR'])*0.004652)))
-            elif line[0].upper()=='ROUT':
-                self.command_list.append('%s=%s' %(line[0],str(float(star['R_OUTER_DUST'])*float(star['R_STAR'])*0.004652)))
-            elif line[0].upper()=='MDOT':
-                if star['DENSTYPE'] == "MASSLOSS":
-                    self.command_list.append('%s=%s' %(line[0],str(float(star['MDOT_DUST'])*100)))                
-            elif line[0].upper()=='VEXP':
-                if star['DENSTYPE'] == "MASSLOSS":
-                    self.command_list.append('%s=%s' %(line[0],str(float(star['V_EXP_DUST']))))                
-            elif line[0].upper()=='TDESITER':
-                self.command_list.append('%s=%s' %(line[0],int(star['TDESITER']) and '.true.' or '.false.'))     
-            elif line[0].upper()=='FLD':
-                self.command_list.append('%s=%s' %(line[0],int(star['FLD']) and '.true.' or '.false.'))     
-            elif line[0].upper()=='TCONTACT':
-                self.command_list.append('%s=%s' %(line[0],int(star['T_CONTACT']) and '.true.' or '.false.'))        
-            elif line[0].upper()=='TMAX': 
-                self.command_list.append('%s=%s' %(line[0],str(float(star['T_INNER_DUST'])))) 
-            elif line[0].upper()=='DENSTYPE':
-                self.command_list.append('%s=%s' %(line[0],"'%s'"%star['DENSTYPE']))
-                if star['DENSTYPE'] == "SHELLFILE" or star['DENSTYPE'] == "FILE":
-                    self.command_list.append('%s=%s' %('densfile',star['DENSFILE']))
-                if star['DENSTYPE'] == "POW":
-                    self.command_list.append('%s=%s' %('denspow',star['DENSPOW']))
-                    self.command_list.append('%s=%s' %('mdust',star['M_DUST']))
+        self.model_id = ''
+        self.command_list = dict()
+        self.command_list['photon_count'] = star['PHOTON_COUNT']
+        if star['STARTYPE'] == 'BB':
+            self.command_list['Tstar'] = float(star['T_STAR'])
+            self.command_list['Rstar'] = float(star['R_STAR'])
+        elif star['STARTYPE'] == 'MARCS':
+            raise NotImplementedError()
+        elif star['STARTYPE'] == 'FILE':
+            self.command_list['startype'] = "'%s'" %star['STARTYPE']
+            if os.path.split(star['STARFILE'])[0]:
+                starfile = star['STARFILE']
             else:
-                try:
-                    self.command_list.append('%s=%s' %(line[0],star[line[0].upper()]))
-                except KeyError:
-                    try:
-                        self.command_list.append('%s=%s' %(line[0],star[line[0].upper().replace(line[0].upper()[0],line[0].upper()[0] + '_',1)]))
-                    except KeyError:
-                        try:
-                            self.command_list.append('%s=%s' %(line[0],star[line[0].upper().replace(line[0].upper()[0],line[0].upper()[0] + '_',1) + '_DUST']))
-                        except KeyError:
-                            try:
-                                self.command_list.append('%s=%s' %(line[0],star[line[0].upper()+ '_DUST']))
-                            except KeyError:
-                                if line[0][:4] != 'abun' and line[0][:4] != 'part':
-                                    self.command_list.append('%s=%s' %(line[0],line[1]))
-                                    #print line[0].upper() + ' not found in inputComboCode.dat. Taking standard value from inputMCMax.dat: ' + line[1] + '.'
+                starfile = os.path.join(os.path.expanduser('~'),\
+                                        self.path_combocode,'StarFiles',\
+                                        star['STARFILE'])
+            self.command_list['starfile'] = "'%s'"%starfile
+            self.command_list['Lstar'] = star['L_STAR']
         
-        #Following five keywords are only added if the corresponding abundance is present, ie not zero
-        dust_list = DataIO.getInputData(path=os.path.join(self.path_combocode,'Data'),keyword='SPECIES_SHORT',filename='Dust.dat')
-        kappas = DataIO.getInputData(path=os.path.join(self.path_combocode,'Data'),keyword='PART_FILE',filename='Dust.dat')
+        self.command_list['tcontact'] = star['T_CONTACT'] \
+                                            and '.true.' \
+                                            or '.false.'
+        for boolkey in ['FLD','iter','randomwalk','tdesiter','storescatt',\
+                        'multiwav']:
+            try:
+                self.command_list[boolkey] = int(star[boolkey.upper()]) \
+                                                and '.true.' \
+                                                or '.false.'
+            except KeyError:
+                self.setCommandKey(boolkey,star,star_key=boolkey.upper(),\
+                                   alternative=self.standard_inputfile[boolkey])
+            
+        if not int(star['TDESITER']):
+            self.command_list['Rin'] = float(star['R_INNER_DUST'])\
+                                        *float(star['R_STAR'])\
+                                        *star.r_solar/star.au
+        self.command_list['Rout'] = float(star['R_OUTER_DUST'])\
+                                        *float(star['R_STAR'])\
+                                        *star.r_solar/star.au
         
-        self.command_list.extend(['abun%.2i=%s'%(index+1,star['A_' + species]) 
-                                  for index,species in enumerate(star['DUST_LIST'])])
-        self.command_list.extend(['%s%.2i=%s' %(kappas[dust_list.index(species)].find('.opacity') != -1 and 'opac' or 'part',\
-                                                index+1,"'" + os.path.join(os.path.expanduser('~'),'MCMax','src',\
-                                                kappas[dust_list.index(species)]) + "'")
-                                  for index,species in enumerate(star['DUST_LIST'])])
-        #This is always present in the inputfile 
-        self.command_list.extend(['TdesA%.2i=%s' %(index+1,str(float(star['T_DESA_' + species])))
-                                  for index,species in enumerate(star['DUST_LIST'])])
-        #This is always present in the inputfile 
-        self.command_list.extend(['TdesB%.2i=%s' %(index+1,str(float(star['T_DESB_' + species])))
-                                  for index,species in enumerate(star['DUST_LIST'])])
-        #R_MIN can only be added if it is present in inputComboCode.dat, hence only if star has the key, it is NEVER made
-        self.command_list.extend(['minrad%.2i=%s' %(index+1,str(float(star['R_MIN_' + species])*float(star['R_STAR'])*0.004652))
-                                  for index,species in enumerate(star['DUST_LIST'])
-                                  if star.has_key('R_MIN_' + species)])
-        #R_MAX can be derived from T_MIN, hence it is always created and if T_MIN is not present, an empty string is added
-        self.command_list.extend(['maxrad%.2i=%s' %(index+1,str(float(star['R_MAX_' + species])*float(star['R_STAR'])*0.004652))
-                                  for index,species in enumerate(star['DUST_LIST'])
-                                  if star['R_MAX_' + species]])
-        self.command_list[0:0] = [str(star['PHOTON_COUNT'])]
+        self.command_list['denstype'] = "'%s'"%star['DENSTYPE']
+        if star['DENSTYPE'] == 'MASSLOSS':
+            self.command_list['Mdot'] = float(star['MDOT_DUST'])*100.
+            self.command_list['vexp'] = float(star['V_EXP_DUST'])
+        elif star['DENSTYPE'] == 'SHELLFILE' or star['DENSTYPE'] == 'FILE':
+            self.command_list['densfile'] = "'%s'"%star['DENSFILE']
+        elif star['DENSTYPE'] == 'POW':
+            self.command_list['denspow'] = star['DENSPOW']
+            self.command_list['mdust'] = star['M_DUST']
+        self.setCommandKey('Mstar',star,star_key='M_STAR',\
+                           alternative=self.standard_inputfile['Mstar'])
+        add_keys = [k  
+                    for k in self.standard_inputfile.keys() 
+                    if not self.command_list.has_key(k)]
+        [self.setCommandKey(k,star,star_key=k.upper(),\
+                            alternative=self.standard_inputfile[k])
+         for k in add_keys]
+        
+        #- Following keywords are only added if corresponding abundance is
+        #- present, ie not zero.
+        #- Note that no indices are associated with each species yet. This is 
+        #- done in the creation of the inputfile for MCMax. This way, confusion
+        #- is avoided when comparing to older models, in the case the order in
+        #- Dust.dat is changed. However, this does mean some species specific
+        #- outputfiles may not match anymore when e.g. plotting dust opacities
+        dust_dict = dict()
+        for species in star['DUST_LIST']:
+            species_dict = dict()
+            species_dict['abun'] = star['A_%s'%species]
+            if star['TDESITER']:
+                species_dict['TdesA'] = star['T_DESA_' + species]
+                species_dict['TdesB'] = star['T_DESB_' + species]
+            if star.has_key('R_MIN_%s'%species):
+                species_dict['minrad'] = star['R_MIN_%s'%species]\
+                                           *star['R_STAR']*star.r_solar/star.au
+            if star.has_key('R_MAX_%s'%species):
+                species_dict['maxrad'] = star['R_MAX_%s'%species]\
+                                           *star['R_STAR']*star.r_solar/star.au
+            dust_dict[self.dust_files[self.dust_list.index(species)]] \
+                = species_dict
+        self.command_list['dust_species'] = dust_dict
         print '** DONE!'
         print '***********************************'
-        #command line doesnt include output directory, such that all the rest can be used to compare with database entries
-        #model id is also included with command list in db, an id is based on time of calculation in UTC in seconds siunce 1970
-        self.model_id = ''
-        try:
-            mcmax_db = open(os.path.join(os.path.expanduser('~'),'MCMax',self.path,'MCMax_models.db'),'r')
-            try:
-                while True:
-                    model = cPickle.load(mcmax_db)
-                    if model[0] == self.command_list:
-                        if self.replace_db_entry and 0:
-                            mcmax_db.close()
-                            Database.deleteModel(model_id=str(model[1]),db_path=os.path.join(os.path.expanduser('~'),'MCMax',self.path,'MCMax_models.db'))
-                            raise EOFError
-                        else:
-                            print '** MCMax model has been calculated before with ID ' + str(model[1]) + '.'
-                            self.model_id = model[1]
-                        break
-            except EOFError:
-                print '** No match found in MCMax database. Calculating new model.'
-            finally:
-                mcmax_db.close()
-        except IOError:
-            print '** No database present at ' + os.path.join(os.path.expanduser('~'),'MCMax',self.path,'MCMax_models.db') + '. Creating new one.'
-        #if no match is found between command lines, calculate new model with new model id 
-        #if the calculation did not fail, append an entry to the database of the new model, with its id     
-        if not self.model_id:
-            self.model_id = 'model_%.4i-%.2i-%.2ih%.2i-%.2i-%.2i' %(gmtime()[0],gmtime()[1],gmtime()[2],gmtime()[3],gmtime()[4],gmtime()[5])
-            input_filename = os.path.join(os.path.expanduser("~"),'MCMax',self.path,'models','inputMCMax_%s.dat'%self.model_id)
-            DataIO.writeFile(filename=input_filename,input_lines=self.command_list[1:])
-            subprocess.call([' '.join(['MCMax',input_filename,self.command_list[0],'-o',\
-                            os.path.join(os.path.expanduser("~"),'MCMax',self.path,'models',self.model_id)])],shell=True)
-            mcmax_db = open(os.path.join(os.path.expanduser('~'),'MCMax',self.path,'MCMax_models.db'),'a')
-            try:
-                new_model = open(os.path.join(os.path.expanduser("~"),'MCMax',self.path,'models',self.model_id,'MCScattered.dat'), 'r')
-                new_model2 = open(os.path.join(os.path.expanduser("~"),'MCMax',self.path,'models',self.model_id,'denstemp.dat'), 'r')
-                new_model.close()
-                new_model2.close()
-                cPickle.dump([self.command_list,self.model_id],mcmax_db)
+        
+        #- Check the MCMax database if the model was calculated before
+        modelbool = self.checkDatabase()
+                
+        #- if no match found in database, calculate new model with new model id 
+        #- if the calculation did not fail, add entry to database for new model
+        if not modelbool:
+            self.model_id = self.makeNewId()
+            input_dict = self.command_list.copy()
+            del input_dict['photon_count']
+            del input_dict['dust_species']
+            #- order in which the species appear is fixed according to the 
+            #- order of the species in the Dust.dat input file 
+            for index,species in enumerate(star['DUST_LIST']):
+                speciesfile = self.dust_files[self.dust_list.index(species)]
+                speciesdict = self.command_list['dust_species'][speciesfile]
+                for k,v in speciesdict.items():
+                    input_dict['%s%.2i'%(k,index+1)] = v
+                ftype = speciesfile.find('opacity') != -1 and 'opac' or 'part'
+                input_dict['%s%.2i'%(ftype,index+1)] = "'%s'"\
+                                  %(os.path.join(self.path_kappas,speciesfile))       
+            input_filename = os.path.join(os.path.expanduser("~"),'MCMax',\
+                                          self.path,'models',\
+                                          'inputMCMax_%s.dat'%self.model_id)
+            output_folder = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                         self.path,'models',self.model_id)
+            input_lines = ["%s=%s"%(k,str(v)) 
+                           for k,v in sorted(input_dict.items())]
+            DataIO.writeFile(filename=input_filename,input_lines=input_lines)
+            subprocess.call(' '.join(['MCMax',input_filename,\
+                                      str(self.command_list['photon_count']),\
+                                      '-o',output_folder]),shell=True)
+            testf1 = os.path.join(output_folder,'denstemp.dat')
+            testf2 = os.path.join(output_folder,'MCScattered.dat')
+            if os.path.exists(testf1) and os.path.exists(testf2) and \
+                    os.path.isfile(testf1) and os.path.isfile(testf2):
+                self.db[self.model_id] = self.command_list
                 self.done_mcmax = True
-            except IOError:
-                print '** Model calculation failed. No entry is added to the database and LAST_MCMAX_MODEL in STAR dictionary is not updated.'
+            else:
+                print '** Model calculation failed. No entry is added to ' + \
+                      'the database and LAST_MCMAX_MODEL in STAR dictionary '+\
+                      'is not updated.'
                 self.model_id = ''
-            finally:
-                mcmax_db.close()
-        #clean up: add/change 'LAST_MCMAX_MODEL' entry, check T_MIN, delete some variables that should be changed
+                
+        #- add/change 'LAST_MCMAX_MODEL' entry
         if self.model_id:
-            #add/change MUTABLE input keys, which will not be overwritten by the input file inputComboCode.dat
             star['LAST_MCMAX_MODEL'] = self.model_id
-            #add/change MUTABLE input keys, which MAY be overwritten by the input file inputComboCode.dat
-            #Done in ModelingManager now, after the star instance has been copied to a backup in the case of iterative              
+        #- Note that the model manager now adds/changes MUTABLE input keys, 
+        #- which MAY be overwritten by the input file inputComboCode.dat
         print '***********************************'
         
