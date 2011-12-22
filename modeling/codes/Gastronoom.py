@@ -672,7 +672,7 @@ class Gastronoom(ModelingSession):
                               == set([''])
         if self.vic <> None and self.sphinx and (False in self.trans_bools \
               and not mline_not_available):
-            self.vic.queueModel(self.model_id)
+            self.vic.queueModel()
         elif self.vic <> None and self.sphinx and (False not in self.trans_bools\
               or mline_not_available):
             self.vic.reset()

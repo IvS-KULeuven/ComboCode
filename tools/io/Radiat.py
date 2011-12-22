@@ -131,7 +131,49 @@ class Radiat():
         self.dict['UPPER'] = [int(x) for x in self.dict['UPPER']]
              
              
-             
+    
+    def getTransInfo(self,up_i,low_i):
+        
+        '''
+        Return all info for one particular transition given by the upper and 
+        lower index.
+        
+        This is the index given in sphinx_indices_filename.
+        
+        @param up_i: The index of the upper level
+        @type up_i: int
+        @param low_i: the index of the lower level
+        @type low_i: int
+        
+        @return: All available info for this particular transition
+        @rtype: dict
+        
+        '''
+        
+        transdict = dict()
+        low_indices = [i 
+                       for i,l in enumerate(self.dict['LOWER']) 
+                       if l == low_i]
+        up_indices = [i 
+                      for i,u in enumerate(self.dict['UPPER']) 
+                      if u == up_i]
+        common_indices1 = [i for i in low_indices if i in up_indices]
+        common_indices2 = [i for i in up_indices if i in low_indices]
+        if common_indices1 == common_indices2 and len(common_indices1) == 1:
+            transdict['radiat_index'] = common_indices1[0]
+            radi = common_indices1[0]
+        else:
+            print 'Could not find transition. Check upper and/or lower level.'
+            return False
+        transdict['frequency'] = self.dict['FREQUENCY'][radi]*10**9
+        transdict['wavelength'] = self.c/(self.dict['FREQUENCY'][radi]*10**5)
+        transdict['einstein'] = self.dict['EINSTEIN'][radi]
+        transdict['low_i'] = low_i
+        transdict['up_i'] = up_i
+        return transdict
+        
+        
+        
     def getFrequency(self,unit='GHz'):
         
         '''

@@ -158,9 +158,9 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                                
                                  (default: 0)
     @type no_line_label_text: bool
-    #@keyword short_label_lines: The label lines are short and at the top of plot
+    @keyword short_label_lines: The label lines are short and at the top of plot
                                 
-                                 (default:0)
+                                (default:0)
     @type short_label_lines: bool   
     @keyword line_label_spectrum: linelabels are set at the top and bottom of 
                                   the spectrum, as for PACS spectra
@@ -802,8 +802,8 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     xmax=kwargs.get('xmax',None)
     ymin=kwargs.get('ymin',None)
     ymax=kwargs.get('ymax',None)
-    twiny_ymin=kwargs.get('ymin',None)
-    twiny_ymax=kwargs.get('ymax',None)
+    twiny_ymin=kwargs.get('twiny_ymin',None)
+    twiny_ymax=kwargs.get('twiny_ymax',None)
     transparent=kwargs.get('transparent',0)
     removeYvalues=kwargs.get('removeYvalues',0)
     histoplot=kwargs.get('histoplot',[])
@@ -1060,10 +1060,12 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
              if list(yi)]
             legends.append(sub2.plot(linewidth=linewidth,*twindata))
             sub2.autoscale_view(tight=True,scaley=False)
-            if twiny_ymin <> None:
-                pl.ylim(ymin=twiny_ymin) # min([min(xi) for xi in x])
-            if twiny_ymax <> None:
-                pl.ylim(ymax=twiny_ymax)
+            if twiny_ymin is None:
+                twiny_ymin = 0.9*min([min(yi) for yi in twiny_y])
+            pl.ylim(ymin=twiny_ymin) # min([min(xi) for xi in x])
+            if twiny_ymax is None:
+                twiny_ymax = 1.1*max([max(yi) for yi in twiny_y])
+            pl.ylim(ymax=twiny_ymax)
             if twiny_keytags:
                 these_tags = [keys 
                               for keys,yi in zip(twiny_keytags,twiny_y) 

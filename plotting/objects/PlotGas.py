@@ -1090,7 +1090,6 @@ class PlotGas(PlottingSession):
                 extra_pars['twiny_x'] = [radius]
                 extra_pars['twiny_y'] = [vel]
                 extra_pars['twiny_keytags'] = [r'$v_\mathrm{g}$']
-                extra_pars['twiny_key_location'] = (0.1,0.1)
                 extra_pars['twinyaxis'] = r'$v_\mathrm{g}$ (km s$^{-1}$)' 
             [trans.readSphinx() for trans in transitions]
             radii = [trans.sphinx.getImpact() for trans in transitions]
@@ -1105,8 +1104,8 @@ class PlotGas(PlottingSession):
                                          %(star['LAST_GASTRONOOM_MODEL'],i))
             keytags=['%s: %s'%(trans.molecule.molecule,trans.makeLabel())
                      for trans in transitions]
-            ymin = normalized and -0.2 or None
-            ymax = normalized and 1.1 or None
+            ymin = normalized and -0.01 or None
+            ymax = normalized and 1.02 or None
             plot_title = '%s: Line Contributions for %s'\
                          %(self.star_name_plots,\
                            star['LAST_PACS_MODEL'].replace('_','\_') \
@@ -1116,8 +1115,8 @@ class PlotGas(PlottingSession):
                 xaxis='$p$ (R$_*$)',yaxis='$I(p) \\times g(p^2)$',\
                 plot_title=plot_title,keytags=keytags,extension='.png',\
                 xlogscale=1,figsize=(20,10),fontsize_axis=26,fontsize_title=22,\
-                key_location=(0.80,0.),fontsize_ticklabels=22,\
-                fontsize_key=12,linewidth=3,ymin=ymin,ymax=ymax,**extra_pars)
+                key_location=(0.70,0.1),fontsize_ticklabels=22,\
+                fontsize_key=20,linewidth=3,ymin=ymin,ymax=ymax,**extra_pars)
             print '** Plot can be found at:'
             print plot_filename
             print '***********************************'                            

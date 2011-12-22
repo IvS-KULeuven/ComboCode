@@ -593,9 +593,8 @@ class Transition():
         
         '''
 
-        wav = self.molecule.radiat.getFrequency(unit='hz')
-        return  float(wav[self.radiat_index])
-
+        return float(self.radiat_trans['frequency'])
+        
 
 
     def getEnergyUpper(self):
@@ -609,7 +608,7 @@ class Transition():
          '''
          
          energy = self.molecule.radiat.getEnergyLevels()
-         return  float(energy[self.up_i - 1])
+         return  float(energy[self.up_i-1])
 
 
 
@@ -624,7 +623,7 @@ class Transition():
          '''
          
          energy = self.molecule.radiat.getEnergyLevels()
-         return  float(energy[self.low_i -1])
+         return  float(energy[self.low_i-1])
 
 
 
@@ -663,19 +662,13 @@ class Transition():
                                   for i in indices].index(quantum_up)][0]
              self.low_i = indices[[i[1:] 
                                   for i in indices].index(quantum_low)][0]
-         low = self.molecule.radiat.getLowerStates()
-         up = self.molecule.radiat.getUpperStates()
-         low_indices = [i for i,l in enumerate(low) if l == self.low_i]
-         up_indices = [i for i,u in enumerate(up) if u == self.up_i]
-         common_indices1 = [i for i in low_indices if i in up_indices]
-         common_indices2 = [i for i in up_indices if i in low_indices]
-         if common_indices1 == common_indices2 and len(common_indices1) == 1:
-             self.radiat_index = common_indices1[0]
-         else:
+         self.radiat_trans = self.molecule.radiat.getTransInfo(low_i=self.low_i,\
+                                                               up_i=self.up_i)
+         if self.radiat_trans is False:
              raw_input('Something fishy is going on in Transition.py... '+\
-                          'non-unique transition indices! Abort')
-
-
+                       'non-unique transition indices! Abort')
+         
+         
 
     def makeLabel(self):
         
