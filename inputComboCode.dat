@@ -62,9 +62,12 @@ STAR_NAME=llpeg                         # Stellar Name (lower cases, no spaces, 
 T_STAR=2400                             # Stellar temperature [K]
 M_STAR=1.0                          # Stellar mass [Msol]
 L_STAR=11000                            # Stellar luminosity [Lsol]
+#LOGG=0.0                               # Only relevant if model atmospheres are used for MCMax (STARTYPE=ATMOSPHERE), default is 0.0
 DISTANCE=1300                           # Distance to object [pc]           
-STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody, MARCS for a MARCS spectrum and FILE for a custom file, and then STARFILE has to be filled in, otherwise it's ignored)
-STARFILE=                           # Only relevant if STARTYPE=FILE, name of file in ~/ComboCode/StarFiles/. Two columns: one with wavelength in micron, one with flux in Jy.
+STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody; ATMOSPHERE for a model atmosphere spectrum in which case ATM_FILENAME and ATM_MODELTYPE have to be defined; FILE for a custom file and then STARFILE has to be filled in, otherwise it's ignored)
+#STARFILE=                           # Only relevant if STARTYPE=FILE, name of file in ~/ComboCode/StarFiles/. Two columns: one with wavelength in micron, one with flux in Jy.
+#ATM_FILENAME=                      # The filename of the model atmosphere (for now only in /STER/100/pieterd/IVSDATA/sedtables/modelgrids/ folder)
+#ATM_MODELTYPE=                     # The model type of the model atmosphere (for now only 'COMARCS')
 
 ####################
 # GAS SHELL Parameters

@@ -1251,7 +1251,7 @@ class PlotGas(PlottingSession):
                             and [wave]*(len(sphinx_flux)) \
                             or [wave]*(len(sphinx_flux)+1)
             ddict['y'] = no_data and sphinx_flux or [flux]+sphinx_flux
-            ddict['labels'] = [(ordername,0.01,0.85)]
+            ddict['labels'] = [(ordername,0.01,0.01)]
             ddict['xmin'] = wave[0]
             ddict['xmax'] = wave[-1]
             ddict['histoplot'] = (not no_data) and [0] or []

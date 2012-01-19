@@ -141,7 +141,10 @@ class ModelingManager():
                                         self.path_gastronoom,'stars',\
                                         self.star_name,\
                                         'GASTRoNOoM_pacs_models.db')
-            self.pacs_db = Database.Database(db_path=pacs_db_path)        
+            if os.path.isfile(pacs_db_path):
+                self.pacs_db = Database.Database(db_path=pacs_db_path)        
+            else:
+                self.pacs_db = None
         else:
             self.pacs_db = None
         if self.vic <> None:

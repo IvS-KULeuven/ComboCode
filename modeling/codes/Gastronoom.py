@@ -236,9 +236,10 @@ class Gastronoom(ModelingSession):
             del self.sph_db[model_id]
         except KeyError:
             pass
-        for pacs_id in [k for k,v in self.pacs_db.items() 
-                          if v['cooling_id'] == model_id]:
-            del self.pacs_db[pacs_id]  
+        if self.pacs <> None:
+            for pacs_id in [k for k,v in self.pacs_db.items() 
+                              if v['cooling_id'] == model_id]:
+                del self.pacs_db[pacs_id]  
 
 
 

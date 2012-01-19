@@ -997,6 +997,20 @@ class Star(dict):
             pass
 
 
+    
+    def calcLOGG(self):
+        
+        """
+        Set the default value of LOGG to 0.
+        
+        """
+        
+        if not self.has_key('LOGG'):
+            self['LOGG']=0
+        else:
+            pass
+
+    
 
     def calcT_INNER_DUST(self):
         

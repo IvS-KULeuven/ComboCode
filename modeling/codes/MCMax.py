@@ -10,10 +10,10 @@ Author: R. Lombaert
 import os
 import subprocess
 from glob import glob
+from numpy import savetxt
 
-from cc.tools.io import DataIO
+from cc.tools.io import DataIO, Database, Atmosphere
 from cc.modeling.ModelingSession import ModelingSession
-from cc.tools.io import Database
 
 
 
@@ -373,8 +373,34 @@ class MCMax(ModelingSession):
         if star['STARTYPE'] == 'BB':
             self.command_list['Tstar'] = float(star['T_STAR'])
             self.command_list['Rstar'] = float(star['R_STAR'])
-        elif star['STARTYPE'] == 'MARCS':
-            raise NotImplementedError()
+        elif star['STARTYPE'] == 'ATMOSPHERE':
+            modeltypes = ['comarcs']
+            modeltype = None
+            for mt in modeltypes:
+                if mt in star['ATM_FILENAME']:
+                    modeltype = mt
+                    continue
+            if modeltype is None: 
+                raise Error('Atmosphere model type is unknown.')
+            self.command_list['startype'] = "'FILE'"
+            self.command_list['Lstar'] = star['L_STAR']
+            path = os.path.join(os.path.expanduser('~'),\
+                                self.path_combocode,'StarFiles')
+            DataIO.testFolderExistence(path)
+            atmfile = star['ATM_FILENAME']
+            atmos = Atmosphere.Atmosphere(modeltype,filename=atmfile)
+            atmosmodel = atmos.getModel(teff=star['T_STAR'],logg=star['LOGG'])
+            #atmosmodel['flux'] = atmosmodel['flux'] \
+                                  #*(star['R_STAR']*star.r_solar)**2 \
+                                  #/(star['DISTANCE']*star.pc)**2
+            starfile = os.path.join(path,'%s_teff%s_logg%s.dat'\
+                                    %(os.path.splitext(atmos.filename)[0],\
+                                      str(atmos.teff_actual),\
+                                      str(atmos.logg_actual)))
+            savetxt(starfile,atmosmodel,fmt=('%.8e'))
+            print 'Using input model atmosphere at '
+            print starfile
+            self.command_list['starfile'] = "'%s'"%starfile
         elif star['STARTYPE'] == 'FILE':
             self.command_list['startype'] = "'%s'" %star['STARTYPE']
             if os.path.split(star['STARFILE'])[0]:

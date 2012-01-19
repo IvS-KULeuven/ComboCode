@@ -11,7 +11,7 @@ import os
 import subprocess
 from scipy import array,zeros
 import types
-
+from pylab import mlab
 
 
 def getGastronoomOutput(filename,keyword='RADIUS',begin_index=0,\
@@ -375,6 +375,22 @@ def convertFloat(string,nans=0,convert_int=0):
     except ValueError:
         return nans and float('nan') or string
         
+
+
+def printRecArray(recarr,precision=8):
+    
+    """
+    Print a record array in a mannerly fashion.
+    
+    @keyword precision: The precision of the floats shown when printed
+    
+                        (default: 8)
+    @type precision: int
+    
+    """
+    
+    mlab.rec2txt(recarr,precision=precision)
+
 
 
 def readCols(filename,delimiter=' ',make_float=1,remove_comments=1,\

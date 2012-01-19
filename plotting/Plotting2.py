@@ -372,11 +372,14 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
         else:
             x,y = ddict['x'],ddict['y']
         these_data = []
-        [these_data.extend([xi,yi,lp]) 
+        [these_data.append([xi,yi,lp]) 
              for xi,yi,lp in zip(x,y,line_types)
              if list(yi) and yi <> None]
-        sub.plot(linewidth=linewidth,*these_data)
-        
+        #sub.plot(linewidth=linewidth,*these_data)
+        for index,(xi,yi,lp) in enumerate(these_data):
+            sub.plot(xi,yi,lp,linewidth=index in ddict['histoplot']\
+                                            and linewidth*2\
+                                            or linewidth)
         if keytags and itile == len(data)-1:
             lg = pl.legend(tuple(keytags),loc=(0,0),prop=\
                     pl.matplotlib.font_manager.FontProperties(size=fontsize_key))
@@ -952,11 +955,15 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
              if list(yi)]
         no_err = []
         legends = []
-        for xi,yi,lp,xerri,yerri in these_data:
+        for index,(xi,yi,lp,xerri,yerri) in enumerate(these_data):
             if xerri is None and yerri is None:
-                legends.append(sub.plot(xi,yi,lp,linewidth=linewidth))
+                legends.append(sub.plot(xi,yi,lp,linewidth=index in histoplot\
+                                                            and linewidth*2.\
+                                                            or linewidth))
             else:
-                legends.append(sub.plot(xi,yi,lp,linewidth=linewidth))
+                legends.append(sub.plot(xi,yi,lp,linewidth=index in histoplot\
+                                                            and linewidth*2.\
+                                                            or linewidth))
                 if xerri <> None: 
                     sub.errorbar(x=xi,y=yi,xerr=xerri,fmt=None,\
                                  ecolor='k',\
