@@ -877,9 +877,9 @@ class PlotGas(PlottingSession):
             plot_filenames.append(Plotting2.plotCols(\
                     x=[wave]*(len(sphinx_flux)+1),y=[flux]+sphinx_flux,\
                     cfg=cfg,filename=plot_filename,keytags=keytags,\
-                    plot_title=self.star_name_plots,histoplot=0,cutX=1,\
+                    plot_title=self.star_name_plots,histoplot=[0],cutX=1,\
                     number_subplots=3,line_labels=these_line_labels,\
-                    line_label_color=1,line_label_lines=1))
+                    line_label_color=1,line_label_lines=1,line_label_spectrum=1))
         new_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                     self.path,'stars',self.star_name,\
                                     self.plot_id,'LineLists',\

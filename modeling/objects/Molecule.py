@@ -85,7 +85,7 @@ class Molecule():
                                              'ComboCode'),\
                  change_fraction_filename=None,set_keyword_change_abundance=0,\
                  set_keyword_change_temperature=0,enhance_abundance_factor=0,\
-                 new_temperature_filename=None):
+                 new_temperature_filename=None,linelist=0):
         
         '''
         Initiate a Molecule class, setting all values for the allowed 
@@ -238,6 +238,12 @@ class Molecule():
         
                                            (default: None)
         @type new_temperature_filename: string
+        @keyword linelist: The molecule is created for the LineList module. No
+                           radiative information is read from GASTRoNOoM input
+                           files.
+        
+                           (default: 0)
+        @type linelist: bool
         
         '''
  
@@ -315,23 +321,27 @@ class Molecule():
                     int(set_keyword_change_temperature)
         self.new_temperature_filename = new_temperature_filename
         self.__model_id = None
-        self.radiat = Radiat.Radiat(molecule=self,\
+        if not linelist:
+            self.radiat = Radiat.Radiat(molecule=self,\
                                     use_indices_dat=self.use_indices_dat)
-        if self.spec_indices:
-            path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM','src',\
-                                'data')
-            if self.use_indices_dat:
-                f = DataIO.getInputData(path=os.path.join(self.path_combocode,\
-                                                        'Data'),\
-                                      keyword='INDICES',\
-                                      filename='Indices.dat',\
-                                      start_index=4)[self.indices_index]
-                filename = os.path.join(path,'indices_backup',f)
-            else:
-                filename = os.path.join(path,'sphinx_indices_filename_%s.dat'\
-                                             %self.molecule)
-            self.radiat_indices = [[int(i) for i in line] 
-                                   for line in DataIO.readFile(filename,' ')]
+            if self.spec_indices:
+                path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM','src',\
+                                    'data')
+                if self.use_indices_dat:
+                    f = DataIO.getInputData(path=os.path.join(self.path_combocode,\
+                                                            'Data'),\
+                                        keyword='INDICES',\
+                                        filename='Indices.dat',\
+                                        start_index=4)[self.indices_index]
+                    filename = os.path.join(path,'indices_backup',f)
+                else:
+                    filename = os.path.join(path,'sphinx_indices_filename_%s.dat'\
+                                            %self.molecule)
+                self.radiat_indices = [[int(i) for i in line] 
+                                     for line in DataIO.readFile(filename,' ')]
+        else:
+            self.radiat = None
+            self.radiat_indices = None
         
 
 

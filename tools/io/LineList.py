@@ -287,6 +287,7 @@ class LineList():
             try:
                 self.readCDMS()
             except IOError:
+                self.cdms = 0
                 print 'CDMS line list not found for %s in %s.' \
                       %(self.molecule.molecule,self.path)
         if self.jpl:
@@ -295,6 +296,7 @@ class LineList():
             except IOError:
                 print 'JPL line list not found for %s in %s.' \
                       %(self.molecule.molecule,self.path)
+                self.jpl = 0
         if self.lamda:
             try:
                 self.readLAMDA()
@@ -354,19 +356,33 @@ class LineList():
                                             ['telescope','offset',\
                                              'n_quad','use_maser_in_sphinx']) 
                      if par <> None])
-        return [Transition.Transition(molecule=self.molecule,\
-                                      frequency=float(trans[0])*10**6,\
-                                      exc_energy=float(trans[12]),\
-                                      int_intensity_log=float(trans[11]),\
-                                      vup=int(trans[1]),\
-                                      jup=int(trans[2]),\
-                                      kaup=int(trans[3]),\
-                                      kcup=int(trans[4]),\
-                                      vlow=int(trans[5]),\
-                                      jlow=int(trans[6]),\
-                                      kalow=int(trans[7]),\
-                                      kclow=int(trans[8]),\
-                                      vibrational=trans[9],\
-                                      **pars) 
-                for trans in self.getLineList()]
-                
+        if self.molecule.spec_indices == 0 and self.cdms == 1:
+            trans_list = [Transition.Transition(molecule=self.molecule,\
+                                        frequency=float(trans[0])*10**6,\
+                                        exc_energy=float(trans[12]),\
+                                        int_intensity_log=float(trans[11]),\
+                                        vup=int(trans[3]),\
+                                        jup=int(trans[2]),\
+                                        vlow=int(trans[7]),\
+                                        jlow=int(trans[6]),\
+                                        vibrational=trans[9],\
+                                        **pars) 
+                          for trans in self.getLineList()]        
+        else:
+            trans_list = [Transition.Transition(molecule=self.molecule,\
+                                        frequency=float(trans[0])*10**6,\
+                                        exc_energy=float(trans[12]),\
+                                        int_intensity_log=float(trans[11]),\
+                                        vup=int(trans[1]),\
+                                        jup=int(trans[2]),\
+                                        kaup=int(trans[3]),\
+                                        kcup=int(trans[4]),\
+                                        vlow=int(trans[5]),\
+                                        jlow=int(trans[6]),\
+                                        kalow=int(trans[7]),\
+                                        kclow=int(trans[8]),\
+                                        vibrational=trans[9],\
+                                        **pars) 
+                          for trans in self.getLineList()]
+                    
+        return trans_list

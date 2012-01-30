@@ -34,8 +34,8 @@ def updateLineSpec(trans_list):
     telescopes = list(set([trans.telescope for trans in trans_list]))
     for telescope in telescopes:
         if not ('HIFI' in telescope or 'PACS' in telescope):
-            print 'Warning! Telescope beam efficiencies for %s are added ' + \
-                  'arbitrarily and thus are not the correct values.'%telescope
+            print 'Warning! Telescope beam efficiencies for %s'%telescope + \
+                  'are added arbitrarily and thus are not the correct values.'
         old_spec = DataIO.readFile(os.path.join(os.path.expanduser('~'),\
                                   'GASTRoNOoM','src','data',telescope+'.spec'))
         line_spec_list = [line 
@@ -208,7 +208,7 @@ class Transition():
                        (default: 0)
         @type kcup: int
         @keyword nup: if not None it is equal to Kaup and only relevant for 
-                      SO-type molecules
+                      SO/hcn-type molecules
         
                       (default: 0)
         @type nup: int
@@ -257,6 +257,9 @@ class Transition():
                             taken to be this parameter in Hz, if None the 
                             frequency of this transition is derived from the 
                             GASTRoNOoM radiative input file
+                            
+                            No indices are searched for if frequency is given 
+                            here. Usually used only for line listing.
                             
                             (default: None)
         @type frequency: float
@@ -324,9 +327,9 @@ class Transition():
         self.path_gastronoom = path_gastronoom
         self.datafile = datafile
         self.lpdata = None 
-        self.setIndices()
+        self.radiat_trans = None
         if frequency is None:
-            self.frequency = self.getFrequency()    #in s^-1
+            self.__setIndices()     #sets frequency from GASTRoNOoM input in s^-1
         else:
             self.frequency = frequency
         self.wavelength = 2.99792458e10/self.frequency  #in cm
@@ -593,81 +596,89 @@ class Transition():
         
         '''
 
-        return float(self.radiat_trans['frequency'])
+        return self.frequency
         
 
 
     def getEnergyUpper(self):
          
-         '''
-         Return the energy level of the upper state of this transition.
- 
-         @return: energy level in cm^-1
-         @rtype: float
+        '''
+        Return the energy level of the upper state of this transition.
+
+        @return: energy level in cm^-1
+        @rtype: float
+    
+        '''
         
-         '''
-         
-         energy = self.molecule.radiat.getEnergyLevels()
-         return  float(energy[self.up_i-1])
+        if self.molecule.radiat is None:
+            print '%s_radiat.dat not found. Cannot find energy levels.'\
+                  %self.molecule.molecule
+            return
+        energy = self.molecule.radiat.getEnergyLevels()
+        return  float(energy[self.up_i-1])
 
 
 
     def getEnergyLower(self):
 
-         '''
-         Return the energy level of the lower state of this transition.
- 
-         @return: energy level in cm^-1
-         @rtype: float
+        '''
+        Return the energy level of the lower state of this transition.
+
+        @return: energy level in cm^-1
+        @rtype: float
+    
+        '''
         
-         '''
-         
-         energy = self.molecule.radiat.getEnergyLevels()
-         return  float(energy[self.low_i-1])
+        if self.molecule.radiat is None:
+            print '%s_radiat.dat not found. Cannot find energy levels.'\
+                  %self.molecule.molecule
+            return
+        energy = self.molecule.radiat.getEnergyLevels()
+        return  float(energy[self.low_i-1])
 
 
 
-    def setIndices(self):
+    def __setIndices(self):
          
-         '''
-         Set the index of this transition in the radiat file of GASTRoNOoM.
-         
-         The index from the indices file for lower and upper state are set.
-         
-         '''
-         #- For 12C16O and 13C16O:
-         #- indices = [i<60 and [i+1,0,i] or [i+1,1,i-60] for i in range(120)]
-         #- As shown in above line, the first 60 (0-59) j's are associated with
-         #- index (1-60) and v=0, the next 60 (60-119) j's are associated with 
-         #- index (61-120) and v=1 
+        '''
+        Set the index of this transition in the radiat file of GASTRoNOoM.
+        
+        The index from the indices file for lower and upper state are set.
+        
+        '''
+        #- For 12C16O and 13C16O:
+        #- indices = [i<60 and [i+1,0,i] or [i+1,1,i-60] for i in range(120)]
+        #- As shown in above line, the first 60 (0-59) j's are associated with
+        #- index (1-60) and v=0, the next 60 (60-119) j's are associated with 
+        #- index (61-120) and v=1 
 
-         if not self.molecule.spec_indices:
-             self.up_i = self.jup + self.vup*self.molecule.ny_low + 1
-             self.low_i = self.jlow + self.vlow*self.molecule.ny_low + 1
-         else:
-             indices = self.molecule.radiat_indices
-             #- some molecules have only 2 or 3 relevant quantum numbers
-             quantum_up = [q 
-                                for i,q in enumerate([self.vup,self.jup,\
-                                                      self.kaup,self.kcup]) 
-                                if i<len(indices[0])-1]  
-             quantum_low = [q 
-                                 for i,q in enumerate([self.vlow,self.jlow,\
-                                                       self.kalow,self.kclow]) 
-                                 if i<len(indices[0])-1]
-             #- Get index of the transition quantum numbers in the indices list
-             #- If not present in list, ValueError is raised: probably caused 
-             #- by using a linelist that doesn't include this transition.
-             self.up_i  = indices[[i[1:] 
-                                  for i in indices].index(quantum_up)][0]
-             self.low_i = indices[[i[1:] 
-                                  for i in indices].index(quantum_low)][0]
-         self.radiat_trans = self.molecule.radiat.getTransInfo(low_i=self.low_i,\
-                                                               up_i=self.up_i)
-         if self.radiat_trans is False:
-             raw_input('Something fishy is going on in Transition.py... '+\
-                       'non-unique transition indices! Abort')
-         
+        if not self.molecule.spec_indices:
+            self.up_i = self.jup + self.vup*self.molecule.ny_low + 1
+            self.low_i = self.jlow + self.vlow*self.molecule.ny_low + 1
+        else:
+            indices = self.molecule.radiat_indices
+            #- some molecules have only 2 or 3 relevant quantum numbers
+            quantum_up = [q 
+                            for i,q in enumerate([self.vup,self.jup,\
+                                                    self.kaup,self.kcup]) 
+                            if i<len(indices[0])-1]  
+            quantum_low = [q 
+                                for i,q in enumerate([self.vlow,self.jlow,\
+                                                    self.kalow,self.kclow]) 
+                                if i<len(indices[0])-1]
+            #- Get index of the transition quantum numbers in the indices list
+            #- If not present in list, ValueError is raised: probably caused 
+            #- by using a linelist that doesn't include this transition.
+            self.up_i  = indices[[i[1:] 
+                                for i in indices].index(quantum_up)][0]
+            self.low_i = indices[[i[1:] 
+                                for i in indices].index(quantum_low)][0]
+        self.radiat_trans = self.molecule.radiat.getTransInfo(low_i=self.low_i,\
+                                                            up_i=self.up_i)
+        if self.radiat_trans is False:
+            raw_input('Something fishy is going on in Transition.py... '+\
+                    'non-unique transition indices! Abort')
+        self.frequency = float(self.radiat_trans['frequency'])
          
 
     def makeLabel(self):

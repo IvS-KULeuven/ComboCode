@@ -972,12 +972,13 @@ class Star(dict):
         if not self.has_key('LL_GAS_LIST'):
             if type(self['LL_MOLECULES']) is types.ListType \
                     or type(self['LL_MOLECULES']) is types.TupleType:
-                self['LL_GAS_LIST'] = [Molecule.Molecule(molecule=molec,\
+                self['LL_GAS_LIST'] = [Molecule.Molecule(molecule=molec,
+                                            linelist=1,\
                                             path_combocode=self.path_combocode) 
                                        for molec in self['LL_MOLECULES']]
             else:
-                self['LL_GAS_LIST'] = [Molecule.Molecule(molecule=\
-                                                         self['LL_MOLECULES'],\
+                self['LL_GAS_LIST'] = [Molecule.Molecule(linelist=1,\
+                                            molecule=self['LL_MOLECULES'],\
                                             path_combocode=self.path_combocode)]
         else:
             pass
@@ -1792,20 +1793,6 @@ class Star(dict):
         self.calcDENSTYPE()
         
                             
-
-    def calcMARCS_TYPE(self):
-        
-        """
-        Give default type of MARCS spectrum: 'st' for 'standard'
-        
-        """
-        
-        if not self.has_key('MARCS_TYPE'):
-            self['MARCS_TYPE'] = 'st'
-        else:
-            pass
-
-                                
                                                         
     def calcDUST_LIST(self):
         

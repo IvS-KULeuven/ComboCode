@@ -120,8 +120,8 @@ def cleanSphinxDatabase(db_path):
                     if this_trans_dict.has_key('IN_PROGRESS'):
                         del sph_db[cool_id][ml_id][trans_id][trans]
                         sph_db.addChangedKey(cool_id)
-                        print 'Removed in progress transition %s with trans'+\
-                              'id %s.'%(trans,trans_id)
+                        print 'Removed in progress transition %s '%trans + \
+                              'with transid %s.'%trans_id
     print '** Synchronizing the database...'
     sph_db.sync()
     print '** Done!'

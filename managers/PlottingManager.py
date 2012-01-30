@@ -157,7 +157,7 @@ class PlottingManager():
                 thisMethod = getattr(self.plotter_dust,method_name)
                 thisMethod(star_grid=star_grid,\
                            cfg=self.dust_cfg.get(k.replace('PLOT_','CFG_'),''))
-        if self.gastronoom:
+        if self.gastronoom or self.gas_pars.has_key('PLOT_LINE_LISTS'):
             for k in self.gas_pars:
                 method_name = 'plot' + \
                               ''.join([w.capitalize() 

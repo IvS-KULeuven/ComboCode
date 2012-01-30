@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from glob import glob
-import pyfits, os
-from scipy import rec,array,argmin
-
 """
 Reading stellar model atmospheres for use with MCMax and GASTRoNOoM.
 
 Author: R. Lombaert
 
 """
+
+from glob import glob
+import pyfits, os
+from scipy import rec,array,argmin
+
+
 
 class Atmosphere(object):
     
@@ -36,10 +38,10 @@ class Atmosphere(object):
                            
                            (default: None)
         @type filename: string
-        @keyword filepath: The folder where the model grids are stored
+        @keyword folder: The folder where the model grids are stored
         
-                           (default: '/STER/100/pieterd/IVSDATA/sedtables/modelgrids/')
-        @type filepath: string
+                         (default: '/STER/100/pieterd/IVSDATA/sedtables/modelgrids/')
+        @type folder: string
                 
         """
         
@@ -185,3 +187,5 @@ class Atmosphere(object):
         
         model = rec.fromarrays([wave,flux],names=['wave','flux'])        
         return model 
+        
+        

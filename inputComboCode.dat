@@ -64,10 +64,9 @@ M_STAR=1.0                          # Stellar mass [Msol]
 L_STAR=11000                            # Stellar luminosity [Lsol]
 #LOGG=0.0                               # Only relevant if model atmospheres are used for MCMax (STARTYPE=ATMOSPHERE), default is 0.0
 DISTANCE=1300                           # Distance to object [pc]           
-STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody; ATMOSPHERE for a model atmosphere spectrum in which case ATM_FILENAME and ATM_MODELTYPE have to be defined; FILE for a custom file and then STARFILE has to be filled in, otherwise it's ignored)
+STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody; ATMOSPHERE for a model atmosphere spectrum in which case ATM_FILENAME has to be defined; FILE for a custom file in which case STARFILE has to be given, otherwise it's ignored)
 #STARFILE=                           # Only relevant if STARTYPE=FILE, name of file in ~/ComboCode/StarFiles/. Two columns: one with wavelength in micron, one with flux in Jy.
 #ATM_FILENAME=                      # The filename of the model atmosphere (for now only in /STER/100/pieterd/IVSDATA/sedtables/modelgrids/ folder)
-#ATM_MODELTYPE=                     # The model type of the model atmosphere (for now only 'COMARCS')
 
 ####################
 # GAS SHELL Parameters
@@ -130,22 +129,6 @@ MDOT_GAS=1.40e-5                 # Gas mass loss rate [Msol/yr] - used to comput
 #R_POINTS_MASS_LOSS=2      10    7.0e-6   1.
 
 ####################
-# ATMOSPHERIC Models - Uncomment extra options if USE_MARCS=1, can use multiple options here as well.
-# Only used when STARTYPE = MARCS
-# NOT YET implemented
-####################
-#MARCS_TYPE=st                               # Type of MARCS spectrum; st  standard (not for giants),          MCMax  
-#                                             # mc  moderately CN cycled (12c/13C ~ 20), hc  heavily CN cycled (12C/13C ~4)
-
-####################################################################################################################
-############# NUMERICAL & CODING & STABILITY PARAMETERS for GASTRoNOoM
-####################################################################################################################
-CHECK_TAU_STEP=0.1                  # check.par.in sphinx if step in tau not too large                    GASTRoNOoM  
-STEP_RS_RIN=1.d+12                  # Step in  radius in DLSODA from RSTAR to RINNER                      GASTRoNOoM  
-STEP_RIN_ROUT=5.e+13                    # Step in  radius in DLSODA from RINNER to ROUT                       GASTRoNOoM  
-
-
-####################
 # DUST Particle Parameters  0 = particle type is ignored, "A_" is reserved for dust species abundances
 # Values should be separated by ";", first value of every "A_" add up to the total dust content, second value of every "A_"
 # adds up to the total dust content, etc. No actual gridding is possible. Any lists here included must have same length.
@@ -197,6 +180,16 @@ RT_SED=1                         # Put to 0 if no ray tracing for SED (ie MC spe
 REDO_OBS=0                    # CC checks if ray tracing for the SED has been done already, but this can be circumvented by putting this to 1, and then the observation output is produced regardless 
 IMAGE=0                       # Put to 1 if you want to make images based on MCMax/src/Image.out (ie change this file if you want different images), always runs, regardless of REDO_OBS 
 IMAGE_NOSOURCE=0              #Remove the central source from the image
+
+
+
+####################################################################################################################
+############# NUMERICAL & CODING & STABILITY PARAMETERS for GASTRoNOoM
+####################################################################################################################
+CHECK_TAU_STEP=0.1                  # check.par.in sphinx if step in tau not too large                    GASTRoNOoM  
+STEP_RS_RIN=1.d+12                  # Step in  radius in DLSODA from RSTAR to RINNER                      GASTRoNOoM  
+STEP_RIN_ROUT=5.e+13                    # Step in  radius in DLSODA from RINNER to ROUT                       GASTRoNOoM  
+
 
 ###################
 # MCMax radial and theta grid, grid refinement (modeling, not observation file output)
@@ -253,8 +246,8 @@ NZLAM=300                                   # Step size subgrid (must be < than 
 ## NEW_TEMPERATURE_FILENAME = the filename for the above, only relevant if nonzero, but must be included (filename with other temperature values to be used in mline and sphinx. Units are [cm,K])
 ## SET_KEYWORD_CHANGE_TEMPERATURE = 0 or 1: change the temperature after cooling (in samling.f)
 ##########################################################################
-MOLECULE=12C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
-MOLECULE=13C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=12C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=13C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=1H1H16O     45  45  648 50  0  1.0e-20  1.0e-20  1.0e-20  50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=p1H1H16O    45  45  644 50  0  1.0e-20  1.0e-20  1.0e-20  50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=32S16O      70  0   156 50  0  1.0e-11   1.0e-11   1.0e-11   50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
@@ -272,7 +265,7 @@ MOLECULE=13C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.
 ###################
 # GASTRoNOoM line lists
 ###################
-LINE_LISTS=1                        # Get molecular transitions from line lists, in addition to the data,
+LINE_LISTS=2                        # Get molecular transitions from line lists, in addition to the data,
                                     # if 1 line lists are generated automatically, if 2 line list is taken from log file
                                     # if 2 a filename is required, but other keywords are ignored for LL
                                     # Syntax: TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
@@ -306,8 +299,8 @@ LL_MOLECULES=16O1H&1H12C14N     #List the molecules for line listing
 #                       to the collection of data found by the auto search
 # Syntax: TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
 ###################
-TRANSITION=12C16O 0 2 0 0 0 1 0 0 JCMT 0.0 100
-TRANSITION=12C16O 0 1 0 0 0 0 0 0 JCMT 0.0 100
+#TRANSITION=12C16O 0 2 0 0 0 1 0 0 JCMT 0.0 100
+#TRANSITION=12C16O 0 1 0 0 0 0 0 0 JCMT 0.0 100
 
 ####################################################################################################################
 ###DATA PARAMETERS

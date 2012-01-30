@@ -11,7 +11,7 @@ import os
 from glob import glob
 from scipy import argmin
 
-import DataIO
+from cc.tools.io import DataIO
 
 
 
