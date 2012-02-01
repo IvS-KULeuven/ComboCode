@@ -10,6 +10,7 @@ Author: R. Lombaert
 import os 
 import re
 from scipy import pi, exp
+import types
 
 from cc.modeling.objects import Molecule 
 from cc.tools.io import Database, DataIO
@@ -164,6 +165,37 @@ def makeTransitionFromSphinx(filename,path_combocode=os.path.join(os.path\
 
 
 
+def checkUniqueness(trans_list):
+    
+    '''
+    Check uniqueness of a list of transitions.
+    
+    Same transitions are replaced by a single transition with all datafiles 
+    from the originals. 
+    
+    Based on the parameters of the transitions. If they are the same, only one
+    transition is added to the output list, but the datafiles are all included.
+    
+    Datafiles do not identify a transition!
+    
+    @param trans_list: The transitions to be checked for uniqueness
+    @type trans_list: list[Transition()]
+    
+    @return: The merged transitions with all datafiles included.
+    @rtype: tuple[Transition()]
+    
+    '''
+    
+    merged = []
+    for trans in trans_list:
+        if trans not in merged: 
+            merged.append(trans)
+        else:
+            merged[merged.index(trans)].addDatafile(trans.datafiles)
+    return tuple(merged)
+    
+    
+
 class Transition():
     
     '''
@@ -175,7 +207,7 @@ class Transition():
                  nup=None,vlow=0,jlow=0,kalow=0,kclow=0,nlow=None,offset=0.0,\
                  frequency=None,exc_energy=None,int_intensity_log=None,\
                  n_quad=100,use_maser_in_sphinx=0,\
-                 vibrational='',path_gastronoom=None,datafile=None,\
+                 vibrational='',path_gastronoom=None,datafiles=None,\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
         
@@ -286,14 +318,14 @@ class Transition():
         
                                   (default: None)
         @type path_gastronoom: string
-        @keyword datafile: filename and path to a datafile for this 
-                           transition, specific for the telescope used for this
-                           dataset. Only applicable for single transition 
-                           files, such as ground-based data. None if no file 
-                           available.
-                                
-                           (default: None)
-        @type datafile: string
+        @keyword datafiles: (multiple) filename(s) and path(s) to a datafile 
+                            for transition, specific for the telescope used for 
+                            this dataset. Only applicable for single transition 
+                            files, such as ground-based data. None if no files 
+                            available.
+                                    
+                            (default: None)
+        @type datafiles: string/list
         
         '''
         
@@ -325,7 +357,10 @@ class Transition():
         self.vibrational = vibrational
         self.sphinx = None
         self.path_gastronoom = path_gastronoom
-        self.datafile = datafile
+        if type(datafiles) is types.StringType:
+            self.datafiles = [datafiles]
+        else:
+            self.datafiles = datafiles
         self.lpdata = None 
         self.radiat_trans = None
         if frequency is None:
@@ -825,17 +860,47 @@ class Transition():
             self.sphinx = SphinxReader.SphinxReader(filename)
      
      
+     
+    def addDatafile(self,datafile):
+        
+        '''
+        Add a datafile name/multiple filenames for this transition. 
+        
+        @param datafile: the full filename, or multiple filenames
+        @type datafile: string/list
+        
+        '''
+        
+        if type(datafile) is types.StringType:
+            if self.datafiles is None:
+                self.datafiles = [datafile]
+            else: 
+                self.datafiles.append(datafile)
+        else:
+            if self.datafiles is None:
+                self.datafiles = datafile
+            else: 
+                self.datafiles.extend(datafile)
+            
+            
 
-    def readData(self):
+    def readData(self,vlsr):
          
         '''
-        Read the datafile associated with this transition if available.
+        Read the datafiles associated with this transition if available.
+         
+        @param vlsr: The stellar velocity with respect to the local standard
+                     of rest. Needed for fits files, in which no velocity 
+                     information is given.
+        @type vlsr: float
          
         '''
          
-        if self.lpdata is None and self.datafile <> None:
-            if self.datafile[-5:] == '.fits':
-                self.lpdata = FitsReader.FitsReader(self.datafile)
-            else:
-                self.lpdata = TxtReader.TxtReader(self.datafile)
+        if self.lpdata is None and self.datafiles <> None:
+            self.lpdata = []
+            for df in self.datafiles:
+                if df[-5:] == '.fits':
+                    self.lpdata.append(FitsReader.FitsReader(df,vlsr))
+                else:
+                    self.lpdata.append(TxtReader.TxtReader(df))
               

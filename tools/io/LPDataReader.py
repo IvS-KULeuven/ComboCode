@@ -32,7 +32,7 @@ class LPDataReader(Reader):
         
         super(LPDataReader, self).__init__()
         self.filename = filename
-    
+        self.c = 2.99792458e10          #in cm/s
     
     
     def getVelocity(self):

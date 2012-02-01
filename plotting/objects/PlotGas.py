@@ -628,14 +628,16 @@ class PlotGas(PlottingSession):
                     [trans.readSphinx() 
                      for trans in current_sub 
                      if trans <> None]
-                    current_trans.readData()
+                    current_trans.readData(v_lsr)
                     ddict = dict()
                     #- Add data, but only if the fata filename is known. This 
                     #- will be Tmb, in K. In case of intrinsic==1, you dont 
                     #- even want to check this.
                     if current_trans.lpdata <> None and no_data == 0:
-                        ddict['x'] = [current_trans.lpdata.getVelocity()]
-                        ddict['y'] = [current_trans.lpdata.getFlux()]
+                        ddict['x'] = [lp.getVelocity() 
+                                      for lp in current_trans.lpdata]
+                        ddict['y'] = [lp.getFlux() 
+                                      for lp in current_trans.lpdata]
                     else:
                         ddict['x'], ddict['y'] = [], []
                     if not no_models:

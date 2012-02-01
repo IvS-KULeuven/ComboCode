@@ -2200,20 +2200,19 @@ class Star(dict):
                                             [0:len(molec.molecule_short)] \
                                         == molec.molecule_short],\
                                    key=operator.itemgetter(0))
-                self['GAS_LINES'] = tuple(set([Transition.Transition(\
-                                                datafile=molec.pop(),\
-                                                molecule=molec.pop(),\
-                                                telescope=molec.pop(),\
-                                                jup=int(molec[0][-2]),\
-                                                jlow=int(molec[0][-1]),\
-                                                n_quad=self['N_QUAD'],\
-                                                use_maser_in_sphinx=self\
+                trans_list = [Transition.Transition(\
+                                    datafiles=molec.pop(),\
+                                    molecule=molec.pop(),\
+                                    telescope=molec.pop(),\
+                                    jup=int(molec[0][-2]),\
+                                    jlow=int(molec[0][-1]),\
+                                    n_quad=self['N_QUAD'],\
+                                    use_maser_in_sphinx=self\
                                                       ['USE_MASER_IN_SPHINX'],\
-                                                path_combocode\
-                                                      =self.path_combocode,\
-                                                path_gastronoom\
-                                                      =self.path_gastronoom)
-                                               for molec in data_list]))
+                                    path_combocode=self.path_combocode,\
+                                    path_gastronoom=self.path_gastronoom)
+                               for molec in data_list]
+                self['GAS_LINES'] = Transition.checkUniqueness(trans_list)
                 self.updateSelectTargetData(raw_data_list)
             #- Check if specific transition were requested in addition to data
             if self.has_key('TRANSITION'):
