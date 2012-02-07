@@ -121,7 +121,7 @@ from cc.statistics import Statistics
 from cc.data.instruments import Pacs
 from cc.data.instruments import Spire
 from cc.data import Sed
-from cc.modeling.tools import IceFitter
+from cc.modeling.tools import IceFitter, ColumnDensity
 from cc.modeling.tools import WaterAbundance as wa
 
 
@@ -543,7 +543,7 @@ class ComboCode(object):
         
         '''
         
-        if self.vic: 
+        if self.vic and self.gastronoom and self.sphinx : 
             self.vic_manager = Vic.Vic(path=self.path_gastronoom,\
                                        path_combocode=self.path_combocode,\
                                        account=self.vic_account,\
@@ -624,7 +624,7 @@ class ComboCode(object):
                 #-- was done: Only then do a progress check, because a lot of time 
                 #-- has passed, but then a wait time is used to make sure the newly
                 #-- queued sphinx models after the mline model are properly queued.
-                if self.vic \
+                if self.vic_manager \
                         and self.vic_manager.getQueue() \
                         and self.model_manager.done_mline_list[-1]:    
                     print '***********************************'
@@ -641,7 +641,7 @@ class ComboCode(object):
         
         '''
         
-        if self.vic:
+        if self.vic_manager <> None:
             #vic_running = vic_manager.checkProgress()
             if self.vic_manager.getQueue():
                 vic_running = True
@@ -841,6 +841,7 @@ class ComboCode(object):
             print '************************************************'
             for star in self.star_grid:
                 if star['LAST_MCMAX_MODEL']:
+                    cdcalc = ColumnDensity.ColumnDensity(star)
                     print 'Requested MCMax parameters for %s:'\
                           %star['LAST_MCMAX_MODEL']
                     if star.has_key('R_INNER_DUST'): del star['R_INNER_DUST']
@@ -860,8 +861,11 @@ class ComboCode(object):
                                          for rs in ['R_DES_H2O','R_DES_AH2O',\
                                                     'R_DES_CH2O']
                                          if star.has_key(rs)])
+                    print 'Dust associated molecular abundances (if available):'
+                    for species in star['DUST_LIST']:
+                        print 'A_%s/A_H2 = %.3e'\
+                              %(species,cdcalc.dustMolecAbun(species))
                     print ''
-    
                 if star['LAST_GASTRONOOM_MODEL']:
                     print 'Requested GASTRoNOoM parameters for %s:'%star['LAST_GASTRONOOM_MODEL']
                     print '%s = %s'%('DENSFILE',star['DENSFILE'])
@@ -898,6 +902,14 @@ class ComboCode(object):
                         print 'Total water vapour abundance (ortho + para) wrt H2:'
                         print '%.3e'%(nh2o_full/nh2_full)
                         print 
+                        nh2o1 = cdcalc.dustMolecAbun('CH2O')
+                        nh2o2 = cdcalc.dustMolecAbun('AH2O')
+                        print 'The new method of calculating dust abundance gives:'
+                        print '%.3e'%(nh2o1+nh2o2)
+                        cdh2o1 = cdcalc.dustFullColDens('CH2O')
+                        cdh2o2 = cdcalc.dustFullColDens('AH2O')
+                        print 'The new method of calculating the FULL column density gives:'
+                        print '%.3e'%(cdh2o1+cdh2o2)
                     else:
                         print 'No water ice present in dust model.'
                 print '************************************************'

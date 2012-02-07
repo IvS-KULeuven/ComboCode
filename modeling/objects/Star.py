@@ -23,6 +23,7 @@ from cc.tools.io import DataIO
 from cc.tools.numerical import Interpol
 from cc.modeling.objects import Molecule
 from cc.modeling.objects import Transition
+from cc.modeling.tools import ColumnDensity
 
   
 
@@ -574,79 +575,35 @@ class Star(dict):
         not good enough as determination of max radius IS correct.
         
         """
-
-        if float(self['T_CONTACT']):
-            print 'The EFFECTIVE minimum and maximum temperature cannot be '+\
-                  'checked yet, since thermal contact is assumed.'
-            return    
+        
+        coldens = ColumnDensity.ColumnDensity(self)
+        for index,species in enumerate(self['DUST_LIST']):
+            self['T_DES_%s'%species] = coldens.t_des[species]
+            self['R_DES_%s'%species] = coldens.r_des[species]\
+                                        /self.r_solar/self['R_STAR']
+            print 'The EFFECTIVE maximum temperature for species %s '%species+\
+                  'is %.2f K, at radius %.2f R_STAR.'\
+                  %(self['T_DES_%s'%species],self['R_DES_%s'%species])
+            
         species_list_min = [species 
                             for species in self.species_list 
-                            if self.has_key('T_MIN_' + species)]
-        for index,species in enumerate(self['DUST_LIST']):
-            name = float(self['T_CONTACT']) \
-                        and 'denstemp.dat' \
-                        or 'denstempP%.2i.dat'%(index+1,)
-            temp_list = self.getMCMaxOutput(int(self['NRAD'])\
-                                                *int(self['NTHETA']),\
-                                            keyword='TEMPERATURE',\
-                                            filename=name)
-            dens_list = self.getMCMaxOutput(int(self['NRAD'])\
-                                                *int(self['NTHETA']),\
-                                            keyword='DENSITY',filename=name)
-            rad_list = self.getMCMaxOutput(int(self['NRAD']),keyword='RADIUS',\
-                                           filename=name)
-            i = 0
-            while True:
-                try:    
-                    if dens_list[i] > 10**(-30):
-                        radius = rad_list[i/int(self['NTHETA'])]\
-                                        /self['R_STAR']/self.r_solar
-                        print 'The EFFECTIVE maximum temperature for species'+\
-                              ' %s is %.2f K, at radius'%(species,temp_list[i])+\
-                              ' %.2f R_STAR.'%(rad_list[i/int(self['NTHETA'])]\
-                                                  /self['R_STAR']/self.r_solar)
-                        self['T_DES_' + species] = temp_list[i]
-                        self['R_DES_' + species] \
-                            = rad_list[int(i/float(self['NTHETA']))]\
-                                /self['R_STAR']/self.r_solar
-                        break
-                except IndexError:
-                    print 'Something went wrong: no dust particles of ' + \
-                          'species %s are present in the envelope.'%species
-                    break
-                i += 1
-                
+                            if self.has_key('T_MIN_%s'%species) \
+                                or self.has_key('R_MAX_%s'%species)]
         for species in species_list_min:
-            name = float(self['T_CONTACT']) \
-                        and 'denstemp.dat' \
-                        or 'denstempP%.2i.dat'%self['DUST_LIST'].index(species)
-            temp_list = self.getMCMaxOutput(int(self['NRAD'])\
-                                                *int(self['NTHETA']),\
-                                           keyword='TEMPERATURE',filename=name)
-            dens_list = self.getMCMaxOutput(int(self['NRAD'])\
-                                                *int(self['NTHETA']),\
-                                            keyword='DENSITY',filename=name)
-            i = 0
-            while True:
-                i += 1
-                try:    
-                    if abs(dens_list[i-1] - dens_list[i]) > dens_list[i-1]/10.\
-                            and dens_list[i-1] > 10**(-50):
-                        print 'The EFFECTIVE minimum temperature for species'+\
-                              ' %s is %.2f K.'%(speciestemp_list[i-1])
-                        print 'The REQUESTED minimum temperature for species'+\
-                              '%s is %.2f K.'%(species,self['T_MIN_'+species])
-                        break
-                except IndexError:
-                    print 'The REQUESTED minimum temperature for species ' + \
-                          '%s is %.2f K.'%(species,self['T_MIN_' + species])
-                    print 'However, this minimum temperature is never ' + \
-                          'reached, and the species %s can exist '%species + \
-                          'throughout the whole CSE.'    
-                    print 'Density at inner radius: %.2f g/cm^3'%dens_list[0]+\
-                          ', at outer radius: %.2f g/cm^3.'\
-                          %str(dens_list[len(dens_list)-1])
-                    break
+            print 'The EFFECTIVE minimum temperature for species'+\
+                  ' %s is %.2f K at maximum radius %.2f R_STAR.'\
+                  %(species,coldens.t_min[species],\
+                    coldens.r_max[species]/self.r_solar/self['R_STAR'])
+            if self.has_key('T_MIN_%s'%species):
+                print 'The REQUESTED minimum temperature for species '+\
+                      '%s is %.2f K.'%(species,self['T_MIN_%s'%species])
+            if self.has_key('R_MAX_%s'%species):
+                print 'The REQUESTED maximum radius for species'+\
+                      '%s is %.2f R_STAR.'%(species,self['R_MAX_%s'%species])
+            print 'The EFFECTIVE outer radius of the shell is %.2f R_STAR.'\
+                  %(coldens.r_outer/self.r_solar/self['R_STAR'])
+            print 'Note that if R_MAX is ~ the effective outer radius, the ' +\
+                  'requested minimum temperature may not be reached.'
         return
     
 
@@ -1027,18 +984,15 @@ class Star(dict):
         
         if not self.has_key('T_INNER_DUST'):
             try:
-                dens = self.getMCMaxOutput(incr=int(self['NRAD'])\
+                rad = self.getMCMaxOutput(incr=int(self['NRAD']))
+                temp_ori = self.getMCMaxOutput(incr=int(self['NRAD'])\
                                                     *int(self['NTHETA']),\
-                                           keyword='DENSITY')
-                temp = self.getMCMaxOutput(incr=int(self['NRAD'])\
-                                                    *int(self['NTHETA']),\
-                                           keyword='TEMPERATURE')
-                i = 0
-                while dens[i] < 10**(-50):
-                    i += 1
-                self['T_INNER_DUST']=temp[i]
+                                               keyword='TEMPERATURE')
+                temp = Data.reduceArray(temp_ori,self['NTHETA'])
+                rin = self['R_INNER_DUST']*self['R_STAR']*self.r_solar
+                self['T_INNER_DUST'] = temp[argmin(abs(rad-rin))]
             except IOError:
-                self['T_INNER_DUST']=0
+                self['T_INNER_DUST'] = 0
         else:
             pass
         
@@ -1196,7 +1150,7 @@ class Star(dict):
                    condensation temperatures of the dust species taken into 
                    account 
             - ABSOLUTE: Density becomes larger than 10**(-51)
-            - RELATIVE: Density becomes larger than 1% of the next density step
+            - RELATIVE: Density becomes larger than 1% of maximum density
         
         Unless defined in the CC input file, the dust radius is updated every 
         time a new iteration starts.
@@ -1222,13 +1176,9 @@ class Star(dict):
                     if self['R_INNER_DUST_MODE'] == 'MAX':
                         ri_cm = rad[argmax(dens)]
                     elif self['R_INNER_DUST_MODE'] == 'ABSOLUTE':
-                        rad_sel = rad[dens>10**(-50)]
-                        ri_cm = rad_sel[0]
+                        ri_cm = rad[dens>10**(-50)][0]
                     else:
-                        i = 0
-                        while dens[i] < dens[i+1]*0.1:
-                             i += 1
-                        ri_cm = rad[i]
+                        ri_cm = rad[dens>0.01*max(dens)][0]
                     self['R_INNER_DUST'] = ri_cm/self.r_solar\
                                                 /float(self['R_STAR'])
                 except IOError:
@@ -1621,7 +1571,7 @@ class Star(dict):
                         #- on the other hand, if TMIN < temp_list[len-1]
                         #- all dust is allowed, so raise KeyError, such that no
                         #- R_MAX is entered in STAR
-                        elif temp < temp_list[len(temp_list)-1]:
+                        elif temp < temp_list[-1]:
                             raise KeyError
                         
                         else:

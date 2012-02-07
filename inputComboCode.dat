@@ -240,7 +240,7 @@ NZLAM=300                                   # Step size subgrid (must be < than 
 ##                if just filename, it is taken from ~/GASTRoNOoM/CustomAbundances, otherwise state the full path. first column radius in cm, second column abundance molecule versus H2 abundance
 ## ENHANCE_ABUNDANCE_FACTOR = scale the explicit abundance profile from a file with this factor. Put to 1 for no extra scaling. Put to 0 if you do not want to use a file for the abundance
 ##                These two parameters are ignored for isotopologues and para water, as the abundances for these are determined from the main isotopologue and the scaling factors (OPR, RATIO_12C_TO_13C, RATIO_16O_TO_17O)
-## CHANGE_FRACTION_FILENAME = the filename for the above, only relevant if nonzero, but must be included (fraction values with which the values from
+## CHANGE_FRACTION_FILENAME = the filename for the filename below, only relevant if nonzero, but must be included (fraction values with which the values from
 ##                           cooling are multiplied to be then used in mline and sphinx; units are [cm, unitless fraction values])
 ## SET_KEYWORD_CHANGE_ABUNDANCE = 0 or 1: change the abundance after cooling (in samling.f and init_mline.f)
 ## NEW_TEMPERATURE_FILENAME = the filename for the above, only relevant if nonzero, but must be included (filename with other temperature values to be used in mline and sphinx. Units are [cm,K])

@@ -468,7 +468,9 @@ class MCMax(ModelingSession):
             if star.has_key('R_MIN_%s'%species):
                 species_dict['minrad'] = star['R_MIN_%s'%species]\
                                            *star['R_STAR']*star.r_solar/star.au
-            if star.has_key('R_MAX_%s'%species):
+            #- R_MAX is always created by Star(), even if not requested.
+            #- Will be empty string if not available; no maxrad is given
+            if star['R_MAX_%s'%species]:
                 species_dict['maxrad'] = star['R_MAX_%s'%species]\
                                            *star['R_STAR']*star.r_solar/star.au
             dust_dict[self.dust_files[self.dust_list.index(species)]] \
