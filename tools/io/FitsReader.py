@@ -110,5 +110,8 @@ class FitsReader(LPDataReader):
             self.contents['flux'] = self.contents['flux'][::-1]
         self.contents['velocity'] = vel_grid
         
+        #- Get the date of observation
+        self.contents['date_obs'] = hdr.get('DATE-OBS')
+        
 
 

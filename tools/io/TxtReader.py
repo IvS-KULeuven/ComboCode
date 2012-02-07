@@ -53,3 +53,4 @@ class TxtReader(LPDataReader):
         data = DataIO.readCols(filename=self.filename,start_row=start_i,nans=1)
         self.contents['velocity'] = data[0]
         self.contents['flux'] = data[1]
+        self.contents['date_obs'] = 'N.A.'

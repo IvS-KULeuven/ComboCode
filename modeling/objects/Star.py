@@ -577,6 +577,7 @@ class Star(dict):
         """
         
         coldens = ColumnDensity.ColumnDensity(self)
+        self.calcT_INNER_DUST()
         for index,species in enumerate(self['DUST_LIST']):
             self['T_DES_%s'%species] = coldens.t_des[species]
             self['R_DES_%s'%species] = coldens.r_des[species]\
@@ -584,7 +585,7 @@ class Star(dict):
             print 'The EFFECTIVE maximum temperature for species %s '%species+\
                   'is %.2f K, at radius %.2f R_STAR.'\
                   %(self['T_DES_%s'%species],self['R_DES_%s'%species])
-            
+        
         species_list_min = [species 
                             for species in self.species_list 
                             if self.has_key('T_MIN_%s'%species) \
@@ -795,9 +796,9 @@ class Star(dict):
             temp = []
         #key = '$T_\mathrm{d} = %i\ K*(2r/R_*)^{-%.1f}$'\
         #        %(power,int(self['T_STAR']))
-        #key = 'Power law ($p = %.2f$) for $T_\mathrm{eff} = %i\ K$'\
-        #        %(power,int(self['T_STAR']))
-        key = 'Eq.~2 with $s=1$'
+        key = 'Power law ($p = %.2f$) for $T_\mathrm{eff} = %i\ K$'\
+              %(power,int(self['T_STAR']))
+        #key = 'Eq.~2 with $s=1$'
         return rad, temp, key
     
     

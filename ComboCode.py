@@ -121,7 +121,7 @@ from cc.statistics import Statistics
 from cc.data.instruments import Pacs
 from cc.data.instruments import Spire
 from cc.data import Sed
-from cc.modeling.tools import IceFitter, ColumnDensity
+from cc.modeling.tools import ColumnDensity, ContinuumDivision
 from cc.modeling.tools import WaterAbundance as wa
 
 
@@ -211,7 +211,7 @@ class ComboCode(object):
             self.finalizeVic()
             self.runPlotManager()
             self.runStatistics()
-            self.doIceFit()
+            self.doContDiv()
             self.appendResults() 
             if self.write_dust_density:
                 [star.writeDensity() for star in self.star_grid]
@@ -238,7 +238,7 @@ class ComboCode(object):
                           ('ln_path_gastronoom',''),('ln_path_mcmax',''),\
                           ('path_gastronoom',''),('path_mcmax',''),\
                           ('print_model_info',1),('stat_mode','chi2'),\
-                          ('do_ice_fit',0),('cfg_ice_fit','')]
+                          ('contdiv_features',[]),('cfg_contdiv','')]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -813,20 +813,32 @@ class ComboCode(object):
     
     
     
-    def doIceFit(self):
+    def doContDiv(self):
          
-         '''
-         Run the IceFitter class for this CC session.
+        '''
+        Run the Continuum Division class for this CC session.
          
-         '''
-         
-         if self.do_ice_fit:
-              print '** Plotting the 3.1 micron ice feature fit.'
-              self.ice = IceFitter.IceFitter(star_grid=self.star_grid,\
-                                             spec=self.sed)
-              self.ice.prepareModels()
-              self.ice.prepareSWS()
-              self.ice.show(cfg=self.cfg_ice_fit)
+        '''
+        
+        if type(self.contdiv_features) is types.StringType:
+            self.contdiv_features = [self.contdiv_features]
+        for k in self.contdiv_features: 
+            features = ['MGS','H2O3.1']
+            if k in features:
+                print '** Plotting continuum division for the %s feature.'%k
+                all_franges = [[20.0,23.,46.,48.5],\
+                               [2.6,2.85,3.3,3.7]]
+                all_funcs = ['linear',\
+                             'power']
+                franges = all_franges[features.index(k)]
+                func = all_funcs[features.index(k)]
+                self.contdiv = ContinuumDivision.ContinuumDivision(\
+                                        star_grid=self.star_grid,\
+                                        spec=self.sed,franges=franges,\
+                                        plot=1,func=func)
+                self.contdiv.prepareModels()
+                self.contdiv.prepareData()
+                self.contdiv.show(cfg=self.cfg_contdiv)
     
     
     
@@ -909,7 +921,7 @@ class ComboCode(object):
                         cdh2o1 = cdcalc.dustFullColDens('CH2O')
                         cdh2o2 = cdcalc.dustFullColDens('AH2O')
                         print 'The new method of calculating the FULL column density gives:'
-                        print '%.3e'%(cdh2o1+cdh2o2)
+                        print '%.3e g cm-2'%(cdh2o1+cdh2o2)
                     else:
                         print 'No water ice present in dust model.'
                 print '************************************************'

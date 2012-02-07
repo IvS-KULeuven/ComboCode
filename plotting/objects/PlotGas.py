@@ -456,7 +456,7 @@ class PlotGas(PlottingSession):
 
     def plotTransitions(self,star_grid,cfg='',no_data=0,vg_factor=3,\
                         telescope_label=1,sort_freq=0,sort_molec=0,\
-                        no_models=0,limited_axis_labels=0):
+                        no_models=0,limited_axis_labels=0,date_tag=1):
         
         """ 
         Plotting beam convolved line profiles in Tmb for both model and data if 
@@ -496,6 +496,11 @@ class PlotGas(PlottingSession):
                                       
                                       (default: 0)
         @type limited_axis_labels: bool
+        @keyword date_tag: Add a tag to a plot indicating the date of 
+                           observation. Only available for non-intrinsic obs.
+                         
+                           (default: 1)
+        @type date_tag: bool
         
         """
         
@@ -527,6 +532,8 @@ class PlotGas(PlottingSession):
             no_models = int(cfg_dict['no_models'])
         if cfg_dict.has_key('limited_axis_labels'):
             limited_axis_labels = cfg_dict['limited_axis_labels']
+        if cfg_dict.has_key('date_tag'):
+            date_tag = int(cfg_dict['date_tag'])
         if cfg_dict.has_key('keytags'):
             keytags = cfg_dict['keytags']
             pacs_keytags = keytags
@@ -563,7 +570,7 @@ class PlotGas(PlottingSession):
         
         def createTilePlots(trans_list,x_dim,y_dim,no_data,intrinsic,\
                             vg_factor,keytags,telescope_label,no_models,cfg,\
-                            star_grid,limited_axis_labels):
+                            star_grid,limited_axis_labels,date_tag):
             
             '''
             Create a tiled plot for a transition list.
@@ -605,6 +612,9 @@ class PlotGas(PlottingSession):
                                       
                                         (default: 0)
             @type limited_axis_labels: bool
+            @param date_tag: Add a tag to a plot indicating the date of 
+                             observation. Only available for non-intrinsic obs.
+            @type date_tag: bool
             @return: The data list with dictionaries for every tile is returned
             @rtype: list[dict]
 
@@ -676,6 +686,11 @@ class PlotGas(PlottingSession):
                             telescope_string = '%s'\
                                     %current_trans.telescope.replace('-H2O','')
                         ddict['labels'].append((telescope_string,0.75,0.90))
+                    if not intrinsic and date_tag:
+                        ddict['labels'].append(\
+                            ('; '.join([lp.getDateObs() \
+                                        for lp in current_trans.lpdata]),\
+                             0.05,0.01))
                     ddict['xmax'] = v_lsr + vg_factor * vg
                     ddict['xmin'] = v_lsr - vg_factor * vg
                     if [yi for yi in ddict['y'] if list(yi)]:
@@ -745,12 +760,13 @@ class PlotGas(PlottingSession):
                                   x_dim=x_dim,y_dim=y_dim,keytags=keytags,\
                                   intrinsic=0,no_models=no_models,\
                                   telescope_label=telescope_label,\
-                                  limited_axis_labels=limited_axis_labels)
+                                  limited_axis_labels=limited_axis_labels,\
+                                  date_tag=date_tag)
         if pacs_list:  
              createTilePlots(trans_list=pacs_list,vg_factor=vg_factor,\
                                   no_data=1,cfg=cfg,star_grid=star_grid,\
                                   intrinsic=1,keytags=pacs_keytags,\
-                                  x_dim=x_dim,y_dim=y_dim,\
+                                  x_dim=x_dim,y_dim=y_dim,date_tag=date_tag,\
                                   telescope_label=telescope_label,no_models=0,\
                                   limited_axis_labels=limited_axis_labels)
         

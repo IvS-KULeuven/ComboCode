@@ -329,12 +329,15 @@ class PlotDust(PlottingSession):
         for star in star_grid:
             if not int(star['T_CONTACT']):
                 radii,temps,keytags = star.getDustTemperatureSpecies()
+                vert_lines = []
             else:
                 include_total = 1
-                print 'Thermal contact is on. Plotting the total ' + \
-                      'temperature profile instead. Not separate profiles ' + \
-                      'for the species are available.'
+                print 'Thermal contact is on. All dust species share the ' + \
+                      'same temperature profile. Vertical lines indicate ' + \
+                      'inner radii of dust species.'
                 radii, temps, keytags = [], [], []
+                vert_lines = [star['R_DES_%s'%d]*star.r_solar*star['R_STAR'] 
+                              for d in star['DUST_LIST']]
             if include_total:
                 rad, temp, key = star.getDustTemperature()
                 radii.append(rad[rad>star['R_INNER_GAS']\
@@ -381,10 +384,8 @@ class PlotDust(PlottingSession):
             print '\n'.join(plot_filenames)
             print '***********************************'
             
-##############################
-####### PLOT OPA DUST ########
-##############################
-    
+
+
     def plotOpacities(self,star_grid=[],models=[],scaling=1,species=['AMC'],\
                       cfg=''):
         

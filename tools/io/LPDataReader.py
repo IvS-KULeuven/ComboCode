@@ -60,3 +60,12 @@ class LPDataReader(Reader):
         
         return self.contents['flux']
     
+    
+    def getDateObs(self):
+    
+        """
+        If available, get the date of observation.
+        
+        """
+        
+        return self.contents['date_obs']

@@ -39,6 +39,10 @@ SPIRE_RESOLUTION=2                       # The resolution of the SPire spectrum 
 #-- SED data selection and plotting
 PATH_SED=/home/robinl/MCMax/Data/    #Path to the Data folder where the text files with SED data are stored. Leave open if no data are to be plotted.
 
+#-- Continuum division for select features in the SED is possible, for comparison between data and model
+CONTDIV_FEATURES= #H2O3.1&MGS       # For now only the 3.1 water ice feature (H2O3.1) and the 30 micron MgS feature (MGS) are available
+CFG_CONTDIV=                        # Settings for the final plot for the continuum division can be given here. This plot shows a limited wavelength range for the dust feature in both continuum divided data and models. If no cfg file given, the plot is shown during the CC run, but not saved.
+
 #-- Statistics module [PACS only]
 STATISTICS=0                        # Calculate basic statistics, for now only for PACS
 STAT_TOLERANCE=1                    # Tolerance for the data wavelength grid, when selecting peak values in PACS data for comparison with model values. The tolerance is a factor >= 1 multiplied by the local wavelength resolution, after which the max flux is taken from that range.
@@ -51,7 +55,6 @@ UPDATE_SPEC=0                       # Update .spec files for GASTRoNOoM based on
 APPEND_RESULTS=0                    # Append model ids of transitions in the grid to the inputfile, regardless if they've been calculated this run or not. By default this is off, since model ids are already appended if successfully calculated *this* run. This switch adds id's even if transitions are pulled from the database.
 WRITE_DUST_DENSITY=0                # Write away separate density files for MCMax models (see Star.writeDensity()) --- The opacity file is now written away fully as input for GASTRoNOoM, so can be read from there.
 PRINT_MODEL_INFO=1                  # Print extra model info at the end of a CC session. Is off automatically for grids > 20 models
-DO_ICE_FIT=0                        # When fitting water ice to an SED, a zoom in of the three micron feature as well as model fits after continuum subtraction are shown. 
 
 ####################################################################################################################
 ############### STELLAR & CIRCUMSTELLAR PARAMETERS 
