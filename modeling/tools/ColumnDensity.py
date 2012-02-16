@@ -30,16 +30,16 @@ class ColumnDensity(object):
         Initializing an instance of the ColumnDensity class. 
         
         To be calculated:
-        - r_des: The minimum radius, ie where the dust species starts to exist.
-                 This is usually where the density of the species rises to 
-                 1% of the maximum density of the shell (in cm).
-        - t_des: The temperature at the destruction radius r_des of the species
-        - r_max: The maximum radius at which species exists, taken to be 
-                 outer radius, or where the density of species drops below 
-                 10**(-10) times the maximum density in the shell (in cm).
-        - t_min: The temperature at the maximum radius r_max of the species
-        - coldens: The column density in g/cm2 of the dust species between
-                   r_des and r_max
+         - r_des: The minimum radius, ie where the dust species starts to exist.
+                  This is usually where the density of the species rises to 
+                  1% of the maximum density of the shell (in cm).
+         - t_des: The temperature at the destruction radius r_des of the species
+         - r_max: The maximum radius at which species exists, taken to be 
+                  outer radius, or where the density of species drops below 
+                  10**(-10) times the maximum density in the shell (in cm).
+         - t_min: The temperature at the maximum radius r_max of the species
+         - coldens: The column density in g/cm2 of the dust species between
+                    r_des and r_max
         
         @param star: The model parameter set
         @type star: Star()

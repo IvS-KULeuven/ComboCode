@@ -985,7 +985,7 @@ class Star(dict):
         
         if not self.has_key('T_INNER_DUST'):
             try:
-                rad = self.getMCMaxOutput(incr=int(self['NRAD']))
+                rad = array(self.getMCMaxOutput(incr=int(self['NRAD'])))
                 temp_ori = self.getMCMaxOutput(incr=int(self['NRAD'])\
                                                     *int(self['NTHETA']),\
                                                keyword='TEMPERATURE')
