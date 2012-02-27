@@ -502,11 +502,23 @@ class ComboCode(object):
                                         extra_input=dict([(key,value)]))
                               for star in self.star_grid 
                               for value in grid]
+        for star in self.star_grid:
+            star.normalizeDustAbundances()
         if self.processed_input.has_key('LAST_MCMAX_MODEL'):
             del self.processed_input['LAST_MCMAX_MODEL']
         if self.processed_input.has_key('LAST_GASTRONOOM_MODEL'):
             del self.processed_input['LAST_GASTRONOOM_MODEL']
-        
+        #- Dust abundance is deleted as it is not changed during the session. 
+        #- Hence, it does not need to be re-updated after mutable input is 
+        #- removed. The keys need to be deleted to avoid inconsistencies in the
+        #- star.normalizeDustAbundances() method. Some A_*** values may not be
+        #- variable, while others are. Yet if any of them are variable, and 
+        #- have to be rescaled, then in principle they are ALL variable. This
+        #- can create a mess, and therefore it is safer to just remove them 
+        #- from the input dictionary.
+        for akey in [k for k in self.processed_input.keys() if k[0:2] == 'A_']:
+            del self.processed_input[akey]
+            
         
     
     def setLinks(self):

@@ -133,7 +133,7 @@ MDOT_GAS=1.40e-5                 # Gas mass loss rate [Msol/yr] - used to comput
 
 ####################
 # DUST Particle Parameters  0 = particle type is ignored, "A_" is reserved for dust species abundances
-# Values should be separated by ";", first value of every "A_" add up to the total dust content, second value of every "A_"
+# Values should be separated by ":", first value of every "A_" add up to the total dust content, second value of every "A_"
 # adds up to the total dust content, etc. No actual gridding is possible. Any lists here included must have same length.
 ####################
 A_AMSIL=0                           # Amorphous Silicates based on o Ceti's SED                           MCMax  

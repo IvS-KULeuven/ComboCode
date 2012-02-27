@@ -455,6 +455,27 @@ class Star(dict):
     
 
 
+    def normalizeDustAbundances(self):
+        
+        """
+        Normalize the dust abundances such that they add up to a total of 1.
+        
+        """
+        
+        
+        abun_ori = [self['A_%s'%sp] for sp in self['DUST_LIST']]
+        self['A_DUST_ORIGINAL'] = abun_ori
+        total = sum(abun_ori)
+        if total != 1:
+            print 'Normalizing dust abundances to 1, from a total of %f.'%total
+            abun_new = [a/total for a in abun_ori]
+            print ', '.join(['%.2f'%a for a in abun_ori]), ' is changed to ', \
+                  ', '.join(['%.2f'%a for a in abun_new]), ' for ', \
+                  ', '.join(self['DUST_LIST']), '.'
+            [self.__setitem__('A_%s'%sp,a) for a,sp in zip(abun_new,\
+                                                           self['DUST_LIST'])]
+
+
     def addLineList(self):
         
         """ 
@@ -1759,6 +1780,7 @@ class Star(dict):
             self['DUST_LIST'] = [species 
                                  for species in self['DUST_LIST'] 
                                  if float(self['A_' + species]) != 0]
+            print '=========='
             print 'Dust species that are taken into account during modeling '+\
                   'are %s.'%(', '.join(self['DUST_LIST']))
             print 'The specific density is %.2f g/cm^3.' \
