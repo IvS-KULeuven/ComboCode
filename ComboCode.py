@@ -238,7 +238,8 @@ class ComboCode(object):
                           ('ln_path_gastronoom',''),('ln_path_mcmax',''),\
                           ('path_gastronoom',''),('path_mcmax',''),\
                           ('print_model_info',1),('stat_mode','chi2'),\
-                          ('contdiv_features',[]),('cfg_contdiv','')]
+                          ('contdiv_features',[]),('cfg_contdiv',''),\
+                          ('show_contdiv',0)]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -847,7 +848,7 @@ class ComboCode(object):
                 self.contdiv = ContinuumDivision.ContinuumDivision(\
                                         star_grid=self.star_grid,\
                                         spec=self.sed,franges=franges,\
-                                        plot=1,func=func)
+                                        plot=self.show_contdiv,func=func)
                 self.contdiv.prepareModels()
                 self.contdiv.prepareData()
                 self.contdiv.show(cfg=self.cfg_contdiv)

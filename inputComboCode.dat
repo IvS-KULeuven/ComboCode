@@ -42,6 +42,7 @@ PATH_SED=/home/robinl/MCMax/Data/    #Path to the Data folder where the text fil
 #-- Continuum division for select features in the SED is possible, for comparison between data and model
 CONTDIV_FEATURES= #H2O3.1&MGS       # For now only the 3.1 water ice feature (H2O3.1) and the 30 micron MgS feature (MGS) are available
 CFG_CONTDIV=                        # Settings for the final plot for the continuum division can be given here. This plot shows a limited wavelength range for the dust feature in both continuum divided data and models. If no cfg file given, the plot is shown during the CC run, but not saved.
+SHOW_CONTDIV=0                      # Show plots of the intermediary steps of the continuum division.
 
 #-- Statistics module [PACS only]
 STATISTICS=0                        # Calculate basic statistics, for now only for PACS
@@ -135,7 +136,8 @@ MDOT_GAS=1.40e-5                 # Gas mass loss rate [Msol/yr] - used to comput
 # DUST Particle Parameters  0 = particle type is ignored, "A_" is reserved for dust species abundances
 # Values should be separated by ":", first value of every "A_" add up to the total dust content, second value of every "A_"
 # adds up to the total dust content, etc. No actual gridding is possible. Any lists here included must have same length.
-####################
+# If total is not equal to 1, it will be automatically normalized to 1 by CC.
+#####################
 A_AMSIL=0                           # Amorphous Silicates based on o Ceti's SED                           MCMax  
 A_AL2O3=0                                   # Amorphous Al2O3, Corundum at wl < 5 micron                          MCMax  
 A_FE=0.05                                       # Metallic Iron                                                               MCMax  
@@ -148,6 +150,7 @@ A_SIC=0.3                                       # Silicon Carbide               
 A_GRAPH=0                                   # Graphite                                                                        MCMax  
 A_H2O=0                                     # Water Ice                                                                       MCMax  
 
+A_NO_NORM=0                                    # If you do not want CC to normalize abundances, put this parameter to 1.                                 
 ####################
 # DUST T ranges (T_MAX_DUSTTYPE, T_MIN_DUSTTYPE) can be given for any dust type, normal gridding is again possible
 ####################

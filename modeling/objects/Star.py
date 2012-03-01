@@ -466,7 +466,7 @@ class Star(dict):
         abun_ori = [self['A_%s'%sp] for sp in self['DUST_LIST']]
         self['A_DUST_ORIGINAL'] = abun_ori
         total = sum(abun_ori)
-        if total != 1:
+        if not int(self['A_NO_NORM']) and '%.3f'%total != '1.000':
             print 'Normalizing dust abundances to 1, from a total of %f.'%total
             abun_new = [a/total for a in abun_ori]
             print ', '.join(['%.2f'%a for a in abun_ori]), ' is changed to ', \
@@ -475,6 +475,21 @@ class Star(dict):
             [self.__setitem__('A_%s'%sp,a) for a,sp in zip(abun_new,\
                                                            self['DUST_LIST'])]
 
+
+
+    def calcA_NO_NORM(self):
+        
+        """
+        Set the default value of A_NO_NORM to 0.
+        
+        """
+        
+        if not self.has_key('A_NO_NORM'):
+            self['A_NO_NORM'] = 0
+        else:
+            pass
+    
+        
 
     def addLineList(self):
         

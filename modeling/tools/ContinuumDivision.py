@@ -80,21 +80,26 @@ class ContinuumDivision(object):
         x = []
         y = []
         keys = []
-        for k in sorted(self.cont_division.keys()):
+        for k in sorted([ik for ik in self.cont_division.keys()
+                            if 'model' not in ik]):
             x.append(self.cont_division[k]['w_feat'])
             y.append(self.cont_division[k]['f_division'])
-            if 'model' in k:
+            keys.append(k)        
+        for star in self.star_grid:
+            if star['LAST_MCMAX_MODEL']:
+                x.append(self.cont_division[star['LAST_MCMAX_MODEL']]\
+                                           ['w_feat'])
+                y.append(self.cont_division[star['LAST_MCMAX_MODEL']]\
+                                           ['f_division'])
                 #star = [s 
-                        #for s in self.star_grid 
-                        #if k == s['LAST_MCMAX_MODEL']][0]
-                keys.append(k.replace('_','\_'))
+                    #for s in self.star_grid 
+                    #if k == s['LAST_MCMAX_MODEL']][0]
+                keys.append(star['LAST_MCMAX_MODEL'].replace('_','\_'))
                 #keys.append(', '.join(['%s = %.2f'%(par.replace('_','\_'),\
-                                                    #star[par]) 
-                                       #for par in star.keys() 
-                                       #if par[0:2] == 'A_' and \
-                                            #self.species in par]))
-            else:
-                keys.append(k)
+                                                #star[par]) 
+                                    #for par in star.keys() 
+                                    #if par[0:2] == 'A_' and \
+                                        #self.species in par]))
         fn = Plotting2.plotCols(x=x,y=y,xmin=fr1*0.9,xmax=fr4*1.1,\
                                 keytags=keys,vert_lines=self.franges,\
                                 key_location=(0.6,0.02),cfg=cfg)
