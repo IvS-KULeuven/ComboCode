@@ -193,7 +193,7 @@ IMAGE_NOSOURCE=0              #Remove the central source from the image
 ############# NUMERICAL & CODING & STABILITY PARAMETERS for GASTRoNOoM
 ####################################################################################################################
 CHECK_TAU_STEP=0.1                  # check.par.in sphinx if step in tau not too large                    GASTRoNOoM  
-STEP_RS_RIN=1.d+12                  # Step in  radius in DLSODA from RSTAR to RINNER                      GASTRoNOoM  
+STEP_RS_RIN=1.e+12                  # Step in  radius in DLSODA from RSTAR to RINNER                      GASTRoNOoM  
 STEP_RIN_ROUT=5.e+13                    # Step in  radius in DLSODA from RINNER to ROUT                       GASTRoNOoM  
 
 

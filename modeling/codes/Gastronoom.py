@@ -772,12 +772,18 @@ class Gastronoom(ModelingSession):
         
         keyword_int_list = ['ITERA_COOLING','LOG_DEPTH_STEP_POWER',\
                             'USE_NO_MASER_OPTION','USE_MLINE_COOLING_RATE_CO',\
-                            'USE_NEW_DUST_KAPPA_FILES']
-        if comm_key in keyword_int_list: make_int = 1
-        else: make_int = 0     
+                            'USE_NEW_DUST_KAPPA_FILES','STEP_RIN_ROUT',\
+                            'STEP_RS_RIN']
+        exp_not_list = ['STEP_RIN_ROUT','STEP_RS_RIN']
+        make_int = comm_key in keyword_int_list
+        
+        #- Make sure large integers are given in exponential notation
+        #- Fortran cannot work with very large integers.
+        exp_not = comm_key in exp_not_list
+        
         return super(Gastronoom, self).setCommandKey(comm_key,star,'GAS',\
                                                      star_key,alternative,\
-                                                     make_int)
+                                                     make_int,exp_not)
  
 
 
@@ -837,7 +843,7 @@ class Gastronoom(ModelingSession):
         #- also sets power law innermost region
         self.command_list['TEMPERATURE_EPSILON'] \
                 = star['TEMPERATURE_EPSILON_GAS']    
-        
+                
         #- the next few keywords only if the mode is not cooling, but epsilon
         if star['TEMPERATURE_MODE_GAS'] != 'cooling':        
             if float(star['TEMPERATURE_EPSILON2_GAS']):

@@ -377,6 +377,35 @@ def convertFloat(string,nans=0,convert_int=0):
         
 
 
+def inputToString(val,make_int=0,exp_not=0):
+    
+    """
+    Convert an input value to a string.
+    
+    @param val: The input value
+    @type val: str, int, float
+    
+    @keyword make_int: Turn the input value into an integer
+    
+                       (default: 0)
+    @type make_int: bool
+    @keyword exp_not: Convert to exponential notation in a string
+    
+                      (default: 0)
+    @type exp_not: bool
+    
+    @return: The converted input value
+    @rtype: string
+
+    """
+    
+    if exp_not:
+        return make_int and '%.2e'%(int(float(val))) or '%.2e'%(float(val))
+    else:
+        return make_int and str(int(float(val))) or str(val)
+    
+
+
 def printRecArray(recarr,precision=8):
     
     """

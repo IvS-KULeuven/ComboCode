@@ -9,6 +9,7 @@ Author: R. Lombaert
 
 import os
 from time import gmtime
+import types
 
 from cc.tools.io import DataIO
 
@@ -77,7 +78,7 @@ class ModelingSession(object):
                   
                   
     def setCommandKey(self,comm_key,star,key_type,star_key=None,\
-                      alternative=None,make_int=0):
+                      alternative=None,make_int=0,exp_not=0):
         
         '''
         Try setting a key in the command_list from a star instance. 
@@ -99,17 +100,21 @@ class ModelingSession(object):
                            
                            (default: None)
         @type star_key: string
-        @keyword alternative:  a default value passed from the standard 
-                               inputfile that is used if the keyword or the 
-                               keyword + '_%s'%key_type is not found in Star()
+        @keyword alternative: a default value passed from the standard 
+                              inputfile that is used if the keyword or the 
+                              keyword + '_%s'%key_type is not found in Star()
                                
-                               (default: None)
+                              (default: None)
         @type alternative: string
         @keyword make_int: make an integer before converting to string for this
                            keyword.
                            
                            (default: 0)
         @type make_int: boolean
+        @keyword exp_not: Convert to exponential notation in a string
+                          
+                          (default: 0)
+        @type exp_not: bool
         
         @return: True if successful, otherwise False.
         @rtype: bool
@@ -119,23 +124,18 @@ class ModelingSession(object):
         if star_key is None: star_key = comm_key
         try:
             self.command_list[comm_key] = \
-                    make_int \
-                        and str(int(float(star[star_key]))) \
-                        or str(star[star_key])
+                        DataIO.inputToString(star[star_key],make_int,exp_not)
             return True
         except KeyError: 
             try:
                 self.command_list[comm_key] = \
-                    make_int \
-                        and str(int(float(star[star_key+ '_%s'%key_type]))) \
-                        or str(star[star_key+ '_%s'%key_type])
+                        DataIO.inputToString(star[star_key+ '_%s'%key_type],\
+                                             make_int,exp_not)
                 return True
             except KeyError:
-                if alternative <> None: 
+                if alternative <> None:
                     self.command_list[comm_key] = \
-                        make_int \
-                            and str(int(float(alternative))) \
-                            or str(alternative)
+                        DataIO.inputToString(alternative,make_int,exp_not)
                     return True
                 else:
                     return False
@@ -185,8 +185,17 @@ class ModelingSession(object):
             keywords = [key 
                         for key in keywords 
                         if key not in ['ABUN_MOLEC','ABUN_MOLEC_RINNER',\
-                                       'ABUN_MOLEC_RE','RMAX_MOLEC']]
+                                       'ABUN_MOLEC_RE','RMAX_MOLEC']]        
         for keyword in keywords:
+            if keyword == 'STEP_RS_RIN':
+                if this_list.has_key(keyword) \
+                        and type(this_list[keyword]) is types.StringType:
+                    if 'd' in this_list[keyword]: 
+                        this_list[keyword] =this_list[keyword].replace('d','e')
+                if modellist.has_key(keyword) \
+                        and type(modellist[keyword]) is types.StringType:
+                    if 'd' in modellist[keyword]: 
+                        modellist[keyword] =modellist[keyword].replace('d','e')
             try:
                 try:
                     try:
