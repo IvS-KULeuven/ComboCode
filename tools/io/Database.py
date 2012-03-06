@@ -58,6 +58,7 @@ def convertMCMaxDatabase(path_mcmax,\
     finally:
         mcmax_db.close()
     db = Database(db_path)
+    print '** Inserting entries into the new database.'
     for commands,model_id in old_db:
         photon_count = DataIO.convertFloat(commands.pop(0),convert_int=1)
         commands = [c.split('=') for c in commands]
@@ -95,7 +96,7 @@ def convertMCMaxDatabase(path_mcmax,\
                            if int(k[-2:]) != i]
         db[model_id] = commanddict
     db.sync()   
-    
+    print '** Done!'
     
     
 def cleanSphinxDatabase(db_path):
