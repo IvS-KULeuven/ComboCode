@@ -359,8 +359,12 @@ class LineList():
         if self.molecule.spec_indices == 0 and self.cdms == 1:
             trans_list = [Transition.Transition(molecule=self.molecule,\
                                         frequency=float(trans[0])*10**6,\
-                                        exc_energy=float(trans[12]),\
-                                        int_intensity_log=float(trans[11]),\
+                                        exc_energy=self.include_extra \
+                                                        and float(trans[12]) \
+                                                        or None,\
+                                        int_intensity_log=self.include_extra \
+                                                           and float(trans[11])\
+                                                           or None,\
                                         vup=int(trans[3]),\
                                         jup=int(trans[2]),\
                                         vlow=int(trans[7]),\
@@ -371,8 +375,12 @@ class LineList():
         else:
             trans_list = [Transition.Transition(molecule=self.molecule,\
                                         frequency=float(trans[0])*10**6,\
-                                        exc_energy=float(trans[12]),\
-                                        int_intensity_log=float(trans[11]),\
+                                        exc_energy=self.include_extra \
+                                                        and float(trans[12]) \
+                                                        or None,\
+                                        int_intensity_log=self.include_extra \
+                                                           and float(trans[11])\
+                                                           or None,\
                                         vup=int(trans[1]),\
                                         jup=int(trans[2]),\
                                         kaup=int(trans[3]),\

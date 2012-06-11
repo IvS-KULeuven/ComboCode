@@ -8,6 +8,7 @@
 GASTRONOOM=0                                # Put to 0 if no GASTRoNOoM is needed
 MCMAX=0                                 # Put to 0 if no MCMax is needed
 SPHINX=1                            # Run Sphinx or not
+SKIP_COOLING=0                      # In case a model is not found in the cooling database, an attempt at calculating the cooling model can be skipped through this keyword, for instance if you already know the failed models in a grid will not succeed anyway.
 
 #-- Output folder management
 PATH_GASTRONOOM=test                          # Path in ~/GASTRoNOoM/. for models to be stored       
@@ -283,10 +284,13 @@ LL_TELESCOPE=PACS                   # Telescope for which the lines are to be se
                                     # PACS, just add PACS and not PACS;PACS-H2O if both molecules are requested. This is taken 
                                     # care of automatically.
 LL_OFFSET=0.0                       # If auto line listing is used, this gives the offset. Default is 0.0
+LL_NO_VIB=0 #12C16O&1H1H16O                         # When molecules are indicated here, their vibrational excitation lines are excluded from the calculation!
 N_QUAD=100                          # Number of impact par. in quadrature int(Inu pdp)               GASTRoNOoM  
                                     # N_QUAD is always the same for all lines requested if LINE_LISTS=1 or if an auto-search for data is done
                                     # n_quad is otherwise included in TRANSITION input lines or in the input files if LINE_LISTS=2 
 USE_MASER_IN_SPHINX=0               #Use correct masering opacities in Sphinx
+
+
 
 ##################
 # Plotting line lists    Note that the searchstring for searching pacs data is given by PACS_SEARCHSTRING
@@ -348,7 +352,7 @@ PLOT_GAS_LINE_CONTRIBUTIONS=0       # Plot the line contribution of molecular tr
 CFG_GAS_LINE_CONTRIBUTIONS=
 
 PLOT_GAS_LINE_LISTS=0               # Plot line lists taken from a spectroscopic database (see LL keywords in the main body of the CC inputfile)
-CFG__GAS_LINE_LISTS=
+CFG_GAS_LINE_LISTS=
 
 PLOT_GAS_PACS_SEGMENTS=0            # Plot segments of a PACS spectrum, either with line list labels or labels based on the sphinx transitions that have been modeled. Segments are defined by wavelength ranges given in the file PLOT_GAS_PACS_SEGMENTS_PATH defined in this inputfile. Requires PLOT_GAS_PACS or PLOT_GAS_LINE_LISTS to be on
 PLOT_GAS_PACS_SEGMENTS_PATH=

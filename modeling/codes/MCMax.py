@@ -465,7 +465,7 @@ class MCMax(ModelingSession):
             if star['TDESITER']:
                 species_dict['TdesA'] = star['T_DESA_' + species]
                 species_dict['TdesB'] = star['T_DESB_' + species]
-            if star.has_key('R_MIN_%s'%species):
+            if star.has_key('R_MIN_%s'%species) and star['R_MIN_%s'%species]:
                 species_dict['minrad'] = star['R_MIN_%s'%species]\
                                            *star['R_STAR']*star.r_solar/star.au
             #- R_MAX is always created by Star(), even if not requested.

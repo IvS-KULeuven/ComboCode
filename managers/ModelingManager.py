@@ -26,6 +26,7 @@ class ModelingManager():
                  mcmax=0,gastronoom=0,sphinx=0,iterative=0,\
                  num_model_sessions=1,vic_manager=None,replace_db_entry=0,\
                  path_gastronoom='runTest',path_mcmax='runTest',\
+                 skip_cooling=0,\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
         
@@ -82,6 +83,12 @@ class ModelingManager():
                                    
                                    (default: 0)
         @type replace_db_entry: bool
+        @keyword skip_cooling: Skip running cooling in case a model is not 
+                               found in the database, for instance if it is 
+                               already known that the model will fail
+        
+                               (default: 0)
+        @type skip_cooling: bool
         @keyword path_mcmax: modeling folder in MCMax home
         
                              (default: 'runTest')
@@ -96,6 +103,7 @@ class ModelingManager():
         self.var_pars, self.iterations = var_pars, int(iterations)
         self.mcmax, self.gastronoom = int(mcmax), int(gastronoom)
         self.sphinx = int(sphinx)
+        self.skip_cooling = skip_cooling
         self.input_dict = processed_input
         self.iterative = int(iterative)
         self.star_grid_old = [[] for i in xrange(num_model_sessions)]
@@ -209,6 +217,7 @@ class ModelingManager():
                                         sph_db=self.sph_db,\
                                         pacs_db=self.pacs_db,\
                                         sphinx=self.sphinx,\
+                                        skip_cooling=self.skip_cooling,\
                                         replace_db_entry=self.replace_db_entry)
                 gas_session.doGastronoom(star)     
                 self.cool_db.sync()

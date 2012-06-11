@@ -30,7 +30,7 @@ class Gastronoom(ModelingSession):
                                                   'ComboCode'),\
                  path_gastronoom='runTest',vic=None,sphinx=0,\
                  replace_db_entry=0,cool_db=None,ml_db=None,sph_db=None,\
-                 pacs_db=None):
+                 pacs_db=None,skip_cooling=0):
     
         """ 
         Initializing an instance of a GASTRoNOoM modeling session.
@@ -61,6 +61,12 @@ class Gastronoom(ModelingSession):
                                    
                                    (default: 0)
         @type replace_db_entry: bool
+        @keyword skip_cooling: Skip running cooling in case a model is not 
+                               found in the database, for instance if it is 
+                               already known that the model will fail
+        
+                               (default: 0)
+        @type skip_cooling: bool
         @keyword cool_db: the cooling database
         
                           (default: None)
@@ -119,6 +125,7 @@ class Gastronoom(ModelingSession):
                                 'GASTRoNOoM','inputGASTRoNOoM.dat')
         self.standard_inputfile = DataIO.readDict(filename,\
                                                   comment_chars=['#','!'])
+        self.skip_cooling = skip_cooling
         self.cool_db = cool_db
         self.ml_db = ml_db
         self.sph_db = sph_db
@@ -531,7 +538,8 @@ class Gastronoom(ModelingSession):
                                     self.path,\
                                     'gastronoom_' + self.model_id + '.inp')
             DataIO.writeFile(filename,commandfile)                
-            self.execGastronoom(subcode='cooling',filename=filename)
+            if not self.skip_cooling:
+                self.execGastronoom(subcode='cooling',filename=filename)
             if os.path.isfile(os.path.join(os.path.expanduser("~"),\
                                            'GASTRoNOoM',self.path,'models',\
                                            self.model_id,'coolfgr_all%s.dat'\

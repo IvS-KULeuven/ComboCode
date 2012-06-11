@@ -366,7 +366,7 @@ class PlotGas(PlottingSession):
                 radii = [rad[rad < 1e17] for rad in radii]
                 plot_filename = Plotting2.plotCols(x=radii,y=temp,cfg=cfg,\
                         filename=plot_filename,xaxis='$r$ (cm)',\
-                        yaxis='$T_\mathrm{g}$ (K)',linewidth=3,\
+                        yaxis='$T_\mathrm{g}$ (K)',\
                         plot_title='',figsize=(12.5,8),fontsize_ticklabels=26,\
                         key_location=(0.05,0.05),xlogscale=1,ylogscale=1,\
                         keytags=keys_cm,extension=extension,fontsize_axis=26,\
@@ -456,7 +456,8 @@ class PlotGas(PlottingSession):
 
     def plotTransitions(self,star_grid,cfg='',no_data=0,vg_factor=3,\
                         telescope_label=1,sort_freq=0,sort_molec=0,\
-                        no_models=0,limited_axis_labels=0,date_tag=1):
+                        no_models=0,limited_axis_labels=0,date_tag=1,\
+                        n_max_models=10):
         
         """ 
         Plotting beam convolved line profiles in Tmb for both model and data if 
@@ -501,6 +502,10 @@ class PlotGas(PlottingSession):
                          
                            (default: 1)
         @type date_tag: bool
+        @keyword n_max_models: Maximum number of models per tile
+        
+                               (default: 10)
+        @type n_max_models: bool
         
         """
         
@@ -534,6 +539,8 @@ class PlotGas(PlottingSession):
             limited_axis_labels = cfg_dict['limited_axis_labels']
         if cfg_dict.has_key('date_tag'):
             date_tag = int(cfg_dict['date_tag'])
+        if cfg_dict.has_key('n_max_models'):
+            n_max_models = int(cfg_dict['n_max_models'])
         if cfg_dict.has_key('keytags'):
             keytags = cfg_dict['keytags']
             pacs_keytags = keytags
@@ -546,7 +553,7 @@ class PlotGas(PlottingSession):
                          for trans in star['GAS_LINES']]))
                        for star in star_grid]
             pacs_keytags = list(keytags)
-            if not no_data : keytags[0:0] = ['Data']
+            if not no_data : keytags.append('Data')
              
         #- Check how many non-PACS transitions there are
         trans_list = sorted(set([trans 
@@ -570,7 +577,8 @@ class PlotGas(PlottingSession):
         
         def createTilePlots(trans_list,x_dim,y_dim,no_data,intrinsic,\
                             vg_factor,keytags,telescope_label,no_models,cfg,\
-                            star_grid,limited_axis_labels,date_tag):
+                            star_grid,limited_axis_labels,date_tag,indexi,\
+                            indexf):
             
             '''
             Create a tiled plot for a transition list.
@@ -615,6 +623,11 @@ class PlotGas(PlottingSession):
             @param date_tag: Add a tag to a plot indicating the date of 
                              observation. Only available for non-intrinsic obs.
             @type date_tag: bool
+            @param indexi: The start index of the models in the star_grid
+            @type indexi: int
+            @param indexf: The end index of the models in the star_grid
+            @type indexf: int
+            
             @return: The data list with dictionaries for every tile is returned
             @rtype: list[dict]
 
@@ -640,39 +653,41 @@ class PlotGas(PlottingSession):
                      if trans <> None]
                     current_trans.readData(v_lsr)
                     ddict = dict()
-                    #- Add data, but only if the fata filename is known. This 
-                    #- will be Tmb, in K. In case of intrinsic==1, you dont 
-                    #- even want to check this.
-                    if current_trans.lpdata <> None and no_data == 0:
-                        ddict['x'] = [lp.getVelocity() 
-                                      for lp in current_trans.lpdata]
-                        ddict['y'] = [lp.getFlux() 
-                                      for lp in current_trans.lpdata]
-                    else:
-                        ddict['x'], ddict['y'] = [], []
                     if not no_models:
                         if intrinsic:
-                            ddict['x'].extend(\
+                            ddict['x'] = \
                                 [(trans <> None and trans.sphinx <> None) \
                                       and list(trans.sphinx.getVelocityIntrinsic()+v_lsr)\
                                       or []                          
-                                 for trans in current_sub])
-                            ddict['y'].extend(\
+                                 for trans in current_sub]
+                            ddict['y'] = \
                                 [(trans <> None and trans.sphinx <> None) \
                                      and list(trans.sphinx.getLPIntrinsic()*10**(23))\
                                      or []
-                                 for trans in current_sub])
+                                 for trans in current_sub]
                         else:
-                            ddict['x'].extend(\
+                            ddict['x'] = \
                                 [(trans <> None and trans.sphinx <> None) \
                                      and list(trans.sphinx.getVelocity()+v_lsr)\
                                      or []                          
-                                 for trans in current_sub])
-                            ddict['y'].extend(\
+                                 for trans in current_sub]
+                            ddict['y'] = \
                                 [(trans <> None and trans.sphinx <> None) \
                                      and list(trans.sphinx.getLPTmb()) \
                                      or []
-                                 for trans in current_sub])
+                                 for trans in current_sub]
+                    else:
+                        ddict['x'], ddict['y'] = [], []
+                    #- Add data, but only if the data filename is known. This 
+                    #- will be Tmb, in K. In case of intrinsic==1, you dont 
+                    #- even want to check this.
+                    if current_trans.lpdata and no_data == 0:
+                        ddict['x'].extend([lp.getVelocity() 
+                                      for lp in current_trans.lpdata])
+                        ddict['y'].extend([lp.getFlux() 
+                                      for lp in current_trans.lpdata])
+                        ddict['histoplot'] = [len(ddict['x'])-1]
+                        
                     ddict['labels'] = \
                         [('%s'%(current_trans.molecule.molecule_plot),0.05,0.87),\
                          ('%s'%(current_trans.makeLabel()),0.05,0.76)]
@@ -704,7 +719,6 @@ class PlotGas(PlottingSession):
                                              for xi,yi in zip(ddict['x'],\
                                                               ddict['y'])
                                              if list(yi)])
-                    if not no_data: ddict['histoplot'] = [0]
                     if limited_axis_labels:
                         if j%x_dim == 0:
                             ddict['yaxis'] = intrinsic \
@@ -722,8 +736,10 @@ class PlotGas(PlottingSession):
                 extension = '.pdf'
                 filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                         self.path,'stars',self.star_name,\
-                                        self.plot_id,'%sline_profiles_%i'\
-                                        %(intrinsic and 'intrinsic_' or '',i))
+                                        self.plot_id,\
+                                        '%sline_profiles_%i_models_%ito%i'\
+                                        %(intrinsic and 'intrinsic_' or '',i,\
+                                          indexi,indexf))
                 plot_filenames.append(Plotting2.plotTiles(extension=extension,\
                      data=data,filename=filename,keytags=keytags,\
                      xaxis=r'$v$ (km s$^{-1}$)',fontsize_axis=16,cfg=cfg,\
@@ -741,8 +757,10 @@ class PlotGas(PlottingSession):
                 new_filename = os.path.join(os.path.expanduser('~'),\
                                             'GASTRoNOoM',\
                                             self.path,'stars',self.star_name,\
-                                            self.plot_id,'%sline_profiles.pdf'\
-                                            %(intrinsic and 'intrinsic_' or ''))
+                                            self.plot_id,\
+                                            '%sline_profiles_models_%ito%i.pdf'\
+                                            %(intrinsic and 'intrinsic_' or '',\
+                                              indexi,indexf))
                 DataIO.joinPdf(old=plot_filenames,new=new_filename)
                 print '** %sine profile plots can be found at:'\
                         %(intrinsic and 'Intrinsic l' or 'L')
@@ -755,21 +773,48 @@ class PlotGas(PlottingSession):
                 print '***********************************' 
     
         if trans_list:
-             createTilePlots(trans_list=trans_list,vg_factor=vg_factor,\
-                                  no_data=no_data,cfg=cfg,star_grid=star_grid,\
-                                  x_dim=x_dim,y_dim=y_dim,keytags=keytags,\
-                                  intrinsic=0,no_models=no_models,\
-                                  telescope_label=telescope_label,\
-                                  limited_axis_labels=limited_axis_labels,\
-                                  date_tag=date_tag)
+            j = 0
+            while j < len(star_grid):
+                i = 0 
+                subgrid = []
+                subkeys = []
+                while i < n_max_models and i+j < len(star_grid):
+                    subgrid.append(star_grid[i+j])
+                    subkeys.append(keytags[i+j])
+                    i += 1
+                subkeys.append(keytags[-1])
+                #- Copying the list so that the destructive loop does not mess
+                #- up multiple tile plot runs if n_models > n_max_models
+                createTilePlots(trans_list=list(trans_list),\
+                                vg_factor=vg_factor,\
+                                no_data=no_data,cfg=cfg,star_grid=subgrid,\
+                                x_dim=x_dim,y_dim=y_dim,keytags=subkeys,\
+                                intrinsic=0,no_models=no_models,\
+                                telescope_label=telescope_label,\
+                                limited_axis_labels=limited_axis_labels,\
+                                date_tag=date_tag,indexi=j,indexf=j+i)
+                j += i
         if pacs_list:  
-             createTilePlots(trans_list=pacs_list,vg_factor=vg_factor,\
-                                  no_data=1,cfg=cfg,star_grid=star_grid,\
-                                  intrinsic=1,keytags=pacs_keytags,\
-                                  x_dim=x_dim,y_dim=y_dim,date_tag=date_tag,\
-                                  telescope_label=telescope_label,no_models=0,\
-                                  limited_axis_labels=limited_axis_labels)
-        
+            j = 0
+            while j < len(star_grid):
+                i = 0 
+                subgrid = []
+                subkeys = []
+                while i < n_max_models and i+j < len(star_grid):
+                    subgrid.append(star_grid[i+j])
+                    subkeys.append(pacs_keytags[i+j])
+                    i += 1
+                subkeys.append(keytags[-1])
+                createTilePlots(trans_list=list(pacs_list),\
+                                vg_factor=vg_factor,\
+                                no_data=1,cfg=cfg,star_grid=subgrid,\
+                                intrinsic=1,keytags=subkeys,\
+                                x_dim=x_dim,y_dim=y_dim,date_tag=date_tag,\
+                                telescope_label=telescope_label,no_models=0,\
+                                limited_axis_labels=limited_axis_labels,\
+                                indexi=j,indexf=j+i)
+                j += i            
+                
 
 
     def createLineLabels(self,star,xmin,xmax):

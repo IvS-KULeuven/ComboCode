@@ -458,11 +458,17 @@ class Database(dict):
             dbfile = open(self.db_path,'r')
             while True:
                 try:
-                    db = cPickle.load(dbfile)
-                    break
-                except ValueError:
-                    print 'Loading database failed: ValueError ~ insecure '+\
-                          'string pickle. Waiting 10 seconds and trying again.' 
+                    try:
+                        db = cPickle.load(dbfile)
+                        break
+                    except ValueError:
+                        print 'Loading database failed: ValueError ~ ' + \
+                              'insecure string pickle. Waiting 10 seconds ' + \
+                              'and trying again.' 
+                        time.sleep(10)
+                except EOFError:
+                    print 'Loading database failed: EOFError. Waiting 10 ' + \
+                          'seconds and trying again.'
                     time.sleep(10)
             dbfile.close()
             self.clear()

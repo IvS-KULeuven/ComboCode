@@ -192,6 +192,10 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                             
                             (default: 0)
     @type removeYvalues: bool
+    @keyword removeXvalues: remove all X tickmarks on the X axis
+                            
+                            (default: 0)
+    @type removeXvalues: bool
     @keyword line_types: if empty, standard line types are used 
                          if an entry is 0, standard line types are used
                          line types are pythonesque ('-k', line style + color) 
@@ -277,6 +281,7 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
     ylogscale=kwargs.get('ylogscale',0)
     transparent=kwargs.get('transparent',0)
     removeYvalues=kwargs.get('removeYvalues',0)
+    removeXvalues=kwargs.get('removeXvalues',0)
     keytags=kwargs.get('keytags',[])
     line_types=kwargs.get('line_types',[])
     wspace = kwargs.get('wspace',0.2)
@@ -418,6 +423,8 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                               short_label_lines=short_label_lines)
             if removeYvalues:
                 ax.set_yticks([])
+            if removeXvalues:
+                ax.set_xticks([])
             for label in ax.xaxis.get_ticklabels() + ax.yaxis.get_ticklabels():
                 label.set_fontsize(fontsize_ticklabels)
                 if bold_ticklabels:
@@ -697,6 +704,10 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                             
                             (default: 0)
     @type removeYvalues: bool
+    @keyword removeXvalues: remove all X tickmarks on the X axis
+                            
+                            (default: 0)
+    @type removeXvalues: bool
     @keyword histoplot: plot as histogram for data indices given in this list 
                         respective to their positions in the x and y inputlists
                         
@@ -821,6 +832,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     twiny_ymax=kwargs.get('twiny_ymax',None)
     transparent=kwargs.get('transparent',0)
     removeYvalues=kwargs.get('removeYvalues',0)
+    removeXvalues=kwargs.get('removeXvalues',0)
     histoplot=kwargs.get('histoplot',[])
     line_types=kwargs.get('line_types',[])
     twiny_line_types=kwargs.get('twiny_line_types',[])
@@ -1053,6 +1065,8 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                 pl.text(x,y,s,transform=ax.transAxes,fontsize=fontsize_label)
         if removeYvalues:
             ax.set_yticks([])
+        if removeXvalues:
+            ax.set_xticks([])
         for label in ax.xaxis.get_ticklabels() + ax.yaxis.get_ticklabels():
             label.set_fontsize(fontsize_ticklabels)
             if bold_ticklabels:

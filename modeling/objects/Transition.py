@@ -192,7 +192,7 @@ def checkUniqueness(trans_list):
             merged.append(trans)
         else:
             merged[merged.index(trans)].addDatafile(trans.datafiles)
-    return tuple(merged)
+    return merged
     
     
 
@@ -896,11 +896,12 @@ class Transition():
          
         '''
          
-        if self.lpdata is None and self.datafiles <> None:
+        if self.lpdata is None:
             self.lpdata = []
-            for df in self.datafiles:
-                if df[-5:] == '.fits':
-                    self.lpdata.append(FitsReader.FitsReader(df,vlsr))
-                else:
-                    self.lpdata.append(TxtReader.TxtReader(df))
-              
+            if self.datafiles <> None:
+                for df in self.datafiles:
+                    if df[-5:] == '.fits':
+                        self.lpdata.append(FitsReader.FitsReader(df,vlsr))
+                    else:
+                        self.lpdata.append(TxtReader.TxtReader(df))
+                

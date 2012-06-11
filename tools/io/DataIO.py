@@ -115,11 +115,12 @@ def getInputData(path=os.path.join(os.path.expanduser('~'),'ComboCode','Data'),\
      
     """
     
+    keyword = keyword.upper()
     data = [line 
             for line in readFile(os.path.join(path,filename),' ')
             if ''.join(line).strip()]
     i = int(start_index)
-    while ' '.join(data[i-1]).upper().find(keyword) == -1:
+    while ' '.join(data[i-1]).find(keyword) == -1:
         i += 1
     data_index = [line.strip('#') 
                   for line in data[i-1]
@@ -737,7 +738,7 @@ def testFolderExistence(filepath):
     
     """
     
-    if not os.path.isdir(filepath):
+    if filepath and not os.path.isdir(filepath):
         subprocess.call(['mkdir ' + filepath],shell=True)
         print 'Made directory: ' + filepath
 

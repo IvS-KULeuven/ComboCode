@@ -7,7 +7,7 @@ Author: R. Lombaert
 
 """
 
-from scipy import mean, sqrt, log
+from scipy import mean, std, sqrt, log, isfinite
 from scipy import array, zeros, arange
 from scipy.optimize import leastsq
 from scipy.integrate import trapz
@@ -288,4 +288,100 @@ def reduceArray(arr,stepsize):
                      for i in xrange(len(arr)) 
                      if i%float(stepsize) == 0])
     return arr_red
+    
+
+
+def getRMS(wave,flux,wmin=None,wmax=None):
+    
+    '''
+    Get the RMS of a flux array in a given wavelength range. If no wavelengths 
+    are given, the RMS of the whole array is given.
+    
+    @param arr: The array of numbers
+    @type arr: array
+    
+    @keyword wmin: The minimum wavelength. If not given, the minimum wavelength 
+                   is the first entry in the wave array
+                    
+                   (default: None)
+    @type wmin: float
+    @keyword wmin: The maximum wavelength. If not given, the maximum wavelength 
+                   is the last entry in the wave array
+                    
+                   (default: None)               
+    @type wmax: float
+    
+    @return: The flux RMS between given wavelengths
+    @rtype: float
+    
+    '''
+    
+    wave, flux = array(wave), array(flux)
+    wmin, wmax = float(wmin), float(wmax)
+    fsel = flux[(wave>wmin)*(wave<wmax)]
+    fsel = fsel[isfinite(fsel)]
+    return sqrt((fsel**2).sum()/float(len(fsel)))
+    
+    
+def getMean(wave,flux,wmin=None,wmax=None):
+
+    '''
+    Get the mean of a flux array in a given wavelength range. If no wavelengths 
+    are given, the mean of the whole array is given.
+    
+    @param arr: The array of numbers
+    @type arr: array
+    
+    @keyword wmin: The minimum wavelength. If not given, the minimum wavelength 
+                   is the first entry in the wave array
+                    
+                   (default: None)
+    @type wmin: float
+    @keyword wmin: The maximum wavelength. If not given, the maximum wavelength 
+                   is the last entry in the wave array
+                    
+                   (default: None)               
+    @type wmax: float
+    
+    @return: The flux mean between given wavelengths
+    @rtype: float
+    
+    '''
+    
+    wave, flux = array(wave), array(flux)
+    wmin, wmax = float(wmin), float(wmax)
+    fsel = flux[(wave>wmin)*(wave<wmax)]
+    return mean(fsel[isfinite(fsel)])
+    
+    
+
+def getStd(wave,flux,wmin=None,wmax=None):
+
+    '''
+    Get the std of a flux array in a given wavelength range. If no wavelengths 
+    are given, the std of the whole array is given.
+    
+    @param arr: The array of numbers
+    @type arr: array
+    
+    @keyword wmin: The minimum wavelength. If not given, the minimum wavelength 
+                   is the first entry in the wave array
+                    
+                   (default: None)
+    @type wmin: float
+    @keyword wmin: The maximum wavelength. If not given, the maximum wavelength 
+                   is the last entry in the wave array
+                    
+                   (default: None)               
+    @type wmax: float
+    
+    @return: The flux std between given wavelengths
+    @rtype: float
+    
+    '''
+    
+    wave, flux = array(wave), array(flux)
+    wmin, wmax = float(wmin), float(wmax)
+    fsel = flux[(wave>wmin)*(wave<wmax)]
+    return std(fsel[isfinite(fsel)])
     

@@ -239,7 +239,7 @@ class ComboCode(object):
                           ('path_gastronoom',''),('path_mcmax',''),\
                           ('print_model_info',1),('stat_mode','chi2'),\
                           ('contdiv_features',[]),('cfg_contdiv',''),\
-                          ('show_contdiv',0)]
+                          ('show_contdiv',0),('skip_cooling',0)]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -309,25 +309,11 @@ class ComboCode(object):
         '''
         Collect the SED data and create an Sed() object.
         
-        For now done based on a Star() object, but will be changed to the same
-        method as used for PACS and SPIRE. Star() eventually will not know 
-        anything about data
-        
         '''
         
         path_sed = self.processed_input.pop('PATH_SED',None)
         if path_sed:
-            cc_path = os.path.join(self.path_combocode,'Data')
-            star_index = DataIO.getInputData(cc_path).index(self.star_name)
-            ak = DataIO.getInputData(path=cc_path,keyword='A_K')[star_index]
-            longitude = DataIO.getInputData(path=cc_path,keyword='LONG')[star_index]
-            latitude = DataIO.getInputData(path=cc_path,keyword='LAT')[star_index]
-            if abs(longitude) < 5.0 and abs(latitude) < 5.0:
-                gal_position = 'GC'
-            else:
-                gal_position = 'ISM'          
-            self.sed = Sed.Sed(star_name=self.star_name,ak=ak,\
-                               gal_position=gal_position,\
+            self.sed = Sed.Sed(star_name=self.star_name,\
                                path_combocode=self.path_combocode,\
                                path=path_sed)
         else: 
@@ -588,7 +574,8 @@ class ComboCode(object):
                                        vic_manager=self.vic_manager,\
                                        path_combocode=self.path_combocode,\
                                        replace_db_entry=self.replace_db_entry,\
-                                       path_mcmax=self.path_mcmax)
+                                       path_mcmax=self.path_mcmax,\
+                                       skip_cooling=self.skip_cooling)
     
     
     def setPlotManager(self):    
@@ -803,10 +790,11 @@ class ComboCode(object):
         
         '''
         
-        print '************************************************'
-        print '****** Loading Statistics module for %s.'%self.star_name
-        print '************************************************'
         if self.statistics and self.pacs <> None:
+            print '************************************************'
+            print '****** Loading Statistics module for %s.'%self.star_name
+            print '************************************************'
+
             self.stats = PeakStats.PeakStats(star_name=self.star_name,\
                                              path_code=self.path_gastronoom,\
                                              path_combocode=self.path_combocode)
@@ -847,11 +835,22 @@ class ComboCode(object):
                 func = all_funcs[features.index(k)]
                 self.contdiv = ContinuumDivision.ContinuumDivision(\
                                         star_grid=self.star_grid,\
-                                        spec=self.sed,franges=franges,\
-                                        plot=self.show_contdiv,func=func)
+                                        spec=[self.sed],franges=franges,\
+                                        plot=self.show_contdiv,func=func,\
+                                        path_combocode=self.path_combocode,\
+                                        cfg=self.cfg_contdiv)
                 self.contdiv.prepareModels()
                 self.contdiv.prepareData()
-                self.contdiv.show(cfg=self.cfg_contdiv)
+                self.contdiv.show()
+                for key,val in self.contdiv.eq_width.items():
+                    if key[0:3] == 'sws':
+                        key = self.sed.star_name_plots
+                        print 'Equivalent width for %s in %s: %f'\
+                              %(k,self.sed.star_name_plots,val)
+                for star in self.star_grid:
+                    model_id = star['LAST_MCMAX_MODEL']
+                    print 'Equivalent width for %s in %s: %f'\
+                          %(k,model_id,self.contdiv.eq_width[model_id])
     
     
     

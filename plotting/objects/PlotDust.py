@@ -325,6 +325,12 @@ class PlotDust(PlottingSession):
                           ' list only, not yet implemented.')
             #- Requires DUST_LIST and T_CONTACT to be taken from the log file. 
             #- It's possible, but needs some programming
+        if cfg:
+            cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
+        else:
+            cfg_dict = dict()
+        if cfg_dict.has_key('powerlaw'):
+            powerlaw = cfg_dict['powerlaw']
         plot_filenames = []
         for star in star_grid:
             if not int(star['T_CONTACT']):

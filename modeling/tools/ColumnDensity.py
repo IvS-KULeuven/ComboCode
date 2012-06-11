@@ -151,7 +151,8 @@ class ColumnDensity(object):
         
         """
         
-        if not float(self.star['A_%s'%species]):
+        if not (self.star.has_key('A_%s'%species) \
+                and float(self.star['A_%s'%species])):
             return 0
         try:
             ispecies = self.dustlist.index(species)
@@ -179,7 +180,8 @@ class ColumnDensity(object):
         
         """
 
-        if not float(self.star['A_%s'%species]):
+        if not (self.star.has_key('A_%s'%species) \
+                and float(self.star['A_%s'%species])):
             return 0
         try:
             ispecies = self.dustlist.index(species)

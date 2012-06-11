@@ -273,7 +273,7 @@ class Molecule():
         self.use_indices_dat = DataIO.getInputData(keyword='USE_INDICES_DAT',\
                                 path=os.path.join(self.path_combocode,'Data'),\
                                 filename='Molecule.dat')[self.molecule_index]
-        if self.use_indices_dat:
+        if self.use_indices_dat and not linelist:
              self.indices_index = DataIO.getInputData(start_index=4,\
                                 path=os.path.join(self.path_combocode,'Data'),\
                                 keyword='MOLECULE',filename='Indices.dat')\

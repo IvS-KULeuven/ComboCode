@@ -48,24 +48,23 @@ class Sed(object):
     
     '''
     
-    def __init__(self,star_name,ak,gal_position,path,path_combocode,\
-                 plot_extrapol_extinction=0):
+    def __init__(self,star_name,path,plot_extrapol_extinction=0,\
+                 path_combocode=os.path.join(os.path.expanduser('~'),\
+                                             'ComboCode')):
         
         ''' 
-        Initializing a Spectrum instance. 
+        Initializing an Sed instance. 
         
         Setting starting parameters from a star object.
         
         @param star_name: The star name of the object
         @type star_name: string
-        @param ak: The interstellar extinction coefficient in K-band
-        @type ak: float
-        @param gal_position: 'gc' or 'ism', for determining the interstellar 
-                             extinction law by chiar and tielens (2006)
-        @type gal_position: string
         @param path: The path to the folder containing the SED data
         @type path: string
-        @param path_combocode: path to the combocode folder
+        
+        @keyword path_combocode: path to the combocode folder
+        
+                               (default: ~/ComboCode/)
         @type path_combocode: string
         @keyword plot_extrapol_extinction: Plot and show the result of the 
                                            extrapolated interstellar extinction
@@ -77,17 +76,42 @@ class Sed(object):
         '''
         
         self.star_name = star_name
-        self.ak = ak
-        self.gal_position = gal_position
         self.path = path
         self.path_combocode = path_combocode
         self.plot_extrapol_extinction = plot_extrapol_extinction
         self.data = dict()
         self.data_raw = dict()
+        self.setStarPars()
         self.setData()
         self.readData()
         self.dereddenData()
-       
+
+
+
+    def setStarPars(self):
+        
+        """
+        Set some standard stellar parameters such as Ak and galactic position.
+        
+        """
+        
+        cc_path = os.path.join(self.path_combocode,'Data')
+        star_index = DataIO.getInputData(cc_path).index(self.star_name)
+        self.ak = DataIO.getInputData(path=cc_path,keyword='A_K')[star_index]
+        longitude = DataIO.getInputData(path=cc_path,keyword='LONG')[star_index]
+        latitude = DataIO.getInputData(path=cc_path,keyword='LAT')[star_index]
+        if (abs(longitude) < 5.0 or longitude > 355.0) and abs(latitude) < 5.0:
+            self.gal_position = 'GC'
+        else:
+            self.gal_position = 'ISM'    
+        self.star_index = DataIO.getInputData(\
+                                path=os.path.join(self.path_combocode,'Data'))\
+                              .index(self.star_name)
+        self.star_name_plots = DataIO.getInputData(\
+                                path=os.path.join(self.path_combocode,'Data'),\
+                                keyword='STAR_NAME_PLOTS',remove_underscore=1)\
+                               [self.star_index]
+    
        
        
     def setData(self):

@@ -110,10 +110,16 @@ class PeakStats(Statistics):
         '''
         
         instrument = instrument.upper()
+        if instrument == 'FREQ_RESO':
+            print 'No peak-to-peak ratios can be calculated for freq-resolved lines.'
+            return
         print '** Calculating peak (data) to peak (model) ratios... for %s.'\
               %instrument
         if tolerance < 1: tolerance = 1
-        for star in self.star_grid:
+        star_grid = [star 
+                     for star in self.star_grid 
+                     if star['LAST_%s_MODEL'%instrument]]
+        for star in star_grid:
             this_id = star['LAST_%s_MODEL'%instrument]
             #-reset for these parameters
             self.star_stats[this_id,tolerance,sigma] = []                
@@ -141,9 +147,12 @@ class PeakStats(Statistics):
                         and model_flux[argmin(abs(model_wav-wav))] \
                         or None
                      for wav in self.central_wav[this_id]]
-                d_tmean = self.data_stats[instrument][filename]['tmean']
-                d_tstd = self.data_stats[instrument][filename]['tstd']
-                
+                d_mean = self.data_stats[instrument][filename]['mean']
+                d_std = self.data_stats[instrument][filename]['std']
+                #- This is not the sigma used for clipping flux ratios. 
+                #- this sigma is used for determining whether a peak flux is
+                #- significant compared to the std value of the band.
+                d_sigma = self.data_stats[instrument][filename]['sigma']
                 self.central_dataflux[this_id,filename,tolerance] = \
                     [(wav>=data_wav[0] and wav<=data_wav[-2]) 
                         and max(data_flux\
@@ -158,9 +167,9 @@ class PeakStats(Statistics):
                 #- want to include it in statistics: replace by mean + std, but
                 #- make it negative to see the difference
                 self.central_dataflux[this_id,filename,tolerance] = \
-                    [(d >= d_tmean+d_tstd or d is None) \
+                    [(d >= d_mean+(d_std*d_sigma) or d is None) \
                         and d \
-                        or -1*abs(d_tmean+d_tstd) 
+                        or -1*abs(d_mean+(d_std*d_sigma)) 
                      for d in self.central_dataflux[this_id,filename,\
                                                     tolerance]]
                 
@@ -179,7 +188,7 @@ class PeakStats(Statistics):
                     (scipy.sqrt(sum(\
                          [(val-1)**2/self.data_stats[instrument]\
                                                     [os.path.split(f)[1]]\
-                                                    ['tstd']**2
+                                                    ['std']**2
                            for f in self.instruments[instrument].data_filenames
                            for val in self.getRatios(instrument,this_id,\
                                                      tolerance,sigma=sigma,\
@@ -193,7 +202,7 @@ class PeakStats(Statistics):
                     (scipy.sqrt(sum(\
                          [abs(val-1)/self.data_stats[instrument]\
                                                     [os.path.split(f)[1]]\
-                                                    ['tstd']
+                                                    ['std']
                            for f in self.instruments[instrument].data_filenames
                            for val in self.getRatios(instrument,this_id,\
                                                      tolerance,sigma=sigma,\
@@ -210,7 +219,7 @@ class PeakStats(Statistics):
                                or scipy.log10(val*10))/self.data_stats\
                                                         [instrument]\
                                                         [os.path.split(f)[1]]\
-                                                        ['tstd'])
+                                                        ['std'])
                            for f in self.instruments[instrument].data_filenames 
                            for val in self.getRatios(instrument,this_id,\
                                                      tolerance,sigma=sigma,\
@@ -237,21 +246,21 @@ class PeakStats(Statistics):
             print '"chi-squared": %.4f,  std: %.4f'\
                   %self.star_stats[this_id,tolerance,sigma,mode]  
         id_closest_match \
-            = self.star_grid[argmin(array([self.star_stats[star['LAST_%s_MODEL'\
+            = star_grid[argmin(array([self.star_stats[star['LAST_%s_MODEL'\
                                                                 %instrument],\
                                                            tolerance,sigma,\
                                                            mode][0] 
-                             for star in self.star_grid 
+                             for star in star_grid 
                              if self.star_stats[star['LAST_%s_MODEL'\
                                                      %instrument],\
                                                 tolerance,sigma,mode][0]]))]\
                             ['LAST_%s_MODEL'%instrument]
         id_lowest_spread \
-            = self.star_grid[argmin(array([self.star_stats[star['LAST_%s_MODEL'\
+            = star_grid[argmin(array([self.star_stats[star['LAST_%s_MODEL'\
                                                                 %instrument],\
                                                            tolerance,sigma,\
                                                            mode][1]
-                             for star in self.star_grid 
+                             for star in star_grid 
                              if self.star_stats[star['LAST_%s_MODEL'\
                                                      %instrument],\
                                                 tolerance,sigma,mode][0]]))]\
@@ -266,8 +275,8 @@ class PeakStats(Statistics):
         print id_lowest_spread
         print '"chi-squared": %.4f, std: %.4f'\
               %self.star_stats[id_lowest_spread,tolerance, sigma,mode]
-        #id_closest_match = self.star_grid[argmin(array([abs(self.star_stats[star['LAST_%s_MODEL'%instrument],tolerance,sigma][0]) for star in self.star_grid]))]['LAST_%s_MODEL'%instrument]
-        #id_lowest_spread = self.star_grid[argmin(array([self.star_stats[star['LAST_%s_MODEL'%instrument],tolerance,sigma][1] for star in self.star_grid]))]['LAST_%s_MODEL'%instrument]
+        #id_closest_match = star_grid[argmin(array([abs(self.star_stats[star['LAST_%s_MODEL'%instrument],tolerance,sigma][0]) for star in star_grid]))]['LAST_%s_MODEL'%instrument]
+        #id_lowest_spread = star_grid[argmin(array([self.star_stats[star['LAST_%s_MODEL'%instrument],tolerance,sigma][1] for star in star_grid]))]['LAST_%s_MODEL'%instrument]
         #print '** The best match (ie mean log10 closest to 0) is found for:'
         #print id_closest_match
         #print 'with mean: %s, and std: %s'%(self.star_stats[id_closest_match,tolerance, sigma])
@@ -276,9 +285,7 @@ class PeakStats(Statistics):
         #print 'with mean: %s, and std: %s'%(self.star_stats[id_lowest_spread,tolerance, sigma])
         print '***********************************'
 
-##############################
-######### GET RATIOS #########
-##############################
+
                                                                                 
     def getRatios(self,instrument,this_id,tolerance,data_type='peak_ratios',\
                   return_negative=0,sigma=None,filename=None,return_clipped=0):
@@ -327,6 +334,9 @@ class PeakStats(Statistics):
         
         '''
         
+        if instrument == 'FREQ_RESO':
+            print 'No peak-to-peak ratios can be calculated for freq-resolved lines.'
+            return
         filenames = filename is None \
                         and self.instruments[instrument].data_filenames \
                         or [os.path.split(filename)[1]]
@@ -443,6 +453,9 @@ class PeakStats(Statistics):
         '''
         
         instrument = instrument.upper()
+        if instrument == 'FREQ_RESO':
+            print 'No peak-to-peak ratios can be calculated for freq-resolved lines.'
+            return
         plot_filenames = []
         this_grid = self.sortStarGrid(instrument,tolerance,sigma,mode)
         plot_filenames = []
@@ -573,7 +586,14 @@ class PeakStats(Statistics):
         
         '''
         
-        return sorted(self.star_grid,\
+        instrument = instrument.upper()
+        if instrument == 'FREQ_RESO':
+            print 'No peak-to-peak ratios can be calculated for freq-resolved lines.'
+            return
+        star_grid = [star 
+                     for star in self.star_grid 
+                     if star['LAST_%s_MODEL'%instrument]]
+        return sorted(star_grid,\
                       key=lambda x: self.star_stats\
                                         [x['LAST_%s_MODEL'%instrument],\
                                          tolerance,sigma,mode])

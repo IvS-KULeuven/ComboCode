@@ -100,6 +100,40 @@ def makeStars(models,star_name,id_type,path,code,\
     return star_grid
       
 
+
+def getStar(model_id,star_grid,idtype='GASTRONOOM'):
+    
+    '''
+    Return a Star instance from a list of such instances based on the model_id.
+    
+    @param model_id: The requested model_id
+    @type model_id: string
+    @param star_grid: The collection of models
+    @type star_grid: list[Star]
+    
+    @keyword idtype: The type of model id
+                    
+                     (default: GASTRONOOM)    
+    @type idtype: string
+    
+    @return: The model with matching id, None if not found.
+    @rtype: Star()
+    
+    '''
+    
+    allids = [s.has_key('LAST_%s_MODEL'%idtype) \
+                    and s['LAST_%s_MODEL'%idtype] \
+                    or '' 
+              for s in star_grid]
+    try:
+        istar = allids.index(model_id)
+        star = star_grid
+    except ValueError:
+        print 'Star with id %s not found. Double check idtype.'%model_id
+        star = None
+    return star
+    
+
     
 class Star(dict):
     
@@ -491,7 +525,7 @@ class Star(dict):
     
         
 
-    def addLineList(self):
+    def __addLineList(self):
         
         """ 
         Take molecular transitions from a line list and wavelength range.
@@ -501,17 +535,16 @@ class Star(dict):
         
         """
         
-        try:
-            gas_list = list(self['GAS_LINES'])
-        except KeyError:
-            gas_list = []
+        gas_list = list(self['GAS_LINES'])
+        if type(self['LL_TELESCOPE']) is not types.ListType:
+            self['LL_TELESCOPE'] = [self['LL_TELESCOPE']]
+        if type(self['LL_NO_VIB']) is not types.ListType:
+            self['LL_NO_VIB'] = [self['LL_NO_VIB']]
         for molec in self['GAS_LIST']:
             radiat = molec.radiat
             wave = radiat.getFrequency(unit=self['LL_UNIT'])
             low = radiat.getLowerStates()
             up = radiat.getUpperStates()
-            if type(self['LL_TELESCOPE']) is not types.ListType:
-                self['LL_TELESCOPE'] = [self['LL_TELESCOPE']]
             for telescope in self['LL_TELESCOPE']:
                 if telescope == 'PACS-H2O' and not molec.isWater():
                     telescope = 'PACS'
@@ -562,6 +595,8 @@ class Star(dict):
                                                   self['USE_MASER_IN_SPHINX'],\
                                         path_gastronoom=self.path_gastronoom,\
                                         **quantum_dict)) 
+                if molec.molecule in self['LL_NO_VIB']:
+                    new_lines = [line for line in new_lines if line.vup == 0]
             gas_list.extend(new_lines)
         self['GAS_LINES'] = tuple(set(gas_list))
 
@@ -832,8 +867,10 @@ class Star(dict):
             temp = []
         #key = '$T_\mathrm{d} = %i\ K*(2r/R_*)^{-%.1f}$'\
         #        %(power,int(self['T_STAR']))
-        key = 'Power law ($p = %.2f$) for $T_\mathrm{eff} = %i\ K$'\
-              %(power,int(self['T_STAR']))
+        #key = 'Power law ($p = %.2f$) for $T_\mathrm{eff} = %i\ K$'\
+              #%(power,int(self['T_STAR']))
+        key = 'Power law ($\\beta = 1$) for $T_\mathrm{eff} = %i\ K$'\
+              %(int(self['T_STAR']))
         #key = 'Eq.~2 with $s=1$'
         return rad, temp, key
     
@@ -2158,7 +2195,7 @@ class Star(dict):
         """
 
         if not self.has_key('GAS_LINES'):
-            self['GAS_LINES'] = tuple()
+            self['GAS_LINES'] = list()
             #- To make sure the GAS_LIST is done, and the conversion of 
             #- TRANSITION to the right molecule names is done 
             #- (in case of PlottingSession.setPacsFromDb is used)
@@ -2211,12 +2248,13 @@ class Star(dict):
                                                                  ['MOLECULE']]]
                 new_lines = [Transition.makeTransition(self,trans) 
                              for trans in self['TRANSITION']]
-                new_lines.extend(self['GAS_LINES'])
-                self['GAS_LINES'] = tuple(set(new_lines))
+                for trans in new_lines: 
+                    if str(trans) not in [str(t) for t in self['GAS_LINES']]:
+                        self['GAS_LINES'].append(trans)
             #- Check if molecular line catalogues have to be browsed to create 
             #- line lists in addition to the data
             if self['LINE_LISTS']:
-                if self['LINE_LISTS'] == 1: self.addLineList()
+                if self['LINE_LISTS'] == 1: self.__addLineList()
                 elif self['LINE_LISTS'] == 2: 
                     ll_filename = os.path.split(self['LL_FILE'].strip())[0] \
                             and self['LL_FILE'].strip() \
@@ -2231,8 +2269,9 @@ class Star(dict):
                                   [molec[0] for molec in self['MOLECULE']]]
                     new_lines = [Transition.makeTransition(self,line) 
                                  for line in lines]
-                    new_lines.extend(self['GAS_LINES'])
-                    self['GAS_LINES'] = tuple(set(new_lines))
+                    for trans in new_lines: 
+                        if str(trans) not in [str(t) for t in self['GAS_LINES']]:
+                            self['GAS_LINES'].append(trans)
             self['GAS_LINES'] = sorted(list(self['GAS_LINES']),\
                                        key=lambda x: str(x))
             requested_transitions = set([str(trans) 
