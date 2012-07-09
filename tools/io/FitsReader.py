@@ -71,14 +71,14 @@ class FitsReader(LPDataReader):
         crpix1 = hdr.get('CRPIX1')
         
         #- load the data
-        try:
-            lp = pyfits.getdata(self.filename)
-        except MemoryError:
-            print 'WARNING! Reading %s results in a '%self.filename + \
-                  'MemoryError. Ignoring datafile for now.'
-            self.contents['flux'] = []
-            self.contents['velocity'] = []
-            return
+        #try:
+        lp = pyfits.getdata(self.filename)
+        #except MemoryError:
+            #print 'WARNING! Reading %s results in a '%self.filename + \
+                  #'MemoryError. Ignoring datafile for now.'
+            #self.contents['flux'] = []
+            #self.contents['velocity'] = []
+            #return
         self.contents['flux'] = lp[0][0][0]
         
         #- Check vlsr

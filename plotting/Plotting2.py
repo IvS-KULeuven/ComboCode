@@ -1187,6 +1187,8 @@ def setLineTypes(x,line_types,extra_line_types):
     if len(line_types) == 1:
         line_types *= len(x)
     elif not line_types or len(line_types) != len(x):
+        if len(x) > len(extra_line_types):
+            raise IOError('Too many datasets for plotting requested with respect to the amount of extra line types available.')
         line_types = [lp for xi,lp in zip(x,extra_line_types)]
     extra_line_types = [extra  for extra in extra_line_types 
                                if extra not in line_types]
