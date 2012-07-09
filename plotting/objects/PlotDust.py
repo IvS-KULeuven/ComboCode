@@ -243,7 +243,7 @@ class PlotDust(PlottingSession):
             print 'Input is undefined. Aborting.'
             return        
         elif not star_grid and models:
-            star_grid = self.makeMCMaxStars(models=models,id_type='MCMax')
+            star_grid = self.makeMCMaxStars(models=models)
         radii = []
         temps = []
         keytags = []

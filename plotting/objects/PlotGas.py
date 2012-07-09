@@ -804,7 +804,6 @@ class PlotGas(PlottingSession):
                     subgrid.append(star_grid[i+j])
                     subkeys.append(pacs_keytags[i+j])
                     i += 1
-                subkeys.append(keytags[-1])
                 createTilePlots(trans_list=list(pacs_list),\
                                 vg_factor=vg_factor,\
                                 no_data=1,cfg=cfg,star_grid=subgrid,\

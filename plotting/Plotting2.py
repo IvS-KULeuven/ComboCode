@@ -446,11 +446,15 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                 pl.ylim(ymin=ddict['ymin']) # min([min(xi) for xi in x])
             if ddict['ymax'] <> None:
                 pl.ylim(ymax=ddict['ymax'])
-    if show_plot or filename is None:
-        pl.show()
     if filename <> None:
         pl.savefig(filename,\
                    orientation=(landscape and 'landscape' or 'portrait'))
+    if show_plot or filename is None:
+        pl.subplots_adjust(bottom=0.45)
+        pl.subplots_adjust(top=0.95)
+        pl.subplots_adjust(right=0.7)
+        pl.subplots_adjust(left=0.05)
+        pl.show()
     pl.close('all')
     return filename
     
@@ -1122,11 +1126,16 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
             lg = pl.legend(legends,keytags,loc=key_location,prop=\
                   pl.matplotlib.font_manager.FontProperties(size=fontsize_key))
             lg.legendPatch.set_alpha(0.0)
-    if show_plot or filename is None:
-        pl.show()
+
     if filename <> None:
         pl.savefig(filename,\
                    orientation=(landscape and 'landscape' or 'portrait'))
+    if show_plot or filename is None:
+        pl.subplots_adjust(bottom=0.45)
+        pl.subplots_adjust(top=0.95)
+        pl.subplots_adjust(right=0.7)
+        pl.subplots_adjust(left=0.05)
+        pl.show()
     pl.close('all')
     return filename
     #pylab.setp(ax.get_xticklabels(), visible=False)

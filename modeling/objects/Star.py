@@ -601,7 +601,22 @@ class Star(dict):
         self['GAS_LINES'] = tuple(set(gas_list))
 
 
-
+    
+    def calcLL_NO_VIB(self):
+        
+        """
+        Set the default value of LL_NO_VIB (remove vibrational states from the
+        calculation and plots) to zero.        
+        
+        """
+        
+        if not self.has_key('LL_NO_VIB'):
+            self['LL_NO_VIB'] = 0
+        else:
+            pass
+    
+    
+        
     def calcN_QUAD(self):
         
         """

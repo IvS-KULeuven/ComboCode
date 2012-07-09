@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ["Statistics","PeakStats"]
+__all__ = ["Statistics","PeakStats","IntIntStats"]
