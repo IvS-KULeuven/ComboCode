@@ -80,16 +80,7 @@ def pEval(x,p,func='power',x_unit=None):
         return p[0] + p[2]*(x+p[1]) + p[3]*(x+p[1])**2
     elif func.lower() == 'linear':
         return p[0] + p[2]*(x + p[1])
-    elif func.lower() == 'planck':
-        pass
-        if x_unit != 'micron':
-            raise IOError('Keyword x_unit must be micron. Other options not yet available.')
-        c = 2.99792458e10          #in cm/s
-        h = 6.62606957e-27         #in erg*s Planck constant
-        k = 1.3806488e-16          #in erg/K Boltzmann constant 
-        f = c/x
-        #planck = 2.*h/c**2.*f**3.*1./(exp(h*f/k/T)-1.)
-    
+  
         
         
 def fitFunction(x_in,y_in,x_out,show=0,func='linear',initial=[1,0,0.5,-1.5],\
