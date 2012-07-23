@@ -98,6 +98,9 @@ class SphinxReader(Reader):
                                               for line in data[data_k:data_l]])
         self.sph2['beam']['tmb'] =       array([float(line[2]) 
                                               for line in data[data_k:data_l]])
+        if self.sph2['nobeam']['velocity'][0] > self.sph2['nobeam']['velocity'][-1]:
+            self.sph2['nobeam']['velocity'] = self.sph2['nobeam']['velocity'][::-1]
+            self.sph2['nobeam']['flux'] = self.sph2['nobeam']['flux'][::-1]
         if True in list(isnan(self.sph2['nobeam']['flux'])):
             self.nans_present = True
             print "WARNING! There are NaN's in the intrinsic line profile " + \

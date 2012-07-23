@@ -30,7 +30,7 @@ class Gastronoom(ModelingSession):
                                                   'ComboCode'),\
                  path_gastronoom='runTest',vic=None,sphinx=0,\
                  replace_db_entry=0,cool_db=None,ml_db=None,sph_db=None,\
-                 pacs_db=None,skip_cooling=0):
+                 pacs_db=None,skip_cooling=0,recover_sphinxfiles=0):
     
         """ 
         Initializing an instance of a GASTRoNOoM modeling session.
@@ -67,6 +67,13 @@ class Gastronoom(ModelingSession):
         
                                (default: 0)
         @type skip_cooling: bool
+        @keyword recover_sphinxfiles: Try to recover sphinx files from the disk
+                                      in case they were correctly calculated, 
+                                      but not saved to the database for one 
+                                      reason or another. 
+                                      
+                                      (default: 0) 
+        @type recover_sphinxfiles: bool
         @keyword cool_db: the cooling database
         
                           (default: None)
@@ -126,11 +133,12 @@ class Gastronoom(ModelingSession):
         self.standard_inputfile = DataIO.readDict(filename,\
                                                   comment_chars=['#','!'])
         self.skip_cooling = skip_cooling
+        self.recover_sphinxfiles = recover_sphinxfiles
         self.cool_db = cool_db
         self.ml_db = ml_db
         self.sph_db = sph_db
         self.pacs_db = pacs_db
-
+        
 
 
     def addTransInProgress(self,trans):
@@ -399,15 +407,15 @@ class Gastronoom(ModelingSession):
                 if trans.getModelId() is None:
                     self.trans_bools.append(False)
                     [trans.setModelId(k)
-                     for k,v in sorted(self.sph_db[self.model_id][molec_id]\
-                                          .items())
-                     if trans.getModelId() is None \
-                        and str(trans) not in v.keys()]
+                        for k,v in sorted(self.sph_db[self.model_id][molec_id]\
+                                        .items())
+                        if trans.getModelId() is None \
+                            and str(trans) not in v.keys()]
                     if trans.getModelId() is None:
                         if not new_trans_id:
                             new_trans_id = self.makeNewId()
                             self.makeIdLog(new_id=new_trans_id,\
-                                           molec_id=molec_id)
+                                        molec_id=molec_id)
                             self.sph_db[self.model_id][molec_id][new_trans_id]\
                                     = dict()
                         if trans.molecule not in molecules_copied_to_new_id:
@@ -415,9 +423,9 @@ class Gastronoom(ModelingSession):
                             molecules_copied_to_new_id.append(trans.molecule)
                         trans.setModelId(new_trans_id)
                     self.sph_db[self.model_id][molec_id][trans.getModelId()]\
-                               [str(trans)] = trans.makeDict(1)
+                            [str(trans)] = trans.makeDict(1)
                     self.sph_db.addChangedKey(self.model_id)
-                
+                    
 
 
     def copyOutput(self,entry,old_id,new_id):
@@ -644,6 +652,8 @@ class Gastronoom(ModelingSession):
                 elif self.vic <> None:
                     #- add transition to the vic translist for this cooling id
                     self.vic.addTrans(trans)
+                elif self.recover_sphinxfiles: 
+                    self.checkSphinxOutput(trans)
                 else:
                     self.updateModel(trans.getModelId())
                     commandfile = ['%s=%s'%(k,v) 

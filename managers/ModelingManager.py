@@ -26,7 +26,7 @@ class ModelingManager():
                  mcmax=0,gastronoom=0,sphinx=0,iterative=0,\
                  num_model_sessions=1,vic_manager=None,replace_db_entry=0,\
                  path_gastronoom='runTest',path_mcmax='runTest',\
-                 skip_cooling=0,\
+                 skip_cooling=0,recover_sphinxfiles=0,\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
         
@@ -89,6 +89,13 @@ class ModelingManager():
         
                                (default: 0)
         @type skip_cooling: bool
+        @keyword recover_sphinxfiles: Try to recover sphinx files from the disk
+                                      in case they were correctly calculated, 
+                                      but not saved to the database for one 
+                                      reason or another. 
+                                      
+                                      (default: 0) 
+        @type recover_sphinxfiles: bool
         @keyword path_mcmax: modeling folder in MCMax home
         
                              (default: 'runTest')
@@ -116,6 +123,7 @@ class ModelingManager():
         self.path_mcmax = path_mcmax
         self.path_gastronoom = path_gastronoom
         self.star_name = star_name
+        self.recover_sphinxfiles = recover_sphinxfiles
         self.setDatabases()
         
         
@@ -218,7 +226,8 @@ class ModelingManager():
                                         pacs_db=self.pacs_db,\
                                         sphinx=self.sphinx,\
                                         skip_cooling=self.skip_cooling,\
-                                        replace_db_entry=self.replace_db_entry)
+                                        replace_db_entry=self.replace_db_entry,\
+                                        recover_sphinxfiles=self.recover_sphinxfiles)
                 gas_session.doGastronoom(star)     
                 self.cool_db.sync()
 

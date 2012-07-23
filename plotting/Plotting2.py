@@ -85,9 +85,12 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                        (default: None)
     @type filename: string
     @keyword extension: extension of the plot filename, adds dot if not present
+                        If None, three outputfiles are created: png, eps, pdf
+                        Multiple extensions can be requested at the same time 
+                        through a list.
                         
-                        (default: '.pdf')
-    @type extension: string
+                        (default: None)
+    @type extension: string/list
     @keyword figsize: the size of the figure, default is A4 page ratio
                       
                       (default: (20.*math.sqrt(2.), 20.) )
@@ -265,7 +268,7 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
     if cfg:
         kwargs.update(DataIO.readDict(cfg,convert_lists=1,convert_floats=1))
     filename=kwargs.get('filename',None)
-    extension=kwargs.get('extension','.pdf')
+    extension=kwargs.get('extension',None)
     figsize=kwargs.get('figsize',(20.*math.sqrt(2.), 20.))
     show_plot=kwargs.get('show_plot',0)
     xaxis=kwargs.get('xaxis',r'$\lambda$\ ($\mu m$)')
@@ -299,9 +302,6 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
     landscape = kwargs.get('landscape',0)
     short_label_lines = kwargs.get('short_label_lines',0)
     thick_lw_data = kwargs.get('thick_lw_data',0)
-    
-    if extension[0] != '.':  extension = '.' + extension
-    if filename <> None:     filename = filename + extension
 
     xdim = dimensions[0]
     ydim = dimensions[1]
@@ -447,8 +447,16 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
             if ddict['ymax'] <> None:
                 pl.ylim(ymax=ddict['ymax'])
     if filename <> None:
-        pl.savefig(filename,\
-                   orientation=(landscape and 'landscape' or 'portrait'))
+        if extension is None:
+            extension = ['.eps','.png','.pdf']
+        elif type(extension) is types.StringType:
+            extension = [extension]
+        for iext,ext in enumerate(extension):
+            if ext[0] != '.': 
+                extension[iext] = '.' + ext
+        [pl.savefig(filename+ext,\
+                    orientation=(landscape and 'landscape' or 'portrait'))
+         for ext in extension]
     if show_plot or filename is None:
         pl.subplots_adjust(bottom=0.45)
         pl.subplots_adjust(top=0.95)
@@ -456,7 +464,7 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
         pl.subplots_adjust(left=0.05)
         pl.show()
     pl.close('all')
-    return filename
+    return filename+extension[0]
     
     
 
@@ -540,9 +548,12 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                        (default: None)
     @type filename: string
     @keyword extension: extension of the plot filename, adds dot if not present
+                        If None, three output files are created: png, eps, pdf
+                        Multiple extensions can be requested at the same time 
+                        through a list.
                         
-                        (default: '.pdf')
-    @type extension: string
+                        (default: None)
+    @type extension: string/list
     @keyword number_subplots: #subplots in which to plot in vertical direction
                               
                               (default: 1)
@@ -801,7 +812,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
         kwargs.update(DataIO.readDict(cfg,convert_lists=1,convert_floats=1))
     inputfiles=kwargs.get('inputfiles',[])
     filename=kwargs.get('filename',None)
-    extension=kwargs.get('extension','.pdf')
+    extension=kwargs.get('extension',None)
     number_subplots=kwargs.get('number_subplots',1)
     figsize=kwargs.get('figsize',(20.*math.sqrt(2.), 20.))
     show_plot=kwargs.get('show_plot',0)
@@ -857,8 +868,6 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     landscape = kwargs.get('landscape',0)
     thick_lw_data = kwargs.get('thick_lw_data',0)
     short_label_lines = kwargs.get('short_label_lines',0)
-    if extension[0] != '.':  extension = '.' + extension
-    if filename <> None:     filename = filename + extension
     if inputfiles:
         x,y, xerr, yerr = [],[],[],[]
         read_input = [DataIO.readCols(f) for f in inputfiles]
@@ -1137,8 +1146,16 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
             lg.legendPatch.set_alpha(0.0)
 
     if filename <> None:
-        pl.savefig(filename,\
-                   orientation=(landscape and 'landscape' or 'portrait'))
+        if extension is None:
+            extension = ['.eps','.png','.pdf']
+        elif type(extension) is types.StringType:
+            extension = [extension]
+        for iext,ext in enumerate(extension):
+            if ext[0] != '.': 
+                extension[iext] = '.' + ext
+        [pl.savefig(filename+ext,\
+                    orientation=(landscape and 'landscape' or 'portrait'))
+         for ext in extension]
     if show_plot or filename is None:
         pl.subplots_adjust(bottom=0.45)
         pl.subplots_adjust(top=0.95)
@@ -1146,12 +1163,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
         pl.subplots_adjust(left=0.05)
         pl.show()
     pl.close('all')
-    return filename
-    #pylab.setp(ax.get_xticklabels(), visible=False)
-    #pylab.setp(bx.get_xticklabels(), visible=False)
-
-    #bx.set_ylabel(yaxis, fontsize=fontsize_axis)
-    #cx.set_xlabel(xaxis, fontsize=fontsize_axis)
+    return filename+extension[0]
     
 
 

@@ -88,7 +88,7 @@ def pEval(x,p,func='power',x_unit=None):
         h = 6.62606957e-27         #in erg*s Planck constant
         k = 1.3806488e-16          #in erg/K Boltzmann constant 
         f = c/x
-        planck = 2.*h\c**2.*f**3.*1./(exp(h*f/k/T)-1.)
+        #planck = 2.*h/c**2.*f**3.*1./(exp(h*f/k/T)-1.)
     
         
         

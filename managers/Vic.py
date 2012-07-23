@@ -28,7 +28,7 @@ class Vic():
     def __init__(self,account,path='code23-01-2010',credits_acc=None,\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode'),\
-                 time_per_sphinx=30):
+                 time_per_sphinx=30,recover_sphinxfiles=0):
         
         """ 
         Initializing a Vic instance.
@@ -52,6 +52,13 @@ class Vic():
                                   
                                   (default: 30)
         @type time_per_sphinx: int
+        @keyword recover_sphinxfiles: Try to recover sphinx files from the Vic
+                                      disk in case they were correctly 
+                                      calculated, but not saved to the database
+                                      for one reason or another. 
+                                      
+                                      (default: 0) 
+        @type recover_sphinxfiles: bool
         @keyword path_combocode: CC home folder
         
                                  (default: '~/ComboCode/')
@@ -73,6 +80,7 @@ class Vic():
         self.disk = account[3:6]
         self.uname = os.path.split(os.path.expanduser('~')+'/'.rstrip('/'))[-1]
         self.time_per_sphinx = float(time_per_sphinx)
+        self.recover_sphinxfiles = recover_sphinxfiles
         self.current_model = 0
         if not credits_acc:
             self.credits_acc = None
@@ -216,16 +224,20 @@ class Vic():
         
         '''
         
-        model_id = self.models[self.current_model]
-        printing = self.makeJobFile()
-        self.makeInputFiles()
-        jobfile = os.path.join('/user','leuven',self.disk,self.account,\
-                               'COCode','vic_run_jobs_%s_%i.sh'\
-                               %(model_id,self.current_model))
-        subprocess.Popen('ssh %s@login.vic3.cc.kuleuven.be %s'\
-                         %(self.account,jobfile),shell=True,\
-                         stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-        if printing: print '\n'.join(printing)
+        self.sphinx_model_ids[self.current_model] \
+            = list(set([trans.getModelId() 
+                        for trans in self.transitions[self.current_model]]))
+        if not self.recover_sphinxfiles:
+            printing = self.makeJobFile()
+            self.makeInputFiles()
+            model_id = self.models[self.current_model]
+            jobfile = os.path.join('/user','leuven',self.disk,self.account,\
+                                   'COCode','vic_run_jobs_%s_%i.sh'\
+                                   %(model_id,self.current_model))
+            subprocess.Popen('ssh %s@login.vic3.cc.kuleuven.be %s'\
+                             %(self.account,jobfile),shell=True,\
+                             stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+            if printing: print '\n'.join(printing)
         self.current_model += 1
 
 
@@ -260,9 +272,6 @@ class Vic():
         '''
         
         model_id = self.models[self.current_model]
-        self.sphinx_model_ids[self.current_model] \
-            = list(set([trans.getModelId() 
-                        for trans in self.transitions[self.current_model]]))
         vic_server = '%s@login.vic3.cc.kuleuven.be'%self.account
         jobfiles = []
         printing = []

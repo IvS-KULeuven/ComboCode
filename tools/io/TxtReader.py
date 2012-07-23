@@ -40,12 +40,19 @@ class TxtReader(LPDataReader):
         
         
     
-    def readTxt(self):
+    def readTxt(self,vlsr=None):
         
         ''' 
         Read the txt file. 
         
         Assumes Tmb flux values in K, with respect to velocity. 
+        
+        @keyword vlsr: The system velocity with respect to local standard of 
+                       rest. Included in the contents of the data object.
+                       In km/s. Used when calculating eg noise values. 
+                       
+                       (default: None)
+        @type vlsr: float
         
         '''
         
@@ -53,4 +60,8 @@ class TxtReader(LPDataReader):
         data = DataIO.readCols(filename=self.filename,start_row=start_i,nans=1)
         self.contents['velocity'] = data[0]
         self.contents['flux'] = data[1]
+        if self.contents['velocity'][0] > self.contents['velocity'][-1]: 
+            self.contents['velocity'] = self.contents['velocity'][::-1]
+            self.contents['flux'] = self.contents['flux'][::-1]
         self.contents['date_obs'] = 'N.A.'
+        self.contents['vlsr'] = vlsr

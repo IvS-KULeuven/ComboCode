@@ -9,6 +9,7 @@ GASTRONOOM=0                                # Put to 0 if no GASTRoNOoM is neede
 MCMAX=0                                 # Put to 0 if no MCMax is needed
 SPHINX=1                            # Run Sphinx or not
 SKIP_COOLING=0                      # In case a model is not found in the cooling database, an attempt at calculating the cooling model can be skipped through this keyword, for instance if you already know the failed models in a grid will not succeed anyway.
+RECOVER_SPHINXFILES=0               # Try checking if the sphinx files are present at the expected model id instead of calculating the sphinx model. Sphinx will not be ran in any case! Before doing this, always run 'from cc.tools.io import Database', followed by 'Database.cleanSphinxDatabase(filename)' where filename is the full path and filename of the sphinx database (usually ~/GASTRoNOoM/<PATH_GASTRONOOM>/GASTRoNOoM_sphinx.db)
 
 #-- Output folder management
 PATH_GASTRONOOM=test                          # Path in ~/GASTRoNOoM/. for models to be stored       
@@ -316,7 +317,7 @@ LL_MOLECULES=16O1H&1H12C14N     #List the molecules for line listing
 ###DATA PARAMETERS
 ####################################################################################################################
 DATA_MOL=0                                          # Put to 0 if no data are to be plotted in GASTRoNOoM and no auto-search is done
-PATH_GAS_DATA=/home/elvired/allspectra/     # Path for gas data, leave empty if not relevant/no gas data are used other than pacs, default is /home/elvired/allspectra/
+PATH_GAS_DATA=/home/robinl/Data/Molecular/     # Path for gas data, leave empty if not relevant/no gas data are used other than pacs, default is /home/elvired/allspectra/
 
 ####################################
 #-- The following plot input is not required to run. Only include those that you need, if you want to plot something.

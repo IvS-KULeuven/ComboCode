@@ -56,7 +56,7 @@ class FitsReader(LPDataReader):
         
         @keyword vlsr: The system velocity with respect to local standard of 
                        rest. Only used when this is not found in the fits file.
-                       In km/s.
+                       In km/s. Used when calculating eg noise values. 
                        
                        (default: None)
         @type vlsr: float

@@ -36,7 +36,7 @@ def updateLineSpec(trans_list):
     for telescope in telescopes:
         if not ('HIFI' in telescope or 'PACS' in telescope):
             print 'Warning! Telescope beam efficiencies for %s'%telescope + \
-                  'are added arbitrarily and thus are not the correct values.'
+                  ' are added arbitrarily and thus are not the correct values.'
         old_spec = DataIO.readFile(os.path.join(os.path.expanduser('~'),\
                                   'GASTRoNOoM','src','data',telescope+'.spec'))
         line_spec_list = [line 
@@ -368,6 +368,8 @@ class Transition():
         else:
             self.frequency = frequency
         self.wavelength = 2.99792458e10/self.frequency  #in cm
+        self.intintsphinx = None
+        self.intintdata = []
         
 
         
@@ -884,7 +886,7 @@ class Transition():
             
             
 
-    def readData(self,vlsr):
+    def readData(self,vlsr,vexp):
          
         '''
         Read the datafiles associated with this transition if available.
@@ -893,7 +895,10 @@ class Transition():
                      of rest. Needed for fits files, in which no velocity 
                      information is given.
         @type vlsr: float
-         
+        @param vexp: The expected expansion velocity. Only used to determine
+                     the velocity range for noise calculations. 
+        @type vexp: float
+        
         '''
          
         if self.lpdata is None:
@@ -901,7 +906,8 @@ class Transition():
             if self.datafiles <> None:
                 for df in self.datafiles:
                     if df[-5:] == '.fits':
-                        self.lpdata.append(FitsReader.FitsReader(df,vlsr))
+                        lprof = FitsReader.FitsReader(df,vlsr)
                     else:
-                        self.lpdata.append(TxtReader.TxtReader(df))
-                
+                        lprof = TxtReader.TxtReader(df,vlsr)
+                    lprof.setNoise(vexp)
+                    self.lpdata.append(lprof)

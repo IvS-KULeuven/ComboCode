@@ -239,7 +239,8 @@ class ComboCode(object):
                           ('path_gastronoom',''),('path_mcmax',''),\
                           ('print_model_info',1),('stat_mode','chi2'),\
                           ('contdiv_features',[]),('cfg_contdiv',''),\
-                          ('show_contdiv',0),('skip_cooling',0)]
+                          ('show_contdiv',0),('skip_cooling',0),\
+                          ('recover_sphinxfiles',0)]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -547,8 +548,10 @@ class ComboCode(object):
                                        path_combocode=self.path_combocode,\
                                        account=self.vic_account,\
                                        time_per_sphinx=self.vic_time_per_sphinx,\
-                                       credits_acc=self.vic_credits)
-            if self.update_spec: self.vic_manager.updateLineSpec()
+                                       credits_acc=self.vic_credits,\
+                                       recover_sphinxfiles=self.recover_sphinxfiles)
+            if self.update_spec: 
+                self.vic_manager.updateLineSpec()
         else: 
             self.vic_manager = None
         
@@ -575,7 +578,8 @@ class ComboCode(object):
                                        path_combocode=self.path_combocode,\
                                        replace_db_entry=self.replace_db_entry,\
                                        path_mcmax=self.path_mcmax,\
-                                       skip_cooling=self.skip_cooling)
+                                       skip_cooling=self.skip_cooling,\
+                                       recover_sphinxfiles=self.recover_sphinxfiles)
     
     
     def setPlotManager(self):    

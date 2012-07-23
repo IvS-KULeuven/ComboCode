@@ -601,7 +601,9 @@ class PlotGas(PlottingSession):
                               the latter
             @type intrinsic: bool
             @param star_grid: The grid of models for which the chosen
-                              transitions in trans_list are plotted
+                              transitions in trans_list are plotted. Can be a 
+                              subgrid of the original star_grid. (determined
+                              before calling this method)
             @type star_grid: list[Star()]
             @param keytags: list of keys for the different models in star_grid
             @type keytags: list[string]
@@ -651,7 +653,7 @@ class PlotGas(PlottingSession):
                     [trans.readSphinx() 
                      for trans in current_sub 
                      if trans <> None]
-                    current_trans.readData(v_lsr)
+                    current_trans.readData(v_lsr,vg)
                     ddict = dict()
                     if not no_models:
                         if intrinsic:
