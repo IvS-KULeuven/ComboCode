@@ -23,7 +23,7 @@ class TxtReader(LPDataReader):
     
     '''
     
-    def __init__(self,filename):
+    def __init__(self,filename,vlsr):
         
         '''
         A txt file reader for line profiles.
@@ -33,10 +33,17 @@ class TxtReader(LPDataReader):
         @param filename: The txt filename, including filepath.
         @type filename: string
         
+        @keyword vlsr: The system velocity with respect to local standard of 
+                       rest. Included in the contents of the data object.
+                       In km/s. Used when calculating eg noise values. 
+                       
+                       (default: None)
+        @type vlsr: float
+        
         '''
         
         super(TxtReader, self).__init__(filename)
-        self.readTxt()
+        self.readTxt(vlsr)
         
         
     

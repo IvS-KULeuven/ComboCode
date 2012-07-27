@@ -625,7 +625,6 @@ class PlotGas(PlottingSession):
             n_subplots = (x_dim*y_dim) - (keytags and 1 or 0)
             plot_filenames = []
             i = 0
-            vg = star_grid[0]['VEL_INFINITY_GAS']
             while trans_list:
                 i += 1             
                 data = []
@@ -660,7 +659,7 @@ class PlotGas(PlottingSession):
                             ddict['x'] = \
                                 [(trans <> None and trans.sphinx <> None) \
                                      and list(trans.sphinx.getVelocity() +
-                                              trans.getBestVlsr(self.vlsr,vg))\
+                                              trans.getBestVlsr(self.vlsr))\
                                      or []                          
                                  for trans in current_sub]
                             ddict['y'] = \
@@ -700,8 +699,8 @@ class PlotGas(PlottingSession):
                             ('; '.join([lp.getDateObs() \
                                         for lp in current_trans.lpdata]),\
                              0.05,0.01))
-                    ddict['xmax'] = v_lsr + vg_factor * vg
-                    ddict['xmin'] = v_lsr - vg_factor * vg
+                    ddict['xmax'] = self.vlsr + vg_factor * current_trans.vexp
+                    ddict['xmin'] = self.vlsr - vg_factor * current_trans.vexp
                     if [yi for yi in ddict['y'] if list(yi)]:
                         ddict['ymax'] = max([max(array(yi)[(array(xi) <= ddict['xmax'])* \
                                                 (array(xi) >= ddict['xmin'])]) 

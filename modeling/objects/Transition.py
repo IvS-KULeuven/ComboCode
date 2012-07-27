@@ -1093,22 +1093,22 @@ class Transition():
         #- make range of vlsr around the central value to find the best match
         #- using vexp as a range indicator, so we never fall out of the 
         #- interpolator range. Note that mvel is centered around zero.
-        range_in_vlsr = linspace(vlsr-vexp,vlsr+vexp,31)
+        range_in_vlsr = linspace(vlsr-0.5*self.vexp,vlsr+0.5*self.vexp,31)
         #- interpolate the data fluxes 
         interpolator = interp1d(dvel,dtmb)
         #- use the new model velocity grids as inputs, and see what dtmb is
         dtmb_interp = [interpolator(mvel+vlsri) for vlsri in range_in_vlsr]
         #- Calculate the chi squared for every interpolated data tmb
-        chisquared = [calcChiSquared(data=dtmbi,model=mtmb,noise=noise)
+        chisquared = [calcChiSquared(data=dtmbi[dtmbi>=-noise],model=mtmb[dtmbi>=-noise],noise=noise)
                       for dtmbi in dtmb_interp]
         #- Get the minimum chi squared and set the best_vlsr
         self.chi2_best_vlsr = min(chisquared)
         self.best_vlsr = range_in_vlsr[argmin(chisquared)]
         self.dtmb_best_vlsr = dtmb_interp[argmin(chisquared)]
         
-        print "The best V_lsr is %f km/s, compared to the "%self.best_vlsr + \
-              "original estimate of %f km/s for transition %s."\
-              %(vlsr,str(self))
+        print "Best V_lsr: %f km/s, "%self.best_vlsr + \
+              "original V_lsr: %f km/s for transition %s, %s."\
+              %(vlsr,str(self),self.getModelId())
         
         return self.best_vlsr
         

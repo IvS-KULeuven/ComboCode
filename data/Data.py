@@ -326,8 +326,8 @@ def getRMS(flux,wave=None,wmin=None,wmax=None,minsize=20):
     '''
     
     fsel = selectArray(flux,wave,wmin,wmax)
-    if fsel.size < minsize:
-        print 'Array size for noise calculation too small. Returning None.'
+    if fsel.size <= minsize:
+        #print 'Array size for noise calculation too small. Returning None.'
         return None
     return sqrt((fsel**2).sum()/float(len(fsel)))
     
@@ -369,8 +369,8 @@ def getMean(flux,wave=None,wmin=None,wmax=None,minsize=20):
     '''
     
     fsel = selectArray(flux,wave,wmin,wmax)
-    if fsel.size < minsize:
-        print 'Array size for noise calculation too small. Returning None.'
+    if fsel.size <= minsize:
+        #print 'Array size for noise calculation too small. Returning None.'
         return None
     return mean(fsel)
     
@@ -412,8 +412,8 @@ def getStd(flux,wave=None,wmin=None,wmax=None,minsize=20):
     '''
     
     fsel = selectArray(flux,wave,wmin,wmax)
-    if fsel.size < minsize:
-        print 'Array size for noise calculation too small. Returning None.'
+    if fsel.size <= minsize:
+        #print 'Array size for noise calculation too small. Returning None.'
         return None
     return std(fsel)
 
