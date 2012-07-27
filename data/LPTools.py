@@ -15,7 +15,7 @@ from cc.tools.numerical import Interpol
 from cc.tools.io import FitsReader, TxtReader
 
 
-def integrateLPData(filename,vexp,vlsr=None,window=2):
+def integrateLPData(filename,vexp,vlsr=None,window=1.2):
     
     """
     Integrate a line profile read from a fits file or a txt file. 
@@ -39,7 +39,7 @@ def integrateLPData(filename,vexp,vlsr=None,window=2):
     @keyword window: The factor with which vexp is multiplied when selecting
                      the integration window in the velocity grid. 
                      
-                     (default: 2)
+                     (default: 1.2)
     @type window: float
     
     @return: The integrated intensity of the profile
