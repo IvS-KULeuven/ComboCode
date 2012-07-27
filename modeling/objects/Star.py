@@ -568,6 +568,7 @@ class Star(dict):
                                     n_quad=self['N_QUAD'],\
                                     use_maser_in_sphinx=\
                                                   self['USE_MASER_IN_SPHINX'],\
+                                    vexp=self['VEL_INFINITY_GAS'],\
                                     path_combocode=self.path_combocode,\
                                     path_gastronoom=self.path_gastronoom)
                                  for l,u,w in zip(low,up,wave)
@@ -593,6 +594,7 @@ class Star(dict):
                                         path_combocode=self.path_combocode,\
                                         use_maser_in_sphinx=\
                                                   self['USE_MASER_IN_SPHINX'],\
+                                        vexp=self['VEL_INFINITY_GAS'],\
                                         path_gastronoom=self.path_gastronoom,\
                                         **quantum_dict)) 
                 if molec.molecule in self['LL_NO_VIB']:
@@ -2249,6 +2251,7 @@ class Star(dict):
                                     n_quad=self['N_QUAD'],\
                                     use_maser_in_sphinx=self\
                                                       ['USE_MASER_IN_SPHINX'],\
+                                    vexp=self['VEL_INFINITY_GAS'],\
                                     path_combocode=self.path_combocode,\
                                     path_gastronoom=self.path_gastronoom)
                                for molec in data_list]

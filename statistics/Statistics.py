@@ -74,7 +74,8 @@ class Statistics(object):
 
     def setInstrument(self,instrument,data_path='',searchstring='',\
                       data_filenames=[],instrument_instance=None,\
-                      pacs_oversampling=None,sample_transitions=[]):
+                      pacs_oversampling=None,sample_transitions=[],\
+                      redo_convolution=0):
        
         '''
         Set an instrument as a source of data.
@@ -115,6 +116,16 @@ class Statistics(object):
                                      
                                      (default: [])
         @type sample_transitions: list
+        @keyword redo_convolution: if you want to do the convolution of the 
+                                 sphinx models regardless of what's already in 
+                                 the database. The pacs id will not change, nor
+                                 the entry in the db, and the old convolved 
+                                 model will be copied to a backup
+                                 Only relevant if instrument==PACS. Not 
+                                 required if instrument_instance is given
+                                 
+                                 (default: 0)
+        @type redo_convolution: bool
         
         '''
         
@@ -130,7 +141,9 @@ class Statistics(object):
                                                      path=self.path_code,\
                                                      path_pacs=data_path,\
                                                      path_combocode\
-                                                        =self.path_combocode)
+                                                        =self.path_combocode,\
+                                                    redo_convolution\
+                                                        =redo_convolution)
                 self.instruments['PACS'].setData(data_filenames=data_filenames,\
                                                  searchstring=searchstring)
             self.doDataStats('PACS')
@@ -138,8 +151,8 @@ class Statistics(object):
         elif instrument.upper() == 'FREQ_RESO' and self.v_lsr <> None:
             #- Make copy so that any changes do not translate to whatever the 
             #- original list of transitions might be. 
-            self.instruments['FREQ_RESO'] = list(sample_transitions)
-            [t.readData(self.v_lsr) for t in self.instruments['FREQ_RESO']]
+            [t.readData(self.v_lsr) for t in sample_transitions]
+            self.instruments['FREQ_RESO'] = sample_transitions
             if not sample_transitions:
                 print 'WARNING! No sample transitions given for Statistics ' +\
                       'module with instrument == FREQ_RESO. No stats will ' + \
@@ -147,7 +160,7 @@ class Statistics(object):
             
 
             
-    def setModels(self,instrument,star_grid=[],models=[],**extra_keywords):
+    def setModels(self,instrument,star_grid=[],models=[]):
         
         '''
         Load the models and remember them.
@@ -171,6 +184,7 @@ class Statistics(object):
         @type extra_keywords: dict
         
         '''
+        
         if instrument.upper() == 'PACS':
             print '** Checking Sphinx models for comparison with PACS.'
             if not star_grid and not models:
@@ -188,7 +202,7 @@ class Statistics(object):
                               'star_grid to be defined for freq-resolved data.')
             if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) == set([0]): 
                 return
-            [[t.readSphinx() for t in s['GAS_LINES']] for s in star_grid]
+            #[[t.readSphinx() for t in s['GAS_LINES']] for s in star_grid]
         else:
             raise IOError('Instruments other than PACS or freq-resolved data not yet implemented.')
         self.star_grid = star_grid

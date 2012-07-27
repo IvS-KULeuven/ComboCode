@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ["instruments","Data","Sed"]
+__all__ = ["instruments","Data","Sed","LPTools"]

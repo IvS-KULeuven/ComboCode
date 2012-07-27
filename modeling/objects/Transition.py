@@ -9,13 +9,71 @@ Author: R. Lombaert
 
 import os 
 import re
-from scipy import pi, exp
+from scipy import pi, exp, linspace, argmin, array
+from scipy.interpolate import interp1d
+from scipy.integrate import trapz
 import types
 
 from cc.modeling.objects import Molecule 
 from cc.tools.io import Database, DataIO
 from cc.tools.io import SphinxReader
 from cc.tools.io import FitsReader, TxtReader
+from cc.tools.numerical import Interpol
+from cc.statistics.BasicStats import calcChiSquared, calcLoglikelihood
+
+
+def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,pacs=0):
+    
+    '''
+    Extract a list a of unique transitions included in a list of Star() objects
+    and sort them.
+    
+    An extra flag is added to the input keyword to determine inclusion of PACS
+    lines or not.
+    
+    The list of transitions is copies to make sure no funky references mess 
+    with the original transitions.
+    
+    @param star_grid: The list of Star() objects from which all 'GAS_LINES' 
+                       keys are taken and collected in a set. 
+    @type star_grid: list[Star()]
+    
+    @keyword sort_freq: Sort the transitions according to their frequencies. 
+                        Otherwise, they are sorted by their wavelengths.
+    
+                        (default: 1)
+    @type sort_freq: bool
+    @keyword sort_molec: Sort the transitions by molecule first.
+                      
+                         (default: 1) 
+    @type sort_molec: bool
+    @keyword pacs: 1: Only select PACS lines. 0: Don't select PACS lines. 2: Do
+                      not make a distinction between the telescope type.
+                      
+                      (default: 0)
+    @type pacs: int
+    
+    @return: a list of unique transitions included in all Star() objects in
+             star_grid
+    @rtype: list[Transition()]
+    
+    '''
+    
+    pacs = int(pacs)
+    selection = list(sorted(set([trans 
+                                 for star in star_grid
+                                 for trans in star['GAS_LINES']]),\
+                            key=lambda x:sort_freq \
+                                and (sort_molec and x.molecule or '',\
+                                     x.frequency) \
+                                or  (sort_molec and x.molecule or '',\
+                                     x.wavelength)))
+    if not pacs:
+        return [trans for trans in selection if 'PACS' not in trans.telescope]
+    if pacs == 1:
+        return [trans for trans in selection if 'PACS' in trans.telescope]
+    else:
+        return selection
 
 
 
@@ -88,7 +146,7 @@ def makeTransition(star,trans):
                           vlow=int(trans[5]),jlow=int(trans[6]),\
                           kalow=int(trans[7]),kclow=int(trans[8]),\
                           telescope=trans[9],offset=float(trans[10]),\
-                          n_quad=int(trans[11]),\
+                          n_quad=int(trans[11]),vexp=star['VEL_INFINITY_GAS'],\
                           path_combocode=star.path_combocode,\
                           use_maser_in_sphinx=star['USE_MASER_IN_SPHINX'],\
                           path_gastronoom=star.path_gastronoom)
@@ -206,7 +264,7 @@ class Transition():
     def __init__(self,molecule,telescope=None,vup=0,jup=0,kaup=0,kcup=0,\
                  nup=None,vlow=0,jlow=0,kalow=0,kclow=0,nlow=None,offset=0.0,\
                  frequency=None,exc_energy=None,int_intensity_log=None,\
-                 n_quad=100,use_maser_in_sphinx=0,\
+                 n_quad=100,use_maser_in_sphinx=0,vexp=None,\
                  vibrational='',path_gastronoom=None,datafiles=None,\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
@@ -285,6 +343,11 @@ class Transition():
                                      
                                      (default: 0)
         @type use_maser_in_spinx: bool
+        @keyword vexp: The terminal gas expansion velocity. Used only to 
+                       determine noise levels in the datasets
+                       
+                       (default: None)
+        @type vexp: float
         @keyword frequency: if not None the frequency of the transition is 
                             taken to be this parameter in Hz, if None the 
                             frequency of this transition is derived from the 
@@ -346,6 +409,7 @@ class Transition():
         self.path_combocode = path_combocode
         self.n_quad = int(n_quad)
         self.use_maser_in_sphinx = int(use_maser_in_sphinx)
+        self.vexp = vexp
         self.__model_id = None
         if nup is None or nlow is None:
             self.nup = self.kaup            
@@ -368,10 +432,9 @@ class Transition():
         else:
             self.frequency = frequency
         self.wavelength = 2.99792458e10/self.frequency  #in cm
-        self.intintsphinx = None
-        self.intintdata = []
+        self.best_vlsr = None
         
-
+        
         
     def __str__(self):
         
@@ -501,6 +564,23 @@ class Transition():
         '''
         
         #- get telescope diameter in cm
+        if 'PACS' in self.telescope.upper():
+            wav = array([55.,68,73,75,84,94,110,136,145,150,168,187])/10000.
+            beam = array([8.4875,8.19,8.19,8.4525,8.2875,8.45,9.0625,9.6875,\
+                          9.96,10.5425,11.0125,11.96])
+            interp = interp1d(wav,beam)
+            try:
+                return interp(self.wavelength)
+            except ValueError:
+                print 'WARNING! The wavelength of %s falls '%str(self) +\
+                      'outside of the interpolation range when determining '+\
+                      'the beamwidth. Extrapolating linearly...'
+                if self.wavelength < wav[0]:
+                    return Interpol.linInterpol(wav[:2],beam[:2],\
+                                                self.wavelength)
+                else:
+                    return Interpol.linInterpol(wav[-2:],beam[-2:],\
+                                                self.wavelength)
         filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM','src',\
                                 'data',self.telescope+'.spec')
         telescope_diameter = [float(line.split('=')[1][0:line.split('=')[1]\
@@ -845,7 +925,22 @@ class Transition():
         return self.__model_id
         
         
+    
+    def setVexp(self,vexp):
         
+        """
+        Set the gas terminal velocity in this object. 
+        
+        @param vexp: The gas terminal velocity.
+        @type vexp: float
+        
+        """
+        
+        if self.vexp is None:
+            self.vexp = float(vexp)
+        
+    
+    
     def readSphinx(self):
          
         '''
@@ -886,7 +981,7 @@ class Transition():
             
             
 
-    def readData(self,vlsr,vexp):
+    def readData(self,vlsr):
          
         '''
         Read the datafiles associated with this transition if available.
@@ -895,9 +990,6 @@ class Transition():
                      of rest. Needed for fits files, in which no velocity 
                      information is given.
         @type vlsr: float
-        @param vexp: The expected expansion velocity. Only used to determine
-                     the velocity range for noise calculations. 
-        @type vexp: float
         
         '''
          
@@ -909,5 +1001,277 @@ class Transition():
                         lprof = FitsReader.FitsReader(df,vlsr)
                     else:
                         lprof = TxtReader.TxtReader(df,vlsr)
-                    lprof.setNoise(vexp)
                     self.lpdata.append(lprof)
+                    
+    
+    
+    def setData(self,trans):
+        
+        """
+        Set data equal to the data in a different Transition object, but for 
+        the same transition. Does no erase data if they have already been set 
+        in this object. 
+        
+        A check is ran to see if the transition in both objects really is the 
+        same. Sphinx model id may differ! 
+        
+        Avoids too much overhead when reading data from files. 
+        
+        @param trans: The other Transition() object, assumes the transition 
+                      is the same, but possibly different sphinx models.
+        @type trans: Transition()        
+        
+        """
+        
+        if self.lpdata is None and self == trans: 
+            self.lpdata = trans.lpdata
+                
+        
+    
+    def getBestVlsr(self,vlsr=None):
+        
+        """ 
+        If self.best_vlsr is None, the best source velocity will be guessed by
+        comparing chi^2 values between different values for the source velocity
+        
+        May be different from input vqlue vlsr, the original expected 
+        source velocity!
+        
+        Based on the first dataset in self.lpdata. Note that multiple datasets
+        might be included, but the scaling will be done for only the first one. 
+        Since different datasets are for the same telescope, the same line
+        and (usually) the same conditions, the source velocity is not expected
+        to be different for the different datasets anyway. 
+        
+        Method will attempt to call self.readData and readSphinx if either are 
+        not available. If data are still not available, the initial guess is 
+        returned. If data are available, but sphinx isn't, vlsr from the fits
+        files is returned, and the initial guess is returned in case of txt 
+        files.
+                
+        @keyword vlsr: The stellar velocity with respect to the local standard
+                       of rest. Needed for fits files, in which no velocity 
+                       information is given. If None, no vlsr is needed. Data \
+                       are already read. Will crash if that is not the case!
+                       
+                       (default: None)
+        @type vlsr: float
+        
+        @return: the best guess vlsr, or the initial guess if no sphinx or data
+                 are available [will return vlsr included in fitsfiles if 
+                 available].
+        @rtype: float
+        
+        """
+        
+        #- check if vlsr was already calculated
+        if self.best_vlsr <> None:
+            return self.best_vlsr
+        #- attempt to read data
+        self.readData(vlsr)
+        #- if no data available, return initial guess
+        if not self.lpdata:
+            return vlsr
+        #- get vlsr again, in case a fitsfile included a better guess
+        vlsr = self.lpdata[0].getVlsr()
+        #- check if sphinx is finished, if not return vlsr from data container
+        self.readSphinx()
+        if not self.sphinx: 
+            return vlsr
+        
+        #- get all the profiles and noise values
+        if self.vexp is None:
+            print 'WARNING! Cannot calculate best v_lsr for %s'%str(self) + \
+                  ' because the terminal gas velocity is not set.'
+            return vlsr
+        noise = self.lpdata[0].getNoise(self.vexp)
+        dvel = self.lpdata[0].getVelocity()
+        dtmb = self.lpdata[0].getFlux()
+        mvel = self.sphinx.getVelocity()
+        mtmb = self.sphinx.getLPTmb()
+        
+        #- make range of vlsr around the central value to find the best match
+        #- using vexp as a range indicator, so we never fall out of the 
+        #- interpolator range. Note that mvel is centered around zero.
+        range_in_vlsr = linspace(vlsr-vexp,vlsr+vexp,31)
+        #- interpolate the data fluxes 
+        interpolator = interp1d(dvel,dtmb)
+        #- use the new model velocity grids as inputs, and see what dtmb is
+        dtmb_interp = [interpolator(mvel+vlsri) for vlsri in range_in_vlsr]
+        #- Calculate the chi squared for every interpolated data tmb
+        chisquared = [calcChiSquared(data=dtmbi,model=mtmb,noise=noise)
+                      for dtmbi in dtmb_interp]
+        #- Get the minimum chi squared and set the best_vlsr
+        self.chi2_best_vlsr = min(chisquared)
+        self.best_vlsr = range_in_vlsr[argmin(chisquared)]
+        self.dtmb_best_vlsr = dtmb_interp[argmin(chisquared)]
+        
+        print "The best V_lsr is %f km/s, compared to the "%self.best_vlsr + \
+              "original estimate of %f km/s for transition %s."\
+              %(vlsr,str(self))
+        
+        return self.best_vlsr
+        
+    
+    
+    def getIntTmbSphinx(self):
+        
+        """
+        Calculate the integrated Tmb of the sphinx line profile.
+        
+        Returns None if no sphinx profile is available yet!
+
+        @return: The integrated model profile Tmb
+        @rtype: float
+        
+        """
+        
+        if self.sphinx is None:
+            self.readSphinx()
+        if self.sphinx is None:
+            return
+        mvel = self.sphinx.getVelocity()
+        mtmb = self.sphinx.getLPTmb()
+        return trapz(x=mvel,y=mtmb)
+    
+    
+    
+    def getPeakTmbSphinx(self):
+    
+        """
+        Get the peak Tmb of the sphinx line profile. 
+        
+        Returns None if no sphinx profile is available yet.
+        
+        Is equal to the mean of the 5 points around the center of the profile.
+        
+        @return: The peak Tmb of the sphinx line profile
+        @rtype: float        
+        
+        """
+        
+        if self.sphinx is None:
+            self.readSphinx()
+        if self.sphinx is None:
+            return
+        mtmb = self.sphinx.getLPTmb()
+        imid = len(mtmb)/2
+        return mean(mtmb[imid-2:imid+3])
+         
+        
+        
+    
+    def getIntTmbData(self,vlsr=None):
+        
+        """
+        Calculate the integrated Tmb of the data line profile.
+        
+        Note that only the first of data profiles is used for this, if there 
+        are multiple profiles available for this transition. (i.e. multiple
+        observations of the same transition with the same telescope)
+        
+        Makes use of the interpolated line profile onto the sphinx velocity 
+        grid for the best vlsr. This avoids taking into account too much 
+        possible outliers in noisy spectra. Run getBestVlsr() first!
+        
+        Returns None if no sphinx or data are available. Both are needed!
+        
+        @keyword vlsr: The stellar velocity with respect to the local standard
+                       of rest. Needed for fits files, in which no velocity 
+                       information is given. If None, no vlsr is needed. Data \
+                       are already read. Will crash if that is not the case!
+                       
+                       (default: None)
+        @type vlsr: float
+        
+        @return: The integrated data Tmb
+        @rtype: float
+        
+        """
+        
+        if self.best_vlsr is None:
+            self.getBestVlsr(vlsr)
+        if self.best_vlsr is None:
+            return
+        mvel = self.sphinx.getVelocity()
+        return trapz(x=mvel,y=self.dtmb_best_vlsr)
+        
+        
+    
+    def getPeakTmbData(self,vlsr=None):
+    
+        """
+        Get the peak Tmb of the data line profile. 
+        
+        Returns None if no sphinx profile or data are available yet.
+        
+        Makes use of the interpolated line profile onto the sphinx velocity 
+        grid for the best vlsr. This avoids taking into account too much 
+        possible outliers in noisy spectra. Run getBestVlsr() first!
+        
+        Is equal to the mean of the 5 points in the data profile around the 
+        center of the sphinx profile (ie in the same velocity bin as 
+        getPeakTmbSphinx).
+
+        @keyword vlsr: The stellar velocity with respect to the local standard
+                       of rest. Needed for fits files, in which no velocity 
+                       information is given. If None, no vlsr is needed. Data \
+                       are already read. Will crash if that is not the case!
+                       
+                       (default: None)
+        @type vlsr: float
+
+        @return: The peak Tmb of the sphinx line profile
+        @rtype: float        
+        
+        """
+
+        if self.best_vlsr is None:
+            self.getBestVlsr(vlsr)
+        if self.best_vlsr is None:
+            return None
+        #- Same velocity range as peak tmb of sphinx. Same velocity grid, so
+        #- mid index can be determined as follows
+        imid = len(self.dtmb_best_vlsr)/2
+        return mean(self.dtmb_best_vlsr[imid-2:imid+3])
+        
+    
+    
+    def getLoglikelihood(self,vlsr=None):
+        
+        """
+        Calculate the loglikelihood of comparison between sphinx and dataset.
+        
+        Gives a measure for the goodness of the fit of the SHAPE of the 
+        profiles.
+        
+        Done only for the first dataset! Makes use of the interpolated line 
+        profile onto the sphinx velocity grid for the best vlsr.
+        
+        Returns None if sphinx or data profile are not available. 
+        
+        Rescales the sphinx profile according to the difference in integrated
+        Tmb between dataset and sphinx profile.
+
+        @keyword vlsr: The stellar velocity with respect to the local standard
+                       of rest. Needed for fits files, in which no velocity 
+                       information is given. If None, no vlsr is needed. Data \
+                       are already read. Will crash if that is not the case!
+                       
+                       (default: None)
+        @type vlsr: float
+
+        @return: The loglikelihood
+        @rtype: float
+        
+        """
+        
+        if self.best_vlsr is None:
+            self.getBestVlsr(vlsr)
+        if self.best_vlsr is None:
+            return None
+        shift_factor = self.getIntTmbData()/self.getIntTmbSphinx()
+        mtmb_scaled = self.sphinx.getLPTmb()*shift_factor
+        noise = self.lpdata[0].getNoise()
+        return calcLoglikelihood(data=self.dtmb_best_vlsr,model=mtmb_scaled,\
+                                 noise=noise)

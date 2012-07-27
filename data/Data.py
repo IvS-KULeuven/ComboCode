@@ -8,13 +8,12 @@ Author: R. Lombaert
 """
 
 from scipy import mean, std, sqrt, log, isfinite
-from scipy import array, zeros, arange
+from scipy import array, zeros, arange, argmin
 from scipy.optimize import leastsq
 from scipy.integrate import trapz
 from scipy.special import erf
 
 from cc.tools.numerical import Interpol
-
 
 
 def alignY(datalists,xmin,xmax,zeropoint=0,p0=[1,0,1.5,-2.5],func='power'):
@@ -291,15 +290,20 @@ def reduceArray(arr,stepsize):
     
 
 
-def getRMS(wave,flux,wmin=None,wmax=None,minsize=20):
+def getRMS(flux,wave=None,wmin=None,wmax=None,minsize=20):
     
     '''
     Get the RMS of a flux array in a given wavelength range. If no wavelengths 
     are given, the RMS of the whole array is given.
     
-    @param arr: The array of numbers
-    @type arr: array
+    If the array used for RMS calculation is too small, None is returned.
     
+    @param flux: The wavelength array
+    @type flux: array
+
+    @keyword wave: The wavelength array. If default, the RMS is calculated of 
+                   the whole flux array
+    @type wave: array    
     @keyword wmin: The minimum wavelength. If not given, the minimum wavelength 
                    is the first entry in the wave array
                     
@@ -321,29 +325,28 @@ def getRMS(wave,flux,wmin=None,wmax=None,minsize=20):
     
     '''
     
-    wave, flux = array(wave), array(flux)
-    if wmin is None: 
-        wmin = wave[0]
-    if wmax is None:
-        wmax = wave[-1]
-    wmin, wmax = float(wmin), float(wmax)
-    fsel = flux[(wave>=wmin)*(wave<=wmax)]
-    fsel = fsel[isfinite(fsel)]
+    fsel = selectArray(flux,wave,wmin,wmax)
     if fsel.size < minsize:
         print 'Array size for noise calculation too small. Returning None.'
         return None
     return sqrt((fsel**2).sum()/float(len(fsel)))
     
     
-def getMean(wave,flux,wmin=None,wmax=None,minsize=20):
+    
+def getMean(flux,wave=None,wmin=None,wmax=None,minsize=20):
 
     '''
     Get the mean of a flux array in a given wavelength range. If no wavelengths 
     are given, the mean of the whole array is given.
     
-    @param arr: The array of numbers
-    @type arr: array
+    If the array used for mean calculation is too small, None is returned.
     
+    @param flux: The wavelength array
+    @type flux: array
+
+    @keyword wave: The wavelength array. If default, the RMS is calculated of 
+                   the whole flux array
+    @type wave: array    
     @keyword wmin: The minimum wavelength. If not given, the minimum wavelength 
                    is the first entry in the wave array
                     
@@ -365,14 +368,7 @@ def getMean(wave,flux,wmin=None,wmax=None,minsize=20):
     
     '''
     
-    wave, flux = array(wave), array(flux)
-    if wmin is None: 
-        wmin = wave[0]
-    if wmax is None:
-        wmax = wave[-1]
-    wmin, wmax = float(wmin), float(wmax)
-    fsel = flux[(wave>=wmin)*(wave<=wmax)]
-    fsel = fsel[isfinite(fsel)]
+    fsel = selectArray(flux,wave,wmin,wmax)
     if fsel.size < minsize:
         print 'Array size for noise calculation too small. Returning None.'
         return None
@@ -380,15 +376,20 @@ def getMean(wave,flux,wmin=None,wmax=None,minsize=20):
     
     
 
-def getStd(wave,flux,wmin=None,wmax=None,minsize=20):
+def getStd(flux,wave=None,wmin=None,wmax=None,minsize=20):
 
     '''
     Get the std of a flux array in a given wavelength range. If no min/max 
     wavelengths are given, the std of the whole array is given.
     
-    @param arr: The array of numbers
-    @type arr: array
+    If the array used for std calculation is too small, None is returned.
     
+    @param flux: The wavelength array
+    @type flux: array
+
+    @keyword wave: The wavelength array. If default, the RMS is calculated of 
+                   the whole flux array
+    @type wave: array    
     @keyword wmin: The minimum wavelength. If not given, the minimum wavelength 
                    is the first entry in the wave array
                     
@@ -410,16 +411,54 @@ def getStd(wave,flux,wmin=None,wmax=None,minsize=20):
     
     '''
     
-    wave, flux = array(wave), array(flux)
-    if wmin is None: 
-        wmin = wave[0]
-    if wmax is None:
-        wmax = wave[-1]
-    wmin, wmax = float(wmin), float(wmax)
-    fsel = flux[(wave>=wmin)*(wave<=wmax)]
-    fsel = fsel[isfinite(fsel)]
+    fsel = selectArray(flux,wave,wmin,wmax)
     if fsel.size < minsize:
         print 'Array size for noise calculation too small. Returning None.'
         return None
     return std(fsel)
+
+
+def selectArray(flux,wave=None,wmin=None,wmax=None): 
+    
+    """
+    Select the sub array of a flux, given a wavelength range. If no range is 
+    given, return the full array.
+    
+    @param flux: The wavelength array
+    @type flux: array
+
+    @keyword wave: The wavelength array. If default, the RMS is calculated of 
+                   the whole flux array
+    @type wave: array    
+    @keyword wmin: The minimum wavelength. If not given, the minimum wavelength 
+                   is the first entry in the wave array
+                    
+                   (default: None)
+    @type wmin: float
+    @keyword wmin: The maximum wavelength. If not given, the maximum wavelength 
+                   is the last entry in the wave array
+                    
+                   (default: None)               
+    @type wmax: float
+    
+    @return: The flux in given wavelengths
+    @rtype: array
+    
+    """
+    
+    flux = array(flux)
+    fsel = flux[isfinite(flux)]
+    if wave <> None:
+        wave = array(wave)
+        if wmin is None: 
+            wmin = wave[0]
+        if wmax is None:
+            wmax = wave[-1]
+        wmin, wmax = float(wmin), float(wmax)
+        fsel = flux[(wave>=wmin)*(wave<=wmax)]
+    return fsel
+    
+    
+    
+
     

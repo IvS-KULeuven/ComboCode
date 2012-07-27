@@ -556,24 +556,10 @@ class PlotGas(PlottingSession):
             if not no_data : keytags.append('Data')
              
         #- Check how many non-PACS transitions there are
-        trans_list = sorted(set([trans 
-                                 for star in star_grid
-                                 for trans in star['GAS_LINES'] 
-                                 if 'PACS' not in trans.telescope]),\
-                            key=lambda x:sort_freq \
-                                    and (sort_molec and x.molecule or '',\
-                                         x.frequency) \
-                                    or (sort_molec and x.molecule or '',\
-                                        x.wavelength))
-        pacs_list  = sorted(set([trans 
-                                 for star in star_grid
-                                 for trans in star['GAS_LINES'] 
-                                 if 'PACS' in trans.telescope]),\
-                            key=lambda x:sort_freq \
-                                    and (sort_molec and x.molecule or '',\
-                                         x.frequency) \
-                                    or (sort_molec and x.molecule or '',\
-                                        x.wavelength))
+        trans_list = Transition.extractTransFromStars(star_grid,sort_freq,\
+                                                      sort_molec,pacs=0)
+        pacs_list  = Transition.extractTransFromStars(star_grid,sort_freq,\
+                                                      sort_molec,pacs=1)
         
         def createTilePlots(trans_list,x_dim,y_dim,no_data,intrinsic,\
                             vg_factor,keytags,telescope_label,no_models,cfg,\
@@ -639,7 +625,6 @@ class PlotGas(PlottingSession):
             n_subplots = (x_dim*y_dim) - (keytags and 1 or 0)
             plot_filenames = []
             i = 0
-            v_lsr = star_grid[0]['V_LSR']
             vg = star_grid[0]['VEL_INFINITY_GAS']
             while trans_list:
                 i += 1             
@@ -650,16 +635,20 @@ class PlotGas(PlottingSession):
                                    for star in star_grid]
                     if None in current_sub: 
                          missing_trans += 1
-                    [trans.readSphinx() 
-                     for trans in current_sub 
-                     if trans <> None]
-                    current_trans.readData(v_lsr,vg)
+                    current_trans.readData(self.vlsr)
+                    for trans in current_sub:
+                        if trans <> None:
+                            trans.readSphinx()
+                            #- Data have been read for current_trans. Don't 
+                            #- read again for other objects (same data files),
+                            #- but simply set based on the already read data
+                            trans.setData(current_trans)
                     ddict = dict()
                     if not no_models:
                         if intrinsic:
                             ddict['x'] = \
                                 [(trans <> None and trans.sphinx <> None) \
-                                      and list(trans.sphinx.getVelocityIntrinsic()+v_lsr)\
+                                      and list(trans.sphinx.getVelocityIntrinsic())\
                                       or []                          
                                  for trans in current_sub]
                             ddict['y'] = \
@@ -670,7 +659,8 @@ class PlotGas(PlottingSession):
                         else:
                             ddict['x'] = \
                                 [(trans <> None and trans.sphinx <> None) \
-                                     and list(trans.sphinx.getVelocity()+v_lsr)\
+                                     and list(trans.sphinx.getVelocity() +
+                                              trans.getBestVlsr(self.vlsr,vg))\
                                      or []                          
                                  for trans in current_sub]
                             ddict['y'] = \
@@ -683,12 +673,14 @@ class PlotGas(PlottingSession):
                     #- Add data, but only if the data filename is known. This 
                     #- will be Tmb, in K. In case of intrinsic==1, you dont 
                     #- even want to check this.
+                    
                     if current_trans.lpdata and no_data == 0:
-                        ddict['x'].extend([lp.getVelocity() 
-                                      for lp in current_trans.lpdata])
-                        ddict['y'].extend([lp.getFlux() 
-                                      for lp in current_trans.lpdata])
-                        ddict['histoplot'] = [len(ddict['x'])-1]
+                        ddict['histoplot'] = []
+                        n_models = len(ddict['x'])
+                        for ilp,lp in enumerate(current_trans.lpdata):
+                            ddict['x'].append(lp.getVelocity())
+                            ddict['y'].append(lp.getFlux())
+                            ddict['histoplot'].append(n_models+ilp)
                         
                     ddict['labels'] = \
                         [('%s'%(current_trans.molecule.molecule_plot),0.05,0.87),\

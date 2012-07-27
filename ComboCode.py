@@ -240,7 +240,7 @@ class ComboCode(object):
                           ('print_model_info',1),('stat_mode','chi2'),\
                           ('contdiv_features',[]),('cfg_contdiv',''),\
                           ('show_contdiv',0),('skip_cooling',0),\
-                          ('recover_sphinxfiles',0)]
+                          ('recover_sphinxfiles',0),('stat_print',0)]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -794,28 +794,44 @@ class ComboCode(object):
         
         '''
         
+        self.pacsstats = None
+        self.resostats = None
         if self.statistics and self.pacs <> None:
             print '************************************************'
-            print '****** Loading Statistics module for %s.'%self.star_name
+            print '**** Doing PACS statistics for %s.'%self.star_name
             print '************************************************'
 
-            self.stats = PeakStats.PeakStats(star_name=self.star_name,\
-                                             path_code=self.path_gastronoom,\
-                                             path_combocode=self.path_combocode)
-            self.stats.setInstrument(instrument='PACS',\
-                                     instrument_instance=self.pacs)
-            self.stats.setModels(instrument='PACS',star_grid=self.star_grid,\
-                                 redo_convolution=self.pacs.redo_convolution)
-            self.stats.findRatios(instrument='PACS',\
-                                  tolerance=self.stat_tolerance,\
-                                  sigma=self.stat_sigma,mode=self.stat_mode)
-            self.stats.plotRatioWav(instrument='PACS',\
-                                    inputfilename=self.inputfilename,\
-                                    tolerance=self.stat_tolerance,\
-                                    sigma=self.stat_sigma,mode=self.stat_mode)
-        else: 
-            self.stats = None    
-    
+            self.pacsstats = PeakStats.PeakStats(star_name=self.star_name,\
+                                            path_code=self.path_gastronoom,\
+                                            path_combocode=self.path_combocode)
+            self.pacsstats.setInstrument(instrument='PACS',\
+                                         instrument_instance=self.pacs)
+            self.pacsstats.setModels(instrument='PACS',\
+                                     star_grid=self.star_grid)
+            self.pacsstats.findRatios(instrument='PACS',\
+                                      tolerance=self.stat_tolerance,\
+                                      sigma=self.stat_sigma,mode=self.stat_mode)
+            self.pacsstats.plotRatioWav(instrument='PACS',\
+                                        inputfilename=self.inputfilename,\
+                                        tolerance=self.stat_tolerance,\
+                                        sigma=self.stat_sigma,\
+                                        mode=self.stat_mode)
+        if self.statistics:
+            trans_sel = Transition.extractTransFromStars(star_grid,pacs=0)
+            if not trans_sel:
+                return
+            print '************************************************'
+            print '**** Doing statistics for spectrally resolveds line in %s.'\
+                  %self.star_name
+            print '************************************************'
+            self.resostats = ResoStats.ResoStats(star_name=self.star_name,\
+                                            path_code=self.path_gastronoom,\
+                                            path_combocode=self.path_combocode,\
+                                            stat_print=self.stat_print)
+            self.resostats.setInstrument(trans_sel)
+            self.resostats.setModels(star_grid=self.star_grid)
+            self.resostats.getIntensities()
+            
     
     
     def doContDiv(self):

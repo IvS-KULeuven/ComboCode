@@ -86,6 +86,23 @@ class LPDataReader(Reader):
             self.setNoise(vexp)
         return self.contents['noise']
         
+        
+   
+    def getVlsr(self):
+        
+        '''
+        Return the source velocity of the observed object in this dataset.
+        
+        This is the value read from the fits file, and if not available or 
+        applicable, the initial guess provided by the user is returned.
+        
+        @return: The source velocity of the observed object in the dataset
+        @rtype: float
+        
+        '''
+
+        return self.contents['vlsr']
+    
     
     
     def getDateObs(self):

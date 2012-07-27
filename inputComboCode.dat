@@ -51,6 +51,7 @@ STATISTICS=0                        # Calculate basic statistics, for now only f
 STAT_TOLERANCE=1                    # Tolerance for the data wavelength grid, when selecting peak values in PACS data for comparison with model values. The tolerance is a factor >= 1 multiplied by the local wavelength resolution, after which the max flux is taken from that range.
 STAT_SIGMA=3                        # sigma for sigma clipping of data/model peak ratios when determining chi-squared values, remove this parameter if no sigma clipping is needed
 STAT_MODE=chi2                      # The method used for statistics in PeakStats.py. Can be chi2, chi_abs or log10_severecut
+STAT_PRINT=0                        # print statistics for individual lines and models of spectrally resolved lines
 
 #-- Various settings for this CC session
 REPLACE_DB_ENTRY=0                  # Be very careful with putting this keyword to 1! If a model in a database is found (usually cooling or mcmax), it is replaced by a newly calculated model (also with a new model_id). Any mline, sphinx or pacs models stemming from the same cooling id will also be deleted!!!!
