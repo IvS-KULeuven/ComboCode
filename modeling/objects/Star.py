@@ -546,10 +546,6 @@ class Star(dict):
             low = radiat.getLowerStates()
             up = radiat.getUpperStates()
             for telescope in self['LL_TELESCOPE']:
-                if telescope == 'PACS-H2O' and not molec.isWater():
-                    telescope = 'PACS'
-                elif telescope == 'PACS' and molec.isWater():
-                    telescope = 'PACS-H2O'
                 if not molec.spec_indices:
                     #- molec.ny_low is the number of levels in gs vib state
                     #- molec.ny_up is the number of levels above gs vib state

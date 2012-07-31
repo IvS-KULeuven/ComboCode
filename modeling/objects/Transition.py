@@ -396,7 +396,18 @@ class Transition():
         if telescope is None:
             self.telescope = 'N.A.'
         else:
-            self.telescope = telescope.upper()
+            telescope = telescope.upper()
+            if telescope.find('H2O') != -1 and telescope.find('PACS') != -1 \
+                    and not self.molecule.isWater():
+                telescope = telescope.replace('-H2O','')
+            elif telescope.find('H2O') == -1 and telescope.find('PACS') != -1 \
+                    and self.molecule.isWater():
+                print 'WARNING! Water lines should not be included in the ' + \
+                      '%s.spec file. Create a file with the '%telescope + \
+                      'same name, appending -H2O to the telescope name and ' +\
+                      'removing all LINE_SPEC lines.'
+                telescope = '%s-H2O'%telescope
+            self.telescope = telescope
         self.vup = int(vup)
         self.jup = int(jup)
         self.kaup = int(kaup)

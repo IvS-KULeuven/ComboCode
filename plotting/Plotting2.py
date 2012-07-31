@@ -319,6 +319,8 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                       'Leaving them out.'
                 keytags = []
             else:
+                #- copy the data list such that it does not mess with the original
+                data = list(data) 
                 data.append(dict([('x',[[0]]*maxlen),('y',[[0]]*maxlen)]))
     else:
         if not len(data) <= xdim*ydim:
@@ -378,20 +380,16 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
         line_types = [ls + col for ls,col in zip(linestyles,6*colors)]
     for ddict,itile in zip(data,xrange(xdim*ydim)):
         sub = pl.subplot(ydim,xdim,itile+1)
-        if ddict['histoplot']:
-            x,y = makeHistoPlot(ddict['x'],ddict['y'],ddict['histoplot'])
-        else:
-            x,y = ddict['x'],ddict['y']
         these_data = []
         [these_data.append([xi,yi,lp]) 
-             for xi,yi,lp in zip(x,y,line_types)
+             for xi,yi,lp in zip(ddict['x'],ddict['y'],line_types)
              if list(yi) and yi <> None]
-        #sub.plot(linewidth=linewidth,*these_data)
         for index,(xi,yi,lp) in enumerate(these_data):
-            sub.plot(xi,yi,lp,\
-                     linewidth=(index in ddict['histoplot'] and thick_lw_data)\
-                                    and linewidth*2\
-                                    or linewidth)
+            if index in ddict['histoplot']:
+                sub.step(xi,yi,lp,where='mid',\
+                         linewidth=(thick_lw_data and linewidth*2 or linewidth))
+            else:
+                sub.plot(xi,yi,lp,linewidth= linewidth)
         if keytags and itile == len(data)-1:
             lg = pl.legend(tuple(keytags),loc=(0,0),prop=\
                     pl.matplotlib.font_manager.FontProperties(size=fontsize_key))
@@ -922,7 +920,6 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
             raise TypeError
     except TypeError:
         x = [array(x) for yi in y]
-    if histoplot: x,y = makeHistoPlot(x,y,histoplot)
     keytags = list(keytags)
     if len(keytags) != len(x) and keytags: keytags = []
     if len(xerr) != len(x) and xerr: xerr = []
@@ -1003,40 +1000,37 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
         no_err = []
         legends = []
         for index,(xi,yi,lp,xerri,yerri) in enumerate(these_data):
-            if xerri is None and yerri is None:
-                legends.append(sub.plot(xi,yi,lp,linewidth=\
-                                        (index in histoplot and thick_lw_data)\
-                                                            and linewidth*2.\
-                                                            or linewidth))
+            if index in histoplot:
+                legends.append(sub.step(xi,yi,lp,where='mid',\
+                                        linewidth=(thick_lw_data\
+                                                    and linewidth*2. \
+                                                    or linewidth)))
             else:
-                legends.append(sub.plot(xi,yi,lp,linewidth=\
-                                        (index in histoplot and thick_lw_data)\
-                                                            and linewidth*2.\
-                                                            or linewidth))
-                if xerri <> None: 
-                    sub.errorbar(x=xi,y=yi,xerr=xerri,fmt=None,\
-                                 ecolor='k',\
-                                 xlolims=set(xerri[:1]) == set([0]) and 1 or 0,\
-                                 xuplims=set(xerri[:0]) == set([0]) and 1 or 0,\
-                                 #splitLineStyle(lp)[1],\
-                                 elinewidth=10,\
-                                 barsabove=True)
-                if yerri <> None:
-                    lls = yerri[0]
-                    uls = yerri[1]
-                    
-                    for (ll,ul,xii,yii) in zip(lls,uls,xi,yi):
-                        if ll != 0 or ul != 0:
-                            sub.errorbar(x=[xii],y=[yii],yerr=[[ll],[ul]],\
-                                         ecolor='k',\
-                                         lolims=lp=='-r',\
-                                         uplims=lp=='-b',\
-                                         #splitLineStyle(lp)[1],\
-                                         capsize=10,\
-                                         elinewidth=2,\
-                                         barsabove=False)
-                    
-                             
+                legends.append(sub.plot(xi,yi,lp,linewidth=linewidth))
+            if xerri <> None: 
+                sub.errorbar(x=xi,y=yi,xerr=xerri,fmt=None,\
+                                ecolor='k',\
+                                xlolims=set(xerri[:1]) == set([0]) and 1 or 0,\
+                                xuplims=set(xerri[:0]) == set([0]) and 1 or 0,\
+                                #splitLineStyle(lp)[1],\
+                                elinewidth=10,\
+                                barsabove=True)
+            if yerri <> None:
+                lls = yerri[0]
+                uls = yerri[1]
+                
+                for (ll,ul,xii,yii) in zip(lls,uls,xi,yi):
+                    if ll != 0 or ul != 0:
+                        sub.errorbar(x=[xii],y=[yii],yerr=[[ll],[ul]],\
+                                        ecolor='k',\
+                                        lolims=lp=='-r',\
+                                        uplims=lp=='-b',\
+                                        #splitLineStyle(lp)[1],\
+                                        capsize=10,\
+                                        elinewidth=2,\
+                                        barsabove=False)
+                
+                            
         #legends.append(sub.plot(linewidth=linewidth,*no_err))
         sub.autoscale_view(tight=True,scaley=False)
         if xlogscale:
@@ -1305,6 +1299,8 @@ def splitLineStyle(lp):
 def makeHistoPlot(x,y,indices=[]):
     
     '''
+    [DEPRECATED]  -- not used by Plotting2 anymore.
+    
     Convert x and y data into input for an unbinned 'histogram' plot.
     
     (by Pieter de Groote)
