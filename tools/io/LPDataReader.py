@@ -7,10 +7,12 @@ Author: R. Lombaert
 
 """
 
+import os
 from scipy import std
 
 from cc.tools.io.Reader import Reader
 from cc.data import Data
+from cc.tools.io import DataIO
 
 
 class LPDataReader(Reader):
@@ -20,7 +22,8 @@ class LPDataReader(Reader):
     
     '''
     
-    def __init__(self,filename):
+    def __init__(self,filename,info_path=os.path.join(os.path.expanduser('~'),\
+                                                      'ComboCode','Data')):
         
         '''
         A data reader for line profiles.
@@ -30,10 +33,18 @@ class LPDataReader(Reader):
         @param filename: The data filename, including filepath.
         @type filename: string
         
-        '''
+        @keyword info_path: The path to the folder containing the info file on
+                            stars, called Star.dat. 
+                            
+                            (default: ~/ComboCode/Data)
+        @type info_path: string
         
+        '''
+                
         super(LPDataReader, self).__init__()
         self.filename = filename
+        self.star_name_gastronoom = os.path.split(self.filename)[1].split('_')[0]
+        self.info_path = info_path
         self.c = 2.99792458e10          #in cm/s
     
     
@@ -94,7 +105,9 @@ class LPDataReader(Reader):
         Return the source velocity of the observed object in this dataset.
         
         This is the value read from the fits file, and if not available or 
-        applicable, the initial guess provided by the user is returned.
+        applicable, the initial guess provided by Star.dat is returned.
+        
+        If the star is not included in Star.dat, the v_lsr is set to 0.0.
         
         @return: The source velocity of the observed object in the dataset
         @rtype: float
@@ -104,6 +117,28 @@ class LPDataReader(Reader):
         return self.contents['vlsr']
     
     
+    
+    def checkVlsr(self):
+        
+        """
+        Check if the Vlsr was set correctly. If not, it is taken from Star.dat.
+        
+        """
+        
+        if self.getVlsr() is None: 
+            try:
+                star_index = DataIO.getInputData(path=self.info_path,\
+                                               keyword='STAR_NAME_GASTRONOOM')\
+                                              .index(self.star_name_gastronoom)
+                vlsr = DataIO.getInputData(path=self.info_path,\
+                                           keyword='V_LSR')[star_index]
+                self.contents['vlsr'] = vlsr
+            except KeyError,ValueError: 
+                print 'Star not found in Star.dat for %s. '%(self.filename) + \
+                      'Setting vlsr to 0. This is wrong! Add star to Star.dat!'
+                raise IOError()
+        
+        
     
     def getDateObs(self):
     

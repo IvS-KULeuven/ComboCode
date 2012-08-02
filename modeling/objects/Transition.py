@@ -992,15 +992,10 @@ class Transition():
             
             
 
-    def readData(self,vlsr):
+    def readData(self):
          
         '''
         Read the datafiles associated with this transition if available.
-         
-        @param vlsr: The stellar velocity with respect to the local standard
-                     of rest. Needed for fits files, in which no velocity 
-                     information is given.
-        @type vlsr: float
         
         '''
          
@@ -1008,10 +1003,11 @@ class Transition():
             self.lpdata = []
             if self.datafiles <> None:
                 for df in self.datafiles:
+                    info_path = os.path.join(self.path_combocode,'Data')
                     if df[-5:] == '.fits':
-                        lprof = FitsReader.FitsReader(df,vlsr)
+                        lprof = FitsReader.FitsReader(df,info_path)
                     else:
-                        lprof = TxtReader.TxtReader(df,vlsr)
+                        lprof = TxtReader.TxtReader(df,info_path)
                     self.lpdata.append(lprof)
                     
     
@@ -1037,16 +1033,39 @@ class Transition():
         if self.lpdata is None and self == trans: 
             self.lpdata = trans.lpdata
                 
-        
     
-    def getBestVlsr(self,vlsr=None):
+    
+    def getVlsr(self):
+        
+        """
+        Return the vlsr read from the fits file, or taken from the Star.dat file.
+        
+        This is different from the getBestVlsr() method, which determines the 
+        best matching vlsr between data and sphinx, if both are available. 
+        
+        @return: the source velocity taken from the fits file OR Star.dat. 0
+                 if data are not available.
+        @rtype: float
+        
+        """
+        
+        self.readData()
+        if self.lpdata: 
+            return self.lpdata[0].getVlsr()
+        else:
+            print 'No data found for %s. Setting v_lsr to 0.0.'%str(self)
+            return 0.0
+            
+            
+            
+    def getBestVlsr(self):
         
         """ 
         If self.best_vlsr is None, the best source velocity will be guessed by
         comparing chi^2 values between different values for the source velocity
         
-        May be different from input vqlue vlsr, the original expected 
-        source velocity!
+        May be different from input value vlsr, the original expected 
+        source velocity (from Star.dat)!
         
         Based on the first dataset in self.lpdata. Note that multiple datasets
         might be included, but the scaling will be done for only the first one. 
@@ -1059,14 +1078,6 @@ class Transition():
         returned. If data are available, but sphinx isn't, vlsr from the fits
         files is returned, and the initial guess is returned in case of txt 
         files.
-                
-        @keyword vlsr: The stellar velocity with respect to the local standard
-                       of rest. Needed for fits files, in which no velocity 
-                       information is given. If None, no vlsr is needed. Data \
-                       are already read. Will crash if that is not the case!
-                       
-                       (default: None)
-        @type vlsr: float
         
         @return: the best guess vlsr, or the initial guess if no sphinx or data
                  are available [will return vlsr included in fitsfiles if 
@@ -1078,16 +1089,12 @@ class Transition():
         #- check if vlsr was already calculated
         if self.best_vlsr <> None:
             return self.best_vlsr
-        #- attempt to read data
-        self.readData(vlsr)
-        #- if no data available, return initial guess
-        if not self.lpdata:
-            return vlsr
-        #- get vlsr again, in case a fitsfile included a better guess
-        vlsr = self.lpdata[0].getVlsr()
+        
+        #- attempt to read data and find the initial vlsr guess
+        vlsr = self.getVlsr()
         #- check if sphinx is finished, if not return vlsr from data container
         self.readSphinx()
-        if not self.sphinx: 
+        if vlsr == 0.0 or not self.sphinx: 
             return vlsr
         
         #- get all the profiles and noise values
@@ -1123,6 +1130,50 @@ class Transition():
         
         return self.best_vlsr
         
+        
+   
+    def getIntIntIntSphinx(self):
+        
+        """
+        Calculate the integrated intrinsic intensity of the sphinx line profile.
+        
+        Returns None if no sphinx profile is available yet!
+
+        @return: The integrated intrinsic intensity of the line profile
+        @rtype: float
+        
+        """
+        
+        if self.sphinx is None:
+            self.readSphinx()
+        if self.sphinx is None:
+            return
+        mvel = self.sphinx.getVelocityIntrinsic()
+        mint = self.sphinx.getLPIntrinsic()
+        return trapz(x=mvel,y=mint)
+    
+    
+    
+    def getIntConIntSphinx(self):
+        
+        """
+        Calculate the integrated convolved intensity of the sphinx line profile.
+        
+        Returns None if no sphinx profile is available yet!
+
+        @return: The integrated convolved intensity of the line profile
+        @rtype: float
+        
+        """
+        
+        if self.sphinx is None:
+            self.readSphinx()
+        if self.sphinx is None:
+            return
+        mvel = self.sphinx.getVelocity()
+        mcon = self.sphinx.getLPConvolved()
+        return trapz(x=mvel,y=mcon)
+    
     
     
     def getIntTmbSphinx(self):
@@ -1172,7 +1223,7 @@ class Transition():
         
         
     
-    def getIntTmbData(self,vlsr=None):
+    def getIntTmbData(self):
         
         """
         Calculate the integrated Tmb of the data line profile.
@@ -1187,21 +1238,13 @@ class Transition():
         
         Returns None if no sphinx or data are available. Both are needed!
         
-        @keyword vlsr: The stellar velocity with respect to the local standard
-                       of rest. Needed for fits files, in which no velocity 
-                       information is given. If None, no vlsr is needed. Data \
-                       are already read. Will crash if that is not the case!
-                       
-                       (default: None)
-        @type vlsr: float
-        
         @return: The integrated data Tmb
         @rtype: float
         
         """
         
         if self.best_vlsr is None:
-            self.getBestVlsr(vlsr)
+            self.getBestVlsr()
         if self.best_vlsr is None:
             return
         mvel = self.sphinx.getVelocity()
@@ -1209,7 +1252,7 @@ class Transition():
         
         
     
-    def getPeakTmbData(self,vlsr=None):
+    def getPeakTmbData(self):
     
         """
         Get the peak Tmb of the data line profile. 
@@ -1224,21 +1267,13 @@ class Transition():
         center of the sphinx profile (ie in the same velocity bin as 
         getPeakTmbSphinx).
 
-        @keyword vlsr: The stellar velocity with respect to the local standard
-                       of rest. Needed for fits files, in which no velocity 
-                       information is given. If None, no vlsr is needed. Data \
-                       are already read. Will crash if that is not the case!
-                       
-                       (default: None)
-        @type vlsr: float
-
         @return: The peak Tmb of the sphinx line profile
         @rtype: float        
         
         """
 
         if self.best_vlsr is None:
-            self.getBestVlsr(vlsr)
+            self.getBestVlsr()
         if self.best_vlsr is None:
             return None
         #- Same velocity range as peak tmb of sphinx. Same velocity grid, so
@@ -1248,7 +1283,7 @@ class Transition():
         
     
     
-    def getLoglikelihood(self,vlsr=None):
+    def getLoglikelihood(self):
         
         """
         Calculate the loglikelihood of comparison between sphinx and dataset.
@@ -1264,21 +1299,13 @@ class Transition():
         Rescales the sphinx profile according to the difference in integrated
         Tmb between dataset and sphinx profile.
 
-        @keyword vlsr: The stellar velocity with respect to the local standard
-                       of rest. Needed for fits files, in which no velocity 
-                       information is given. If None, no vlsr is needed. Data \
-                       are already read. Will crash if that is not the case!
-                       
-                       (default: None)
-        @type vlsr: float
-
         @return: The loglikelihood
         @rtype: float
         
         """
         
         if self.best_vlsr is None:
-            self.getBestVlsr(vlsr)
+            self.getBestVlsr()
         if self.best_vlsr is None:
             return None
         shift_factor = self.getIntTmbData()/self.getIntTmbSphinx()

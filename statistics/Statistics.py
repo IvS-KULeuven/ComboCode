@@ -56,20 +56,7 @@ class Statistics(object):
         self.code = code
         self.data_stats = dict()
         self.data_info = dict()
-        try:
-            self.star_index = DataIO.getInputData(path=os.path.join(\
-                                                        self.path_combocode,\
-                                                        'Data'))\
-                                                 .index(self.star_name)
-            self.v_lsr = DataIO.getInputData(path=os.path.join(\
-                                                        self.path_combocode,\
-                                                        'Data'),\
-                                             keyword='V_LSR')[self.star_index]
-        except KeyError,ValueError: 
-            print 'No (correct) star name has been supplied. ' + \
-                  'No data stats will be calculated for freq-resolved lines.'
-            self.v_lsr = None
-            
+
 
 
     def setInstrument(self,instrument,data_path='',searchstring='',\
@@ -148,10 +135,10 @@ class Statistics(object):
                                                  searchstring=searchstring)
             self.doDataStats('PACS')
         
-        elif instrument.upper() == 'FREQ_RESO' and self.v_lsr <> None:
+        elif instrument.upper() == 'FREQ_RESO':
             #- Make copy so that any changes do not translate to whatever the 
             #- original list of transitions might be. 
-            [t.readData(self.v_lsr) for t in sample_transitions]
+            [t.readData() for t in sample_transitions]
             self.instruments['FREQ_RESO'] = sample_transitions
             if not sample_transitions:
                 print 'WARNING! No sample transitions given for Statistics ' +\

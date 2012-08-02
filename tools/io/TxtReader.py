@@ -23,44 +23,41 @@ class TxtReader(LPDataReader):
     
     '''
     
-    def __init__(self,filename,vlsr):
+    def __init__(self,filename,info_path=os.path.join(os.path.expanduser('~'),\
+                                                      'ComboCode','Data')):
         
         '''
         A txt file reader for line profiles.
         
         Filename of the txt file is passed to the object upon creation.
         
+        Initialisation of the object will also check Vlsr in Star.dat and add 
+        it as a keyword in the contents dictionary.
+        
         @param filename: The txt filename, including filepath.
         @type filename: string
-        
-        @keyword vlsr: The system velocity with respect to local standard of 
-                       rest. Included in the contents of the data object.
-                       In km/s. Used when calculating eg noise values. 
-                       
-                       (default: None)
-        @type vlsr: float
+               
+        @keyword info_path: The path to the folder containing the info file on
+                            stars, called Star.dat. 
+                            
+                            (default: ~/ComboCode/Data)
+        @type info_path: string       
         
         '''
         
-        super(TxtReader, self).__init__(filename)
-        self.readTxt(vlsr)
+        super(TxtReader, self).__init__(filename,info_path)
+        self.readTxt()
+        self.checkVlsr()
         
         
     
-    def readTxt(self,vlsr=None):
+    def readTxt(self):
         
         ''' 
         Read the txt file. 
         
         Assumes Tmb flux values in K, with respect to velocity. 
-        
-        @keyword vlsr: The system velocity with respect to local standard of 
-                       rest. Included in the contents of the data object.
-                       In km/s. Used when calculating eg noise values. 
-                       
-                       (default: None)
-        @type vlsr: float
-        
+                
         '''
         
         start_i = self.filename[-6:] == '.table' and 1 or 0
@@ -71,4 +68,4 @@ class TxtReader(LPDataReader):
             self.contents['velocity'] = self.contents['velocity'][::-1]
             self.contents['flux'] = self.contents['flux'][::-1]
         self.contents['date_obs'] = 'N.A.'
-        self.contents['vlsr'] = vlsr
+        self.contents['vlsr'] = None

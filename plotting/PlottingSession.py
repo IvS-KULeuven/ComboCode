@@ -67,10 +67,6 @@ class PlottingSession(object):
                                 path=os.path.join(self.path_combocode,'Data'),\
                                 keyword='STAR_NAME_PLOTS',remove_underscore=1)\
                                [self.star_index]
-        self.vlsr = DataIO.getInputData(\
-                        path=os.path.join(self.path_combocode,'Data'),\
-                        keyword='V_LSR',remove_underscore=1)\
-                        [self.star_index]
         self.path = path
         self.mutable_mcmax = [line[0] 
                               for line in DataIO.readFile(\

@@ -262,7 +262,7 @@ class PlotDust(PlottingSession):
                                 'stars',self.star_name,self.plot_id,\
                                 'Td_gastronoom')
         title = 'Average Dust Temperature Stratification for %s'\
-                %(star_grid[0]['STAR_NAME_PLOTS'])
+                %(self.star_name_plots)
         filename = Plotting2.plotCols(x=radii,y=temps,filename=filename,\
                                       yaxis='$T_\mathrm{d}$ (K)',\
                                       plot_title=title,xaxis='$R$ (cm)',\
@@ -361,7 +361,7 @@ class PlotDust(PlottingSession):
                                     'stars',self.star_name,self.plot_id,\
                                     'Td_species_%s'%star['LAST_MCMAX_MODEL'])
             extension = '.eps'
-            title = 'Dust Temperature in %s'%(star['STAR_NAME_PLOTS'])
+            title = 'Dust Temperature in %s'%(self.star_name_plots)
             plot_filenames.append(Plotting2.plotCols(x=radii,y=temps,cfg=cfg,\
                         filename=filename,xaxis='$r$ (cm)',\
                         yaxis='$T_\mathrm{d}$ (K)',keytags=keytags,\
@@ -490,7 +490,7 @@ class PlotDust(PlottingSession):
                                         'opacities_species_%s'\
                                         %star['LAST_MCMAX_MODEL'])
                 title = 'Dust Opacities in %s (%s)' \
-                        %(star['STAR_NAME_PLOTS'],\
+                        %(self.star_name_plots,\
                             star['LAST_MCMAX_MODEL'].replace('_','\_'))
                 keytags = ['%s with $A$ = %s and $T_{des} = %i$ K'\
                            %(sp,str(star['A_%s'%sp]),int(star['T_DES_%s'%sp])) 
@@ -587,7 +587,7 @@ class PlotDust(PlottingSession):
                                 'gastronoom_opacities_%s'\
                                 %star['LAST_MCMAX_MODEL'])
         title = 'GASTRoNOoM Extinction Efficiencies in %s'\
-                 %(star['STAR_NAME_PLOTS'])
+                 %(self.star_name_plots)
         filename = Plotting2.plotCols(x=x,y=y,cfg=cfg,filename=filename,\
                                       xaxis='$\lambda$ ($\mu$m)',keytags=keys,\
                                       yaxis='$Q_{ext}/a$ (cm$^{-1}$)',\

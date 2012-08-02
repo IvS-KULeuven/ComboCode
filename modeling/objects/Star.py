@@ -995,11 +995,10 @@ class Star(dict):
         
         if not self.has_key(missing_key):
             self[missing_key] \
-                = DataIO.getInputData(path=os.path.join(self.path_combocode,'Data'),\
-                               keyword=missing_key,\
-                               remove_underscore=missing_key == \
-                                                    'STAR_NAME_PLOTS')\
-                              [self['STAR_INDEX']]
+                = DataIO.getInputData(path=os.path.join(self.path_combocode,\
+                                                        'Data'),\
+                                      keyword=missing_key)\
+                                     [self['STAR_INDEX']]
         else:
             pass
  
@@ -2761,8 +2760,7 @@ class Star(dict):
         
         if missing_key in ('T_STAR','L_STAR','R_STAR'):
             self.calcTLR()
-        elif missing_key in ('A_K','V_LSR','STAR_NAME_PLOTS',\
-                             'STAR_NAME_GASTRONOOM','LONG','LAT'):
+        elif missing_key in ('V_LSR','STAR_NAME_GASTRONOOM'):
             self.getClassAttr(missing_key)
         elif missing_key in ['R_MAX_' + species 
                              for species in self.species_list]:

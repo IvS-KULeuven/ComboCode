@@ -634,7 +634,8 @@ class PlotGas(PlottingSession):
                                    for star in star_grid]
                     if None in current_sub: 
                          missing_trans += 1
-                    current_trans.readData(self.vlsr)
+                    current_trans.readData()
+                    vlsr = current_trans.getVlsr()
                     for trans in current_sub:
                         if trans <> None:
                             trans.readSphinx()
@@ -659,7 +660,7 @@ class PlotGas(PlottingSession):
                             ddict['x'] = \
                                 [(trans <> None and trans.sphinx <> None) \
                                      and list(trans.sphinx.getVelocity() +
-                                              trans.getBestVlsr(self.vlsr))\
+                                              trans.getBestVlsr())\
                                      or []                          
                                  for trans in current_sub]
                             ddict['y'] = \
@@ -699,8 +700,8 @@ class PlotGas(PlottingSession):
                             ('; '.join([lp.getDateObs() \
                                         for lp in current_trans.lpdata]),\
                              0.05,0.01))
-                    ddict['xmax'] = self.vlsr + vg_factor * current_trans.vexp
-                    ddict['xmin'] = self.vlsr - vg_factor * current_trans.vexp
+                    ddict['xmax'] = vlsr + vg_factor * current_trans.vexp
+                    ddict['xmin'] = vlsr - vg_factor * current_trans.vexp
                     if [yi for yi in ddict['y'] if list(yi)]:
                         ddict['ymax'] = max([max(array(yi)[(array(xi) <= ddict['xmax'])* \
                                                 (array(xi) >= ddict['xmin'])]) 

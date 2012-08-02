@@ -462,7 +462,8 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
         pl.subplots_adjust(left=0.05)
         pl.show()
     pl.close('all')
-    return filename+extension[0]
+    
+    return filename <> None and filename+extension[0] or None
     
     
 
@@ -1157,7 +1158,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
         pl.subplots_adjust(left=0.05)
         pl.show()
     pl.close('all')
-    return filename+extension[0]
+    return filename <> None and filename+extension[0] or None
     
 
 

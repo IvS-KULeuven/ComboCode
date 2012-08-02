@@ -23,7 +23,8 @@ class FitsReader(LPDataReader):
     
     '''
     
-    def __init__(self,filename,vlsr=None):
+    def __init__(self,filename,info_path=os.path.join(os.path.expanduser('~'),\
+                                                      'ComboCode','Data')):
         
         '''
         A FITS file reader for line profiles.
@@ -33,33 +34,28 @@ class FitsReader(LPDataReader):
         @param filename: The FITS filename, including filepath.
         @type filename: string
         
-        @keyword vlsr: The system velocity with respect to local standard of 
-                       rest. Only used when this is not found in the fits file.
-                       In km/s.
-                       
-                       (default: None)
-        @type vlsr: float
-        
+        @keyword info_path: The path to the folder containing the info file on
+                            stars, called Star.dat. 
+                            
+                            (default: ~/ComboCode/Data)
+        @type info_path: string
+
         '''
         
-        super(FitsReader, self).__init__(filename)
-        self.readFits(vlsr)
-        
+        super(FitsReader, self).__init__(filename,info_path)
+        self.readFits()
         
     
-    def readFits(self,vlsr=None):
+    
+    def readFits(self):
         
         ''' 
         Read the FITS file. 
         
         Assumes Tmb flux values in K, with respect to velocity. 
         
-        @keyword vlsr: The system velocity with respect to local standard of 
-                       rest. Only used when this is not found in the fits file.
-                       In km/s. Used when calculating eg noise values. 
-                       
-                       (default: None)
-        @type vlsr: float
+        The source velocity is taken from the fits file if available. Otherwise
+        it is taken from Star.dat.
         
         '''
         
@@ -90,13 +86,13 @@ class FitsReader(LPDataReader):
         #- Create velocity OR frequency grid depending on fits file vlsr
         if vlsr_fits is None:
             #- use input vlsr
-            self.contents['vlsr'] = vlsr
+            self.checkVlsr()
             crval1 = hdr.get('CRVAL1')
             cdelt1 = hdr.get('CDELT1')
             restfreq = hdr.get('RESTFREQ')
             freq_grid = restfreq + crval1 + (arange(n_points) - crpix1)*cdelt1
             #- c in cm/s, vlsr in km/s, conversion factor of 10**5, final: km/s
-            vel_grid = vlsr - (freq_grid-restfreq)/restfreq*self.c/100000.
+            vel_grid = self.getVlsr - (freq_grid-restfreq)/restfreq*self.c/100000.
         else:           
             #- use vlsr from fits file
             self.contents['vlsr'] = vlsr_fits/1000.
