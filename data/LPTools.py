@@ -292,8 +292,9 @@ def fitLP(filename=None,lprof=None,show=0,\
                    (default: 0)
     @type show: bool
     
-    @return: the gas terminal velocity in km/s estimated from the fit
-    @rtype: float
+    @return: the gas terminal velocity in km/s estimated from the fit and the
+             fitting uncertainty.
+    @rtype: tuple(float,float)
     
     '''
     
@@ -351,6 +352,7 @@ def fitLP(filename=None,lprof=None,show=0,\
         mymodel = soft_parabola
     pars = soft_parabola.get_parameters()
     vexp = pars[0][2]
+    evexp = pars[1][2]
     print mymodel.param2str(accuracy=10)
     
     #-- Collect some data for a plot.
@@ -380,4 +382,4 @@ def fitLP(filename=None,lprof=None,show=0,\
         leg = plt.legend(loc='best',fancybox=True)
         leg.get_frame().set_alpha(0.5)
         plt.show()
-    return vexp
+    return (vexp,evexp)
