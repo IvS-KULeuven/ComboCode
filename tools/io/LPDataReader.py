@@ -46,6 +46,7 @@ class LPDataReader(Reader):
         self.star_name_gastronoom = os.path.split(self.filename)[1].split('_')[0]
         self.info_path = info_path
         self.c = 2.99792458e10          #in cm/s
+        self.contents['vlsr'] = None
     
     
     
@@ -123,21 +124,29 @@ class LPDataReader(Reader):
         """
         Check if the Vlsr was set correctly. If not, it is taken from Star.dat.
         
+        It is assumed the vlsr in the fits file is correct within 25%. If it is
+        not, the value from Star.dat is used.
+        
         """
         
+        try:
+            star_index = DataIO.getInputData(path=self.info_path,\
+                                            keyword='STAR_NAME_GASTRONOOM')\
+                                            .index(self.star_name_gastronoom)
+            vlsr = DataIO.getInputData(path=self.info_path,\
+                                       keyword='V_LSR')[star_index]
+        except KeyError,ValueError: 
+            print 'Star not found in Star.dat for %s. '%(self.filename) + \
+                  'Add star to Star.dat!'
+            raise IOError()
         if self.getVlsr() is None: 
-            try:
-                star_index = DataIO.getInputData(path=self.info_path,\
-                                               keyword='STAR_NAME_GASTRONOOM')\
-                                              .index(self.star_name_gastronoom)
-                vlsr = DataIO.getInputData(path=self.info_path,\
-                                           keyword='V_LSR')[star_index]
+            self.contents['vlsr'] = vlsr
+        elif vlsr == 0.0:
+            if not abs(self.getVlsr()) < 0.25:
                 self.contents['vlsr'] = vlsr
-            except KeyError,ValueError: 
-                print 'Star not found in Star.dat for %s. '%(self.filename) + \
-                      'Setting vlsr to 0. This is wrong! Add star to Star.dat!'
-                raise IOError()
-        
+        elif abs(self.getVlsr()/vlsr) > 1.3 or abs(self.getVlsr()/vlsr) < 0.75:
+            self.contents['vlsr'] = vlsr
+            
         
     
     def getDateObs(self):
