@@ -14,6 +14,53 @@ import types
 from pylab import mlab
 
 
+def getMCMaxOutput(incr,filename,keyword='RADIUS',single=1):
+    
+    """
+    Search MCMax output for relevant structural information.
+
+    @param incr: length of partial list that is needed from MCMax output. For 
+                 radius and theta this is usually the grid size (NRAD and 
+                 NTHETA respectively), and for any other quantity this is 
+                 NRAD*NTHETA (fi for denstemp.dat). 
+                 Put this keyword to zero if you are extracting a number
+                 from one line that contains the keyword itself. In that case
+                 also put single to 0 so you can take your information from the
+                 whole line. (fi log.dat)
+    @type incr: int
+    @param filename: name and path of the file searched
+    @type filename: string
+    
+    @keyword keyword: the type of information required, always equal to one
+                      of the keywords present in the outputfiles of MCMax
+                        
+                      (default: 'RADIUS')
+    @type keyword: string
+    @keyword single: return a list of only the first element on every row
+    
+                     (default: 1)
+    @type single: bool
+    
+    @return: The requested data from MCMax output
+    @rtype: list[]
+    
+    """
+    
+    keyword = keyword.upper()
+    data = readFile(filename,' ')
+    i = 1
+    while ' '.join(data[i-1]).upper().find(keyword) == -1:
+        i += 1
+    if not incr:
+        i -= 1
+        incr = 1
+    if single:
+        return [float(line[0]) for line in data[i:i+int(incr)]]
+    else:
+        return [line for line in data[i:i+int(incr)]]
+
+
+
 def getGastronoomOutput(filename,keyword='RADIUS',begin_index=0,\
                         return_array=0,key_index=0):
     
@@ -412,6 +459,9 @@ def printRecArray(recarr,precision=8):
     """
     Print a record array in a mannerly fashion.
     
+    @param recarr: The record array.
+    @type recarr: recarray
+    
     @keyword precision: The precision of the floats shown when printed
     
                         (default: 8)
@@ -419,12 +469,12 @@ def printRecArray(recarr,precision=8):
     
     """
     
-    mlab.rec2txt(recarr,precision=precision)
+    print mlab.rec2txt(recarr,precision=precision)
 
 
 
-def readCols(filename,delimiter=' ',make_float=1,remove_comments=1,\
-             start_row=0,make_array=1,nans=0):
+def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
+             nans=0,start_from_keyword=''):
     
     '''
     Read columns, remove comments and turn into floats.
@@ -440,12 +490,6 @@ def readCols(filename,delimiter=' ',make_float=1,remove_comments=1,\
                          
                          (default: 1)
     @type make_float: bool
-    @keyword remove_comments: remove all comment lines, if False the comment 
-                              lines are returned as well as a second argument.
-                              In-line comments are removed regardless.
-    
-                              (default: 1)
-    @type remove_comments: bool
     @keyword start_row: read from this row number onward
     
                         (default: 0)
@@ -459,38 +503,44 @@ def readCols(filename,delimiter=' ',make_float=1,remove_comments=1,\
                    
                    (default: 0)
     @type nans: bool
+    @keyword start_from_keyword: Start returning data from the line that starts
+                                 with a given keyword. Only used if not 
+                                 default. The start_row parameter counts from 
+                                 this index onward. (not case sensitive)
+                                 
+                                 (default: '')
+    @type start_from_keyword: string
     
     @return: The columns are returned, and if requested, the commentlines
     @rtype: (list or array) or (list or array,list(string))
     
     '''
     
-    lines = readFile(filename,delimiter=delimiter)[start_row:]
-    if not remove_comments: 
-        comment_chars = ['#','!']
-        commentlines = [line 
-                        for line in lines 
-                        if delimiter.join(line)[0] in comment_chars]
+    lines = readFile(filename,delimiter=delimiter)
+    #-- OBSOLETE
+    #   if not remove_comments: 
+    #       comment_chars = ['#','!']
+    #       commentlines = [line 
+    #                       for line in lines 
+    #                       if delimiter.join(line)[0] in comment_chars]
+    if str(start_from_keyword):
+        i = 0
+        while lines[i][0].upper().find(start_from_keyword.upper()) == -1:
+            i += 1
+        lines = lines[i:]
+    lines = lines[start_row:]
     lines = removeComments(lines,delimiter)
     if not lines:
         print 'WARNING from DataIO.readCols! No numerical data ' + \
               'are available in %s. Returning empty list.'%filename
-        return not remove_comments and ([],[]) or []
+        return []
     if make_float:
         lines = [[convertFloat(l,nans=nans) for l in line] for line in lines]
     if make_array and make_float:    
-        if not remove_comments: 
-            return [array([line[i] for line in lines]) 
-                    for i in xrange(lines[0])], commentlines
-        else: 
-            return [array([line[i] for line in lines]) 
-                    for i in xrange(len(lines[0]))]
+        return [array([line[i] for line in lines]) 
+                for i in xrange(len(lines[0]))]
     else:
-        if not remove_comments: 
-            return [[line[i] for line in lines] 
-                    for i in xrange(lines[0])], commentlines
-        else: 
-            return [[line[i] for line in lines] for i in xrange(len(lines[0]))]
+        return [[line[i] for line in lines] for i in xrange(len(lines[0]))]
       
       
       
@@ -744,7 +794,7 @@ def testFolderExistence(filepath):
 
 
 
-def joinPdf(old,new):
+def joinPdf(old,new,del_old=1):
     
     '''
     Join .pdf files into a single .pdf and remove the separate ones.
@@ -756,10 +806,16 @@ def joinPdf(old,new):
     @param new: The filename of the joined .pdf file
     @type new: string
     
+    @keyword del_old: delete the old filenames
+    
+                      (default: 1)
+    @type del_old: bool
+    
     '''
     
     subprocess.call([' '.join(['pdftk']+old+['cat','output',new])],shell=True)
-    subprocess.call([' '.join(['rm']+old)],shell=True)
+    if bool(del_old):
+        subprocess.call([' '.join(['rm']+old)],shell=True)
 
 
 
@@ -786,3 +842,25 @@ def checkLink(path,ln_path,folder=1):
         if folder: testFolderExistence(path)
         subprocess.call([' '.join(['ln','-s',path,ln_path])],shell=True)
         
+
+
+def fillOutSpaces(string,nchars):
+    
+    '''
+    Fill out a string to a set number of characters with spaces. 
+    
+    @param string: The string to be filled out, if nchars is < than len(string)
+                   the string itself is returned, unchanged.
+    @type string: str
+    @param nchars: The number of characters requested in final string
+    @type nchars: int
+    
+    @return: The filled out string.
+    @rtype: str
+    
+    '''
+    
+    string, nchars = str(string), int(nchars)
+    if nchars > len(string):
+        string += ''.join([' ']*(nchars-len(string)))
+    return string

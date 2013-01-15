@@ -138,7 +138,7 @@ class Statistics(object):
         elif instrument.upper() == 'FREQ_RESO':
             #- Make copy so that any changes do not translate to whatever the 
             #- original list of transitions might be. 
-            [t.readData() for t in sample_transitions]
+            [t.fitLP() for t in sample_transitions]
             self.instruments['FREQ_RESO'] = sample_transitions
             if not sample_transitions:
                 print 'WARNING! No sample transitions given for Statistics ' +\
@@ -170,9 +170,10 @@ class Statistics(object):
                                  (default: dict())
         @type extra_keywords: dict
         
-        '''
+        '''        
         
         if instrument.upper() == 'PACS':
+            print '***********************************'
             print '** Checking Sphinx models for comparison with PACS.'
             if not star_grid and not models:
                 raise IOError('Statistics.setModels requires either ' + \
@@ -182,19 +183,21 @@ class Statistics(object):
             if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) == set([0]): 
                 return
             self.instruments['PACS'].prepareSphinx(star_grid)
+            self.star_grid = [star 
+                              for star in star_grid 
+                              if star['LAST_%s_MODEL'%instrument]]
         elif instrument.upper() == 'FREQ_RESO':
-            print '** Checking Sphinx models for comparison with freq-resolved data.'
             if not star_grid:
                 raise IOError('Statistics.setModels requires a ' + \
                               'star_grid to be defined for freq-resolved data.')
             if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) == set([0]): 
                 return
             #[[t.readSphinx() for t in s['GAS_LINES']] for s in star_grid]
+            self.star_grid = star_grid
         else:
             raise IOError('Instruments other than PACS or freq-resolved data not yet implemented.')
-        self.star_grid = star_grid
-        print '***********************************'
-
+       
+    
 
     
     def doDataStats(self,instrument):

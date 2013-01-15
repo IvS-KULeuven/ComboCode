@@ -641,7 +641,7 @@ class Gastronoom(ModelingSession):
         print '%i transitions out of %i not yet calculated.'\
               %(len([boolean for boolean in self.trans_bools if not boolean]),\
                 len(self.trans_bools))
-        for trans_bool,trans in zip(self.trans_bools,self.trans_list):
+        for i,(trans_bool,trans) in enumerate(zip(self.trans_bools,self.trans_list)):
             if not trans_bool and trans.getModelId():
                 if not self.sphinx:
                     #- Only transitions with no db entry will get empty model id
@@ -677,6 +677,8 @@ class Gastronoom(ModelingSession):
                                             'gastronoom_%s.inp'\
                                             %trans.getModelId())
                     DataIO.writeFile(filename,commandfile)                
+                    print 'Starting calculation for transition %i out of %i.'\
+                          %(i,len(self.trans_bools))
                     self.execGastronoom(subcode='sphinx',filename=filename)
                     self.checkSphinxOutput(trans)
                     self.sph_db.sync()

@@ -32,6 +32,7 @@ PATH_PACS=/home/robinl/Data/PACS/         # Path to PACS data, leave empty if no
 PACS_REDO_CONVOLUTION=0                  # Re-do the convolution of sphinx output to PACS resolution (fi if the data has changed, sphinx convolution output depends on the wavelength list in the data lists)
 PACS_SEARCHSTRING=oversampling2           #searchstring used when looking for data, all data that include this string will be taken so make it unique
 PACS_OVERSAMPLING=2                       # The oversampling factor of the PACS data, this should also be included in the filenames of the data
+PACS_LINEFIT=                              # folder name in $PATH_PACS$/$STAR_NAME$/ of line fit results, done by Pierre (assumes his structure and syntax, as well as the presence of a file called 'lineFitResults')
 
 #-- SPIRE convolution and plotting
 PATH_SPIRE=/home/robinl/Data/SPIRE/         # Path to Spire data, leave empty if not relevant/no dust data are used. Data will be taken from path_spire/star_name/cont_subtracted/.  The star_name does not have to be specified.
@@ -46,12 +47,10 @@ CONTDIV_FEATURES= #H2O3.1&MGS       # For now only the 3.1 water ice feature (H2
 CFG_CONTDIV=                        # Settings for the final plot for the continuum division can be given here. This plot shows a limited wavelength range for the dust feature in both continuum divided data and models. If no cfg file given, the plot is shown during the CC run, but not saved.
 SHOW_CONTDIV=0                      # Show plots of the intermediary steps of the continuum division.
 
-#-- Statistics module [PACS only]
-STATISTICS=0                        # Calculate basic statistics, for now only for PACS
-STAT_TOLERANCE=1                    # Tolerance for the data wavelength grid, when selecting peak values in PACS data for comparison with model values. The tolerance is a factor >= 1 multiplied by the local wavelength resolution, after which the max flux is taken from that range.
-STAT_SIGMA=3                        # sigma for sigma clipping of data/model peak ratios when determining chi-squared values, remove this parameter if no sigma clipping is needed
-STAT_MODE=chi2                      # The method used for statistics in PeakStats.py. Can be chi2, chi_abs or log10_severecut
-STAT_PRINT=0                        # print statistics for individual lines and models of spectrally resolved lines
+#-- Statistics module [PACS and RESO(lved lines) STATS only]
+STATISTICS=0                        # Calculate basic statistics, for now only for PACS and spectrally resolved lines.
+STAT_PRINT=0                        # RESO_STATS: print statistics for individual lines and models of spectrally resolved lines, use cc_session.resostats for more interactive options
+STAT_LLL_P=                         # RESO_STATS: The number of variable parameters is given here, for the automatic determination of the loglikelihood threshold determination (95% confidence interval). The loglikelihood can be used to determine best-fit models based on the shape of the line profile. 
 
 #-- Various settings for this CC session
 REPLACE_DB_ENTRY=0                  # Be very careful with putting this keyword to 1! If a model in a database is found (usually cooling or mcmax), it is replaced by a newly calculated model (also with a new model_id). Any mline, sphinx or pacs models stemming from the same cooling id will also be deleted!!!!

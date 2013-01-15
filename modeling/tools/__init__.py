@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ["WaterAbundance","ColumnDensity","ContinuumDivision"]
+__all__ = ["ColumnDensity","ContinuumDivision"]

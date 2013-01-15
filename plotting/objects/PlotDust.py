@@ -622,18 +622,23 @@ class PlotDust(PlottingSession):
         star_grid = Star.makeStars(models=models,star_name=self.star_name,\
                                    code='MCMax',id_type='MCMax',path=self.path)
         for star,model in zip(star_grid,models):    
-            grid_shape = star.getMCMaxOutput(incr=1,keyword='NGRAINS',\
-                                             single=0)[0]
+            filepath = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                    self.path,'models',\
+                                    star['LAST_MCMAX_MODEL'])
+            denstemp = os.path.join(filepath,'denstemp.dat')
+            logfile = os.path.join(filepath,'log.dat')
+            grid_shape = DataIO.getMCMaxOutput(filename=denstemp,incr=1,\
+                                               keyword='NGRAINS',single=0)[0]
             star.update({'PATH_DUST_DATA':data_path,\
                          'NTHETA':int(grid_shape[1]),\
                          'NRAD':int(grid_shape[0]),\
-                         'T_STAR':float(star.getMCMaxOutput(incr=0,\
+                         'T_STAR':float(DataIO.getMCMaxOutput(filename=logfile,\
+                                                incr=0,\
                                                 keyword='STELLAR TEMPERATURE',\
-                                                filename='log.dat',\
                                                 single=0)[0][2]),\
-                         'R_STAR':float(star.getMCMaxOutput(incr=0,\
-                                                keyword='STELLAR RADIUS',
-                                                filename='log.dat',\
+                         'R_STAR':float(DataIO.getMCMaxOutput(filename=logfile,\
+                                                incr=0,\
+                                                keyword='STELLAR RADIUS',\
                                                 single=0)[0][2])})            
         return star_grid  
         

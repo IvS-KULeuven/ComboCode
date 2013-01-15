@@ -71,6 +71,11 @@ class Instrument(object):
         self.instrument = instrument_name.upper()
         self.intrinsic = intrinsic
         self.data_filenames = []
+        ccd = os.path.join(self.path_combocode,'Data')
+        istar = DataIO.getInputData(path=ccd,keyword='STAR_NAME').index(star_name)
+        #-- Set relevant velocities in cm/s
+        self.c = 2.99792458e10 
+        self.vlsr = DataIO.getInputData(path=ccd,keyword='V_LSR')[istar]*10**5
         DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
                                                 self.code,self.path,'stars'))
         DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
@@ -198,15 +203,14 @@ class Instrument(object):
         sphinx_input = [self.intrinsic \
                             and (trans.sphinx.getVelocityIntrinsic(),\
                                  trans.sphinx.getLPIntrinsic())
-                            or (trans.sphinx.getVelocityIntrinsic(),\
+                            or (trans.sphinx.getVelocity,\
                                 trans.sphinx.getLPConvolved())
                         for trans in sphinx_transitions]
         
         #- convert km/s to cm/s to micron and flux to Jy 
         #- doppler shift (1-(v_source - v_observer=delta_v)/c)*f_zero converted 
         #- to wavelength in micron
-        sphinx_input = [(1/(1.-(vel*10**5/star.c))\
-                            *star.c/trans.frequency*10**(4),\
+        sphinx_input = [(1/(1.-(vel*10**5/star.c))*trans.wavelength*10**(4),\
                          flux*10**(23)) 
                         for (vel,flux),trans in zip(sphinx_input,\
                                                     sphinx_transitions)]

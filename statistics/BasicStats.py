@@ -8,7 +8,7 @@ Author: R. Lombaert
 """
 
 import scipy
-from scipy import array,sqrt
+from scipy import array,sqrt,log,pi
 
 
 def calcChiSquared(data,model,noise):
@@ -53,7 +53,8 @@ def calcLoglikelihood(data,model,noise):
     """
     
     data, model, noise = array(data), array(model), float(noise) 
-    return TODO
+    lll = (-log(sqrt(2.*pi)) - log(noise) - 1./2.*((data-model)/noise)**2.).sum()
+    return lll
     
     
 

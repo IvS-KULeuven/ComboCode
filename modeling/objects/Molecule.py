@@ -44,7 +44,8 @@ def makeMoleculeFromDb(molec_id,molecule,path_gastronoom='codeSep2010',\
                             path_gastronoom)
     if os.path.isfile(os.path.join(filepath,'models',molec_id,\
                                    'cooling_id.log')):
-        model_id = DataIO.readFile(os.path.join(filepath,'cooling_id.log'))[0]
+        model_id = DataIO.readFile(os.path.join(filepath,'models',molec_id,\
+                                                'cooling_id.log'))[0]
     #- ie mline id is the same as model id, the first calced for this id
     else: 
         model_id = molec_id

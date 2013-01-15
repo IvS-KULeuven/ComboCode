@@ -9,12 +9,13 @@ Author: R. Lombaert
 
 import os
 import numpy as np
-from scipy import mean,sqrt,log, std
+from scipy import mean,sqrt,log, std,median
 from scipy import argmin,argmax,array
 from scipy.integrate import trapz
 from matplotlib import pyplot as plt
 
-from cc.tools.io import FitsReader, TxtReader
+from cc.tools.io import FitsReader, TxtReader, DataIO
+from cc.plotting import Plotting2
 
 from ivs.sigproc import fit, funclib
 
@@ -93,7 +94,7 @@ def integrateLPData(vexp,filename=None,lprof=None,window=1.2,\
     """
     
     if lprof is None:
-        lprof = readLineProfile(filename,file_path)
+        lprof = readLineProfile(filename,info_path)
     vel = lprof.getVelocity()
     flux = lprof.getFlux()
     vlsr = lprof.getVlsr()
@@ -106,7 +107,7 @@ def integrateLPData(vexp,filename=None,lprof=None,window=1.2,\
     
 
 
-def getPeakLPData(filename=None,lprof=None,\
+def getPeakLPData(filename=None,lprof=None,vlsr=None,\
                   info_path=os.path.join(os.path.expanduser('~'),\
                                          'ComboCode','Data')):
     
@@ -135,6 +136,11 @@ def getPeakLPData(filename=None,lprof=None,\
                         
                         (default: ~/ComboCode/Data)
     @type info_path: string
+    @keyword vlsr: If you want to provide your own vlsr for some reason. Leave
+                   as default if you don't have a good reason to do that. 
+                   
+                   (default: None)
+    @type vlsr: float
     
     @return: The peak intensity of the profile
     @rtype: float
@@ -142,17 +148,20 @@ def getPeakLPData(filename=None,lprof=None,\
     """
     
     if lprof is None:
-        lprof = readLineProfile(filename,file_path)
+        lprof = readLineProfile(filename,info_path)
     vel = lprof.getVelocity()
     flux = lprof.getFlux()
-    vlsr = lprof.getVlsr()
+    if vlsr is None:
+        vlsr = lprof.getVlsr()
+    else: 
+        vlsr = float(vlsr)
     
     i_mid = argmin(np.abs(vel-vlsr))
     return mean(flux[i_mid-2:i_mid+3])
     
     
     
-def varyInitialFit(vel,flux,initial,index,values,\
+def varyInitialFit(vel,flux,initial,index,values,vary,\
                    function=funclib.soft_parabola,vary_window=0): 
 
     """
@@ -171,7 +180,10 @@ def varyInitialFit(vel,flux,initial,index,values,\
     @param index: Index of initial parameter to be varied
     @type index: int
     @param values: The values used for the variable initial parameter
-    @type vary_init: tuple
+    @type values: tuple
+    @param vary: Allow initial parameter to be changed in fitting process. 
+                 Must have same length as initial.
+    @type vary: list[bool]
     
     @keyword function: The function to be fitted
     
@@ -183,10 +195,10 @@ def varyInitialFit(vel,flux,initial,index,values,\
                           (mu/vlsr and sigma/vexp respectively)
                           
                           (default: 0) 
-    @type window: bool
+    @type vary_window: bool
                           
     @return: The model after minimization
-    @type: funclib.soft_parabola
+    @rtype: funclib.soft_parabola
     
     """
     
@@ -200,47 +212,57 @@ def varyInitialFit(vel,flux,initial,index,values,\
         window = function == funclib.soft_parabola and 1.5 or 3.
         results = [fitFunction(vel[np.abs(vel-initi[1])<=(initi[2]*window)],\
                                flux[np.abs(vel-initi[1])<=(initi[2]*window)],\
-                               initi,function)
+                               initi,function,vary=vary)
                    for initi in zip(*all_init)]
     else: 
-        results = [fitFunction(vel,flux,initi,function)
+        results = [fitFunction(vel,flux,initi,function,vary=vary)
                    for initi in zip(*all_init)]
-    results = [fg 
-               for fg in results
-               if fg.get_parameters()[1][index] != 0.]
-    fitvalues = array([fg.get_parameters()[0][index] 
-                       for fg in results])
-    fiterrors = array([fg.get_parameters()[1][index] 
-                       for fg in results])
-    bestresult = results[argmin(abs(fiterrors/fitvalues))]
+    rel_errors = [fg.get_parameters()[1][index]/fg.get_parameters()[0][index]
+                  for fg in results]
+    sel_results = [res 
+                   for res,rel_err in zip(results,rel_errors) 
+                   if rel_err > 10**(-5)]
+    sel_errors = array([rel_err 
+                        for rel_err in rel_errors 
+                        if rel_err > 10**(-5)])
+    if not sel_results:
+        sel_results = results
+        sel_errors = array(rel_errors)
+    bestresult = sel_results[argmin(abs(sel_errors))]
     return bestresult
     
  
 
-def fitFunction(x,y,initial,function):
+def fitFunction(x,y,initial,function,vary):
     
     """
     Fit a function to a set of x and y values.
     
-    @param vel: The x grid
-    @type vel: array
-    @param flux: The y grid
-    @type flux: array
+    @param x: The x grid
+    @type x: array
+    @param y: The y grid
+    @type y: array
     @param initial: initial parameters
     @type initial: list
     @param function: The function to be fitted
-    @type function: funclib.function (e.g. funclib.soft_parabola, funclib.gauss )
+    @type function: funclib.function (e.g. funclib.soft_parabola,funclib.gauss)
+    @param vary: Allow initial parameter to be changed in fitting process. 
+                 Must have same length as initial.
+    @type vary: list[bool]
     
     @return: The model after minimization
-    @type: funclib.######## (some function)
+    @rtype: funclib.function() (some function)
     """
     
     #-- fit only soft parabola
     #   1. setup model    
     #mymodel = funclib.soft_parabola()
-    mymodel = function()
+    if function == funclib.gauss and False in vary:
+       mymodel = function(use_jacobian=False)
+    else:
+        mymodel = function()
     #   2. Initial values: e.g. for SP [int,vlsr,vexp,gamma] 
-    mymodel.setup_parameters(values=initial)
+    mymodel.setup_parameters(values=initial,vary=vary)
     #   3. minimize and evaluate fit
     result = fit.minimize(x,y,mymodel)
     return mymodel
@@ -378,7 +400,8 @@ def checkLPShape(vel,flux,vlsr,vexp,window=2.,show=0):
     
 
 
-def fitLP(filename=None,lprof=None,show=0,\
+def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
+          vary_pars=['vexp'],i_vexp=15.0,i_gamma=1.0,do_gauss=0,\
           info_path=os.path.join(os.path.expanduser('~'),'ComboCode','Data')):
     
     '''
@@ -389,7 +412,9 @@ def fitLP(filename=None,lprof=None,show=0,\
     extra absorption component). An estimate of the expansion velocity (width 
     of the profile) and an improved guess of the vlsr are given. 
     
-    A guess for the gas terminal velocity is returned. 
+    A guess for the gas terminal velocity is returned, as well as its error and
+    the fitted profile (sp/gaussian, and if applicable extra gaussian and the 
+    full fit). 
     
     @keyword filename: The filename to the data file of the line profile. If 
                        None a line profile object is expected. 
@@ -397,10 +422,51 @@ def fitLP(filename=None,lprof=None,show=0,\
                        (default: None)
     @type filename: string
     @keyword lprof: A line profile object (LPDataReader or inheriting classes)
-                    If None, a filename is expected!
+                    If None, a filename is expected! If not None, the results
+                    are saved in this object as well as returned upon method 
+                    call
                     
                     (default: None)
     @type lprof: LPDataReader()
+    @keyword convert_ms_kms: Convert velocity grid from m/s to km/s.
+    
+                             (default: 0)
+    @type convert_ms_kms: bool
+    @keyword theory: If theoretical profile, and filename is given,
+                     set vlsr to 0 and read two columns. lprof and info_path 
+                     not relevant if True.
+                     
+                     (default: 0)
+    @type theory: bool
+    @keyword vary_pars: The soft parabola parameters varied (can only be vexp
+                        or gamma for now). The initial values for parameters
+                        listed here are not used. If 'gamma' is requested, a 
+                        reasonable guess for i_vexp when calling the method 
+                        will improve the fitting results. This is done for the 
+                        first guess only! If a Gaussian absorption is present
+                        improving these first guesses won't make much of a 
+                        difference. However, the first guess value for gamma
+                        is still used. Vexp is always varied if absorption is 
+                        present.
+                        
+                        (default: ['vexp'])                        
+    @type vary_pars: list[string]
+    @keyword i_vexp: The initial guess for the expansion velocity. Not relevant
+                     if vexp is included in vary_pars.
+                     
+                     (default: 15.0)
+    @type i_vexp: float
+    @keyword i_gamma: The initial guess for the gamma parameter of soft parab.
+                      Not relevant if gamma is included in vary_pars.
+                      
+                      (default: 1.0)
+    @type i_gamma: float
+    @keyword do_gauss: Force a Gaussian fit regardless of soft parabola fit 
+                       results. Still does the soft parabola fit first to allow
+                       for comparison of parameters.
+                        
+                       (default: 0)
+    @type do_gauss: bool
     @keyword info_path: The path to the folder containing the info file on
                         stars, called Star.dat. 
                         
@@ -411,42 +477,58 @@ def fitLP(filename=None,lprof=None,show=0,\
                    (default: 0)
     @type show: bool
     
-    @return: (vexp,evexp,function,bool) The soft parabola or gaussian fit to the 
-             line, excluding the extra gaussian component if it has been added.
-             The vexp and its error are returned as well, to avoid confusion 
-             if the function is a gaussian. Lastly, a bool is returned indicating
-             if an extra gauss was needed in addition to the soft parabola.
-    @rtype: tuple(float,float,funclib.Function(),bool)
+    @return: dictionary including [vexp,evexp,gamma,egamma,fitprof,gaussian,\
+             fullfit,dintint,fgintint] 
+    @rtype: dict[float,float,float,float,funclib.Function(),\
+                 funclib.Function(),funclib.Function()]
     
     '''
     
-    print '***********************'
-    if filename <> None: print '** Fitting line in %s.'%filename
-    if lprof is None:
-        lprof = readLineProfile(filename,info_path)
-    vel = lprof.getVelocity()
-    flux = lprof.getFlux()
-    vel = vel[-np.isnan(flux)]
-    flux = flux[-np.isnan(flux)]
-    vlsr = lprof.getVlsr()
+    print '*******************************************'
+    if theory and filename <> None:
+        d = DataIO.readCols(filename=filename)
+        vel = d[0]
+        flux = d[1]
+        vlsr = 0.0
+    else:
+        if filename is None: 
+            filename = lprof.filename
+        print '** Fitting line profile in %s.'%filename
+        if lprof is None:
+            lprof = readLineProfile(filename,info_path)
+        vel = lprof.getVelocity()
+        flux = lprof.getFlux()
+        vel = vel[-np.isnan(flux)]
+        flux = flux[-np.isnan(flux)]
+        vlsr = lprof.getVlsr()
     
-    #-- First guess, only relevant for initial window selection. 
-    #   vexp is narrowed down later.
-    #vexp = 80
-    #-- select line
-    #keep = np.abs(vel-vlsr)<=(vexp)
-    #velsel,fluxsel = vel[keep],flux[keep]
+    if convert_ms_kms:
+        vel = vel/1000.
     #-- Initial values: [peak tmb,vlsr,vexp,gamma] 
     #   For the central peak value, get a first guess from the data
     #   Attempt multiple vexp values and return the best fitting case. 
     #   The initial values are given, with an arbitrary value for the vexp key
-    peak = getPeakLPData(lprof=lprof)
-    ivexp = array([50.,40.,30.,25.,20.,15.,10.])
-    #-- varyInitialFit adapts the velocity window itself. No more assumptions 
-    #   needed for the expansion velocity
-    firstguess = varyInitialFit(vel,flux,[peak,vlsr,0.,1.],index=2,\
-                                values=ivexp,function=funclib.soft_parabola,\
-                                vary_window=1)
+    i_mid = argmin(np.abs(vel-vlsr))
+    peak = mean(flux[i_mid-2:i_mid+3])
+    
+    #-- Vary vexp or gamma if requested. If not requested i_vexp or i_gamma are
+    #   used.
+    #   Multiple values for gamma are tried and the best fitting model
+    #   is then chosen based on the relative error of the fitted gamma.
+    if 'gamma' in vary_pars:
+        igammas = array([-0.5,-0.1,0.1,0.5,1.0,2.0,4.0])
+        firstguess = varyInitialFit(vel,flux,[peak,vlsr,i_vexp,0.0],index=3,\
+                                    values=igammas,vary_window=1,vary=[1,1,1,1],\
+                                    function=funclib.soft_parabola)
+        i_gamma = firstguess.get_parameters()[0][3]
+    #-- varyInitialFit adapts the velocity window itself. No more 
+    #   assumptions needed for the expansion velocity
+    ivexps = array([50.,40.,30.,25.,20.,15.,10.])
+    if 'vexp' in vary_pars:
+        firstguess = varyInitialFit(vel,flux,[peak,vlsr,0.,i_gamma],index=2,\
+                                    values=ivexps,vary_window=1,vary=[1,1,1,1],\
+                                    function=funclib.soft_parabola)
+
     vexp = abs(firstguess.get_parameters()[0][2])
     window = 2.
     print 'First guess fit, using a soft parabola:'
@@ -469,18 +551,19 @@ def fitLP(filename=None,lprof=None,show=0,\
     if include_gauss <> None:
         #-- fit soft para model + gaussian
         #   1. Set up new soft parabola for several guesses of vexp
-        ivexp = list(ivexp)
-        initial = [peak,vlsr,0.,1.]
-        all_init = [[p]*len(ivexp) for i,p in enumerate(initial) if i != 2]
-        all_init.insert(2,ivexp)
-        functions = [funclib.soft_parabola() for i in ivexp]
+        ivexps = list(ivexps)
+        initial = [peak,vlsr,0.,i_gamma]
+        all_init = [[p]*len(ivexps) for i,p in enumerate(initial) if i != 2]
+        all_init.insert(2,ivexps)
+        functions = [funclib.soft_parabola() for i in ivexps]
         [ff.setup_parameters(values=initi) 
          for ff,initi in zip(functions,zip(*all_init))]
         #   2. setup gaussian
         gaussians = [funclib.gauss() for ff in functions]
         #   initial guesses assuming an interstellar absorption line from the
         #   checkLPShape method
-        [gg.setup_parameters(values=include_gauss) for gg in gaussians]
+        [gg.setup_parameters(values=include_gauss,vary=[True,True,True,False]) 
+         for gg in gaussians]
         #   3. combine soft para + gaussian, and minimize fit
         mymodels = [fit.Model(functions=[ff,gg]) 
                     for ff,gg in zip(functions,gaussians)]
@@ -508,26 +591,38 @@ def fitLP(filename=None,lprof=None,show=0,\
         print 'Improved fit, including extra Gaussian:'
         print mymodel.param2str(accuracy=5)
     else: 
+        #-- if gamma is requested to be varied, allow another iteration on 
+        #   gamma with the best vexp guess we already have.
+        if 'gamma' in vary_pars:
+            finalfit = varyInitialFit(vel,flux,[peak,vlsr,vexp,0.0],\
+                                      index=3,values=igammas,vary_window=1,\
+                                      function=funclib.soft_parabola,\
+                                      vary=[True,True,True,True])
+            print 'Final fit with soft parabola, second gamma iteration:'
+            print finalfit.param2str(accuracy=5)
         #-- firstguess is best we can do at the moment
-        finalfit = firstguess
+        else:
+            finalfit = firstguess
         
     #-- If the relative error on vexp is larger than 30%, usually something 
     #   funky is going on in the emission line. Try a Gaussian instead.
     vexp = abs(finalfit.get_parameters()[0][2])
     evexp = abs(finalfit.get_parameters()[1][2])
     gamma = finalfit.get_parameters()[0][3]
+    egamma = finalfit.get_parameters()[1][3]
     #-- Gamma has to be positive. If it isnt, dont bother with Gaussian
     #   (double peaked line profile will not be fitted well with a Gaussian!)
-    if (evexp/vexp > 0.40 and gamma > 0) or (evexp/vexp > 0.20 and vexp> 30.):
+    if (evexp/vexp > 0.40 and gamma > 0) or (evexp/vexp > 0.20 and vexp> 30.) \
+            or do_gauss:
         #-- Go back to default window to try a Gaussian fit
         #keep = np.abs(vel-vlsr)<=(80)
         #velselg,fluxselg = vel[keep],flux[keep]
         include_gauss = None
         #-- FWHM is twice vexp!
-        sigmas = 2*ivexp/(2.*sqrt(2.*log(2.)))
+        sigmas = 2*ivexps/(2.*sqrt(2.*log(2.)))
         finalfit = varyInitialFit(vel,flux,[peak,vlsr,0.,0.],index=2,\
                                   values=sigmas,function=funclib.gauss,\
-                                  vary_window=1)
+                                  vary_window=1,vary=[True,True,True,False])
         vexp = abs(finalfit.get_parameters()[0][2])*(2.*sqrt(2.*log(2.)))/2.
         evexp = abs(finalfit.get_parameters()[1][2])*(2.*sqrt(2.*log(2.)))/2.
         window = 3.
@@ -541,20 +636,23 @@ def fitLP(filename=None,lprof=None,show=0,\
     velsel = vel[keep]
     flux_first = firstguess.evaluate(velsel)
     flux_fg = finalfit.evaluate(velsel)
+    dimb = trapz(y=flux[keep],x=velsel)
+    fifg = trapz(y=flux_fg,x=velsel)
     print('I_mb (emission line data): %f'\
-          %trapz(y=flux[keep],x=velsel))
+          %dimb)
     print('I_mb (SP -- initial guess): %f'\
           %trapz(y=flux_first,x=velsel))
     print('I_mb (SP -- improved guess): %f'\
-          %trapz(y=flux_fg,x=velsel))
+          %fifg)
     if include_gauss <> None:
         fitted_flux = mymodel.evaluate(velsel)
         print('I_mb (SP + Gauss fit): %f'\
               %trapz(y=fitted_flux,x=velsel))
-    print('Final v_exp guess: %.2f +/- %.2f km/s'%(vexp,evexp))
+    print('Final v_exp guess: %.4f +/- %.4f km/s'%(vexp,evexp))
+    print('Final gamma guess: %.4f +/- %.4f'%(gamma,egamma))
     
     #-- plot
-    if show:
+    if show or cfg:
         plt.clf()    
         #-- improve velocity window for plotting
         keep = np.abs(vel-vlsr)<=(1.5*window*vexp)
@@ -562,17 +660,49 @@ def fitLP(filename=None,lprof=None,show=0,\
         vel_highres = np.linspace(velsel[0],velsel[-1],10000)
         flux_fg_highres = finalfit.evaluate(vel_highres)
         flux_first_highres = firstguess.evaluate(vel_highres)    
-        plt.step(velsel,fluxsel,'-r',where='mid',lw=3,\
-                 label='Observed profile')
-        plt.plot(vel_highres,flux_first_highres,'b-',lw=3,\
-                 label='First guess')
-        plt.plot(vel_highres,flux_fg_highres,'g--',lw=3,\
-                 label='Improved guess')
         if include_gauss <> None:
             flux_full_highres = mymodel.evaluate(vel_highres)
-            plt.plot(vel_highres,flux_full_highres,'g-',lw=2,\
-                     label='Full fit (including Gaussian)')
-        leg = plt.legend(loc='best',fancybox=True)
-        leg.get_frame().set_alpha(0.5)
-        plt.show()
-    return vexp,evexp,finalfit,not include_gauss is None
+        if show: 
+            plt.step(velsel,fluxsel,'-r',where='mid',lw=3,\
+                     label='Observed profile')
+            plt.plot(vel_highres,flux_first_highres,'b-',lw=3,\
+                     label='First guess')
+            plt.plot(vel_highres,flux_fg_highres,'g--',lw=3,\
+                     label='Improved guess')
+            if include_gauss <> None:
+                plt.plot(vel_highres,flux_full_highres,'g-',lw=2,\
+                         label='Full fit (including Gaussian)')
+            leg = plt.legend(loc='best',fancybox=True)
+            leg.get_frame().set_alpha(0.5)
+            plt.show()
+        if cfg:
+            pf = 'lprof_fitted_%s'%filename
+            keytags = ['Observed profile','Improved guess']
+            line_types = ['-r','-b',]
+            x = [velsel,vel_highres]
+            y = [fluxsel,flux_fg_highres]
+            if include_gauss <> None:
+                line_types.append('g--')
+                x.append(vel_highres)
+                y.append(flux_full_highres)
+                keytags.append('Full fit (including Gaussian)')
+            pf = Plotting2.plotCols(x=x,y=y,filename=pf,cfg=cfg,linewidth=5,\
+                                    yaxis='$T_\mathrm{mb}\ (\mathrm{K})$',\
+                                    xaxis='$v (\mathrm{km}/\mathrm{s})$',\
+                                    keytags=keytags,line_types=line_types,\
+                                    histoplot=[0])
+            print 'Your figure can be found at %s .'%pf
+    #-- Collecting all relevant results and returning.
+    results = dict()
+    results['vexp'] = vexp
+    results['evexp'] = evexp
+    results['gamma'] = gamma
+    results['egamma'] = egamma
+    results['fitprof'] = finalfit 
+    results['fitgauss'] = not include_gauss is None and gaussian or None
+    results['fgintint'] = fifg
+    results['dintint'] = dimb
+    results['intwindow'] = window*0.6
+    #-- The full model, includes gaussian if applicable, otherwise == finalfit
+    results['fullfit'] = not include_gauss is None and mymodel or finalfit
+    return results

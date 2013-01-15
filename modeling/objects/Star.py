@@ -25,8 +25,37 @@ from cc.modeling.objects import Molecule
 from cc.modeling.objects import Transition
 from cc.modeling.tools import ColumnDensity
 
-  
 
+def getStar(star_grid,modelid,idtype='GASTRONOOM'):
+    
+    '''
+    Grab a Star() object from a list of such objects, given a model id.
+    
+    If no modelid is found, an empty list is returned. If Star() objects are 
+    found (even only one), a list of them is returned.
+    
+    Based on the cooling modelid.
+    
+    @param star_grid: the Star() objects
+    @type star_grid: list[Star()]
+    @param modelid: the given modelid for which the selection is made.
+    @type modelid: string
+    
+    @keyword idtype: The type of model id
+                    
+                     (default: GASTRONOOM)    
+    @type idtype: string
+
+    @return: The models matching the modelid
+    @rtype: list[Star()]
+    
+    '''
+    
+    modelid, idtype = str(modelid), str(idtype)
+    return [s for s in star_grid if s['LAST_%s_MODEL'%idtype] == modelid]
+    
+    
+    
 def powerRfromT(T,T_STAR,R_STAR=1.0,power=0.5):
     
     """
@@ -99,40 +128,6 @@ def makeStars(models,star_name,id_type,path,code,\
                  for model in models]
     return star_grid
       
-
-
-def getStar(model_id,star_grid,idtype='GASTRONOOM'):
-    
-    '''
-    Return a Star instance from a list of such instances based on the model_id.
-    
-    @param model_id: The requested model_id
-    @type model_id: string
-    @param star_grid: The collection of models
-    @type star_grid: list[Star]
-    
-    @keyword idtype: The type of model id
-                    
-                     (default: GASTRONOOM)    
-    @type idtype: string
-    
-    @return: The model with matching id, None if not found.
-    @rtype: Star()
-    
-    '''
-    
-    allids = [s.has_key('LAST_%s_MODEL'%idtype) \
-                    and s['LAST_%s_MODEL'%idtype] \
-                    or '' 
-              for s in star_grid]
-    try:
-        istar = allids.index(model_id)
-        star = star_grid
-    except ValueError:
-        print 'Star with id %s not found. Double check idtype.'%model_id
-        star = None
-    return star
-    
 
     
 class Star(dict):
@@ -318,10 +313,15 @@ class Star(dict):
         '''
         
         if not self['LAST_MCMAX_MODEL']: return
-        dens = self.getMCMaxOutput(int(self['NTHETA'])*int(self['NRAD']),\
-                                   keyword='DENSITY')
-        rad = array(self.getMCMaxOutput(int(self['NRAD'])))\
-                /self.r_solar/self['R_STAR']
+        filename = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                self.path_mcmax,'models',\
+                                self['LAST_MCMAX_MODEL'],'denstemp.dat')
+        incr = int(self['NTHETA'])*int(self['NRAD'])
+        dens = DataIO.getMCMaxOutput(incr=incr,filename=filename,\
+                                     keyword='DENSITY')
+        rad = array(DataIO.getMCMaxOutput(incr=int(self['NRAD']),\
+                                          filename=filename))\
+                    /self.r_solar/self['R_STAR']
         dens = Data.reduceArray(dens,self['NTHETA'])
         DataIO.writeCols(os.path.join(os.path.expanduser('~'),'MCMax',\
                                       self.path_mcmax,'models',\
@@ -368,52 +368,7 @@ class Star(dict):
                     self[par] = self[par]*unit_conversion[unit_index]
         else:
             pass
-                            
-
-
-    def getMCMaxOutput(self,incr,keyword='RADIUS',filename='denstemp.dat',\
-                       single=1):
-        
-        """
-        Search MCMax output for relevant structural information.
-    
-        @param incr: length of partial list that is needed from MCMax output
-        @type incr: int
-        
-        @keyword keyword: the type of information required, always equal to one
-                          of the keywords present in the outputfiles of MCMax
-                          
-                          (default: 'RADIUS')
-        @type keyword: string
-        @keyword filename: name of the file searched, keyword has to be present
-                           in it
-                           
-                           (default: 'denstemp.dat')
-        @type filename: string
-        @keyword single: return a list of only the first element on every row
-        
-                         (default: 1)
-        @type single: bool
-        
-        @return: The requested data from MCMax output
-        @rtype: list[]
-        
-        """
-        
-        data = DataIO.readFile(os.path.join(os.path.expanduser('~'),'MCMax',\
-                               self.path_mcmax,'models',\
-                               self['LAST_MCMAX_MODEL'],filename),' ')
-        i = 1
-        while ' '.join(data[i-1]).upper().find(keyword) == -1:
-            i += 1
-        if not incr:
-            i -= 1
-            incr = 1
-        if single:
-            return [float(line[0]) for line in data[i:i+int(incr)]]
-        else:
-            return [line for line in data[i:i+int(incr)]]
-            
+                                             
 
     
     def removeMutableMCMax(self,mutable,var_pars):
@@ -494,11 +449,32 @@ class Star(dict):
         """
         Normalize the dust abundances such that they add up to a total of 1.
         
-        """
+        If the MRN_DUST keyword for MCMax is nonzero, all nonzero abundances 
+        are set to 1. The abundance given in the inputfile does not matter in 
+        this case.
         
+        """
         
         abun_ori = [self['A_%s'%sp] for sp in self['DUST_LIST']]
         self['A_DUST_ORIGINAL'] = abun_ori
+        if int(self['MRN_DUST']): 
+            self['A_NO_NORM'] = 1
+            print 'WARNING! Take care when extracting output in MCMax using '+\
+                  'these scripts, if MRN_DUST == 1! Especially if some ' + \
+                  'abundances are set manually and some according to MRN: ' + \
+                  'these are not normalized to 1, since this depends on the '+\
+                  'MRN distributed dust species.'
+            for sp in self['DUST_LIST']:
+                mrn_count = 0
+                if self['MRN_NGRAINS'] != len(self['DUST_LIST']) \
+                        and self.has_key('RGRAIN_%s'%sp):
+                    self.__setitem__('A_%s'%sp,2)
+                    mrn_count += 1
+                elif self['MRN_NGRAINS'] == len(self['DUST_LIST']):
+                    self.__setitem__('A_%s'%sp,2)        
+                    mrn_count += 1
+                if mrn_count != self['MRN_NGRAINS']:
+                    raise IOError('MRN_NGRAINS not equal to amount of RGRAIN_sp keywords.')
         total = sum(abun_ori)
         if not int(self['A_NO_NORM']) and '%.3f'%total != '1.000':
             print 'Normalizing dust abundances to 1, from a total of %f.'%total
@@ -564,7 +540,6 @@ class Star(dict):
                                     n_quad=self['N_QUAD'],\
                                     use_maser_in_sphinx=\
                                                   self['USE_MASER_IN_SPHINX'],\
-                                    vexp=self['VEL_INFINITY_GAS'],\
                                     path_combocode=self.path_combocode,\
                                     path_gastronoom=self.path_gastronoom)
                                  for l,u,w in zip(low,up,wave)
@@ -590,7 +565,6 @@ class Star(dict):
                                         path_combocode=self.path_combocode,\
                                         use_maser_in_sphinx=\
                                                   self['USE_MASER_IN_SPHINX'],\
-                                        vexp=self['VEL_INFINITY_GAS'],\
                                         path_gastronoom=self.path_gastronoom,\
                                         **quantum_dict)) 
                 if molec.molecule in self['LL_NO_VIB']:
@@ -872,8 +846,12 @@ class Star(dict):
         '''
         
         power = float(power)
+        filename = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                self.path_mcmax,'models',\
+                                self['LAST_MCMAX_MODEL'],'denstemp.dat')
         try:
-            rad = array(self.getMCMaxOutput(incr=int(self['NRAD'])))
+            rad = array(DataIO.getMCMaxOutput(filename=filename,\
+                                              incr=int(self['NRAD'])))
             temp = self['T_STAR']*(2*rad/self.r_solar/self['R_STAR'])**(-power)
         except IOError:
             rad = []
@@ -903,16 +881,19 @@ class Star(dict):
         
         '''
         
-        radii = [array(self.getMCMaxOutput(incr=int(self['NRAD']),\
-                                          filename='denstempP%.2i.dat'%(i+1)))
+        fp = os.path.join(os.path.expanduser('~'),'MCMax',self.path_mcmax,\
+                          'models',self['LAST_MCMAX_MODEL'])
+        radii = [array(DataIO.getMCMaxOutput(incr=int(self['NRAD']),\
+                                             filename=os.path.join(fp,\
+                                                   'denstempP%.2i.dat'%(i+1))))
                  for i in xrange(len(self['DUST_LIST']))]
-        temps = [self.getMCMaxOutput(incr=int(self['NRAD'])\
-                                            *int(self['NTHETA']),\
-                                     keyword='TEMPERATURE',\
-                                     filename='denstempP%.2i.dat'%(i+1))
+        incr = int(self['NRAD'])*int(self['NTHETA'])
+        temps = [DataIO.getMCMaxOutput(incr=incr,keyword='TEMPERATURE',\
+                                       filename=os.path.join(fp,\
+                                                    'denstempP%.2i.dat'%(i+1)))
                  for i in xrange(len(self['DUST_LIST']))]      
         temps = [Data.reduceArray(t,self['NTHETA'])
-                    for t in temps]
+                 for t in temps]
         radii = [r[t<=self['T_DES_%s'%sp]] 
                  for r,t,sp in zip(radii,temps,self['DUST_LIST'])]
         temps = [t[t<=self['T_DES_%s'%sp]] 
@@ -1068,12 +1049,17 @@ class Star(dict):
         
         """        
         
+        filename = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                self.path_mcmax,'models',\
+                                self['LAST_MCMAX_MODEL'],'denstemp.dat')
         if not self.has_key('T_INNER_DUST'):
             try:
-                rad = array(self.getMCMaxOutput(incr=int(self['NRAD'])))
-                temp_ori = self.getMCMaxOutput(incr=int(self['NRAD'])\
-                                                    *int(self['NTHETA']),\
-                                               keyword='TEMPERATURE')
+                rad = array(DataIO.getMCMaxOutput(incr=int(self['NRAD']),\
+                                                  filename=filename))
+                incr = int(self['NRAD'])*int(self['NTHETA'])
+                temp_ori = DataIO.getMCMaxOutput(incr=incr,\
+                                                 keyword='TEMPERATURE',\
+                                                 filename=filename)
                 temp = Data.reduceArray(temp_ori,self['NTHETA'])
                 rin = self['R_INNER_DUST']*self['R_STAR']*self.r_solar
                 self['T_INNER_DUST'] = temp[argmin(abs(rad-rin))]
@@ -1252,12 +1238,17 @@ class Star(dict):
                                                 /self['R_STAR']/self.r_solar
             else:
                 try:
-                    dens_ori = array(self.getMCMaxOutput(\
-                                                    incr=int(self['NRAD'])\
-                                                        *int(self['NTHETA']),\
-                                                    keyword='DENSITY'))
-                    rad = array(self.getMCMaxOutput(incr=int(self['NRAD']),\
-                                                    keyword='RADIUS'))
+                    filename = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                            self.path_mcmax,'models',\
+                                            self['LAST_MCMAX_MODEL'],\
+                                            'denstemp.dat')
+                    incr = int(self['NRAD'])*int(self['NTHETA'])
+                    dens_ori = array(DataIO.getMCMaxOutput(filename=filename,\
+                                                           incr=incr,\
+                                                           keyword='DENSITY'))
+                    rad = array(DataIO.getMCMaxOutput(incr=int(self['NRAD']),\
+                                                      keyword='RADIUS',\
+                                                      filename=filename))
                     dens = Data.reduceArray(dens_ori,self['NTHETA'])
                     if self['R_INNER_DUST_MODE'] == 'MAX':
                         ri_cm = rad[argmax(dens)]
@@ -1396,15 +1387,26 @@ class Star(dict):
         """
     
         if not self.has_key('SPEC_DENS_DUST'):
-            self['SPEC_DENS_DUST'] = sum([float(self['A_' + species])*spec_dens
-                                          for species in self['DUST_LIST']
-                                          for species_short,spec_dens in zip(\
-                                            self.species_list,\
-                                            DataIO.getInputData(path=os.path.join(\
-                                                  self.path_combocode,'Data'),\
-                                                         keyword='SPEC_DENS',\
-                                                         filename='Dust.dat'))
-                                          if species == species_short])
+            data_path = os.path.join(self.path_combocode,'Data')
+            sd_list = DataIO.getInputData(path=data_path,keyword='SPEC_DENS',\
+                                          filename='Dust.dat')
+            if int(self['MRN_DUST']):
+                these_sd = [sd
+                            for sp in self['DUST_LIST']
+                            for sps,sd in zip(self.species_list,sd_list)
+                            if sp == sps and self.has_key('RGRAIN_%s'%sp)]
+                sd_mrn = sum(these_sd)/len(these_sd)
+                a_sd = sum([float(self['A_' + sp])*sd
+                            for sp in self['DUST_LIST']
+                            for sps,sd in zip(self.species_list,sd_list)
+                            if sp == sps and self['A_%s'%sp] != 2.])
+                self['SPEC_DENS_DUST'] = (sd_mrn + a_sd)/2.
+            else:
+                these_sd = [float(self['A_' + sp])*sd
+                            for sp in self['DUST_LIST']
+                            for sps,sd in zip(self.species_list,sd_list)
+                            if sp == sps]
+                self['SPEC_DENS_DUST'] = sum(these_sd)
         else:
             pass
             
@@ -1618,18 +1620,21 @@ class Star(dict):
                 try:
                     #- if T_CONTACT: no specific species denstemp files, 
                     #- so denstemp.dat is taken
+                    fp = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                      self.path_mcmax,'models',\
+                                      self['LAST_MCMAX_MODEL'])
                     inputname = float(self['T_CONTACT']) \
                                     and 'denstemp.dat' \
                                     or 'denstempP%.2i.dat' \
-                                       %self['DUST_LIST'].index(missing_key[6:])
-                    
-                    rad_list = self.getMCMaxOutput(int(self['NRAD']),\
-                                                   keyword='RADIUS',\
-                                                   filename=inputname)
-                    temp_list = self.getMCMaxOutput(int(self['NRAD'])\
-                                                        *int(self['NTHETA']),\
-                                                    keyword='TEMPERATURE',\
-                                                    filename=inputname)
+                                      %self['DUST_LIST'].index(missing_key[6:])
+                    inputname = os.path.join(fp,inputname)
+                    rad_list = DataIO.getMCMaxOutput(incr=int(self['NRAD']),\
+                                                     keyword='RADIUS',\
+                                                     filename=inputname)
+                    incr = int(self['NRAD'])*int(self['NTHETA'])
+                    temp_list = DataIO.getMCMaxOutput(incr=incr,\
+                                                      keyword='TEMPERATURE',\
+                                                      filename=inputname)
                     temp_list = Data.reduceArray(temp_list,self['NTHETA'])
                     
                     i = 0
@@ -1852,8 +1857,131 @@ class Star(dict):
         else:
             pass
             
-            
-            
+    
+    def calcMRN_DUST(self):
+        
+        '''
+        Set the default value for MRN_DUST to 0.
+        
+        '''
+        
+        if not self.has_key('MRN_DUST'):
+            self['MRN_DUST'] = 0
+        else:
+            pass
+    
+    
+    
+    def calcMRN_INDEX(self):
+    
+        '''
+        Set the default value for MRN_INDEX to 3.5 (standard power law in ISM
+        dust grain size distribution).
+        
+        '''
+        
+        if not self.has_key('MRN_INDEX'):
+            self['MRN_INDEX'] = 3.5
+        else:
+            pass
+        
+        
+    
+    def calcMRN_NGRAINS(self):
+        
+        '''
+        Set the default balue for MRN_NGRAINS to the max number of dust species
+        involved. 
+        
+        This means that all dust species are treated in the mrn treatment of 
+        MCMax. 
+        
+        If the max is set to less species, then the extra species are treated 
+        as normal, with manually set abundances. 
+        
+        '''
+        
+        if not self.has_key('MRN_NGRAINS'):
+            self['MRN_NGRAINS'] = len(self['DUST_LIST'])
+        else:
+            pass
+        
+        
+    
+    def calcMRN_RMAX(self):
+        
+        '''
+        Set the default value for the maximum grain size in micron. 
+        
+        Abundances of bigger grains will be set to 0.
+        
+        '''
+        
+        if not self.has_key('MRN_RMAX'):
+            self['MRN_RMAX'] = 1000.
+        else:
+            pass
+        
+        
+    
+    def calcMRN_RMIN(self):
+        
+        '''
+        Set the default value for the minimum grain size in micron. 
+        
+        Abundances of smaller grains will be set to 0.
+        
+        '''
+        
+        if not self.has_key('MRN_RMIN'):
+            self['MRN_RMIN'] = 0.01
+        else:
+            pass
+        
+    
+    def calcSCSET(self):
+        
+        '''
+        Set default of self-consistent settling to False.
+        
+        '''
+        
+        if not self.has_key('SCSET'):
+            self['SCSET'] = 0
+        else:
+            pass
+        
+    
+    def calcSCSETEQ(self):
+        
+        '''
+        Set default of self-consistent settling to True.
+        
+        Only relevant if SCSET == 1.
+        
+        '''
+        
+        if not self.has_key('SCSETEQ'):
+            self['SCSETEQ'] = 1
+        else:
+            pass
+        
+        
+        
+    def calcALPHATURB(self):
+        
+        '''
+        Set default of the turbulent mixing strenght to 1e-4.
+                
+        '''
+        
+        if not self.has_key('ALPHATURB'):
+            self['ALPHATURB'] = 1e-4
+        else:
+            pass
+        
+        
+    
     def calcMOLECULE(self):
         
         '''
@@ -2167,11 +2295,18 @@ class Star(dict):
                 self['DUST_TEMPERATURE_FILENAME'] = filename
             else:
                 try:
-                    rad_list = array(self.getMCMaxOutput(int(self['NRAD'])))\
+                    iofile = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                          self.path_mcmax,'models',\
+                                          self['LAST_MCMAX_MODEL'],\
+                                          'denstemp.dat')
+                    rad_list = array(DataIO.getMCMaxOutput(\
+                                                incr=int(self['NRAD']),\
+                                                filename=iofile))\
                                      /self.r_solar/float(self['R_STAR'])
-                    temp_list = self.getMCMaxOutput(int(self['NRAD'])\
-                                                    *int(self['NTHETA']),\
-                                                    keyword='TEMPERATURE')
+                    incr = int(self['NRAD'])*int(self['NTHETA'])
+                    temp_list = DataIO.getMCMaxOutput(incr=incr,\
+                                                      keyword='TEMPERATURE',\
+                                                      filename=iofile)
                     t_strat = Data.reduceArray(temp_list,self['NTHETA'])
                     if self['RID_TEST'] == 'R_STAR':
                          t_strat = t_strat[rad_list > 1]
@@ -2212,7 +2347,10 @@ class Star(dict):
             #- TRANSITION to the right molecule names is done 
             #- (in case of PlottingSession.setPacsFromDb is used)
             self.calcGAS_LIST()     
-            if self['PATH_GAS_DATA'] and self['DATA_MOL']:
+            #-- If a path to the gas data is known, do an autosearch for data
+            #   so that data are known and available. Only if DATA_MOL is also
+            #   True will these transitions be added to the model grid.
+            if self['PATH_GAS_DATA']:
                 searchpath = os.path.join(self['PATH_GAS_DATA'],
                                          self['STAR_NAME_GASTRONOOM'] + '_*.*')
                 raw_data_list = [f 
@@ -2238,20 +2376,24 @@ class Star(dict):
                                         == molec.molecule_short],\
                                    key=operator.itemgetter(0))
                 trans_list = [Transition.Transition(\
-                                    datafiles=molec.pop(),\
-                                    molecule=molec.pop(),\
-                                    telescope=molec.pop(),\
-                                    jup=int(molec[0][-2]),\
-                                    jlow=int(molec[0][-1]),\
-                                    n_quad=self['N_QUAD'],\
-                                    use_maser_in_sphinx=self\
+                                datafiles=molec[-1],\
+                                molecule=molec[-2],\
+                                telescope=molec[-3],\
+                                jup=int(molec[0][-2]),\
+                                jlow=int(molec[0][-1]),\
+                                n_quad=self['N_QUAD'],\
+                                use_maser_in_sphinx=self\
                                                       ['USE_MASER_IN_SPHINX'],\
-                                    vexp=self['VEL_INFINITY_GAS'],\
-                                    path_combocode=self.path_combocode,\
-                                    path_gastronoom=self.path_gastronoom)
-                               for molec in data_list]
-                self['GAS_LINES'] = Transition.checkUniqueness(trans_list)
-                self.updateSelectTargetData(raw_data_list)
+                                path_combocode=self.path_combocode,\
+                                path_gastronoom=self.path_gastronoom)
+                              for molec in data_list]
+                #-- Only if autosearch is requested, add the transitions to the
+                #   list
+                if self['DATA_MOL']:
+                    self['GAS_LINES'] = Transition.checkUniqueness(trans_list)
+                    self.updateSelectTargetData(raw_data_list)
+            else:
+                raw_data_list = []
             #- Check if specific transition were requested in addition to data
             if self.has_key('TRANSITION'):
                 self['TRANSITION'] = [trans 
@@ -2263,7 +2405,13 @@ class Star(dict):
                              for trans in self['TRANSITION']]
                 for trans in new_lines: 
                     if str(trans) not in [str(t) for t in self['GAS_LINES']]:
-                        self['GAS_LINES'].append(trans)
+                        #-- Check if there's data available for this transition
+                        if raw_data_list and trans in trans_list: 
+                            dtrans = [t for t in trans_list if t == trans][0]
+                            self['GAS_LINES'].append(dtrans)
+                        #-- If not, add without data.
+                        else:
+                            self['GAS_LINES'].append(trans)
             #- Check if molecular line catalogues have to be browsed to create 
             #- line lists in addition to the data
             if self['LINE_LISTS']:
@@ -2508,9 +2656,14 @@ class Star(dict):
         '''
         
         wavelength = float(wavelength)
-        radius = array(self.getMCMaxOutput(int(self['NRAD'])))
-        dens = self.getMCMaxOutput(int(self['NRAD'])*int(self['NTHETA']),\
-                                   keyword='DENSITY')
+        filename = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                self.path_mcmax,'models',\
+                                self['LAST_MCMAX_MODEL'],'denstemp.dat')
+        radius = array(DataIO.getMCMaxOutput(incr=int(self['NRAD']),\
+                                             filename=filename))
+        incr = int(self['NRAD'])*int(self['NTHETA'])
+        dens = DataIO.getMCMaxOutput(filename=filename,incr=incr,\
+                                     keyword='DENSITY')
         dens = Data.reduceArray(dens,self['NTHETA'])
         wave_list,kappas = self.readWeightedKappas()
         if wavelength:

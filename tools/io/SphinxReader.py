@@ -85,9 +85,12 @@ class SphinxReader(Reader):
         data_j = DataIO.findString(data_i,data_col_1)
         self.sph2['nobeam']['velocity'] = array([float(line[0]) 
                                               for line in data[data_i:data_j]])
+        #-- Reverse this flux grid. Sphinx output files give the mirrored
+        #   flux grid for the associated velocity grid.
         self.sph2['nobeam']['flux'] =     array([DataIO.convertFloat(line[-1],\
                                                                      nans=1) 
                                               for line in data[data_i:data_j]])
+        self.sph2['nobeam']['flux'] = self.sph2['nobeam']['flux'][::-1]
         data_k = data_j + 4
         data_l = DataIO.findString(data_k,data_col_1)
         self.sph2['beam']['velocity'] =  array([float(line[0]) 
@@ -98,6 +101,11 @@ class SphinxReader(Reader):
                                               for line in data[data_k:data_l]])
         self.sph2['beam']['tmb'] =       array([float(line[2]) 
                                               for line in data[data_k:data_l]])
+        if self.sph2['beam']['velocity'][0] > self.sph2['beam']['velocity'][-1]:
+            self.sph2['beam']['velocity'] = self.sph2['beam']['velocity'][::-1]
+            self.sph2['beam']['flux'] = self.sph2['beam']['flux'][::-1]
+            self.sph2['beam']['norm_flux'] = self.sph2['beam']['norm_flux'][::-1]
+            self.sph2['beam']['tmb'] = self.sph2['beam']['tmb'][::-1]
         if self.sph2['nobeam']['velocity'][0] > self.sph2['nobeam']['velocity'][-1]:
             self.sph2['nobeam']['velocity'] = self.sph2['nobeam']['velocity'][::-1]
             self.sph2['nobeam']['flux'] = self.sph2['nobeam']['flux'][::-1]

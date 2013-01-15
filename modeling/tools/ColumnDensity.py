@@ -71,7 +71,8 @@ class ColumnDensity(object):
         self.fullcoldens = dict()
         self.dustfractions = dict()
         self.readDustInfo()
-        
+        if int(self.star['MRN_DUST']):
+            raise IOError('No column densities can be calculated for now if MRN distribution is used in MCMax.')
     
 
     def readDustInfo(self):
@@ -80,13 +81,21 @@ class ColumnDensity(object):
         Read all column densities, min/max temperatures and min/max radii for 
         the species involved in the MCMax model.
         
+        Note that the self.coldens dictionary does not give real column 
+        densities! This dict merely gives column densities in a prescribed 
+        shell with given min and max radius, in order to compare with the H2 
+        col density. 
+        
         """
         
-        dens = self.star.getMCMaxOutput(keyword='DENSITY',\
+        fn = os.path.join(os.path.expanduser('~'),'MCMax',\
+                          self.star.path_mcmax,'models',\
+                          self.star['LAST_MCMAX_MODEL'],'denstemp.dat')
+        dens = DataIO.getMCMaxOutput(filename=fn,keyword='DENSITY',\
                                         incr=self.star['NRAD']*\
                                              self.star['NTHETA'])
         dens = Data.reduceArray(dens,self.star['NTHETA'])
-        temp = self.star.getMCMaxOutput(keyword='TEMPERATURE',\
+        temp = DataIO.getMCMaxOutput(filename=fn,keyword='TEMPERATURE',\
                                         incr=self.star['NRAD']*\
                                              self.star['NTHETA'])
         temp = Data.reduceArray(temp,self.star['NTHETA'])
@@ -96,6 +105,7 @@ class ColumnDensity(object):
         comp = DataIO.readCols(compf)
         self.rad = comp.pop(0)*self.au
         self.r_outer = self.rad[-1]
+        
         for species in self.star['DUST_LIST']:
             #- Save the actual density profile for this dust species, as well
             #- as calculating the full column density of a dust species.
@@ -152,6 +162,34 @@ class ColumnDensity(object):
         """
         
         if not (self.star.has_key('A_%s'%species) \
+                and self.star['A_%s'%species]):
+            return 0
+        try:
+            ispecies = self.dustlist.index(species)
+        except ValueError:
+            print 'Dust species %s not found in Dust.dat.'%species
+            return 0
+        return self.fullcoldens[species]
+        
+    
+    def dustFullNumberColDens(self,species):
+    
+        """
+        Calculate the full NUMBER column density of a dust species in the shell. 
+        
+        This is NOT the number used in determining the equivalent molecular 
+        abundance!
+        
+        @param species: The dust species
+        @type species: string
+        
+        @return: The number column density of the dust species in the full 
+                 envelope in cm-2
+        @rtype: float
+        
+        """
+        
+        if not (self.star.has_key('A_%s'%species) \
                 and float(self.star['A_%s'%species])):
             return 0
         try:
@@ -163,7 +201,8 @@ class ColumnDensity(object):
             print 'No molar weight given for dust species %s in Dust.dat.'\
                   %species
             return 0
-        return self.fullcoldens[species]
+        nsp = self.fullcoldens[species]*self.avogadro/self.dustmolar[ispecies]
+        return nsp
         
         
         
@@ -171,6 +210,11 @@ class ColumnDensity(object):
         
         """ 
         Calculate the molecular abundance of a dust species with respect to H2.
+        
+        Note that the self.coldens dictionary does not give real column 
+        densities! This dict merely gives column densities in a prescribed 
+        shell with given min and max radius, in order to compare with the H2 
+        col density. 
         
         @param species: the dust species (from Dust.dat)
         @type species: string

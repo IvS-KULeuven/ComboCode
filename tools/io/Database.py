@@ -177,6 +177,36 @@ def coolingDbRetrieval(path_gastronoom,r_outer=None):
     cool_db.sync()
     
 
+def addDefaultKeywordToDatabase(keyword,value,db_fn):
+        
+    '''
+    Add a default value for a new keyword to the database. 
+    
+    Does not work if keyword is already in present in the database!
+    
+    @param keyword: The name of the keyword in the database for every model.
+    @type keyword: db key type (string mostly)
+    @param value: The default value for the keyword.
+    @type value: string/float/...
+    @param db_fn: The filename and path of the database.
+    @type db_fn: string
+    
+    '''
+    
+    db = Database(db_fn)
+    if db.keys() == []:
+        print 'Database has no keys. No default keyword is added.'
+        return
+    #-- Check if for the first model in the db the new keyword already exists.
+    if db[db.keys()[0]].has_key(keyword):
+        print 'Database models already have the new keyword. No new values are added.'
+        return
+    for k,v in db.items():
+        v[keyword] = value
+        db.addChangedKey(k)
+    db.sync()
+
+
 
 class Database(dict):
     

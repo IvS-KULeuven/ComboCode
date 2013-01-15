@@ -166,3 +166,49 @@ class PlottingManager():
                 thisMethod = getattr(self.plotter_gas,method_name)
                 thisMethod(star_grid=star_grid,\
                            cfg=self.gas_cfg.get(k.replace('PLOT_','CFG_'),''))
+    
+    
+    
+    def plotTransitions(self,star_grid,force=0,cfg='',fn_suffix=''):
+        
+        '''
+        Run the plotTransitions method in the PlotGas object of this manager. 
+        
+        If available, the cfg is taken from the plot input.
+        
+        Only done if PLOT_GAS_TRANSITIONS is indeed 1 in the CC inputfile. This
+        can be forced through the keyword force.
+        
+        This method is mainly used if you want to plot a sub selection of 
+        models from the main input grid, for instance after statistical 
+        selection. 
+        
+        @param star_grid: The collection of models to be plotted
+        @type star_grid: list[Star()]
+        
+        @keyword force: Plot the transitions regardless of the 
+                        PLOT_GAS_TRANSITIONS keyword in cc input, e.g. when the
+                        manager is ran outside a cc session.
+                        
+                        (default: 0)
+        @type force: bool
+        @keyword cfg: The config file. If not given, the manager checks if a
+                      cfg file is available in the CC input. 
+                      
+                      (default: None)
+        @type cfg: string
+        @keyword fn_suffix: A suffix that is appended to the filename. For 
+                            instance, when running the plot command for a 
+                            best fit subgrid of Star() models as to not 
+                            overwrite the plot of the full grid.
+                            
+                            (default: '')
+        @type fn_suffix: string
+        
+        
+        '''
+        
+        if 'PLOT_TRANSITIONS' in self.gas_pars or force: 
+            if not cfg: cfg = self.gas_cfg.get('CFG_TRANSITIONS','')
+            self.plotter_gas.plotTransitions(star_grid,cfg=cfg,\
+                                             fn_suffix=fn_suffix)

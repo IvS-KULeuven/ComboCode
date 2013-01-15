@@ -188,7 +188,8 @@ class MCMax(ModelingSession):
         
                                  (default: /home/<user>/ComboCode/')
         @type path_combocode: string
-        @keyword path_kappas: kappas folder
+        @keyword path_kappas: kappas folder, only used when no path is given in
+                              the kappas file
         
                               (default: /home/<user>/MCMax/src/')
         @type path_kappas: string
@@ -442,8 +443,19 @@ class MCMax(ModelingSession):
         elif star['DENSTYPE'] == 'POW':
             self.command_list['denspow'] = star['DENSPOW']
             self.command_list['mdust'] = star['M_DUST']
+        if int(star['MRN_DUST']):
+            self.command_list['mrn'] = '.true.'
+            self.command_list['mrn_index'] = star['MRN_INDEX']
+            self.command_list['mrn_ngrains'] = star['MRN_NGRAINS']
+            self.command_list['mrn_rmax'] = star['MRN_RMAX']
+            self.command_list['mrn_rmin'] = star['MRN_RMIN']
+        if int(star['SCSET']):
+            self.command_list['scset'] = '.true.'
+            self.command_list['scseteq'] = int(star['SCSETEQ']) \
+                                                and '.true' or '.false.'
+            self.command_list['alphaturb'] = star['ALPHATURB']
         self.setCommandKey('Mstar',star,star_key='M_STAR',\
-                           alternative=self.standard_inputfile['Mstar'])
+                           alternative=self.standard_inputfile['Mstar'])       
         add_keys = [k  
                     for k in self.standard_inputfile.keys() 
                     if not self.command_list.has_key(k)]
@@ -461,7 +473,6 @@ class MCMax(ModelingSession):
         dust_dict = dict()
         for species in star['DUST_LIST']:
             species_dict = dict()
-            species_dict['abun'] = star['A_%s'%species]
             if star['TDESITER']:
                 species_dict['TdesA'] = star['T_DESA_' + species]
                 species_dict['TdesB'] = star['T_DESB_' + species]
@@ -473,32 +484,46 @@ class MCMax(ModelingSession):
             if star['R_MAX_%s'%species]:
                 species_dict['maxrad'] = star['R_MAX_%s'%species]\
                                            *star['R_STAR']*star.r_solar/star.au
+            if int(star['MRN_DUST']) and star.has_key(['RGRAIN_%s'%species]):
+                species_dict['rgrain'] = star['RGRAIN_%s'%species]
+            else:
+                species_dict['abun'] = star['A_%s'%species]
             dust_dict[self.dust_files[self.dust_list.index(species)]] \
                 = species_dict
         self.command_list['dust_species'] = dust_dict
         print '** DONE!'
         print '***********************************'
         
-        #- Check the MCMax database if the model was calculated before
+        #-- Check the MCMax database if the model was calculated before
         modelbool = self.checkDatabase()
                 
-        #- if no match found in database, calculate new model with new model id 
-        #- if the calculation did not fail, add entry to database for new model
+        #-- if no match found in database, calculate new model with new model id 
+        #-- if the calculation did not fail, add entry to database for new model
         if not modelbool:
             self.model_id = self.makeNewId()
             input_dict = self.command_list.copy()
             del input_dict['photon_count']
             del input_dict['dust_species']
-            #- order in which the species appear is fixed according to the 
-            #- order of the species in the Dust.dat input file 
-            for index,species in enumerate(star['DUST_LIST']):
+            #-- order in which the species appear is fixed according to the 
+            #   order of the species in the Dust.dat input file. Note that this
+            #   order does not matter for the database. 
+            #   rgrain species are put first, following the DUST_LIST order.
+            #   Then the rest.
+            dl_sort = sorted(star['DUST_LIST'],key=lambda x: \
+                                             (not star.has_key('RGRAIN_%s'%x),\
+                                              star['DUST_LIST'].index(x)))
+            for index,species in enumerate(dl_sort):
                 speciesfile = self.dust_files[self.dust_list.index(species)]
                 speciesdict = self.command_list['dust_species'][speciesfile]
                 for k,v in speciesdict.items():
                     input_dict['%s%.2i'%(k,index+1)] = v
                 ftype = speciesfile.find('opacity') != -1 and 'opac' or 'part'
+                #-- Check if speciesfile contains a path. If not add, the 
+                #   default one
+                path = os.path.split(speciesfile)[0]
+                if not path: path = self.path_kappas
                 input_dict['%s%.2i'%(ftype,index+1)] = "'%s'"\
-                                  %(os.path.join(self.path_kappas,speciesfile))       
+                                         %(os.path.join(path,speciesfile))       
             input_filename = os.path.join(os.path.expanduser("~"),'MCMax',\
                                           self.path,'models',\
                                           'inputMCMax_%s.dat'%self.model_id)

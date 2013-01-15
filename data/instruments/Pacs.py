@@ -14,6 +14,7 @@ from glob import glob
 from time import gmtime
 from scipy import array,argmax
 import scipy
+import numpy as np
 
 from cc.tools.io import DataIO
 from cc.data.instruments.Instrument import Instrument
@@ -53,7 +54,7 @@ class Pacs(Instrument):
     """
     
     def __init__(self,star_name,oversampling,path_pacs,path='codeSep2010',
-                 redo_convolution=0,intrinsic=1,\
+                 redo_convolution=0,intrinsic=1,path_linefit='',\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
         
@@ -90,6 +91,14 @@ class Pacs(Instrument):
                                  
                                  (default: 0)
         @type redo_convolution: bool
+        @keyword path_linefit: The folder name for linefit results from Hipe
+                               (created by Pierre, assuming his syntax). The 
+                               folder is located in $path_pacs$/$star_name$/.
+                               If no folder is given, no linefits are 
+                               processed.
+                               
+                               (default: '')
+        @type path_linefit: string
         
         '''
         
@@ -112,10 +121,55 @@ class Pacs(Instrument):
                                    self.star_name,'PACS_results'))
         self.sphinx_prep_done = 0
         self.oversampling = oversampling
+        self.path_linefit = path_linefit
+        self.readLineFit()
+        
         if not self.oversampling:
             print 'WARNING! PACS oversampling is undefined!'
 
 
+
+    def readLineFit(self):
+        
+        '''
+        Read the data from the line fit procedure done by Pierre.
+        
+        Assumes structure and syntax as given in the example file
+        /home/robinl/Data/PACS/v669cas/lineFitOH127_os2_us3_9_0_978/lineFitResults
+        
+        The columns include (with unit indicated): 
+        wave_in (micron), 
+        wave_fit (micron), 
+        line_flux (W/m2),
+        line_flux_err (W/m2), 
+        line_flux_rel, 
+        continuum (W/m2 m), 
+        line_peak (W/m2 m), 
+        fwhm_fit (micron),
+        fwhm_pacs (micron),
+        fwhm_rel
+        
+        '''
+        
+        fn = os.path.join(self.path_instrument,self.star_name,\
+                          self.path_linefit,'lineFitResults')
+        if not self.path_linefit or not os.path.isfile(fn):
+            self.linefit = None
+            return
+        dd = DataIO.readCols(fn,make_array=0,start_row=2,\
+                             start_from_keyword='TARGET')
+        dd[-6] = [float(val.strip('%')) for val in dd[-6]]
+        del dd[-8]
+        dd = dd[-11:]
+        names = ('band','wave_in','wave_fit','line_flux','line_flux_err',\
+                 'line_flux_rel','continuum','line_peak','fwhm_fit',\
+                 'fwhm_pacs','fwhm_rel')
+        self.linefit = np.recarray(shape=(len(dd[-1]),),\
+                                   dtype=zip(names,['|S3']+[float]*10))
+        for n,d in zip(names,dd):
+            self.linefit[n] = d
+        
+            
 
     def addStarPars(self,star_grid):
         
@@ -175,7 +229,7 @@ class Pacs(Instrument):
                                      for word in os.path.split(f)[1].split('_') 
                                      if word.upper() in ('R1','B2A','B3A',\
                                                          'B3B','B2B','R1A',\
-                                                         'R1B')][0] 
+                                                         'R1B','R1C')][0] 
                                     for f in self.data_filenames]
             if len(self.data_ordernames) != len(self.data_filenames): 
                 raise IOError('Could not match number of ordernames to ' + \
@@ -272,7 +326,7 @@ class Pacs(Instrument):
   
             #- convolve the model fluxes with a gaussian at central wavelength 
             #- from data_wave_list for every star, and appropriate sigma
-            print '* Convolving Sphinx model.'
+            print '* Convolving Sphinx model, after correction for v_lsr.'
             if not self.data_delta_list:
                 self.setDataResolution()
             for filename in filenames_to_do:
@@ -291,18 +345,20 @@ class Pacs(Instrument):
                         os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                      self.path,'stars',self.star_name,\
                                      'PACS_results',star['LAST_PACS_MODEL']))
-                sphinx_convolved = Data.doConvolution(\
-                                        x_in=sphinx_wave,y_in=sphinx_flux,\
+                #-- Correct for the v_lsr of the central source
+                sphinx_wave_corr = array(sphinx_wave)*(1./(1-self.vlsr/self.c))
+                sph_conv = Data.doConvolution(\
+                                        x_in=sphinx_wave_corr,\
+                                        y_in=sphinx_flux,\
                                         x_out=self.data_wave_list[i_file],\
                                         widths=self.data_delta_list[i_file],\
                                         oversampling=self.oversampling)
-                DataIO.writeCols(filename=\
-                        os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                     self.path,'stars',self.star_name,\
-                                     'PACS_results',star['LAST_PACS_MODEL'],\
-                                     '_'.join(['sphinx',filename])),\
-                                 cols=[self.data_wave_list[i_file],\
-                                       sphinx_convolved])
+                sph_fn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                      self.path,'stars',self.star_name,\
+                                      'PACS_results',star['LAST_PACS_MODEL'],\
+                                      '_'.join(['sphinx',filename])) 
+                DataIO.writeCols(filename=sph_fn,\
+                                 cols=[self.data_wave_list[i_file],sph_conv])
                 self.db[star['LAST_PACS_MODEL']]['filenames'].append(filename)
                 self.db.addChangedKey(star['LAST_PACS_MODEL'])        
         

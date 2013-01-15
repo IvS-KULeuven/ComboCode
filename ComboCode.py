@@ -117,12 +117,12 @@ from cc.managers import Vic
 from cc.modeling.objects import Star
 from cc.modeling.objects import Transition
 from cc.statistics import PeakStats
+from cc.statistics import ResoStats
 from cc.statistics import Statistics
 from cc.data.instruments import Pacs
 from cc.data.instruments import Spire
 from cc.data import Sed
 from cc.modeling.tools import ColumnDensity, ContinuumDivision
-from cc.modeling.tools import WaterAbundance as wa
 
 
 
@@ -234,13 +234,13 @@ class ComboCode(object):
                           ('vic_time_per_sphinx',30),('vic_credits',None),\
                           ('append_results',0),('write_dust_density',0),\
                           ('replace_db_entry',0),('update_spec',0),\
-                          ('stat_tolerance',1.),('stat_sigma',None),\
                           ('ln_path_gastronoom',''),('ln_path_mcmax',''),\
                           ('path_gastronoom',''),('path_mcmax',''),\
-                          ('print_model_info',1),('stat_mode','chi2'),\
+                          ('print_model_info',1),\
                           ('contdiv_features',[]),('cfg_contdiv',''),\
                           ('show_contdiv',0),('skip_cooling',0),\
-                          ('recover_sphinxfiles',0),('stat_print',0)]
+                          ('recover_sphinxfiles',0),('stat_print',0),\
+                          ('stat_lll_p',None)]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -266,6 +266,7 @@ class ComboCode(object):
         searchstring = self.processed_input.pop('PACS_SEARCHSTRING','')
         oversampling = self.processed_input.pop('PACS_OVERSAMPLING','')
         intrinsic = self.processed_input.pop('PACS_INTRINSIC',1)
+        linefit = self.processed_input.pop('PACS_LINEFIT','')
         if path_pacs:
             self.pacs = Pacs.Pacs(star_name=self.star_name,\
                                   path_combocode=self.path_combocode,\
@@ -273,7 +274,8 @@ class ComboCode(object):
                                   redo_convolution=redo_convolution,\
                                   oversampling=oversampling,\
                                   path_pacs=path_pacs,\
-                                  intrinsic=intrinsic)
+                                  intrinsic=intrinsic,\
+                                  path_linefit=linefit)
             self.pacs.setData(searchstring=searchstring)
         else:
             self.pacs = None
@@ -496,14 +498,14 @@ class ComboCode(object):
             del self.processed_input['LAST_MCMAX_MODEL']
         if self.processed_input.has_key('LAST_GASTRONOOM_MODEL'):
             del self.processed_input['LAST_GASTRONOOM_MODEL']
-        #- Dust abundance is deleted as it is not changed during the session. 
-        #- Hence, it does not need to be re-updated after mutable input is 
-        #- removed. The keys need to be deleted to avoid inconsistencies in the
-        #- star.normalizeDustAbundances() method. Some A_*** values may not be
-        #- variable, while others are. Yet if any of them are variable, and 
-        #- have to be rescaled, then in principle they are ALL variable. This
-        #- can create a mess, and therefore it is safer to just remove them 
-        #- from the input dictionary.
+        #-- Dust abundance is deleted as it is not changed during the session. 
+        #   Hence, it does not need to be re-updated after mutable input is 
+        #   removed. The keys need to be deleted to avoid inconsistencies in the
+        #   star.normalizeDustAbundances() method. Some A_*** values may not be
+        #   variable, while others are. Yet if any of them are variable, and 
+        #   have to be rescaled, then in principle they are ALL variable. This
+        #   can create a mess, and therefore it is safer to just remove them 
+        #   from the input dictionary.
         for akey in [k for k in self.processed_input.keys() if k[0:2] == 'A_']:
             del self.processed_input[akey]
             
@@ -800,37 +802,34 @@ class ComboCode(object):
             print '************************************************'
             print '**** Doing PACS statistics for %s.'%self.star_name
             print '************************************************'
-
             self.pacsstats = PeakStats.PeakStats(star_name=self.star_name,\
+                                            instrument='PACS',\
                                             path_code=self.path_gastronoom,\
                                             path_combocode=self.path_combocode)
-            self.pacsstats.setInstrument(instrument='PACS',\
-                                         instrument_instance=self.pacs)
-            self.pacsstats.setModels(instrument='PACS',\
-                                     star_grid=self.star_grid)
-            self.pacsstats.findRatios(instrument='PACS',\
-                                      tolerance=self.stat_tolerance,\
-                                      sigma=self.stat_sigma,mode=self.stat_mode)
-            self.pacsstats.plotRatioWav(instrument='PACS',\
-                                        inputfilename=self.inputfilename,\
-                                        tolerance=self.stat_tolerance,\
-                                        sigma=self.stat_sigma,\
-                                        mode=self.stat_mode)
+            self.pacsstats.setInstrument(instrument_instance=self.pacs)
+            self.pacsstats.setModels(star_grid=self.star_grid)
+            self.pacsstats.setRatios()
+            self.pacsstats.plotRatioWav(inputfilename=self.inputfilename)
         if self.statistics:
-            trans_sel = Transition.extractTransFromStars(star_grid,pacs=0)
+            trans_sel = Transition.extractTransFromStars(self.star_grid,pacs=0)
             if not trans_sel:
                 return
             print '************************************************'
             print '**** Doing statistics for spectrally resolveds line in %s.'\
                   %self.star_name
+            print '**** Use cc_session.resostats for more interactive tools.'
             print '************************************************'
             self.resostats = ResoStats.ResoStats(star_name=self.star_name,\
-                                            path_code=self.path_gastronoom,\
-                                            path_combocode=self.path_combocode,\
-                                            stat_print=self.stat_print)
+                                           path_code=self.path_gastronoom,\
+                                           path_combocode=self.path_combocode,\
+                                           lll_p=self.stat_lll_p)
             self.resostats.setInstrument(trans_sel)
             self.resostats.setModels(star_grid=self.star_grid)
-            self.resostats.getIntensities()
+            self.resostats.setIntensities()
+            if self.stat_print:
+                self.resostats.printStats()
+            #bfms = self.resostats.selectBestFitModels(mode='int')
+            #self.plot_manager.plotTransitions(star_grid=bfms,fn_suffix='BFM',force=1)
             
     
     
@@ -885,7 +884,6 @@ class ComboCode(object):
             print '************************************************'
             for star in self.star_grid:
                 if star['LAST_MCMAX_MODEL']:
-                    cdcalc = ColumnDensity.ColumnDensity(star)
                     print 'Requested MCMax parameters for %s:'\
                           %star['LAST_MCMAX_MODEL']
                     if star.has_key('R_INNER_DUST'): del star['R_INNER_DUST']
@@ -893,8 +891,27 @@ class ComboCode(object):
                     print '%s = %s'%('TEMDUST_FILENAME',star['TEMDUST_FILENAME'])
                     print '%s = %s'%('DUST_TEMPERATURE_FILENAME',star['DUST_TEMPERATURE_FILENAME'])
                     print '%s = %s km/s'%('V_EXP_DUST',star['V_EXP_DUST'])
+
+                    if not int(star['MRN_DUST']):
+                        cdcalc = ColumnDensity.ColumnDensity(star)
+                        dlist = [sp 
+                                 for sp in star['DUST_LIST'] 
+                                 if 'H2O' not in sp]
+                        print 'Dust FULL column densities (if available):'
+                        for species in dlist:
+                            print 'C_%s = %.3e g/cm^-2'\
+                               %(species,cdcalc.dustFullColDens(species))
+                        print 'Dust FULL number column densities (if available):'
+                        for species in dlist:
+                            print 'N_%s = %.3e cm^-2'\
+                               %(species,cdcalc.dustFullNumberColDens(species))
+                        print 'Dust associated molecular abundances (if available):'
+                        print 'Note: Does not use above column densities. See ColumnDensity.py.'
+                        for species in dlist:
+                            print 'A_%s/A_H2 = %.3e'\
+                                %(species,cdcalc.dustMolecAbun(species))
                     if star.has_key('T_DES_H2O') or star.has_key('T_DES_CH2O')\
-                            or star.has_key('T_DES_AH2O'):
+                            or star.has_key('T_DES_AH2O') and not int(star['MRN_DUST']):
                         print ', '.join(['%s = %s K'%(ts,star[ts])
                                          for ts in ['T_DES_H2O','T_DES_CH2O',\
                                                     'T_DES_AH2O']
@@ -905,10 +922,18 @@ class ComboCode(object):
                                          for rs in ['R_DES_H2O','R_DES_AH2O',\
                                                     'R_DES_CH2O']
                                          if star.has_key(rs)])
-                    print 'Dust associated molecular abundances (if available):'
-                    for species in star['DUST_LIST']:
-                        print 'A_%s/A_H2 = %.3e'\
-                              %(species,cdcalc.dustMolecAbun(species))
+                        cdh2o1 = cdcalc.dustFullColDens('CH2O')
+                        cdh2o2 = cdcalc.dustFullColDens('AH2O')
+                        print 'The FULL water ice column density:'
+                        print 'C_H2O_ice = %.3e g cm-2'%(cdh2o1+cdh2o2)
+                        ncdh2o1 = cdcalc.dustFullNumberColDens('CH2O')
+                        ncdh2o2 = cdcalc.dustFullNumberColDens('AH2O')
+                        print 'The FULL water ice column number density:'
+                        print 'N_H2O_ice = %.3e cm-2'%(ncdh2o1+ncdh2o2)
+                        nh2o1 = cdcalc.dustMolecAbun('CH2O')
+                        nh2o2 = cdcalc.dustMolecAbun('AH2O')
+                        print 'The associated molecular abundance of water ice:'
+                        print 'A_H2O_ice/A_H2 = %.3e'%(nh2o1+nh2o2)
                     print ''
                 if star['LAST_GASTRONOOM_MODEL']:
                     print 'Requested GASTRoNOoM parameters for %s:'%star['LAST_GASTRONOOM_MODEL']
@@ -926,36 +951,30 @@ class ComboCode(object):
                     if star['R_OH1612_AS']: 
                         print '%s = %.2f R_STAR = %.2e cm'%('R_OH1612_OBS',star['R_OH1612'],star['R_OH1612']*star.r_solar*star['R_STAR'])
                     print '-----------------------------------'
-                    if star.has_key('R_DES_H2O') or star.has_key('R_DES_CH2O') or star.has_key('R_DES_AH2O'):
-                        (nh2o,nh2o_ice,nh2,nh2o_full,nh2_full) = wa.getWaterInfo(star)
-                        print 'Ice shell water VAPOUR column density [cm-2]:'
-                        print '%.3e'%nh2o
-                        print 'Ice shell H2 column density [cm-2]:'
-                        print '%.3e'%nh2
-                        print 'Total water vapour abundance (ortho + para) wrt H2:'
-                        print '%.3e'%(nh2o/nh2)
-                        print 'Ice shell water ICE MOLECULAR column density [cm-2]:'
-                        print '%.3e'%nh2o_ice
-                        print 'Minimum required water vapour abundance N(H2O)/N(H2) for this ice column density:'
-                        print '%.3e'%(nh2o_ice/nh2)
-                        print 'Ice/vapour fraction in ice shell:'
-                        print '%.2f'%(nh2o_ice/nh2o)
-                        print 
-                        print 'FULL shell water VAPOUR column density [cm-2]:'
-                        print '%.3e'%nh2o_full
-                        print 'Total water vapour abundance (ortho + para) wrt H2:'
-                        print '%.3e'%(nh2o_full/nh2_full)
-                        print 
-                        nh2o1 = cdcalc.dustMolecAbun('CH2O')
-                        nh2o2 = cdcalc.dustMolecAbun('AH2O')
-                        print 'The new method of calculating dust abundance gives:'
-                        print '%.3e'%(nh2o1+nh2o2)
-                        cdh2o1 = cdcalc.dustFullColDens('CH2O')
-                        cdh2o2 = cdcalc.dustFullColDens('AH2O')
-                        print 'The new method of calculating the FULL column density gives:'
-                        print '%.3e g cm-2'%(cdh2o1+cdh2o2)
-                    else:
-                        print 'No water ice present in dust model.'
+                    #if star.has_key('R_DES_H2O') or star.has_key('R_DES_CH2O') or star.has_key('R_DES_AH2O'):
+                        #(nh2o,nh2o_ice,nh2,nh2o_full,nh2_full) = wa.getWaterInfo(star)
+                        #print 'Ice shell water VAPOUR column density [cm-2]:'
+                        #print '%.3e'%nh2o
+                        #print 'Ice shell H2 column density [cm-2]:'
+                        #print '%.3e'%nh2
+                        #print 'Total water vapour abundance (ortho + para) wrt H2:'
+                        #print '%.3e'%(nh2o/nh2)
+                        #print 'Ice shell water ICE MOLECULAR column density [cm-2]:'
+                        #print '%.3e'%nh2o_ice
+                        #print 'Minimum required water vapour abundance N(H2O)/N(H2) for this ice column density:'
+                        #print '%.3e'%(nh2o_ice/nh2)
+                        #print 'Ice/vapour fraction in ice shell:'
+                        #print '%.2f'%(nh2o_ice/nh2o)
+                        #print 
+                        #print 'FULL shell water VAPOUR column density [cm-2]:'
+                        #print '%.3e'%nh2o_full
+                        #print 'Total water vapour abundance (ortho + para) wrt H2:'
+                        #print '%.3e'%(nh2o_full/nh2_full)
+                        #print 
+                        #if not int(star['MRN_DUST'):
+
+                    #else:
+                        #print 'No water ice present in dust model.'
                 print '************************************************'
         
 

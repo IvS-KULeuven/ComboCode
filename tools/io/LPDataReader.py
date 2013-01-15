@@ -77,18 +77,46 @@ class LPDataReader(Reader):
         return self.contents['flux']
     
     
+    def getVexp(self):
+        
+        '''
+        Return the fitted value of the gas terminal velocity. 
+        
+        @return: The gas terminal velocity determined by the auto fit of the LP
+        @rtype: float
+        
+        '''
+        
+        return self.contents['vexp']
+        
+    
+    
+    def setVexp(self,vexp):
+        
+        '''
+        Set a value for the gas terminal velocity. 
+        
+        @param vexp: The gas terminal velocity, determined through whichever 
+                     way you want. This value is only used to set the noise 
+                     parameter in the object. 
+        @type vexp: float
+        
+        '''
+        
+        self.contents['vexp'] = float(vexp)
+        
+    
     def getNoise(self,vexp=None):
         
         '''
         Return the noise value for this dataset.
         
-        @keyword vexp: The terminal gas expansion velocity. Used to determine the
-                     velocity range for noise calculation. Only relevant if 
-                     noise was not yet set.
-                     
-                     (default: None)
+        @keyword vexp: The terminal gas velocity, only required if vexp is not 
+                       set yet for this LPDataReader object!
+                       
+                       (default: None)
         @type vexp: float
-        
+
         @return: The std of the dataset
         @rtype: float
         
@@ -160,20 +188,25 @@ class LPDataReader(Reader):
         
     
     
-    def setNoise(self,vexp):
+    def setNoise(self,vexp=None):
         
         """
         Calculate the noise of the dataset, by taking the standard deviation
         of the velocity range lower than v_lsr - 2*vexp. 
         
         If this is not available, the velocity range is taken to be where it is
-        smaller than 1.2*vexp.
+        smaller than 1.1*vexp.
         
         If the size of the above selection still is too small, None is 
         returned.
         
-        @param vexp: The terminal gas expansion velocity. Used to determine the
-                     velocity range for noise calculation.
+        The gas terminal velocity has to have been set previously or passed to
+        this method as a keyword.
+        
+        @keyword vexp: The terminal gas velocity, only required if vexp is not 
+                       set yet for this LPDataReader object!
+                       
+                       (default: None)
         @type vexp: float
         
         @return: The noise of the dataset
@@ -181,12 +214,21 @@ class LPDataReader(Reader):
         
         """
         
+        if vexp <> None and not self.contents.has_key('vexp'):
+            self.contents['vexp'] = float(vexp)
+        if not self.contents.has_key('vexp'):
+            print 'Cannot set noise without an estimate for the terminal gas'+\
+                  ' velocity. Pass as keyword to this method!'
+            return None
         vel = self.contents['velocity']
         flux = self.contents['flux']
         vlsr = self.contents['vlsr']
-        vexp = abs(float(vexp))
+        vexp = self.contents['vexp']
         noise = Data.getStd(wave=vel,flux=flux,wmin=vlsr-5*vexp,\
                             wmax=vlsr-2*vexp,minsize=10)
+        if noise is None:
+            noise = Data.getStd(wave=vel,flux=flux,wmin=vlsr-3*vexp,\
+                                wmax=vlsr-1.8*vexp,minsize=10)
         if noise is None:
             noise = Data.getStd(wave=vel,flux=flux,wmin=vlsr-3*vexp,\
                                 wmax=vlsr-1.1*vexp,minsize=10)
