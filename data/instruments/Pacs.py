@@ -138,6 +138,7 @@ class Pacs(Instrument):
         /home/robinl/Data/PACS/v669cas/lineFitOH127_os2_us3_9_0_978/lineFitResults
         
         The columns include (with unit indicated): 
+        band
         wave_in (micron), 
         wave_fit (micron), 
         line_flux (W/m2),
@@ -156,8 +157,15 @@ class Pacs(Instrument):
         if not self.path_linefit or not os.path.isfile(fn):
             self.linefit = None
             return
-        dd = DataIO.readCols(fn,make_array=0,start_row=2,\
-                             start_from_keyword='TARGET')
+        dd = DataIO.readCols(fn,make_array=0,start_row=1,\
+                             start_from_keyword='GROUPID')
+        #-- If no % symbol in 6th last column, new way of giving int ints:
+        #   get rid of last 2 columns which do not contain relevant information
+        #   as well as the wave ratio column
+        if dd[-6][0].find('%') == -1:
+            del dd[-1]
+            del dd[-1]
+            del dd[-10]
         dd[-6] = [float(val.strip('%')) for val in dd[-6]]
         del dd[-8]
         dd = dd[-11:]
