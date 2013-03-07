@@ -2323,6 +2323,11 @@ class Star(dict):
                     self['NUMBER_INPUT_DUST_TEMP_VALUES'] = len(rad_list)
                     print '** Made dust temperature stratifaction file at %s.'\
                           %filename
+                    if self['NUMBER_INPUT_DUST_TEMP_VALUES'] > 999:
+                        ss = '** WARNING! The dust temperature file contains'+\
+                             ' more than 999 grid points. GASTRoNOoM will '+\
+                             'fail because it requires less than 1000 points.'
+                        print ss
                 except IOError:
                     self['DUST_TEMPERATURE_FILENAME'] = ''
         else:

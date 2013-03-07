@@ -1091,7 +1091,7 @@ class PlotGas(PlottingSession):
                 if star['R_OH1612']:
                     radii.extend([array([star['R_OH1612'],star['R_OH1612']])])
                     abuns.extend([[1e-2,1e-9]])
-                    keytags.append('Max intensity OH maser')
+                    keytags.append('Location OH maser')
                     lt.append('-k')
                 extension = '.eps'
                 plot_filename = os.path.join(os.path.expanduser('~'),\

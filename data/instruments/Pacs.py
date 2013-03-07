@@ -168,6 +168,17 @@ class Pacs(Instrument):
             del dd[-10]
         dd[-6] = [float(val.strip('%')) for val in dd[-6]]
         del dd[-8]
+        #bands = []
+        #obs_bands = set([(band,obsid) 
+                         #for band,obsid in zip(dd[-11],dd[-13])
+                         #if 'R1' not in band])
+        #for ival,val in enumerate(dd[-11]):
+            #if 'R1' in val:
+                #thisid = dd[-13][ival]
+                #b2b = ('B2B',thisid)
+                #b2a = ('B2A',thisid)
+            #else:
+                #bands.append(val)
         dd = dd[-11:]
         names = ('band','wave_in','wave_fit','line_flux','line_flux_err',\
                  'line_flux_rel','continuum','line_peak','fwhm_fit',\

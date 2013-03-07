@@ -233,6 +233,9 @@ class LPDataReader(Reader):
             noise = Data.getStd(wave=vel,flux=flux,wmin=vlsr-3*vexp,\
                                 wmax=vlsr-1.1*vexp,minsize=10)
         if noise is None:
+            noise = Data.getStd(wave=vel,flux=flux,wmin=vlsr-3*vexp,\
+                                wmax=vlsr-1.1*vexp,minsize=5)
+        if noise is None:
             print 'WARNING! Noise cannot be determined, not enough data ' + \
                   'points outside the emission line.'
         self.contents['noise'] = noise

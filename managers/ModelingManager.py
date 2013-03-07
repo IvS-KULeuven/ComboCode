@@ -186,7 +186,7 @@ class ModelingManager():
             if self.mcmax: 
                 print '***********************************'
                 print '** Starting MCMax calculation.'
-                print '** Iteration # ' + str(i+1)
+                print '** Iteration # %i for Model %i.'%(i+1,star_index+1)
                 #- Initiate a dust session which is used for every iteration
                 if i == 0: 
                     dust_session = MCMax(path_combocode=self.path_combocode,\
@@ -214,7 +214,7 @@ class ModelingManager():
             if self.gastronoom:    
                 print '***********************************'
                 print '** Starting GASTRoNOoM calculation.'
-                print '** Iteration # ' + str(i + 1)
+                print '** Iteration # %i for Model %i.'%(i+1,star_index+1)
                 #- Initiate a gas session which is used for every iteration
                 if i == 0: 
                     gas_session = Gastronoom(vic=self.vic,\
