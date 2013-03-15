@@ -1057,12 +1057,14 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
         for index,(xi,yi,lp,xerri,yerri) in enumerate(these_data):
             ls,col = splitLineStyle(lp)
             if index in histoplot:
-                legends.append(sub.step(xi,yi,lp,where='mid',\
-                                        linewidth=(thick_lw_data\
-                                                    and linewidth*2. \
-                                                    or linewidth)))
+                leg = sub.step(xi,yi,lp,where='mid',\
+                               linewidth=(thick_lw_data and linewidth*2. \
+                                                        or linewidth))
             else:
-                legends.append(sub.plot(xi,yi,lp,linewidth=linewidth))
+                leg = sub.plot(xi,yi,lp,linewidth=linewidth)
+            if '--' in lp:
+                leg[0].set_dashes([15,5])
+            legends.append(leg)
             if xerri <> None: 
                 sub.errorbar(x=xi,y=yi,xerr=xerri,fmt=None,\
                                 ecolor=col,\
@@ -1094,9 +1096,6 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                                         markersize=linewidth,\
                                         elinewidth=lp=='ok' and 4 or 1,\
                                         barsabove=False)
-                
-                            
-        #legends.append(sub.plot(linewidth=linewidth,*no_err))
         sub.autoscale_view(tight=True,scaley=False)
         if xlogscale:
             sub.set_xscale('log')
