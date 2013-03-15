@@ -845,6 +845,11 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     
                         (default: 0)
     @type landscape: bool
+    @keyword arrows: Draw arrows in a plot. (x0,y0,delta(x),delta(y),width,col)
+                     works like localized_labels.
+                     
+                     (default: [])
+    @type arrows: list[list]
     
     @return: the plotfilename with extension is returned
     @rtype: string
@@ -917,6 +922,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     thick_lw_data = kwargs.get('thick_lw_data',0)
     short_label_lines = kwargs.get('short_label_lines',0)
     all_xaxislabels = kwargs.get('all_xaxislabels',0)
+    arrows = kwargs.get('arrows',[])
     if inputfiles:
         x,y, xerr, yerr = [],[],[],[]
         read_input = [DataIO.readCols(f) for f in inputfiles]
@@ -1153,6 +1159,15 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                     pl.text((xpos-ll_xmin)/(ll_xmax-ll_xmin),ypos,s,\
                             transform=ax.transAxes,\
                             fontsize=fontsize_localized_label)
+        if arrows:
+            ll_xmin = min([sorted(dd[0])[0] for dd in these_data])
+            ll_xmax = max([sorted(dd[0])[-1] for dd in these_data])
+            for x0,y0,dx,dy,w,fc in arrows:
+                if x0 < ll_xmax and x0 > ll_xmin:
+                    arr = pl.Arrow(x0,y0,dx,dy,width=w)
+                    arr.set_facecolor(fc)
+                    ax.add_patch(arr)            
+                    
         if removeYvalues:
             ax.set_yticks([])
         if removeXvalues:
