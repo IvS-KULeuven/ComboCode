@@ -7,6 +7,7 @@ Author: R. Lombaert
 
 """
 
+import types
 import os
 import subprocess
 import cPickle
@@ -162,7 +163,7 @@ class Pacs(Instrument):
         #-- If no % symbol in 6th last column, new way of giving int ints:
         #   get rid of last 2 columns which do not contain relevant information
         #   as well as the wave ratio column
-        if dd[-6][0].find('%') == -1:
+        if type(dd[-6][0]) is not types.StringType:
             del dd[-1]
             del dd[-1]
             del dd[-10]
