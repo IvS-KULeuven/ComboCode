@@ -179,7 +179,7 @@ class PeakStats(Statistics):
         #   1) Select the info belonging to this particular band    
         ordername = inst.data_ordernames[ifn]
         lf = inst.linefit[inst.linefit['band'] == ordername]
-        if not lf.wave_fit:
+        if not list(lf.wave_fit):
             for star in self.star_grid:
                 this_id = star['LAST_%s_MODEL'%self.instrument]
                 self.int_ratios[fn][this_id] = []
