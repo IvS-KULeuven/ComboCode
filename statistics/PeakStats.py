@@ -179,7 +179,12 @@ class PeakStats(Statistics):
         #   1) Select the info belonging to this particular band    
         ordername = inst.data_ordernames[ifn]
         lf = inst.linefit[inst.linefit['band'] == ordername]
-        
+        if not lf.wave_fit:
+            for star in self.star_grid:
+                this_id = star['LAST_%s_MODEL'%self.instrument]
+                self.int_ratios[fn][this_id] = []
+                self.int_ratios_err[fn][this_id] = []
+            return
         #   2) Check if the wav of an mtrans matches a wav in the fitted
         #      intensities list, within the fitted_fwhm/2 of the line with 
         #      respect to the fitted central wavelength.
