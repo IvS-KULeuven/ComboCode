@@ -273,9 +273,10 @@ NZLAM=300                                   # Step size subgrid (must be < than 
 ###################
 # GASTRoNOoM line lists
 ###################
-LINE_LISTS=2                        # Get molecular transitions from line lists, in addition to the data,
-                                    # if 1 line lists are generated automatically, if 2 line list is taken from log file
-                                    # if 2 a filename is required, but other keywords are ignored for LL
+LINE_LISTS=2                        # Get molecular transitions from line lists
+                                    # 1: line lists are generated automatically
+                                    # 2: line list taken from a file. A filename is required, but other LL_keywords are ignored
+                                    # 3: wavelength ranges for line lists are determined from data files. [NYI]
                                     # Syntax: TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
 LL_FILE=h2o_iktau_hifi.dat          # if LINE_LISTS is 2, otherwise it is ignored
 LL_MAX=218                          # If LINE_LISTS, the max (rest) wavelength for the transitions
@@ -289,7 +290,7 @@ LL_NO_VIB=0 #12C16O&1H1H16O                         # When molecules are indicat
 N_QUAD=100                          # Number of impact par. in quadrature int(Inu pdp)               GASTRoNOoM  
                                     # N_QUAD is always the same for all lines requested if LINE_LISTS=1 or if an auto-search for data is done
                                     # n_quad is otherwise included in TRANSITION input lines or in the input files if LINE_LISTS=2 
-USE_MASER_IN_SPHINX=0               #Use correct masering opacities in Sphinx
+USE_MASER_IN_SPHINX=0               # Use correct masering opacities in Sphinx
 
 
 

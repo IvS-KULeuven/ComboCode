@@ -375,14 +375,14 @@ class MCMax(ModelingSession):
             self.command_list['Tstar'] = float(star['T_STAR'])
             self.command_list['Rstar'] = float(star['R_STAR'])
         elif star['STARTYPE'] == 'ATMOSPHERE':
-            modeltypes = ['comarcs']
+            modeltypes = ['comarcs','marcs','kurucz']
             modeltype = None
             for mt in modeltypes:
                 if mt in star['ATM_FILENAME']:
                     modeltype = mt
                     continue
             if modeltype is None: 
-                raise Error('Atmosphere model type is unknown.')
+                raise IOError('Atmosphere model type is unknown.')
             self.command_list['startype'] = "'FILE'"
             self.command_list['Lstar'] = star['L_STAR']
             path = os.path.join(os.path.expanduser('~'),\

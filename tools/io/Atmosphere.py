@@ -21,7 +21,7 @@ class Atmosphere(object):
     """
     
     def __init__(self,modeltype,filename=None,\
-                 folder='/STER/100/pieterd/IVSDATA/sedtables/modelgrids/'):
+                 folder='/STER/pieterd/IVSDATA/sedtables/modelgrids/'):
         
         """
         Initializing an Atmosphere() object. 
@@ -29,7 +29,7 @@ class Atmosphere(object):
         The stellar model atmospheres are read from a given folder and the 
         preferred model is chosen after initialisation.
         
-        @param modeltype: The type of model atmosphere (for now only 'comarcs')
+        @param modeltype: Type of model atmosphere (any from IVSDATA folder)
         @type modeltype: string
         
         @keyword filename: The filename of the model atmosphere in the 
