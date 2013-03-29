@@ -171,16 +171,16 @@ def makeTransition(trans,star=None,def_molecs=None,\
         molec = def_molecs.get(trans[0].replace('TRANSITION=',''),None)
         path_gastronoom = None
         umis = 0
-    elif star <> None:
+    elif star is None:
+        molec = def_molecs.get(trans[0].replace('TRANSITION=',''),None)
+        path_gastronoom = None
+        umis = 0
+    else:
         molec = star.getMolecule(trans[0].replace('TRANSITION=',''))
         umis = star['USE_MASER_IN_SPHINX']
         path_combocode = star.path_combocode
         path_gastronoom = star.path_gastronoom
-    else:
-        molec = def_molecs.get(trans[0].replace('TRANSITION=',''),None)
-        path_gastronoom = None
-        umis = 0
-    
+        
     if molec <> None:
         return Transition(molecule=molec,\
                           vup=int(trans[1]),jup=int(trans[2]),\
