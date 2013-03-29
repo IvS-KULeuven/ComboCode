@@ -2406,7 +2406,7 @@ class Star(dict):
                                       if trans[0] in [molec[0] 
                                                       for molec in self\
                                                                  ['MOLECULE']]]
-                new_lines = [Transition.makeTransition(self,trans) 
+                new_lines = [Transition.makeTransition(star=self,trans=trans) 
                              for trans in self['TRANSITION']]
                 for trans in new_lines: 
                     if str(trans) not in [str(t) for t in self['GAS_LINES']]:
@@ -2433,7 +2433,7 @@ class Star(dict):
                             if line[0] != '#' \
                               and line.split()[0].replace('TRANSITION=','') in \
                                   [molec[0] for molec in self['MOLECULE']]]
-                    new_lines = [Transition.makeTransition(self,line) 
+                    new_lines = [Transition.makeTransition(star=self,trans=line) 
                                  for line in lines]
                     for trans in new_lines: 
                         if str(trans) not in [str(t) for t in self['GAS_LINES']]:

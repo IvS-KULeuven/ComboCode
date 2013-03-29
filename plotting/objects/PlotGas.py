@@ -1468,7 +1468,8 @@ class PlotGas(PlottingSession):
             lines = [line.split() 
                      for line in DataIO.readFile(fn_trans_marker) 
                      if line[0] != '#']
-            trans_markers = set([Transition.makeTransition(star_grid[0],line) 
+            trans_markers = set([Transition.makeTransition(star=star_grid[0],\
+                                                           trans=line) 
                                  for line in lines])
             used_indices = list(set([ll[-1] for ll in sphinx_line_labels]))
             this_index = [ii for ii in range(100) if ii not in used_indices][0]

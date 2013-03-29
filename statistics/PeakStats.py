@@ -122,7 +122,7 @@ class PeakStats(Statistics):
         print '** Calculating integrated/peak intensity ratios for %s.'\
               %self.instrument
         
-        #-- Make a sample selection of Transition()s. 
+        #-- Make a sample selection of Transition()s.
         sample_trans = Transition.extractTransFromStars(self.star_grid,pacs=1)
         inst = self.instruments[self.instrument]
         
@@ -175,37 +175,8 @@ class PeakStats(Statistics):
         self.int_ratios_err[fn] = dict() 
         
         #-- Comparing integrated intensities between PACS and models.
-        #   Comparisons only made for the same band! 
-        #   1) Select the info belonging to this particular band    
-        ordername = inst.data_ordernames[ifn]
-        lf = inst.linefit[inst.linefit['band'] == ordername]
-        if not list(lf.wave_fit):
-            for star in self.star_grid:
-                this_id = star['LAST_%s_MODEL'%self.instrument]
-                self.int_ratios[fn][this_id] = []
-                self.int_ratios_err[fn][this_id] = []
-            return
-        #   2) Check if the wav of an mtrans matches a wav in the fitted
-        #      intensities list, within the fitted_fwhm/2 of the line with 
-        #      respect to the fitted central wavelength.
-        #      Note that there cannot be 2 fitted lines with central wavelength
-        #      closer than fwhm/2. Those lines would be inseparable!
-        imatches = [argmin(abs(lf.wave_fit-mwav))
-                    for mwav in self.central_mwav[fn]]
-        matches = [(mwav <= lf.wave_fit[ii] + lf.fwhm_fit[ii]/2. \
-                        and mwav >= lf.wave_fit[ii] - lf.fwhm_fit[ii]/2.) \
-                    and (lf.wave_fit[ii],ii) or (None,None)
-                   for mwav,ii in zip(self.central_mwav[fn],imatches)]
-        
-        #   3) If match found, check if multiple mtrans fall within   
-        #      fitted_FWHM/2 from the fitted central wavelength of the
-        #      line. These are blended IN MODEL and/or IN DATA.
-        matches_wv = array([mm[0] for mm in matches])
-        wf_blends = [list(array(self.sample_trans[fn])[matches_wv==wv])
-                     for wv in lf.wave_fit]
-        blended = [ii <> None and len(wf_blends[ii]) > 1. \
-                        and wf_blends[ii].index(st) != 0
-                   for st,(match,ii) in zip(self.sample_trans[fn],matches)]
+        #   Comparisons only made per filename! 
+        inst.intIntMatch(trans_list=self.sample_trans[fn],ifn=ifn)
         
         for star in self.star_grid:
             #--  From here on, we start extracting the model specific int ints.
@@ -214,42 +185,39 @@ class PeakStats(Statistics):
                             for t in self.sample_trans[fn]])
             these_ratios = []
             these_errs = []
-            for mt,blend,(match,ii) in zip(mtrans,blended,matches):
-                #   4) No trans == sample_trans found for this model, or no
-                #      match found in linefit for this band, or line is blended
-                #      with other line that is already added: ratio is None.
-                if mt is None or match is None or blend:
+            for mt,st in zip(mtrans,self.sample_trans[fn]):
+                #   4) No trans == sample_trans found for this model, or sample
+                #      trans does not contain a PACS integrated intensity.
+                if mt is None or st.getIntIntPacs(fn)[0] is None:
                     these_ratios.append(None)
                     these_errs.append(None)
                
-                #   5) Match found with a wave_fit value once. Get int ratio 
-                #      m/d + check for line blend IN DATA:
-                #      Check the ratio fitted FWHM/PACS FWHM. If larger by 20% 
-                #      or more, put the int ratio negative. 
-                elif len(wf_blends[ii]) == 1:
-                    this_ratio = mt.getIntIntIntSphinx()/lf.line_flux[ii]
-                    factor = lf.fwhm_rel[ii] >= 1.2 and -1 or 1
-                    these_ratios.append(factor*this_ratio)
-                    err = sqrt(lf.line_flux_rel[ii]/100**2+0.2**2)
-                    these_errs.append(err*this_ratio)
-                
-                #   4) If multiple matches, add up the integrated intensities 
-                #      of the mtrans and make m/d based on that sum. Make 
-                #      negative to indicate a line blend. 
-                #      The *OTHER* transitions found this way are not compared 
-                #      with any data and get None. 
-                else: 
-                    blended_mt = [star.getTransition(st) 
-                                  for st in wf_blends[ii]
-                                  if star.getTransition(st) <> None]
-                    total_mflux = sum([bmt.getIntIntIntSphinx() 
-                                       for bmt in blended_mt])
-                    this_ratio = total_mflux/lf.line_flux[ii]
-                    these_ratios.append(-1.*this_ratio)
-                    err = sqrt(lf.line_flux_rel[ii]/100**2+0.2**2)
-                    these_errs.append(err*this_ratio)
+                #   5) Match found with a wave_fit value. Get int ratio 
+                #      m/d. If dintint is negative, it is a blend due to large
+                #      FWHM! If blends is not None, multiple sample trans have 
+                #      been found in the wavelength resolution bin of the 
+                #      fitted line and also indicates a blend.
+                else:
+                    dintint, dintinterr, blends = st.getIntIntPacs(fn)
+                    if blends is None:
+                        mintint = mt.getIntIntIntSphinx() 
+                    else:
+                        #-- blends is a list of sample transitions that refers
+                        #   to the transitions involved in the blend, so get 
+                        #   these from the model grid, add them up and make 
+                        #   sure the ratio will be negative to indicate a blend
+                        blendlines = [star.getTransition(t) 
+                                      for t in blends
+                                      if star.getTransition(t) <> None]
+                        mintint = sum([t.getIntIntIntSphinx() 
+                                       for t in blendlines])
+                        dintint = -1.*abs(dintint)
+                    this_ratio = mintint/dintint
+                    these_ratios.append(this_ratio)
+                    these_errs.append(abs(this_ratio)*dintinterr)
             self.int_ratios[fn][this_id] = these_ratios
-            self.int_ratios_err[fn][this_id] = these_errs
+            self.int_ratios_err[fn][this_id] = these_errs        
+        
 
 
     def __setPeakRatios(self,ifn,fn):

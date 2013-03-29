@@ -13,102 +13,6 @@ import types
 import subprocess
 import time
 
-
-
-def checkEntryInfo(input_list,number_of_keys,info_type):
-    
-    '''
-    Specific input keywords for ComboCode (currently: MOLECULE, TRANSITION,
-    R_POINTS_MASS_LOSS) require multiple arguments separated by a space. This 
-    method sorts those arguments and checks if the format is OK.
-    
-    The method returns a tuple or a list of these arguments depending on 
-    multiplicity of input, and the need to create a grid for the parameter.
-    
-    @param input_list: argument strings for one of the special CC input keys.
-    @type input_list: list[string]
-    @param number_of_keys: the number of arguments expected
-    @type number_of_keys: int
-    @param info_type: MOLECULE, TRANSITION or R_POINTS_MASS_LOSS
-    @type info_type: string
-    @return: the sorted arguments for the requested info_type. The output is 
-             given as a list or a tuple, depending on if this gridded parameter
-             or not, respectively.
-    @rtype: list[tuple(list[string])] or tuple(list[string])
-    
-    '''
-    
-    if not info_type in ('MOLECULE','R_POINTS_MASS_LOSS','TRANSITION'):
-        raise KeyError('The info_type keyword is unknown. Should be ' + \
-                       'MOLECULE, TRANSITION or R_POINTS_MASS_LOSS.')
-    input_list = [line.split() for line in input_list]
-    if set([len(line) for line in input_list]) != set([number_of_keys]):
-        print 'Number of keys should be: %i'%number_of_keys
-        print '\n'.join(['%i  for  %s'%(len(line),line) for line in input_list])
-        raise IOError('Input for one of the %s lines has wrong number of ' + \
-                      'values. Double check, and abort.'%info_type)
-    else:
-        #- if MOLECULE: only molecule string, 
-        #- if R_POINTS_MASS_LOSS: only grid id number, 
-        #- if TRANSITION: everything except last entry (n_quad)
-        entries = [info_type in ('MOLECULE','R_POINTS_MASS_LOSS') \
-                        and line[0] or ' '.join(line[0:-1]) 
-                   for line in input_list]  
-        unique_entries = set(entries)
-        #- ie the defining parameter is never multiply defined ! 
-        #- Hence, only a single set of parameters is used here.
-        if len(unique_entries) == len(entries):        
-            if info_type == 'R_POINTS_MASS_LOSS':
-                input_list = ['  '.join(il[1:]) for il in input_list]
-            return tuple(input_list)
-        else:
-            if info_type == 'TRANSITION':
-                indices = [i 
-                           for i,entry in enumerate(entries) 
-                           if entries.count(entry) > 1]
-                print 'Identical transition(s) in the transition list: Doubl'+\
-                      'es will not be removed even if N_QUAD is the same too!'
-                for i in indices:
-                    print 'At index %i:  %s' %(i,entries[i])
-                raw_input('Abort if identical transitions are not expected.')
-            if info_type == 'R_POINTS_MASS_LOSS':
-                #- This will be a list of R_POINTS_MASS_LOSS sets, where each 
-                #- set is defined as a list of radial grid point parameters
-                final = []  
-                while input_list:
-                    if int(input_list[0][0]) != 1:
-                        raise IOError('The grid point ID numbers for the ' + \
-                                      'R_POINTS_MASS_LOSS keywords do not ' + \
-                                      'follow a correct order. Use ID = 1 ' + \
-                                      'as a reset for new set of grid points.')
-                    final.append([input_list.pop(0)])
-                    while input_list and int(input_list[0][0]) != 1:
-                        final[-1].append(input_list.pop(0))
-                #- Remove the grid point ID numbers, not relevant anymore
-                #- put the rest back into a string
-                final = [tuple(['  '.join([num 
-                                           for i,num in enumerate(this_point) 
-                                           if i != 0]) 
-                                for this_point in this_set]) 
-                         for this_set in final]      
-                return final
-            final = [[line 
-                      for line,entry in zip(input_list,entries) 
-                      if entries.count(entry) == 1]]
-            multiples = set([entry 
-                             for entry in entries 
-                             if entries.count(entry) != 1])
-            for entry in multiples:
-                this_input = [line 
-                              for this_entry,line in zip(entries,input_list) 
-                              if this_entry == entry]
-                final = [this_list + [extra_line] 
-                         for extra_line in this_input 
-                         for this_list in final]
-            return [tuple(final_list) for final_list in final]
-
-
-
 from cc.tools.io import DataIO
 from cc.tools.numerical import Gridding
 from cc.managers import ModelingManager
@@ -416,20 +320,20 @@ class ComboCode(object):
         #-- Make sure R_POINTS_MASS_LOSS, Molecule and Transition input makes 
         #-- sense and is correct
         if molecules: 
-            molecules = checkEntryInfo(molecules,20,'MOLECULE')
+            molecules = DataIO.checkEntryInfo(molecules,20,'MOLECULE')
             if type(molecules) is types.ListType:
                 self.multiplicative_grid['MOLECULE'] = molecules
             else:
                 self.processed_input['MOLECULE'] = molecules
         if r_points_mass_loss: 
-            r_points_mass_loss = checkEntryInfo(r_points_mass_loss,4,\
-                                                            'R_POINTS_MASS_LOSS')
+            r_points_mass_loss = DataIO.checkEntryInfo(r_points_mass_loss,4,\
+                                                       'R_POINTS_MASS_LOSS')
             if type(r_points_mass_loss) is types.ListType:
                 self.additive_grid['R_POINTS_MASS_LOSS'] = r_points_mass_loss
             else:
                 self.processed_input['R_POINTS_MASS_LOSS'] = r_points_mass_loss
         if transitions: 
-            transitions = checkEntryInfo(transitions,12,'TRANSITION')
+            transitions = DataIO.checkEntryInfo(transitions,12,'TRANSITION')
             if type(transitions) is types.ListType:
                 self.multiplicative_grid['TRANSITION'] = transitions
             else:

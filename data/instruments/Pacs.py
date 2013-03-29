@@ -13,7 +13,7 @@ import subprocess
 import cPickle
 from glob import glob
 from time import gmtime
-from scipy import array,argmax
+from scipy import array,argmax,argmin,sqrt
 import scipy
 import numpy as np
 
@@ -22,7 +22,117 @@ from cc.data.instruments.Instrument import Instrument
 from cc.tools.io import Database
 from cc.data import Data
 
+def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
+                     path_pacs=os.path.join(os.path.expanduser('~'),\
+                                            'Data','PACS'),\
+                     path_combocode=os.path.join(os.path.expanduser('~'),\
+                                                 'ComboCode')):
 
+    '''
+    Write a table with integrated line intensities and their uncertainties for
+    multiple stars. 
+    
+    The table - for now - is only available in LaTeX format.
+    
+    @param filename: The filename of the to be written table.
+    @type filename: string
+    @param stars: The stars for which the table is created.
+    @type stars: list[string]
+    @param trans: The transitions for which the integrated intensities are 
+                  selected from the PACS line fit results of each star. 
+    @type trans: list[Transition()]
+    
+    @keyword path_pacs: full path to PACS data folder, excluding star_name
+                        Only needed when PACS data objects are created from 
+                        scratch.
+                        
+                        (default: ~/Data/PACS/)
+    @type path_pacs: string
+    @keyword dpacs: The data objects for PACS for each star. If not given, they
+                    are generated automatically with path_linefit 'lineFit', 
+                    oversampling 6 and given path_pacs.
+                    
+                    (default: None)
+    @type dpacs: dict(Pacs())
+    @keyword searchstring: the searchstring conditional for the auto-search, if 
+                           data have not been read into given Pacs objects or 
+                           if new Pacs objects are generated.
+        
+                           (default: 'os2_us3')
+    @type searchstring: string
+    @keyword path_combocode: CC home folder
+        
+                             (default: '~/ComboCode/')
+    @type path_combocode: string
+    
+    '''
+    
+    #-- Keep track of the transitions for each star seperately.
+    dtrans = dict()
+    trans = sorted(trans,key=lambda x: (x.molecule.molecule_index,x.frequency))
+    for star in stars:
+        if not dpacs.has_key(star):
+            dpacs[star] = Pacs(star,6,path_pacs,path_linefit='lineFit',\
+                               path_combocode=path_combocode)
+        dpacs[star].setData(searchstring='os2_us3')
+        for ifn in range(len(dpacs[star].data_filenames)):
+            dtrans[star] = list(trans)
+            dpacs[star].intIntMatch(dtrans[star],ifn)
+    
+    istars = [DataIO.getInputData(path=os.path.join(path_combocode,'Data'))\
+                    .index(star)
+              for star in stars]
+    pstars = [DataIO.getInputData(path=os.path.join(path_combocode,'Data'),\
+                                  keyword='STAR_NAME_PLOTS')[istar]
+              for istar in istars]
+    pstars = [s.replace('_',' ') for s in pstars]
+    these_molecs = [t.molecule.molecule for t in trans]
+    all_molecs = DataIO.getInputData(path=os.path.join(path_combocode,'Data'),\
+                                     keyword='TYPE_SHORT',make_float=0,\
+                                     filename='Molecule.dat')
+    all_pmolecs = DataIO.getInputData(path=os.path.join(path_combocode,'Data'),\
+                                     keyword='NAME_PLOT',make_float=0,\
+                                     filename='Molecule.dat')
+    inlines = []
+    inlines.append('&'.join(['','','']+pstars[:-1]+[r'%s \\\hline'%pstars[-1]]))
+    
+    inlines.append('&'.join(['Molecule','Transition','$\lambda_0$']+\
+                   [r'\multicolumn{%i}{c}{$F_\mathrm{int}$} \\'%len(pstars)]))
+    inlines.append('&'.join(['','',r'$\mu$m']+\
+                   [r'\multicolumn{%i}{c}{(W/m$^2$)} \\\hline'%len(pstars)]))
+    orders = ['R1B','R1A','B2B','B2A']
+    
+    for order in orders:
+        inlines.append(r'\multicolumn{3}{c}{PACS Band: %s} & \multicolumn{%i}{c}{} \\\hline'\
+                       %(order,len(pstars)))
+        prev_molec = ''
+        for it,t in enumerate(trans):
+            all_ints = set([dtrans[s][it].getIntIntPacs\
+                               (os.path.split(dpacs[s].data_filenames[dpacs[s]\
+                                        .data_ordernames.index(order)])[1])[0] 
+                            for s in stars])
+            if  all_ints == set([None]):
+                continue
+            if t.molecule.molecule != prev_molec:
+                col1 = all_pmolecs[all_molecs.index(t.molecule.molecule)]
+            else: 
+                col1 = ''
+            parts = [col1,t.makeLabel(),'%.2f'%(t.wavelength*10**4)]
+            for s in stars:
+                ifn = dpacs[s].data_ordernames.index(order)
+                fn = os.path.split(dpacs[s].data_filenames[ifn])[1]
+                fint,finterr,fintblend = dtrans[s][it].getIntIntPacs(fn)
+                if fint is None:
+                    parts.append('')
+                else:
+                    parts.append('%.2e (%.1f%s)'%(fint,finterr*100,r'\%'))
+            parts[-1] = parts[-1] + r'\\'
+            inlines.append('&'.join(parts))   
+            prev_molec = t.molecule.molecule
+        inlines[-1] = inlines[-1] + r'\hline'
+    DataIO.writeFile(filename,input_lines=inlines)
+    
+    
 
 def readPacsData(data_filenames):
     
@@ -76,7 +186,7 @@ class Pacs(Instrument):
         @type path: string
         @keyword path_combocode: CC home folder
         
-                                 (default: '~/ComboCode/'
+                                 (default: '~/ComboCode/')
         @type path_combocode: string
         @keyword intrinsic: Use the intrinsic Sphinx line profiles for 
                             convolving with the spectral resolution? Otherwise
@@ -190,7 +300,97 @@ class Pacs(Instrument):
             self.linefit[n] = d
         
             
-
+            
+    def intIntMatch(self,trans_list,ifn):
+        
+        '''
+        Match the wavelengths of integrated intensities with transitions.
+        
+        Checks if a blend might be present based on the data, as well as the 
+        available transitions. 
+        
+        @param trans_list: The list of transitions for which the check is done.
+        @type trans_list: list[Transition()]
+        @param ifn: The index of the filename in self.data_filenames. This is 
+                    done per file! 
+        
+        '''
+        
+        if self.linefit is None:
+            return
+        dwav = self.data_wave_list[ifn]
+        ordername = self.data_ordernames[ifn]
+        fn = os.path.split(self.data_filenames[ifn])[1]
+        #   1) Prep: Create a list of sample transitions and get central
+        #            wavs corrected for vlsr, in micron. Select fit results
+        #            for this particular band.
+        lf = self.linefit[self.linefit['band'] == ordername]
+        #      No info available for band, so don't set anything.
+        if not list(lf.wave_fit):
+            return
+        strans = [t for t in trans_list if t.wavelength*10**4 >= dwav[0]\
+                                        and t.wavelength*10**4 <= dwav[-2]]
+        central_mwav = [t.wavelength*10**4*1./(1-self.vlsr/t.c)
+                        for t in strans]
+        #   2) Check if the wav of a trans matches a wav in the fitted
+        #      intensities list, within the fitted_fwhm/2 of the line with 
+        #      respect to the fitted central wavelength.
+        #      Note that there cannot be 2 fitted lines with central wav
+        #      closer than fwhm/2. Those lines would be inseparable!
+        imatches = [argmin(abs(lf.wave_fit-mwav))
+                    for mwav in central_mwav]
+        matches = [(mwav <= lf.wave_fit[ii] + lf.fwhm_pacs[ii] \
+                        and mwav >= lf.wave_fit[ii] - lf.fwhm_pacs[ii]) \
+                    and (lf.wave_fit[ii],ii) or (None,None)
+                   for mwav,ii in zip(central_mwav,imatches)]
+        #   3) If match found, check if multiple mtrans fall within   
+        #      fitted_FWHM/2 from the fitted central wavelength of the
+        #      line. These are blended IN MODEL and/or IN DATA.
+        #      Check for model blend is done by looking for ALL transitions 
+        #      that have been matched with a single fitted wavelength.
+        matches_wv = array([mm[0] for mm in matches])
+        wf_blends = [list(array(strans)[matches_wv==wv]) 
+                     for wv in lf.wave_fit]
+        #      Use the wave_fit array indices from matches[:][1] to check  
+        #      if indeed multiple transitions were found for the same wav.
+        #      If positive, include True if the particular transition is  
+        #      the first among the blended ones, else include False. The 
+        #      False ones are not taken into account as blended because: 
+        #      1) no match was found at all, 
+        #      2) only one match was found, 
+        #      3) if multiple matches have been found it was not the first. 
+        #      
+        blended = [ii <> None and len(wf_blends[ii]) > 1. \
+                                and wf_blends[ii].index(st) != 0
+                   for st,(match,ii) in zip(strans,matches)]
+        for st,blend,(match,ii) in zip(strans,blended,matches):
+            #   4) No match found in linefit for this band, or line is 
+            #      blended with other line that is already added: no 
+            #      integrated intensity is set for this filename in this  
+            #      transition. Simply move on to the next transtion. (not 
+            #      setting gives None when asking Trans for intintpacs)
+            if match is None or blend:
+                continue
+            #   5) Match found with a wave_fit value once. Check for line 
+            #      blend IN DATA: Check the ratio fitted FWHM/PACS FWHM. If
+            #       larger by 30% or more, put the int int negative. 
+            elif len(wf_blends[ii]) == 1:
+                err = sqrt((lf.line_flux_rel[ii]/100)**2+0.2**2)
+                factor = lf.fwhm_rel[ii] >= 1.3 and -1 or 1
+                st.setIntIntPacs(fn,factor*lf.line_flux[ii],err)
+            #   6) If multiple matches, give a selection of strans included
+            #      in the blend (so they can be used to select model 
+            #      specific transitions later for addition of the 
+            #      integrated intensities of the mtrans). Make intintpacs 
+            #      negative to indicate a line blend. 
+            #      The *OTHER* transitions found this way are not compared 
+            #      with any data and get None. (see point 4) )
+            else: 
+                err = sqrt((lf.line_flux_rel[ii]/100**2)+0.2**2)
+                st.setIntIntPacs(fn,-1.*lf.line_flux[ii],err,wf_blends[ii])
+                
+                
+                
     def addStarPars(self,star_grid):
         
         '''
@@ -437,7 +637,7 @@ class Pacs(Instrument):
         print '** Reading PACS native resolution.'
         reso_wave_list,reso_delta_list \
                 = self.getPacsResolution(filename=os.path.join(\
-                                                self.path_combocode,'Data',\
+                                                path_combocode,'Data',\
                                                 'Pacs_Resolution.dat'))
         
         #- Make interpolators for every order

@@ -125,24 +125,62 @@ def updateLineSpec(trans_list):
 
  
 
-def makeTransition(star,trans):
+def makeTransition(trans,star=None,def_molecs=None,\
+                   path_combocode=os.path.join(os.path.expanduser('~'),\
+                                               'ComboCode')):
     
     '''
     Create a Transition instance based on a Star object and a standard CC input 
     line, with 12 entries in a list.
     
-    @param star: The star object providing basic info
-    @type star: Star()
+    If a star object is not given, the method creates Molecule() objects itself
+    For now only 12C16O, 1H1H16O and p1H1H16O are possible.
+    
     @param trans: the input line with 12 entries, the first being the molecule,
                   followed by all 11 CC input parameters for a transition
     @type trans: list[string]
     
+    @keyword star: The star object providing basic info
+    
+                   (default: None)
+    @type star: Star()
+    @keyword def_molecs: Default molecules needed for the requested transitions
+                         None is returned if the requested molecule is not 
+                         present. If both this and star are not given, a few
+                         default molecules are loaded. 
+                         
+                         (default: None)
+    @type def_molecs: dict(string: Molecule())
+    @keyword path_combocode: CC home folder
+          
+                             (default: '/home/robinl/ComboCode')
+    @type path_combocode: string       
+        
     @return: The transition object is returned with all info included
     @rtype: Transition()
     
     '''
     
-    molec = star.getMolecule(trans[0].replace('TRANSITION=',''))
+    if star is None and def_molecs is None: 
+        def_molecs = {'12C16O':Molecule.Molecule('12C16O',61,61,240,\
+                                               path_combocode=path_combocode),\
+                      '1H1H16O':Molecule.Molecule('1H1H16O',39,90,1157,\
+                                               path_combocode=path_combocode),\
+                      'p1H1H16O':Molecule.Molecule('p1H1H16O',32,90,1029,\
+                                               path_combocode=path_combocode)}
+        molec = def_molecs.get(trans[0].replace('TRANSITION=',''),None)
+        path_gastronoom = None
+        umis = 0
+    elif star <> None:
+        molec = star.getMolecule(trans[0].replace('TRANSITION=',''))
+        umis = star['USE_MASER_IN_SPHINX']
+        path_combocode = star.path_combocode
+        path_gastronoom = star.path_gastronoom
+    else:
+        molec = def_molecs.get(trans[0].replace('TRANSITION=',''),None)
+        path_gastronoom = None
+        umis = 0
+    
     if molec <> None:
         return Transition(molecule=molec,\
                           vup=int(trans[1]),jup=int(trans[2]),\
@@ -150,14 +188,50 @@ def makeTransition(star,trans):
                           vlow=int(trans[5]),jlow=int(trans[6]),\
                           kalow=int(trans[7]),kclow=int(trans[8]),\
                           telescope=trans[9],offset=float(trans[10]),\
-                          n_quad=int(trans[11]),\
-                          path_combocode=star.path_combocode,\
-                          use_maser_in_sphinx=star['USE_MASER_IN_SPHINX'],\
-                          path_gastronoom=star.path_gastronoom)
+                          n_quad=int(trans[11]),use_maser_in_sphinx=umis,\
+                          path_combocode=path_combocode,\
+                          path_gastronoom=path_gastronoom)
     else:
         return None    
-        
 
+
+
+def makeTransitionsFromTransList(filename,path_combocode=os.path.join(os.path\
+                                            .expanduser('~'),'ComboCode')):
+    
+    '''
+    Make Transition objects for the transitions listed in a line list file,
+    used by CC. 
+    
+    The syntax is the same as the input Transition lines in a CC inputfile.
+    
+    @param filename: The filename to the linelist
+    @type filename: string
+    
+    @keyword path_combocode: The CC home folder
+    
+                             (default: ~/ComboCode/)
+    @type path_combocode: string
+    
+    @return: The Transitions in the file are returned in object form.
+    @rtype: list[Transition]
+    
+    '''
+    
+    def_molecs = {'12C16O':Molecule.Molecule('12C16O',61,61,240,\
+                                             path_combocode=path_combocode),\
+                  '1H1H16O':Molecule.Molecule('1H1H16O',39,90,1157,\
+                                              path_combocode=path_combocode),\
+                  'p1H1H16O':Molecule.Molecule('p1H1H16O',32,90,1029,\
+                                               path_combocode=path_combocode)}
+    trl = DataIO.readDict(filename,multi_keys=['TRANSITION'])
+    trl_sorted = DataIO.checkEntryInfo(trl['TRANSITION'],14,'TRANSITION')
+    trans = [makeTransition(trans=t,def_molecs=def_molecs,\
+                            path_combocode=path_combocode) 
+             for t in trl_sorted]
+    return trans
+
+    
 
 def makeTransitionFromSphinx(filename,path_combocode=os.path.join(os.path\
                                             .expanduser('~'),'ComboCode')):
@@ -452,7 +526,9 @@ class Transition():
         self.best_vlsr = None
         self.fittedlprof = None
         self.best_mfilter = None
-        
+        self.intintpacs = dict()
+        self.intinterrpacs = dict()
+        self.intintpacs_blends = dict()
         
     def __str__(self):
         
@@ -851,12 +927,25 @@ class Transition():
         else:
             if not self.molecule.spec_indices:
                 if self.vup == 0 and self.vlow ==0:
-                    return '%i - %i' %(self.jup,self.jlow)
+                    return r'$J=%i-%i$' %(self.jup,self.jlow)
                 else:
-                    return '%i,%i - %i,%i' \
-                           %(self.vup,self.jup,self.vlow,self.jlow)
-            elif self.molecule.spec_indices == 2 \
-                    or self.molecule.spec_indices == 3:
+                    return r'$\nu=%i$, $J=%i-%i' \
+                           %(self.vup,self.jup,self.jlow)
+            elif self.molecule.isWater():
+                ugly = r'J_{\mathrm{K}_\mathrm{a}, \mathrm{K}_\mathrm{c}}'
+                if self.vup == 0 and self.vlow ==0:
+                    return r'$%s=%i_{%i,%i}-%i_{%i,%i}$'\
+                            %(ugly,self.jup,self.kaup,self.kcup,\
+                              self.jlow,self.kalow,self.kclow)
+                else:
+                    dvup = {1:2, 2:3}
+                    label = r'$\nu_%i=1$, $%s=%i_{%i,%i}-%i_{%i,%i}$'\
+                             %(dvup[self.vup],ugly,self.jup,self.kaup,\
+                               self.kcup,self.jlow,self.kalow,self.kclow)
+                    return label
+            elif not self.molecule.isWater() and \
+                    (self.molecule.spec_indices == 2 \
+                     or self.molecule.spec_indices == 3):
                 return '%i,%i$_{%i}$ - %i,%i$_{%i}$'\
                        %(self.vup,self.jup,self.nup,self.vlow,self.jlow,\
                          self.nlow)
@@ -1424,8 +1513,73 @@ class Transition():
         #   should be model independent.
         return LPTools.getPeakLPData(lprof=self.lpdata[0],\
                                      info_path=info_path)
+    
+    
+    def setIntIntPacs(self,fn,dint,dint_err,st_blends=None):
+        
+        """
+        Set the integrated intensity for this transition measured in given 
+        filename. (in SI units of W/m2)
+        
+        A negative value is given for those lines suspected of being in a blend
+        both by having at least 2 model transitions in a fitted line's breadth
+        or by having a fitted_fwhm/pacs_fwhm of ~ 1.4 or more.
+        
+        @param fn: The data filename of PACS that contains the measured 
+                   integrated intensity.
+        @type fn: string
+        @param dint: The value for the integrated intensity in W/m2.
+        @type dint: float
+        @param dint_err: The fitting uncertainty on the intensity  + absolute 
+                         flux calibration uncertainty of 20%.
+        @type dint_err: float
+        
+        @keyword st_blends: List of sample transitions involved in a line blend
+                            detected by finding multiple central wavs in a PACS
+                            wavelength resolution bin
+        
+                            (default: None)
+        @type st_blends: list[Transition()]
+        """
+        
+        self.intintpacs[fn] = float(dint)
+        self.intinterrpacs[fn] = float(dint_err)
+        self.intintpacs_blends[fn] = st_blends
         
     
+    def getIntIntPacs(self,fn):
+    
+        '''
+        If already set, the integrated intensity can be accessed here based on
+        filename (multiple measurements can be available for a single 
+        transition). 
+        
+        Always set and returned in W/m2!
+        
+        Must have been set through setIntIntPacs()! Otherwise returns None.
+        
+        A negative value is given for those lines suspected of being in a blend
+        both by having at least 2 model transitions in a fitted line's breadth
+        or by having a fitted_fwhm/pacs_fwhm of ~ 1.4 or more.
+        
+        @param fn: The data filename of PACS that contains the measured 
+                   integrated intensity.
+        @type fn: string
+        
+        @return: The integrated intensity measured in PACS for this filename, 
+                 in SI units of W/m2, and the fitting uncertainty + absolute 
+                 flux calibration uncertainty of 20%.
+        @rtype: (float,float)
+        
+        '''
+        
+        if self.intintpacs.has_key(fn):
+            return (self.intintpacs[fn],\
+                    self.intinterrpacs[fn],\
+                    self.intintpacs_blends[fn])
+        else:
+            return (None,None,None)
+        
     
     def getLoglikelihood(self):
         
