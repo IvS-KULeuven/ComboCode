@@ -637,7 +637,7 @@ class Pacs(Instrument):
         print '** Reading PACS native resolution.'
         reso_wave_list,reso_delta_list \
                 = self.getPacsResolution(filename=os.path.join(\
-                                                path_combocode,'Data',\
+                                                self.path_combocode,'Data',\
                                                 'Pacs_Resolution.dat'))
         
         #- Make interpolators for every order
