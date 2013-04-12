@@ -399,10 +399,14 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
              if list(yi) and yi <> None]
         for index,(xi,yi,lp) in enumerate(these_data):
             if index in ddict['histoplot']:
-                sub.step(xi,yi,lp,where='mid',\
+                leg = sub.step(xi,yi,lp,where='mid',\
                          linewidth=(thick_lw_data and linewidth*2 or linewidth))
             else:
-                sub.plot(xi,yi,lp,linewidth= linewidth)
+                leg = sub.plot(xi,yi,lp,linewidth= linewidth)
+            if '--' in lp:
+                leg[0].set_dashes([15,5])
+            if '.-' in lp or '-.' in lp:
+                leg[0].set_dashes([15,5,2,5])
         if keytags and itile == len(data)-1:
             lg = pl.legend(tuple(keytags),loc=(0,0),prop=\
                     pl.matplotlib.font_manager.FontProperties(size=fontsize_key))
@@ -1070,6 +1074,8 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                 leg = sub.plot(xi,yi,lp,linewidth=linewidth)
             if '--' in lp:
                 leg[0].set_dashes([15,5])
+            if '.-' in lp or '-.' in lp:
+                leg[0].set_dashes([15,5,2,5])
             legends.append(leg)
             if xerri <> None: 
                 sub.errorbar(x=xi,y=yi,xerr=xerri,fmt=None,\

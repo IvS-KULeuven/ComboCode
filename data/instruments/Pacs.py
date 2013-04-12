@@ -23,8 +23,10 @@ from cc.tools.io import Database
 from cc.data import Data
 
 def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
+                     mark_trans=[],extra_marker=r'\tablefootmark{f}',\
+                     blend_mark=r'\tablefootmark{$\star$}',\
                      path_pacs=os.path.join(os.path.expanduser('~'),\
-                                            'Data','PACS'),\
+                                            'Data','PACS'),sort_freq=1,\
                      path_combocode=os.path.join(os.path.expanduser('~'),\
                                                  'ComboCode')):
 
@@ -54,6 +56,19 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                     
                     (default: None)
     @type dpacs: dict(Pacs())
+    @keyword blend_mark: The marker used for blended lines.
+    
+                         (default: \tablefootmark{$\star$})
+    @type blend_mark: string
+    @keyword mark_trans: If a subset of transitions has to be marked with an 
+                         extra mark, they are included in this list.
+                         
+                         (default: [])
+    @type mark_trans: list
+    @keyword extra_marker: The marker used for the subset mark_trans
+    
+                           (default: \tablefootmark{f})
+    @type extra_marker: string
     @keyword searchstring: the searchstring conditional for the auto-search, if 
                            data have not been read into given Pacs objects or 
                            if new Pacs objects are generated.
@@ -64,12 +79,27 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
         
                              (default: '~/ComboCode/')
     @type path_combocode: string
+    @keyword sort_freq: Sort the transitions on frequency. Otherwise sort on 
+                        wavelength.
+    
+                        (default: 1)
+    @type sort_freq: bool
     
     '''
     
     #-- Keep track of the transitions for each star seperately.
     dtrans = dict()
-    trans = sorted(trans,key=lambda x: (x.molecule.molecule_index,x.frequency))
+    trans = sorted(trans,\
+                   key=lambda x: sort_freq and x.frequency or x.wavelength)
+    #-- Reset the integrated line strength info in the transitions, in case it 
+    #   was already set previously. There's no way to be sure for every trans
+    #   individually if the match-up has been done before. And in addition, it
+    #   needs to be done for every star separately. So play safe, and reset in 
+    #   the sample transition list.
+    for t in trans:
+        t.intintpacs = dict()
+        t.intinterrpacs = dict()
+        t.intintpacs_blends = dict()
     for star in stars:
         if not dpacs.has_key(star):
             dpacs[star] = Pacs(star,6,path_pacs,path_linefit='lineFit',\
@@ -94,18 +124,18 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                                      keyword='NAME_PLOT',make_float=0,\
                                      filename='Molecule.dat')
     inlines = []
-    inlines.append('&'.join(['','','']+pstars[:-1]+[r'%s \\\hline'%pstars[-1]]))
+    inlines.append('&'.join(['','','','','']+pstars[:-1]+[r'%s \\\hline'%pstars[-1]]))
     
-    inlines.append('&'.join(['Molecule','Transition','$\lambda_0$']+\
+    inlines.append('&'.join(['PACS','Molecule','Vibrational','Rotational','$\lambda_0$']+\
                    [r'\multicolumn{%i}{c}{$F_\mathrm{int}$} \\'%len(pstars)]))
-    inlines.append('&'.join(['','',r'$\mu$m']+\
+    inlines.append('&'.join(['Band','','State','Transition',r'$\mu$m']+\
                    [r'\multicolumn{%i}{c}{(W/m$^2$)} \\\hline'%len(pstars)]))
     orders = ['R1B','R1A','B2B','B2A']
-    
+    if not sort_freq: orders.reverse()
     for order in orders:
-        inlines.append(r'\multicolumn{3}{c}{PACS Band: %s} & \multicolumn{%i}{c}{} \\\hline'\
-                       %(order,len(pstars)))
-        prev_molec = ''
+        #inlines.append(r'\multicolumn{4}{c}{PACS Band: %s} & \multicolumn{%i}{c}{} \\\hline'\
+                       #%(order,len(pstars)))
+        new_order = 1
         for it,t in enumerate(trans):
             all_ints = set([dtrans[s][it].getIntIntPacs\
                                (os.path.split(dpacs[s].data_filenames[dpacs[s]\
@@ -113,11 +143,28 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                             for s in stars])
             if  all_ints == set([None]):
                 continue
-            if t.molecule.molecule != prev_molec:
-                col1 = all_pmolecs[all_molecs.index(t.molecule.molecule)]
-            else: 
-                col1 = ''
-            parts = [col1,t.makeLabel(),'%.2f'%(t.wavelength*10**4)]
+            all_fintblends = []
+            for thisblend in [dtrans[s][it].getIntIntPacs\
+                               (os.path.split(dpacs[s].data_filenames[dpacs[s]\
+                                        .data_ordernames.index(order)])[1])[2] 
+                              for s in stars]:
+                if not thisblend is None:
+                    all_fintblends.extend(thisblend)
+            all_fintblends = sorted(list(set(all_fintblends)),\
+                                    key=lambda x: sort_freq and x.frequency \
+                                                            or x.wavelength)
+            col1 = all_pmolecs[all_molecs.index(t.molecule.molecule)]
+            if new_order:
+                col0 = order
+                new_order = 0
+            else:
+                col0 = ''
+            parts = [col0,col1,t.makeLabel(return_vib=1),t.makeLabel(inc_vib=0),\
+                     '%.2f'%(t.wavelength*10**4)]
+            extraparts = [['',col1,tb.makeLabel(return_vib=1),\
+                                 tb.makeLabel(inc_vib=0),\
+                                 '%.2f'%(tb.wavelength*10**4)] 
+                          for tb in all_fintblends if tb != t]
             for s in stars:
                 ifn = dpacs[s].data_ordernames.index(order)
                 fn = os.path.split(dpacs[s].data_filenames[ifn])[1]
@@ -125,9 +172,20 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                 if fint is None:
                     parts.append('')
                 else:
-                    parts.append('%.2e (%.1f%s)'%(fint,finterr*100,r'\%'))
+                    parts.append('%s%s%.2e (%.1f%s)'\
+                                 %(t in mark_trans and extra_marker or r'',\
+                                   fint<0 and blend_mark or r'',abs(fint),\
+                                   finterr*100,r'\%'))
+                for tb,ep in zip(all_fintblends,extraparts):
+                    if tb in fintblend:
+                        ep.append('%s'%(tb in mark_trans and extra_marker or ''))
+                    else:
+                        ep.append('')
             parts[-1] = parts[-1] + r'\\'
             inlines.append('&'.join(parts))   
+            for ep in extraparts:
+                ep[-1] = ep[-1] + r'\\'
+                inlines.append('&'.join(ep))   
             prev_molec = t.molecule.molecule
         inlines[-1] = inlines[-1] + r'\hline'
     DataIO.writeFile(filename,input_lines=inlines)
@@ -386,7 +444,7 @@ class Pacs(Instrument):
             #      The *OTHER* transitions found this way are not compared 
             #      with any data and get None. (see point 4) )
             else: 
-                err = sqrt((lf.line_flux_rel[ii]/100**2)+0.2**2)
+                err = sqrt((lf.line_flux_rel[ii]/100)**2+0.2**2)
                 st.setIntIntPacs(fn,-1.*lf.line_flux[ii],err,wf_blends[ii])
                 
                 

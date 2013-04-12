@@ -196,7 +196,8 @@ def makeTransition(trans,star=None,def_molecs=None,\
 
 
 
-def makeTransitionsFromTransList(filename,path_combocode=os.path.join(os.path\
+def makeTransitionsFromTransList(filename,n_entry=14,\
+                                 path_combocode=os.path.join(os.path\
                                             .expanduser('~'),'ComboCode')):
     
     '''
@@ -208,6 +209,11 @@ def makeTransitionsFromTransList(filename,path_combocode=os.path.join(os.path\
     @param filename: The filename to the linelist
     @type filename: string
     
+    @keyword n_entry: The number of entries on the TRANSITION input line, 
+                      including the TRANSITION=MOLECULE entry.
+    
+                      (default: 14)
+    @type n_entry: int
     @keyword path_combocode: The CC home folder
     
                              (default: ~/ComboCode/)
@@ -225,7 +231,7 @@ def makeTransitionsFromTransList(filename,path_combocode=os.path.join(os.path\
                   'p1H1H16O':Molecule.Molecule('p1H1H16O',32,90,1029,\
                                                path_combocode=path_combocode)}
     trl = DataIO.readDict(filename,multi_keys=['TRANSITION'])
-    trl_sorted = DataIO.checkEntryInfo(trl['TRANSITION'],14,'TRANSITION')
+    trl_sorted = DataIO.checkEntryInfo(trl['TRANSITION'],n_entry,'TRANSITION')
     trans = [makeTransition(trans=t,def_molecs=def_molecs,\
                             path_combocode=path_combocode) 
              for t in trl_sorted]
@@ -481,10 +487,10 @@ class Transition():
                 telescope = telescope.replace('-H2O','')
             elif telescope.find('H2O') == -1 and telescope.find('PACS') != -1 \
                     and self.molecule.isWater():
-                print 'WARNING! Water lines should not be included in the ' + \
-                      '%s.spec file. Create a file with the '%telescope + \
-                      'same name, appending -H2O to the telescope name and ' +\
-                      'removing all LINE_SPEC lines.'
+                #print 'WARNING! Water lines should not be included in the ' +\
+                      #'%s.spec file. Create a file with the '%telescope + \
+                      #'same name, appending -H2O to the telescope name and '+\
+                      #'removing all LINE_SPEC lines.'
                 telescope = '%s-H2O'%telescope
             self.telescope = telescope
         self.vup = int(vup)
@@ -892,15 +898,26 @@ class Transition():
         self.frequency = float(self.radiat_trans['frequency'])
          
 
-    def makeLabel(self):
+    def makeLabel(self,inc_vib=1,return_vib=0):
         
         '''
         Return a short-hand label for this particular transition. 
         
         These labels can be used for plot line identifications for instance.
         
-        If vibrational is not None, it always concerns a line list and is 
+        If self.vibrational is not None, it always concerns a line list and is 
         included as well.
+        
+        @keyword inc_vib: Include the vibrational state in the label. Is always
+                          True is self.vibrational is not None.
+        
+                          (default: 1)
+        @type inc_vib: bool
+        @keyword return_vib: Only return a label for the vibrational state. 
+                             Does not work if vibrational is not None.
+        
+                             (default: 0)
+        @type return_vib: bool
         
         @return: The transition label
         @rtype: string
@@ -926,23 +943,32 @@ class Transition():
                          self.kcup,self.vlow,self.jlow,self.kalow,self.kclow)
         else:
             if not self.molecule.spec_indices:
-                if self.vup == 0 and self.vlow ==0:
-                    return r'$J=%i-%i$' %(self.jup,self.jlow)
+                if (self.vup == 0 and self.vlow ==0) or not inc_vib\
+                        and not return_vib:
+                    return r'$J=%i - %i$' %(self.jup,self.jlow)
+                elif return_vib:
+                    return r'$\nu=%i$' %(self.vup)
                 else:
                     return r'$\nu=%i$, $J=%i-%i' \
                            %(self.vup,self.jup,self.jlow)
             elif self.molecule.isWater():
                 ugly = r'J_{\mathrm{K}_\mathrm{a}, \mathrm{K}_\mathrm{c}}'
-                if self.vup == 0 and self.vlow ==0:
-                    return r'$%s=%i_{%i,%i}-%i_{%i,%i}$'\
+                if ((self.vup == 0 and self.vlow ==0) or not inc_vib) \
+                        and not return_vib:
+                    return r'$%s=%i_{%i,%i} - %i_{%i,%i}$'\
                             %(ugly,self.jup,self.kaup,self.kcup,\
                               self.jlow,self.kalow,self.kclow)
+                elif return_vib:
+                    if self.vup == 0:
+                        return r'$\nu=0$'
+                    else:
+                        dvup = {1:2, 2:3}
+                        return r'$\nu_%i=1$'%(dvup[self.vup])
                 else:
                     dvup = {1:2, 2:3}
-                    label = r'$\nu_%i=1$, $%s=%i_{%i,%i}-%i_{%i,%i}$'\
+                    return r'$\nu_%i=1$, $%s=%i_{%i,%i} - %i_{%i,%i}$'\
                              %(dvup[self.vup],ugly,self.jup,self.kaup,\
                                self.kcup,self.jlow,self.kalow,self.kclow)
-                    return label
             elif not self.molecule.isWater() and \
                     (self.molecule.spec_indices == 2 \
                      or self.molecule.spec_indices == 3):
@@ -1540,6 +1566,7 @@ class Transition():
         
                             (default: None)
         @type st_blends: list[Transition()]
+        
         """
         
         self.intintpacs[fn] = float(dint)

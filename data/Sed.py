@@ -126,11 +126,13 @@ class Sed(object):
         cc_path = os.path.join(self.path_combocode,'Data')
         all_data_types = DataIO.getInputData(path=cc_path,keyword='DATA_TYPES',\
                                              filename='Dust.dat')
-        searchpath = os.path.join(self.path,'*_%s.dat'%self.star_name)
-        data_list = [os.path.split(f)[1].replace('_%s.dat'%self.star_name,'') 
-                     for f in glob(searchpath)] 
+        searchpath = os.path.join(self.path,'*_%s*.dat'%self.star_name)
+        all_files = glob(searchpath)
+        data_list = [os.path.split(f)[1].split('_')[0]
+                     for f in all_files] 
         self.data_types = [dt for dt in data_list if dt in all_data_types]
-            
+        self.data_filenames = [fn for fn,dt in zip(all_files,data_list)
+                               if dt in all_data_types]
         
     
     def readData(self):
@@ -140,16 +142,15 @@ class Sed(object):
         
         '''
         
-        for dt in self.data_types:
-            inputfile = os.path.join(self.path,'%s_%s.dat'%(dt,self.star_name))
-            data = DataIO.readCols(inputfile,nans=1)
+        for dt,fn in zip(self.data_types,self.data_filenames):
+            data = DataIO.readCols(fn,nans=1)
             data_sorted = array([(x,y) 
                                  for x,y in sorted(zip(data[0],data[1]),\
                                                    key=operator.itemgetter(0)) 
                                  if y])
             self.data_raw[dt] = (data_sorted[:,0],data_sorted[:,1])
             
-        print '** LWS is not being aligned automatically with SWS for now.'
+        #print '** LWS is not being aligned automatically with SWS for now.'
         #- Check if SWS and LWS are present (for now, LWS is not aligned automatically)
         # included_sws = [(data_type,i) 
         #                for i,(data_type,boolean) in enumerate(zip(data_types,\
