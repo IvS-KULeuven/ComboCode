@@ -222,7 +222,7 @@ class Sed(object):
 def getExtinctionCurve(gal_position='ism',curve_type='chiar_tielens',\
                        av_to_ak_conv=0.112,\
                        path=os.path.join(os.path.expanduser('~'),'MCMax',\
-                                         'Data','Extinction_Curves')):
+                                         'Extinction_Curves')):
     
     """
     Read extinction curve.
@@ -246,7 +246,7 @@ def getExtinctionCurve(gal_position='ism',curve_type='chiar_tielens',\
     @type av_to_ak_conv: float
     @keyword path: path for extinction curve data
     
-                   (default: '~/MCMax/extinction_curves/')
+                   (default: '~/MCMax/Extinction_Curves/')
     @type path: string
     
     @return: The wavelength grid and extinction curve values

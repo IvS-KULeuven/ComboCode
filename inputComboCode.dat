@@ -40,7 +40,7 @@ SPIRE_SEARCHSTRING=oversampling2           #searchstring used when looking for d
 SPIRE_RESOLUTION=2                       # The resolution of the SPire spectrum in cm^-1
 
 #-- SED data selection and plotting
-PATH_SED=/home/robinl/MCMax/Data/    #Path to the Data folder where the text files with SED data are stored. Leave open if no data are to be plotted.
+PATH_SED=/home/robinl/Data/SED/    #Path to the Data folder where the text files with SED data are stored. Leave open if no data are to be plotted.
 
 #-- Continuum division for select features in the SED is possible, for comparison between data and model
 CONTDIV_FEATURES= #H2O3.1&MGS       # For now only the 3.1 water ice feature (H2O3.1) and the 30 micron MgS feature (MGS) are available
