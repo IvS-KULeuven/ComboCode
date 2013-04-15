@@ -30,17 +30,18 @@ class Radiat():
         '''
         Initializing an instance of the Radiat class.
         
-        @param molecule: The molecule (short hand name) for which radiat info is 
-                         loaded.
+        @param molecule: The molecule (short hand name) for which radiat info 
+                         is loaded.
         @type molecule: Molecule()
+        
         @keyword use_indices_dat: If True, get the radiat filename from 
                                   ~/ComboCode/Data/Indices.dat
                                         
                                   (default: 0)
         @type use_indices_dat: bool
         @keyword path: The path where the radiat file can be found. Uses 
-                       radiat_backup appended to the path in case use_indices_dat
-                       is True.
+                       radiat_backup appended to the path in case 
+                       use_indices_dat is True.
                             
                        (default: ~/GASTRoNOoM/src/data/)
         @type path: string

@@ -188,7 +188,8 @@ class PeakStats(Statistics):
             for mt,st in zip(mtrans,self.sample_trans[fn]):
                 #   4) No trans == sample_trans found for this model, or sample
                 #      trans does not contain a PACS integrated intensity.
-                if mt is None or st.getIntIntPacs(fn)[0] is None:
+                if mt is None or st.getIntIntPacs(fn)[0] is None or \
+                        st.getIntIntPacs(fn)[0] == 'inblend':
                     these_ratios.append(None)
                     these_errs.append(None)
                

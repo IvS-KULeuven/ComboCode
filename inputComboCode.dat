@@ -64,7 +64,7 @@ PRINT_MODEL_INFO=1                  # Print extra model info at the end of a CC 
 ####################################################################################################################
 # Star
 ####################
-STAR_NAME=llpeg                         # Stellar Name (lower cases, no spaces, only SIMBAD name is accepted, greek letters written in full, omicron = o)
+STAR_NAME=afgl3068                         # Stellar Name (lower cases, no spaces, only SIMBAD name is accepted, greek letters written in full, omicron = o)
 T_STAR=2400                             # Stellar temperature [K]
 M_STAR=1.0                          # Stellar mass [Msol]
 L_STAR=11000                            # Stellar luminosity [Lsol]

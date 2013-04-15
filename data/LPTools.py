@@ -258,7 +258,7 @@ def fitFunction(x,y,initial,function,vary):
     #   1. setup model    
     #mymodel = funclib.soft_parabola()
     if function == funclib.gauss and False in vary:
-       mymodel = function(use_jacobian=False)
+        mymodel = function(use_jacobian=False)
     else:
         mymodel = function()
     #   2. Initial values: e.g. for SP [int,vlsr,vexp,gamma] 

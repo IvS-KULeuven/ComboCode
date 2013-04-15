@@ -517,59 +517,15 @@ class Star(dict):
         if type(self['LL_NO_VIB']) is not types.ListType:
             self['LL_NO_VIB'] = [self['LL_NO_VIB']]
         for molec in self['GAS_LIST']:
-            radiat = molec.radiat
-            wave = radiat.getFrequency(unit=self['LL_UNIT'])
-            low = radiat.getLowerStates()
-            up = radiat.getUpperStates()
             for telescope in self['LL_TELESCOPE']:
-                if not molec.spec_indices:
-                    #- molec.ny_low is the number of levels in gs vib state
-                    #- molec.ny_up is the number of levels above gs vib state
-                    #- generally ny_up/ny_low +1 is the number of vib states
-                    ny_low = molec.ny_low
-                    n_vib = int(molec.ny_up/ny_low) + 1 
-                    indices = [[i+1,int(i/ny_low),i-ny_low*int(i/ny_low)]
-                               for i in xrange(molec.ny_low*n_vib)]
-                    new_lines = [Transition.Transition(\
-                                    molecule=molec,telescope=telescope,\
-                                    vup=int(indices[u-1][1]),\
-                                    jup=int(indices[u-1][2]),\
-                                    vlow=int(indices[l-1][1]),\
-                                    jlow=int(indices[l-1][2]),\
-                                    offset=self['LL_OFFSET'],\
-                                    n_quad=self['N_QUAD'],\
-                                    use_maser_in_sphinx=\
-                                                  self['USE_MASER_IN_SPHINX'],\
-                                    path_combocode=self.path_combocode,\
-                                    path_gastronoom=self.path_gastronoom)
-                                 for l,u,w in zip(low,up,wave)
-                                 if w > self['LL_MIN'] and w < self['LL_MAX']]
-                else:
-                    indices = molec.radiat_indices
-                    quantum = ['v','j','ka','kc']
-                    new_lines = [] 
-                    for l,u,w in zip(low,up,wave):
-                        if w > self['LL_MIN'] and w < self['LL_MAX']:
-                            quantum_dict = dict()
-                            #- some molecs only have 2 or 3 quantum numbers
-                            for i in xrange(1,len(indices[0])):    
-                                quantum_dict[quantum[i-1]+'up'] = \
-                                                        int(indices[u-1][i])
-                                quantum_dict[quantum[i-1]+'low'] = \
-                                                        int(indices[l-1][i])
-                            new_lines.append(Transition.Transition(\
-                                        molecule=molec,\
-                                        telescope=telescope,\
-                                        offset=self['LL_OFFSET'],\
-                                        n_quad=self['N_QUAD'],\
-                                        path_combocode=self.path_combocode,\
-                                        use_maser_in_sphinx=\
-                                                  self['USE_MASER_IN_SPHINX'],\
-                                        path_gastronoom=self.path_gastronoom,\
-                                        **quantum_dict)) 
-                if molec.molecule in self['LL_NO_VIB']:
-                    new_lines = [line for line in new_lines if line.vup == 0]
-            gas_list.extend(new_lines)
+                nl = Transition.makeTransitionsFromRadiat(molec=molec,\
+                            telescope=telescope,ll_min=self['LL_MIN'],\
+                            ll_max=self['LL_MAX'],ll_unit=self['LL_UNIT'],\
+                            n_quad=self['N_QUAD'],offset=self['LL_OFFSET'],\
+                            use_maser_in_sphinx=self['USE_MASER_IN_SPHINX'],\
+                            path_gastronoom=self.path_gastronoom,\
+                            no_vib=molec.molecule in self['LL_NO_VIB'])
+            gas_list.extend(nl)
         self['GAS_LINES'] = tuple(set(gas_list))
 
 

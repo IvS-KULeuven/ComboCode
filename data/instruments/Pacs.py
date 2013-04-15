@@ -96,10 +96,10 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
     #   individually if the match-up has been done before. And in addition, it
     #   needs to be done for every star separately. So play safe, and reset in 
     #   the sample transition list.
-    for t in trans:
-        t.intintpacs = dict()
-        t.intinterrpacs = dict()
-        t.intintpacs_blends = dict()
+    for tr in trans:
+        tr.intintpacs = dict()
+        tr.intinterrpacs = dict()
+        tr.intintpacs_blends = dict()
     for star in stars:
         if not dpacs.has_key(star):
             dpacs[star] = Pacs(star,6,path_pacs,path_linefit='lineFit',\
@@ -116,7 +116,6 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                                   keyword='STAR_NAME_PLOTS')[istar]
               for istar in istars]
     pstars = [s.replace('_',' ') for s in pstars]
-    these_molecs = [t.molecule.molecule for t in trans]
     all_molecs = DataIO.getInputData(path=os.path.join(path_combocode,'Data'),\
                                      keyword='TYPE_SHORT',make_float=0,\
                                      filename='Molecule.dat')
@@ -125,7 +124,6 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                                      filename='Molecule.dat')
     inlines = []
     inlines.append('&'.join(['','','','','']+pstars[:-1]+[r'%s \\\hline'%pstars[-1]]))
-    
     inlines.append('&'.join(['PACS','Molecule','Vibrational','Rotational','$\lambda_0$']+\
                    [r'\multicolumn{%i}{c}{$F_\mathrm{int}$} \\'%len(pstars)]))
     inlines.append('&'.join(['Band','','State','Transition',r'$\mu$m']+\
@@ -143,16 +141,6 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                             for s in stars])
             if  all_ints == set([None]):
                 continue
-            all_fintblends = []
-            for thisblend in [dtrans[s][it].getIntIntPacs\
-                               (os.path.split(dpacs[s].data_filenames[dpacs[s]\
-                                        .data_ordernames.index(order)])[1])[2] 
-                              for s in stars]:
-                if not thisblend is None:
-                    all_fintblends.extend(thisblend)
-            all_fintblends = sorted(list(set(all_fintblends)),\
-                                    key=lambda x: sort_freq and x.frequency \
-                                                            or x.wavelength)
             col1 = all_pmolecs[all_molecs.index(t.molecule.molecule)]
             if new_order:
                 col0 = order
@@ -161,32 +149,21 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                 col0 = ''
             parts = [col0,col1,t.makeLabel(return_vib=1),t.makeLabel(inc_vib=0),\
                      '%.2f'%(t.wavelength*10**4)]
-            extraparts = [['',col1,tb.makeLabel(return_vib=1),\
-                                 tb.makeLabel(inc_vib=0),\
-                                 '%.2f'%(tb.wavelength*10**4)] 
-                          for tb in all_fintblends if tb != t]
             for s in stars:
                 ifn = dpacs[s].data_ordernames.index(order)
                 fn = os.path.split(dpacs[s].data_filenames[ifn])[1]
                 fint,finterr,fintblend = dtrans[s][it].getIntIntPacs(fn)
                 if fint is None:
-                    parts.append('')
+                    parts.append(r'/')
+                elif fint == 'inblend':
+                    parts.append('Blended')
                 else:
                     parts.append('%s%s%.2e (%.1f%s)'\
                                  %(t in mark_trans and extra_marker or r'',\
                                    fint<0 and blend_mark or r'',abs(fint),\
                                    finterr*100,r'\%'))
-                for tb,ep in zip(all_fintblends,extraparts):
-                    if tb in fintblend:
-                        ep.append('%s'%(tb in mark_trans and extra_marker or ''))
-                    else:
-                        ep.append('')
             parts[-1] = parts[-1] + r'\\'
             inlines.append('&'.join(parts))   
-            for ep in extraparts:
-                ep[-1] = ep[-1] + r'\\'
-                inlines.append('&'.join(ep))   
-            prev_molec = t.molecule.molecule
         inlines[-1] = inlines[-1] + r'\hline'
     DataIO.writeFile(filename,input_lines=inlines)
     
@@ -422,21 +399,23 @@ class Pacs(Instrument):
                                 and wf_blends[ii].index(st) != 0
                    for st,(match,ii) in zip(strans,matches)]
         for st,blend,(match,ii) in zip(strans,blended,matches):
-            #   4) No match found in linefit for this band, or line is 
-            #      blended with other line that is already added: no 
+            #   4) No match found in linefit for this band: no 
             #      integrated intensity is set for this filename in this  
             #      transition. Simply move on to the next transtion. (not 
             #      setting gives None when asking Trans for intintpacs)
-            if match is None or blend:
+            if match is None:
                 continue
-            #   5) Match found with a wave_fit value once. Check for line 
+            #   5) Line is blended with other line that is already added.
+            elif blend:
+                st.setIntIntPacs(fn,'inblend',None)
+            #   6) Match found with a wave_fit value once. Check for line 
             #      blend IN DATA: Check the ratio fitted FWHM/PACS FWHM. If
-            #       larger by 30% or more, put the int int negative. 
+            #      larger by 30% or more, put the int int negative. 
             elif len(wf_blends[ii]) == 1:
                 err = sqrt((lf.line_flux_rel[ii]/100)**2+0.2**2)
-                factor = lf.fwhm_rel[ii] >= 1.3 and -1 or 1
+                factor = lf.fwhm_rel[ii] >= 1.2 and -1 or 1
                 st.setIntIntPacs(fn,factor*lf.line_flux[ii],err)
-            #   6) If multiple matches, give a selection of strans included
+            #   7) If multiple matches, give a selection of strans included
             #      in the blend (so they can be used to select model 
             #      specific transitions later for addition of the 
             #      integrated intensities of the mtrans). Make intintpacs 

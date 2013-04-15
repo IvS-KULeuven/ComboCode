@@ -336,8 +336,7 @@ class Molecule():
                                         start_index=4)[self.indices_index]
                     filename = os.path.join(path,'indices_backup',f)
                 else:
-                    filename = os.path.join(path,'sphinx_indices_filename_%s.dat'\
-                                            %self.molecule)
+                    filename = os.path.join(path,'%s_indices.dat'%self.molecule)
                 self.radiat_indices = [[int(i) for i in line] 
                                      for line in DataIO.readFile(filename,' ')]
         else:

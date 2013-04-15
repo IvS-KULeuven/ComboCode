@@ -313,6 +313,104 @@ def makeTransitionFromSphinx(filename,path_combocode=os.path.join(os.path\
 
 
 
+def makeTransitionsFromRadiat(molec,telescope,ll_min,ll_max,ll_unit='GHz',\
+                              n_quad=100,offset=0.0,use_maser_in_sphinx=0,\
+                              path_gastronoom=None,no_vib=0):
+    
+    '''
+    Make Transition() objects from a Radiat file of a molecule, within a given
+    wavelength/frequency range. 
+    
+    Requires a Molecule() object to work!
+    
+    @param molec: The molecule for which the line list is made.
+    @type molec: Molecule()
+    @param telescope: The telescope for which the Transition() list is made.
+    @type telescope: string
+    @param ll_min: The minimum allowed wavelength/frequency for the transitions
+    @type ll_min: float
+    @param ll_max: The maximum allowed wavelength/frequency for the transitions
+    @type ll_max: float
+    
+    @keyword ll_unit: The unit of the wavelength/frequency range. Can be: GHz, 
+                      MHz, Hz, MICRON, MM, CM, M
+    
+                      (default: 'GHz')
+    @type ll_unit: string
+    @keyword n_quad: The N_QUAD value for GASTRoNOoM sphinx calculations. 
+    
+                     (default: 100)
+    @type n_quad: int
+    @keyword offset: The offset from center position for calculations in sphinx
+    
+                     (default: 0.0)
+    @type offset: float
+    @keyword use_maser_in_spinx: using maser calc in sphinx code
+                                     
+                                     (default: 0)
+    @type use_maser_in_spinx: bool
+    @keyword path_gastronoom: model output folder in the GASTRoNOoM home
+        
+                              (default: None)
+    @type path_gastronoom: string
+    @keyword no_vib: Do not include vibrational states in the output list.
+                     
+                     (default: 0)
+    @type no_vib: bool
+    
+    @return: The newly made Transition() objects for all transitions in range
+    @rtype: list[Transition()]    
+    
+    '''
+    
+    radiat = molec.radiat
+    wave = radiat.getFrequency(unit=ll_unit)
+    low = radiat.getLowerStates()
+    up = radiat.getUpperStates()
+    if not molec.spec_indices:
+        #- molec.ny_low is the number of levels in gs vib state
+        #- molec.ny_up is the number of levels above gs vib state
+        #- generally ny_up/ny_low +1 is the number of vib states
+        ny_low = molec.ny_low
+        n_vib = int(molec.ny_up/ny_low) + 1 
+        indices = [[i+1,int(i/ny_low),i-ny_low*int(i/ny_low)]
+                    for i in xrange(molec.ny_low*n_vib)]
+        nl = [Transition(molecule=molec,telescope=telescope,\
+                         vup=int(indices[u-1][1]),\
+                         jup=int(indices[u-1][2]),\
+                         vlow=int(indices[l-1][1]),\
+                         jlow=int(indices[l-1][2]),\
+                         offset=offset,n_quad=n_quad,\
+                         use_maser_in_sphinx=use_maser_in_sphinx,\
+                         path_combocode=molec.path_combocode,\
+                         path_gastronoom=path_gastronoom)
+              for l,u,w in zip(low,up,wave)
+              if w > ll_min and w < ll_max]
+    else:
+        indices = molec.radiat_indices
+        quantum = ['v','j','ka','kc']
+        nl = [] 
+        for l,u,w in zip(low,up,wave):
+            if w > ll_min and w < ll_max:
+                quantum_dict = dict()
+                #- some molecs only have 2 or 3 quantum numbers
+                for i in xrange(1,len(indices[0])):    
+                    quantum_dict[quantum[i-1]+'up'] = \
+                                            int(indices[u-1][i])
+                    quantum_dict[quantum[i-1]+'low'] = \
+                                            int(indices[l-1][i])
+                nl.append(Transition(molecule=molec,n_quad=n_quad,\
+                                     telescope=telescope,offset=offset,\
+                                     path_combocode=molec.path_combocode,\
+                                     use_maser_in_sphinx=use_maser_in_sphinx,\
+                                     path_gastronoom=path_gastronoom,\
+                                     **quantum_dict))
+    if no_vib:
+        nl = [line for line in nl if line.vup == 0]
+    return nl
+
+
+
 def checkUniqueness(trans_list):
     
     '''
@@ -665,10 +763,11 @@ class Transition():
         
         #- get telescope diameter in cm
         if 'PACS' in self.telescope.upper():
-            wav = array([55.,68,73,75,84,94,110,136,145,150,168,187])/10000.
-            beam = array([8.4875,8.19,8.19,8.4525,8.2875,8.45,9.0625,9.6875,\
-                          9.96,10.5425,11.0125,11.96])
-            interp = interp1d(wav,beam)
+            data = DataIO.readCols(os.path.join(self.path_combocode,'Data',\
+                                                'Pacs_beamsize_v4.dat'))
+                                                
+            #-- Go from micron to cm. self.wavelength is in cm!
+            interp = interp1d(data[0]/10000.,data[1])
             try:
                 return interp(self.wavelength)
             except ValueError:
@@ -943,7 +1042,7 @@ class Transition():
                          self.kcup,self.vlow,self.jlow,self.kalow,self.kclow)
         else:
             if not self.molecule.spec_indices:
-                if (self.vup == 0 and self.vlow ==0) or not inc_vib\
+                if ((self.vup == 0 and self.vlow ==0) or not inc_vib)\
                         and not return_vib:
                     return r'$J=%i - %i$' %(self.jup,self.jlow)
                 elif return_vib:
@@ -1554,8 +1653,10 @@ class Transition():
         @param fn: The data filename of PACS that contains the measured 
                    integrated intensity.
         @type fn: string
-        @param dint: The value for the integrated intensity in W/m2.
-        @type dint: float
+        @param dint: The value for the integrated intensity in W/m2. If the 
+                     line is part of a blend that has already been added, this
+                     may also say 'inblend'.
+        @type dint: float or string
         @param dint_err: The fitting uncertainty on the intensity  + absolute 
                          flux calibration uncertainty of 20%.
         @type dint_err: float
@@ -1569,8 +1670,11 @@ class Transition():
         
         """
         
-        self.intintpacs[fn] = float(dint)
-        self.intinterrpacs[fn] = float(dint_err)
+        if dint == 'inblend':
+            self.intintpacs[fn] = dint
+        else:
+            self.intintpacs[fn] = float(dint)
+        self.intinterrpacs[fn] = dint_err <> None and float(dint_err) or None
         self.intintpacs_blends[fn] = st_blends
         
     
