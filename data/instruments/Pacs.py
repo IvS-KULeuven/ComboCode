@@ -128,7 +128,7 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                    [r'\multicolumn{%i}{c}{$F_\mathrm{int}$} \\'%len(pstars)]))
     inlines.append('&'.join(['Band','','State','Transition',r'$\mu$m']+\
                    [r'\multicolumn{%i}{c}{(W/m$^2$)} \\\hline'%len(pstars)]))
-    orders = ['R1B','R1A','B2B','B2A']
+    orders = ['R1B','R1A','B2B','B2A','B3A']
     if not sort_freq: orders.reverse()
     for order in orders:
         #inlines.append(r'\multicolumn{4}{c}{PACS Band: %s} & \multicolumn{%i}{c}{} \\\hline'\
