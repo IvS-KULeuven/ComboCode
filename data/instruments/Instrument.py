@@ -121,7 +121,7 @@ class Instrument(object):
                 for f in glob(os.path.join(self.path_instrument,\
                                            self.star_name,'cont_subtracted',\
                                            '*'+searchstring+'*'))
-                if f[-1] != '~']
+                if f[-1] != '~' and f[-7:] != '.tar.gz']
                      
 
 
