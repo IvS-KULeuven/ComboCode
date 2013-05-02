@@ -9,13 +9,13 @@ Author: R. Lombaert
 
 import os
 import scipy
-from scipy import argmin,array,sqrt
+from scipy import argmin,array,sqrt,log10
 import operator
 
 from cc.tools.io import DataIO
 from cc.modeling.objects import Transition
 from cc.statistics.Statistics import Statistics
-from cc.statistics.BasicStats import calcChiSquared
+from cc.statistics import BasicStats as bs
 from cc.plotting import Plotting2
 
 
@@ -66,13 +66,21 @@ class PeakStats(Statistics):
         self.sample_trans = dict()
         self.central_mwav = dict()
         
-        #-- Remember the peak and integrated intensity ratios, and chi^2. 
-        ##   key: filename
+        #-- Remember the peak and integrated flux ratios, and individual chi^2 
+        #   of the mint-dint comparison.
+        #   key: filename
         #   value: dict([instrument based id, list[float] or float])
         self.peak_ratios = dict()     
         self.int_ratios = dict()
         self.int_ratios_err = dict()
-        self.chi2 = dict()
+        self.chi2_intsi = dict()
+        
+        #-- Remember chi2 per model for integrated line strengths and straight 
+        #   up comparison between convolved model and observed spectrum.
+        #   key: instrument based id
+        #   value: float
+        self.chi2_inttot = dict()
+        self.chi2_con = dict()
         
         #-- Set the upper and lower data noise limits
         upper_limits = dict()
@@ -148,10 +156,60 @@ class PeakStats(Statistics):
             self.__setPeakRatios(ifn,fn)
             if self.instrument == 'PACS' and inst.linefit <> None:
                 self.__setIntRatios(ifn,fn)
+        
+        self.calcChiSquared()
         print '***********************************'
                 
                 
                 
+    def calcChiSquared(self):
+        
+        '''
+        Calculate the chi_squared value for given models and data. 
+        
+        If integrated fluxes are available, they are used without the line 
+        blends. 
+        
+        If not, the modeled, convolved spectrum is compared directly with the 
+        data, where the model is not just 0 flux.
+        
+        '''
+        
+        inst = self.instruments[self.instrument]
+        for star in self.star_grid:
+            this_id = star['LAST_%s_MODEL'%self.instrument]
+        
+            #-- Get all integrate flux chi2s, add them up for a single model
+            #   and divide by the amount of comparisons. Line blends not incl. 
+            #   If no integrated flux available, set chi2_inttot[this_id] to 0
+            all_chi2s = []
+            [all_chi2s.extend(dd[this_id]) for dd in self.chi2_intsi.values()]
+            if not all_chi2s:
+                self.chi2_inttot[this_id] = 0
+            else:
+                self.chi2_inttot[this_id] = sum(all_chi2s)/len(all_chi2s)
+        
+            #-- Calculate chi2 based on the convolved model with respect to the
+            #   continuum-subtracted data.
+            all_dflux = []
+            all_mflux = []
+            all_dstd = []
+            for fn,dflux in zip(inst.data_filenames,inst.data_flux_list):
+                fn = os.path.split(fn)[1]
+                dstd = self.data_stats[self.instrument][fn]['std']
+                sphinx_file = os.path.join(os.path.expanduser('~'),\
+                                           'GASTRoNOoM',self.path_code,\
+                                           'stars',self.star_name,\
+                                           '%s_results'%self.instrument,\
+                                           this_id,'%s_%s'%('sphinx',fn))
+                mflux = DataIO.readCols(sphinx_file)[1]
+                all_dflux.extend(dflux[mflux>0])
+                all_mflux.extend(mflux[mflux>0])
+                all_dstd.extend([dstd]*len(mflux[mflux>0]))
+            self.chi2_con[this_id] = bs.calcChiSquared(all_dflux,all_mflux,\
+                                                       all_dstd)
+            
+            
     def __setIntRatios(self,ifn,fn):
         
         '''
@@ -173,6 +231,7 @@ class PeakStats(Statistics):
         inst = self.instruments[self.instrument]
         self.int_ratios[fn] = dict()
         self.int_ratios_err[fn] = dict() 
+        self.chi2_intsi[fn] = dict()
         
         #-- Comparing integrated intensities between PACS and models.
         #   Comparisons only made per filename! 
@@ -185,6 +244,7 @@ class PeakStats(Statistics):
                             for t in self.sample_trans[fn]])
             these_ratios = []
             these_errs = []
+            self.chi2_intsi[fn][this_id] = []
             for mt,st in zip(mtrans,self.sample_trans[fn]):
                 #   4) No trans == sample_trans found for this model, or sample
                 #      trans does not contain a PACS integrated intensity.
@@ -213,12 +273,20 @@ class PeakStats(Statistics):
                         mintint = sum([t.getIntIntIntSphinx() 
                                        for t in blendlines])
                         dintint = -1.*abs(dintint)
+                    if dintint > 0 and not mt.sphinx.nans_present:
+                        ichi2 = bs.calcChiSquared(log10(dintint),\
+                                                  log10(mintint),\
+                                                  log10(dintint*dintinterr))
+                        #ichi2 = bs.calcLoglikelihood(dintint,\
+                        #                             mintint,\
+                        #                             dintint*dintinterr)
+                        self.chi2_intsi[fn][this_id].append(ichi2)
                     this_ratio = mintint/dintint
                     these_ratios.append(this_ratio)
                     these_errs.append(abs(this_ratio)*dintinterr)
             self.int_ratios[fn][this_id] = these_ratios
             self.int_ratios_err[fn][this_id] = these_errs        
-        
+            
 
 
     def __setPeakRatios(self,ifn,fn):
@@ -249,9 +317,7 @@ class PeakStats(Statistics):
         d_sigma = self.data_stats[self.instrument][fn]['sigma']
         
         self.peak_ratios[fn] = dict()
-        self.chi2[fn] = dict() 
-        
-        
+    
         for star in self.star_grid:
             #-- Read the convolved sphinx model
             this_id = star['LAST_%s_MODEL'%self.instrument]
@@ -264,10 +330,6 @@ class PeakStats(Statistics):
             if list(mflux[mflux < 0]) != []: 
                 print 'There are negative sphinx flux values! They will '+\
                       'not be taken into account.'
-            
-            #-- Calculate the chi-squared value for this model
-            self.chi2[fn][this_id] = calcChiSquared(dflux[mflux>0],\
-                                                    mflux[mflux>0],d_std)
             
             #-- Calculate the peak-to-peak ratios. 
             #   1) Central wavelengths of mtrans are set in previous method
@@ -301,8 +363,7 @@ class PeakStats(Statistics):
             self.peak_ratios[fn][this_id] = [m <> None and m/d or None
                                              for m,d in zip(central_mflux,\
                                                             central_dflux)]
-                                                            
-    
+            
                                                                                 
     def getRatios(self,this_id,sel_type='peak_ratios',\
                   data_type='peak_ratios',return_negative=0,filename=None):
@@ -384,7 +445,6 @@ class PeakStats(Statistics):
         inst = self.instruments[self.instrument]
         for star in this_grid:
             this_id = star['LAST_%s_MODEL'%self.instrument]
-            chi2 = sum([vals[this_id] for vals in self.chi2.values()])
             lp = [] 
             waves = []
             ratios = []
@@ -482,7 +542,11 @@ class PeakStats(Statistics):
                                                    .change_fraction_filename\
                                                    .replace('_','\_'))[1],\
                                0.05,0.30))
-            plot_title = '%s: $\chi^2$ %.4f'%(this_id.replace('_','\_'),chi2)
+            plot_title = '%s: $\chi^2_\mathrm{con}$ %.4f'\
+                         %(this_id.replace('_','\_'),self.chi2_con[this_id])
+            if self.chi2_inttot[this_id]: 
+                plot_title += ', $\chi^2_\mathrm{int}$ %.4f'\
+                              %(self.chi2_inttot[this_id])
             plot_filenames.append(Plotting2.plotCols(\
                     filename=plot_filename,x=waves,y=ratios,yerr=ratios_err,\
                     yaxis=r'$F_{\nu,p,m}/F_{\nu,p,d}$',\
@@ -506,18 +570,18 @@ class PeakStats(Statistics):
         
         '''
         Return a sorted list of the star grid in this instance according to 
-        the chi^2 value determined from convolved model vs data.
+        the chi^2 value. If a chi^2 based on integrated line fluxes is 
+        available, it is used. Otherwise the chi^2 determined from convolved 
+        model vs data is taken.
         
         @return: A sorted list of models according to chi^2
         @rtype: list[Star]
         
         '''
         
-        chi2s = dict()
-        for s in self.star_grid:
-            this_id = s['LAST_%s_MODEL'%self.instrument]
-            chi2s[this_id] = sum([vals[this_id] 
-                                  for vals in self.chi2.values()])
-        
-        return sorted(self.star_grid,\
-                      key=lambda x: chi2s[x['LAST_%s_MODEL'%self.instrument]])
+        if self.chi2_inttot.values()[0]:
+            styp = 'chi2_inttot'
+        else: 
+            styp = 'chi2_con'
+        ikey = 'LAST_%s_MODEL'%self.instrument
+        return sorted(self.star_grid,key=lambda x: getattr(self,styp)[x[ikey]])

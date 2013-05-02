@@ -126,7 +126,7 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
     inlines.append('&'.join(['','','','','']+pstars[:-1]+[r'%s \\\hline'%pstars[-1]]))
     inlines.append('&'.join(['PACS','Molecule','Vibrational','Rotational','$\lambda_0$']+\
                    [r'\multicolumn{%i}{c}{$F_\mathrm{int}$} \\'%len(pstars)]))
-    inlines.append('&'.join(['Band','','State','Transition',r'$\mu$m']+\
+    inlines.append('&'.join(['band','','state','transition',r'$\mu$m']+\
                    [r'\multicolumn{%i}{c}{(W/m$^2$)} \\\hline'%len(pstars)]))
     orders = ['R1B','R1A','B2B','B2A','B3A']
     if not sort_freq: orders.reverse()
@@ -166,29 +166,6 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
             inlines.append('&'.join(parts))   
         inlines[-1] = inlines[-1] + r'\hline'
     DataIO.writeFile(filename,input_lines=inlines)
-    
-    
-
-def readPacsData(data_filenames):
-    
-    '''
-    Read PACS data, taking special care of NaNs.
-    
-    @param data_filenames: Filenames of data
-    @type data_filenames: list[string]
-    
-    @return: wavelength and flux grids for the multiple files
-    @rtype: (list[list],list[list])
-    
-    '''
-    
-    data_wave_list = []
-    data_flux_list = []
-    for filename in data_filenames:
-        data = DataIO.readCols(filename=filename,nans=1)
-        data_wave_list.append(data[0])
-        data_flux_list.append(data[1])
-    return data_wave_list,data_flux_list              
 
 
 
@@ -269,9 +246,6 @@ class Pacs(Instrument):
         self.oversampling = oversampling
         self.path_linefit = path_linefit
         self.readLineFit()
-        
-        if not self.oversampling:
-            print 'WARNING! PACS oversampling is undefined!'
 
 
 
@@ -484,9 +458,8 @@ class Pacs(Instrument):
         if self.data_filenames:
             self.data_ordernames = [[word 
                                      for word in os.path.split(f)[1].split('_') 
-                                     if word.upper() in ('R1','B2A','B3A',\
-                                                         'B3B','B2B','R1A',\
-                                                         'R1B','R1C')][0] 
+                                     if word.upper() in ('B2A','B3A','B2B',\
+                                                         'R1A','R1B')][0] 
                                     for f in self.data_filenames]
             if len(self.data_ordernames) != len(self.data_filenames): 
                 raise IOError('Could not match number of ordernames to ' + \
@@ -565,7 +538,7 @@ class Pacs(Instrument):
             finished_conv_filenames = []
         filenames_to_do = [this_f 
                            for this_f in [os.path.split(f)[1] 
-                           for f in self.data_filenames] 
+                           for f in self.data_filenames]
                            if this_f not in finished_conv_filenames]     
         
         #-Get sphinx model output and merge, for all star models in star_grid

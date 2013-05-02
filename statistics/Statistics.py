@@ -62,7 +62,7 @@ class Statistics(object):
     def setInstrument(self,instrument,data_path='',searchstring='',\
                       data_filenames=[],instrument_instance=None,\
                       pacs_oversampling=None,sample_transitions=[],\
-                      redo_convolution=0):
+                      redo_convolution=0,stat_method='clipping'):
        
         '''
         Set an instrument as a source of data.
@@ -114,6 +114,14 @@ class Statistics(object):
                                  (default: 0)
         @type redo_convolution: bool
         
+        @keyword stat_method: Std/Mean/RMS determination method for PACS. Can  
+                              be 'clipping' or 'preset'. The former 1-sigma 
+                              clips based on std/... of full spectrum, then 
+                              takes std/... of clipped spectrum. Latter takes
+                              values from Data.dat.
+                         
+                              (default: 'clipping')
+        @type stat_method: string
         '''
         
         if instrument.upper() == 'PACS':
@@ -133,7 +141,7 @@ class Statistics(object):
                                                         =redo_convolution)
                 self.instruments['PACS'].setData(data_filenames=data_filenames,\
                                                  searchstring=searchstring)
-            self.doDataStats('PACS')
+            self.doDataStats('PACS',method=stat_method)
         
         elif instrument.upper() == 'FREQ_RESO':
             #- Make copy so that any changes do not translate to whatever the 
@@ -192,23 +200,31 @@ class Statistics(object):
                               'star_grid to be defined for freq-resolved data.')
             if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) == set([0]): 
                 return
-            #[[t.readSphinx() for t in s['GAS_LINES']] for s in star_grid]
             self.star_grid = star_grid
         else:
-            raise IOError('Instruments other than PACS or freq-resolved data not yet implemented.')
-       
-    
+            raise IOError('Instruments other than PACS or freq-resolved ' + \
+                          'data not yet implemented.')
+
 
     
-    def doDataStats(self,instrument):
+    def doDataStats(self,instrument,method='clipping'):
         
         '''
-        Calculate means, tmeans, stds and tstds for the data files.
+        Calculate mean, std, rms for the data files.
         
         They are saved in self.data_stats[instrument].
         
         @param instrument: The instrument (such as 'PACS')
         @type instrument: string
+        
+        @keyword method: Std/Mean/RMS determination method. Can be 'clipping'
+                         or 'preset'. The former 1-sigma clips based on 
+                         mean/std/... of full spectrum, then takes mean/std/...
+                         of clipped spectrum. Latter takes preset values from
+                         Data.dat.
+                         
+                         (default: 'clipping')
+        @type method: string
         
         '''
         
@@ -221,44 +237,55 @@ class Statistics(object):
                             self.instruments[instrument].data_wave_list,\
                             self.instruments[instrument].data_flux_list,\
                             self.instruments[instrument].data_ordernames):
-                this_index = self.data_info[instrument]['bands'].index(band)
-                w_std_min = self.data_info[instrument]['w_std_min'][this_index]
-                w_std_max = self.data_info[instrument]['w_std_max'][this_index]
-                sigma = self.data_info[instrument]['sigmas'][this_index]
-                filename = os.path.split(filename)[1]
                 these_stats = dict()
-                these_stats['mean'] = Data.getMean(wave=data_wave,\
-                                                   flux=data_flux,\
-                                                   wmin=w_std_min,\
-                                                   wmax=w_std_max)
-                these_stats['std'] = Data.getStd(wave=data_wave,\
-                                                 flux=data_flux,\
-                                                 wmin=w_std_min,\
-                                                 wmax=w_std_max)
-                these_stats['rms'] = Data.getRMS(wave=data_wave,\
-                                                 flux=data_flux-these_stats['mean'],\
-                                                 wmin=w_std_min,\
-                                                 wmax=w_std_max)
-                these_stats['sigma'] = sigma
-                #these_stats['tmean'] \
-                    #= scipy.stats.tmean(data_flux[scipy.isfinite(data_flux)],\
-                                        #limits=(these_stats['mean']\
-                                                    #-these_stats['std'],\
-                                                #these_stats['mean']\
-                                                    #+these_stats['std']))
-                #these_stats['tstd'] \
-                    #= scipy.stats.tstd(data_flux[scipy.isfinite(data_flux)],\
-                                        #limits=(these_stats['mean']\
-                                                    #-these_stats['std'],\
-                                                #these_stats['mean']\
-                                                    #+these_stats['std']))
-                print '* Data statistics for %s:'%filename
-                print '* Taken between %.2f and %.2f micron.'%(w_std_min,w_std_max)
+                bi = self.data_info[instrument]['bands'].index(band)
+                these_stats['sigma'] = self.data_info[instrument]['sigmas'][bi]
+                filename = os.path.split(filename)[1]
+                if method == 'preset':
+                    w_std_min = self.data_info[instrument]['w_std_min'][bi]
+                    w_std_max = self.data_info[instrument]['w_std_max'][bi]
+                    if w_std_min < data_wave[0] or w_std_max > data_wave[-1]:
+                        method = 'clipping'
+                    test_mean = Data.getMean(wave=data_wave,flux=data_flux,\
+                                             wmin=w_std_min,wmax=w_std_max)
+                    if test_mean is None:
+                        method = 'clipping'
+                if method == 'clipping':
+                    totmean = Data.getMean(wave=data_wave,flux=data_flux)
+                    totstd = Data.getStd(wave=data_wave,flux=data_flux)
+                    limits = (-totstd,totstd)
+                    these_stats['mean'] = Data.getMean(flux=data_flux,\
+                                                       limits=limits)
+                    these_stats['std'] = Data.getStd(flux=data_flux,\
+                                                     limits=limits)
+                    these_stats['rms'] = Data.getRMS(flux=data_flux-\
+                                                          these_stats['mean'],\
+                                                     limits=limits)                    
+                elif method == 'preset':
+                    these_stats['mean'] = Data.getMean(wave=data_wave,\
+                                                       flux=data_flux,\
+                                                       wmin=w_std_min,\
+                                                       wmax=w_std_max) 
+                    these_stats['std'] = Data.getStd(wave=data_wave,\
+                                                     flux=data_flux,\
+                                                     wmin=w_std_min,\
+                                                     wmax=w_std_max)
+                    these_stats['rms'] = Data.getRMS(wave=data_wave,\
+                                                     flux=data_flux-\
+                                                          these_stats['mean'],\
+                                                     wmin=w_std_min,\
+                                                     wmax=w_std_max)
+                else:
+                    raise IOError('Statistics().doDataStats() got wrong ' + \
+                                  'input for method keyword.')
+                print '* Data statistics for %s using "%s" method:'\
+                      %(filename,method)
+                if method == 'preset':
+                    print '* Taken between %.2f and %.2f micron.'\
+                          %(w_std_min,w_std_max)
                 print 'mean = ',these_stats['mean'],' Jy'
                 print 'std = ',these_stats['std'],' Jy'      
                 print 'RMS = ',these_stats['rms'],' Jy'      
-                #print 'tmean = ',these_stats['tmean'],' Jy'      
-                #print 'tstd = ',these_stats['tstd'],' Jy'    
                 stats[filename] = these_stats
         self.data_stats[instrument] = stats
         print '***********************************'

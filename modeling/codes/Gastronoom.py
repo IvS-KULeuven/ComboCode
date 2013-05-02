@@ -416,6 +416,8 @@ class Gastronoom(ModelingSession):
                             new_trans_id = self.makeNewId()
                             self.makeIdLog(new_id=new_trans_id,\
                                         molec_id=molec_id)
+                        if not self.sph_db[self.model_id][molec_id]\
+                                    .has_key(new_trans_id):
                             self.sph_db[self.model_id][molec_id][new_trans_id]\
                                     = dict()
                         if trans.molecule not in molecules_copied_to_new_id:

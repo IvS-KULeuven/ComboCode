@@ -144,7 +144,7 @@ class ComboCode(object):
                           ('contdiv_features',[]),('cfg_contdiv',''),\
                           ('show_contdiv',0),('skip_cooling',0),\
                           ('recover_sphinxfiles',0),('stat_print',0),\
-                          ('stat_lll_p',None)]
+                          ('stat_lll_p',None),('stat_pacsmethod','clipping')]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -710,7 +710,8 @@ class ComboCode(object):
                                             instrument='PACS',\
                                             path_code=self.path_gastronoom,\
                                             path_combocode=self.path_combocode)
-            self.pacsstats.setInstrument(instrument_instance=self.pacs)
+            self.pacsstats.setInstrument(instrument_instance=self.pacs,\
+                                         stat_method=self.stat_pacsmethod)
             self.pacsstats.setModels(star_grid=self.star_grid)
             self.pacsstats.setRatios()
             self.pacsstats.plotRatioWav(inputfilename=self.inputfilename)

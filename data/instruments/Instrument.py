@@ -169,11 +169,13 @@ class Instrument(object):
         
         '''
         
-        self.data_wave_list = [DataIO.readCols(filename=filename,nans=1)[0] 
-                               for filename in data_filenames]
-        self.data_flux_list = [DataIO.readCols(filename=filename,nans=1)[1] 
-                               for filename in data_filenames]
-
+        self.data_wave_list = [] 
+        self.data_flux_list = [] 
+        for filename in data_filenames:
+            data = DataIO.readCols(filename=filename,nans=1)
+            self.data_wave_list.append(data[0])
+            self.data_flux_list.append(data[1])
+            
             
             
     def mergeSphinx(self,star):

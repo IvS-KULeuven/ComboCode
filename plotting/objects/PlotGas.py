@@ -1464,6 +1464,8 @@ class PlotGas(PlottingSession):
             fn_trans_marker = cfg_dict['fn_trans_marker']
         if cfg_dict.has_key('include_ordername'):
             include_ordername = bool(cfg_dict['include_ordername'])
+        if cfg_dict.has_key('number_subplots'):
+            number_subplots = bool(cfg_dict['number_subplots'])
         if fn_trans_marker:
             lines = [line.split() 
                      for line in DataIO.readFile(fn_trans_marker) 
@@ -1484,7 +1486,8 @@ class PlotGas(PlottingSession):
                         self.pacs.data_ordernames):
             if fn_plt:
                 fn_plt = os.path.splitext(fn_plt)[0]
-                this_filename = '%s_%s'%(fn_plt,ordername)
+                this_filename = '%s_%s_%.2f_%.2f'%(fn_plt,ordername,\
+                                                   wave[0],wave[-1])
             else:    
                 this_filename = os.path.join(os.path.expanduser('~'),\
                                              'GASTRoNOoM',self.path,'stars',\
@@ -1505,9 +1508,9 @@ class PlotGas(PlottingSession):
             if include_ordername:
                 labels = [(ordername,0.01,0.01)]
             plot_filenames.append(Plotting2.plotCols(x=x_list,y=y_list,\
-                    keytags=keytags,number_subplots=3,cfg=cfg_dict,\
+                    keytags=keytags,number_subplots=number_subplots,\
                     plot_title='%s: %s - %s'%(self.plot_id.replace('_','\_'),\
-                    self.star_name_plots,ordername),\
+                    self.star_name_plots,ordername),cfg=cfg_dict,\
                     line_labels=sphinx_line_labels,\
                     histoplot=not exclude_data and [0] or [],\
                     filename=this_filename,labels=labels,\

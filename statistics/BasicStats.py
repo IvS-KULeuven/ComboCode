@@ -7,6 +7,7 @@ Author: R. Lombaert
 
 """
 
+import types
 import scipy
 from scipy import array,sqrt,log,pi
 
@@ -21,16 +22,19 @@ def calcChiSquared(data,model,noise):
     @type data: array
     @param model: The model array. Must have same dimensions as data!
     @type model: array
-    @param noise: the noise in the data array. 
-    @type noise: float
+    @param noise: the noise in the data array. Give one value for overall noise
+                  or individual values for every entry in data/model. 
+    @type noise: float/array
 
     @return: The chi squared value
     @rtype: float
     
     """
     
-    data, model, noise = array(data), array(model), float(noise) 
-    return sqrt(((data - model)**2./noise**2.).sum())/len(model)
+    if type(data) not in [types.ListType,scipy.ndarray]:
+        data = [data]
+    data, model, noise = array(data), array(model), array(noise) 
+    return sqrt(((data - model)**2./noise**2.).sum())/len(data)
     
     
 
@@ -45,14 +49,16 @@ def calcLoglikelihood(data,model,noise):
     @param model: The model array. Must have same dimensions as data!
     @type model: array
     @param noise: the noise in the data array. 
-    @type noise: float
+    @type noise: float/array
 
     @return: The loglikelihood value
     @rtype: float
     
     """
     
-    data, model, noise = array(data), array(model), float(noise) 
+    data, model, noise = array(data), array(model), array(noise) 
+    print data, model, noise
+    print -log(sqrt(2.*pi)),   - log(noise) , 1./2.*((data-model)/noise)**2.
     lll = (-log(sqrt(2.*pi)) - log(noise) - 1./2.*((data-model)/noise)**2.).sum()
     return lll
     
