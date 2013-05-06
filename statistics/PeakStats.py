@@ -116,13 +116,20 @@ class PeakStats(Statistics):
         
         
 
-    def setRatios(self):
+    def setRatios(self,chi2_type='normal'):
         
         ''' 
         Find the peak to peak ratios of data versus model.
         
         The result are saved in the self.peak_ratios dictionary, see 
         __init__.__doc__()
+        
+        @keyword chi2_type: The type of chi-squared calculated for integrated 
+                            fluxes. 'normal' for the usual kind, 'log' for chi2
+                            of the log of the integrated fluxes and noise. 
+                            
+                            (default: normal)
+        @type chi2_type: string
         
         '''
         
@@ -155,7 +162,7 @@ class PeakStats(Statistics):
             
             self.__setPeakRatios(ifn,fn)
             if self.instrument == 'PACS' and inst.linefit <> None:
-                self.__setIntRatios(ifn,fn)
+                self.__setIntRatios(ifn,fn,chi2_type=chi2_type)
         
         self.calcChiSquared()
         print '***********************************'
@@ -210,7 +217,7 @@ class PeakStats(Statistics):
                                                        all_dstd)
             
             
-    def __setIntRatios(self,ifn,fn):
+    def __setIntRatios(self,ifn,fn,chi2_type='normal'):
         
         '''
         Calculate ratios of integrated intensities, if requested. 
@@ -224,6 +231,14 @@ class PeakStats(Statistics):
         @type ifn: int
         @param fn: The filename of the data set. Needed for book keeping.
         @type fn: string
+        
+        @keyword chi2_type: The type of chi-squared calculated for integrated 
+                            fluxes. 'normal' for the usual kind, 'log' for chi2
+                            of the log of the integrated fluxes and noise. 
+                            
+                            (default: normal)
+        @type chi2_type: string
+        
         
         '''
         
@@ -274,9 +289,14 @@ class PeakStats(Statistics):
                                        for t in blendlines])
                         dintint = -1.*abs(dintint)
                     if dintint > 0 and not mt.sphinx.nans_present:
-                        ichi2 = bs.calcChiSquared(log10(dintint),\
-                                                  log10(mintint),\
-                                                  log10(dintint*dintinterr))
+                        if chi2_type == 'log':
+                            ichi2 = bs.calcChiSquared(log10(dintint),\
+                                                      log10(mintint),\
+                                                      log10(dintint*dintinterr))
+                        else:
+                            ichi2 = bs.calcChiSquared(dintint,\
+                                                      mintint,\
+                                                      dintint*dintinterr)
                         #ichi2 = bs.calcLoglikelihood(dintint,\
                         #                             mintint,\
                         #                             dintint*dintinterr)

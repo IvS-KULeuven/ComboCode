@@ -140,7 +140,7 @@ class ComboCode(object):
                           ('replace_db_entry',0),('update_spec',0),\
                           ('ln_path_gastronoom',''),('ln_path_mcmax',''),\
                           ('path_gastronoom',''),('path_mcmax',''),\
-                          ('print_model_info',1),\
+                          ('print_model_info',1),('stat_chi2_pacs','normal'),\
                           ('contdiv_features',[]),('cfg_contdiv',''),\
                           ('show_contdiv',0),('skip_cooling',0),\
                           ('recover_sphinxfiles',0),('stat_print',0),\
@@ -713,7 +713,7 @@ class ComboCode(object):
             self.pacsstats.setInstrument(instrument_instance=self.pacs,\
                                          stat_method=self.stat_pacsmethod)
             self.pacsstats.setModels(star_grid=self.star_grid)
-            self.pacsstats.setRatios()
+            self.pacsstats.setRatios(chi2_type=self.stat_chi2_pacs)
             self.pacsstats.plotRatioWav(inputfilename=self.inputfilename)
         if self.statistics:
             trans_sel = Transition.extractTransFromStars(self.star_grid,pacs=0)
