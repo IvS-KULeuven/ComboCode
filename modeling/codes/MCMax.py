@@ -536,7 +536,7 @@ class MCMax(ModelingSession):
                                       str(self.command_list['photon_count']),\
                                       '-o',output_folder]),shell=True)
             testf1 = os.path.join(output_folder,'denstemp.dat')
-            testf2 = os.path.join(output_folder,'MCScattered.dat')
+            testf2 = os.path.join(output_folder,'kappas.dat')
             if os.path.exists(testf1) and os.path.exists(testf2) and \
                     os.path.isfile(testf1) and os.path.isfile(testf2):
                 self.db[self.model_id] = self.command_list
