@@ -1271,13 +1271,20 @@ class PlotGas(PlottingSession):
 
 
 
-    def createSphinxLineLabels(self,star_grid):
+    def createSphinxLineLabels(self,star_grid,unit='micron'):
          
          '''
          Create line labels for all transitions in list of Star() models.
          
          @param star_grid: The Star() models
          @type star_grid: list[Star()]
+         
+         @keyword unit: The unit of the location number. Can be 'micron' or 
+                        'cm-1'.
+                        
+                        (default: 'micron')
+         @type unit: string
+         
          @return: a sorted list(set) of line labels
          @rtype: list[string]
          
@@ -1291,13 +1298,16 @@ class PlotGas(PlottingSession):
                          for star in star_grid 
                          for trans in star['GAS_LINES'] 
                          if trans.getModelId()]))
+         if unit == 'cm-1':
+             sphinx_line_labels = [(l,1./w*10**4,i) 
+                                   for l,w,i in sphinx_line_labels]
          sphinx_line_labels = sorted(sphinx_line_labels,\
                                      key=operator.itemgetter(1))
          return sphinx_line_labels
          
          
 
-    def plotPacsFull(self,star_grid=[],models=[],no_data=0,cfg=''):
+    def plotPacsFull(self,star_grid=[],models=[],exclude_data=0,cfg=''):
          
         '''
         Plot the full PACS spectrum for a series of models along with the data.
@@ -1318,10 +1328,10 @@ class PlotGas(PlottingSession):
                        
                       (default: '')
         @type cfg: string         
-        @keyword no_data: if enabled only the sphinx mdels are plotted.
+        @keyword exclude_data: if enabled only the sphinx mdels are plotted.
          
-                          (default: 0)
-        @type no_data: bool
+                               (default: 0)
+        @type exclude_data: bool
         
         '''
          
@@ -1346,8 +1356,8 @@ class PlotGas(PlottingSession):
             cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
         else:
             cfg_dict = dict()
-        if cfg_dict.has_key('no_data'):
-            no_data = bool(cfg_dict['no_data'])
+        if cfg_dict.has_key('exclude_data'):
+            exclude_data = bool(cfg_dict['exclude_data'])
         print '** Plotting now...'
         sphinx_line_labels = self.createSphinxLineLabels(star_grid)
         tiles = []
@@ -1357,14 +1367,14 @@ class PlotGas(PlottingSession):
                             self.sphinx_flux_list,self.pacs.data_filenames,\
                             self.pacs.data_ordernames):
             ddict = dict()
-            ddict['x'] = no_data \
+            ddict['x'] = exclude_data \
                             and [wave]*(len(sphinx_flux)) \
                             or [wave]*(len(sphinx_flux)+1)
-            ddict['y'] = no_data and sphinx_flux or [flux]+sphinx_flux
+            ddict['y'] = exclude_data and sphinx_flux or [flux]+sphinx_flux
             ddict['labels'] = [(ordername,0.01,0.01)]
             ddict['xmin'] = wave[0]
             ddict['xmax'] = wave[-1]
-            ddict['histoplot'] = (not no_data) and [0] or []
+            ddict['histoplot'] = (not exclude_data) and [0] or []
             ddict['line_labels'] = [('',x,index) 
                                     for l,x,index in sphinx_line_labels
                                     if x >= wave[0] and x <= wave[-1]]
@@ -1386,7 +1396,7 @@ class PlotGas(PlottingSession):
        
 
     def plotPacs(self,star_grid=[],models=[],exclude_data=0,fn_plt='',cfg='',\
-                 fn_trans_marker='',include_ordername=1):
+                 fn_trans_marker='',include_ordername=1,number_subplots=3,):
         
         '''
         Plot PACS data along with Sphinx results, one plot per band.
@@ -1428,6 +1438,10 @@ class PlotGas(PlottingSession):
                                     
                                     (default: 1)
         @type include_ordername: bool
+        @keyword number_subplots: The number of subplots in plotCols.
+        
+                                  (default: 3)
+        @type number_subplots: int
         
         '''
         
@@ -1449,6 +1463,7 @@ class PlotGas(PlottingSession):
                'PACS_results'))
         self.setSphinx(star_grid)
         print '** Plotting now...'
+        
         sphinx_line_labels = self.createSphinxLineLabels(star_grid)
         plot_filenames = []
         if cfg:
@@ -1466,6 +1481,10 @@ class PlotGas(PlottingSession):
             include_ordername = bool(cfg_dict['include_ordername'])
         if cfg_dict.has_key('number_subplots'):
             number_subplots = bool(cfg_dict['number_subplots'])
+        if cfg_dict.has_key('labels'):
+            labels = bool(cfg_dict['labels'])
+        else:
+            labels = []
         if fn_trans_marker:
             lines = [line.split() 
                      for line in DataIO.readFile(fn_trans_marker) 
@@ -1478,6 +1497,7 @@ class PlotGas(PlottingSession):
             extra_line_labels = [('---',t.wavelength*10**4,this_index) 
                                  for t in trans_markers]
             sphinx_line_labels = sphinx_line_labels + extra_line_labels
+        
         for wave,flux,sphinx_flux,filename,ordername in \
                     zip(self.pacs.data_wave_list,\
                         self.pacs.data_flux_list,\
@@ -1506,7 +1526,7 @@ class PlotGas(PlottingSession):
                 y_list = [flux]+sphinx_flux
                 keytags = ['PACS Spectrum'] + keytags
             if include_ordername:
-                labels = [(ordername,0.01,0.01)]
+                labels.extend([(ordername,0.01,0.01)])
             plot_filenames.append(Plotting2.plotCols(x=x_list,y=y_list,\
                     keytags=keytags,number_subplots=number_subplots,\
                     plot_title='%s: %s - %s'%(self.plot_id.replace('_','\_'),\
@@ -1536,7 +1556,8 @@ class PlotGas(PlottingSession):
 
 
     def plotPacsSegments(self,star_grid,pacs_segments_path='',mode='sphinx',\
-                         include_sphinx=None,no_data=0,cfg=''):
+                         include_sphinx=None,exclude_data=0,fn_trans_marker='',\
+                         cfg=''):
         
         '''
         Plot segments of spectra only.
@@ -1568,10 +1589,17 @@ class PlotGas(PlottingSession):
         
                                  (default: None)
         @type include_sphinx: bool
-        @keyword no_data: The data are not included when True. 
+        @keyword exclude_data: The data are not included when True. 
                                 
-                          (default: 0) 
-        @type no_data: bool
+                               (default: 0) 
+        @type exclude_data: bool
+        @keyword fn_trans_marker: A file that includes TRANSITION definitions.
+                                  These transitions will be marked up in the 
+                                  plot. For instance, when indicating a subset 
+                                  of transitions for one reason or another.
+                                  
+                                  (default: '')
+        @type fn_trans_marker: string
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                           
@@ -1588,7 +1616,26 @@ class PlotGas(PlottingSession):
             mode = cfg_dict['mode']
         if cfg_dict.has_key('pacs_segments_path'):
             pacs_segments_path = cfg_dict['pacs_segments_path']
-        
+        if cfg_dict.has_key('include_sphinx'):
+            include_sphinx = cfg_dict['include_sphinx']
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg_dict['filename']
+            del cfg_dict['filename']
+        if cfg_dict.has_key('fn_trans_marker'):
+            fn_trans_marker = cfg_dict['fn_trans_marker']
+        if cfg_dict.has_key('exclude_data'):
+            exclude_data = bool(cfg_dict['exclude_data'])
+            
+        if self.pacs is None:
+            print 'No PACS data found for plotting PACS segments. Aborting...'
+            return
+        elif not pacs_segments_path:
+            print 'No pacs_segments_path given. Pass in the cfg file or in ' +\
+                  'the method call. Aborting...' 
+            return
+        else:
+            self.setSphinx(star_grid)
+
         if mode == 'll':
             xmins=[min(wave_list) for wave_list in self.pacs.data_wave_list]
             xmaxs=[max(wave_list) for wave_list in self.pacs.data_wave_list]
@@ -1605,16 +1652,21 @@ class PlotGas(PlottingSession):
         else:
             print 'Mode for plotting PACS segments not recognized. Aborting...'
             return
+
+
+        if fn_trans_marker:
+            lines = [line.split() 
+                     for line in DataIO.readFile(fn_trans_marker) 
+                     if line[0] != '#']
+            trans_markers = set([Transition.makeTransition(star=star_grid[0],\
+                                                           trans=line) 
+                                 for line in lines])
+            used_indices = list(set([ll[-1] for ll in line_labels]))
+            this_index = [ii for ii in range(100) if ii not in used_indices][0]
+            extra_line_labels = [('---',t.wavelength*10**4,this_index) 
+                                 for t in trans_markers]
+            line_labels = line_labels + extra_line_labels
         
-        if self.pacs is None:
-            print 'No PACS data found for plotting PACS segments. Aborting...'
-            return
-        elif not pacs_segments_path:
-            print 'No pacs_segments_path given. Pass in the cfg file or in ' +\
-                  'the method call. Aborting...' 
-            return
-        else:
-            self.setSphinx(star_grid)
         
         if include_sphinx is None:
             include_sphinx = self.sphinx_flux_list and 1 or 0
@@ -1634,30 +1686,37 @@ class PlotGas(PlottingSession):
                             [f[abs(wave-((wmax+wmin)/2.))<=delta] 
                             for f in self.sphinx_flux_list[i_file] if list(f)]
                     wave = wave[abs(wave-((wmax+wmin)/2.))<=delta]
-                    plot_filename = os.path.join(os.path.expanduser('~'),\
-                          'GASTRoNOoM',self.path,'stars',self.star_name,\
-                          self.plot_id,\
-                          mode=='ll' and 'LineLists' or 'PACS_results',\
-                          '%s_segment_%.1f-%.1f_'%(mode,wmin,wmax)+ \
-                          os.path.split(filename)[1].replace('.dat',''))
+                    if fn_plt:
+                        fn_plt = os.path.splitext(fn_plt)[0]
+                        plot_filename = '%s_%s_%.2f_%.2f'%(fn_plt,\
+                                                           mode,wmin,wmax)
+                    else:    
+                        folder = mode=='ll' and 'LineLists' or 'PACS_results'
+                        dfn_seg = os.path.split(filename)[1].replace('.dat','')
+                        pfn = '%s_segment_%.1f-%.1f_'%(mode,wmin,wmax)+dfn_seg
+                        plot_filename = os.path.join(os.path.expanduser('~'),\
+                                                     'GASTRoNOoM',self.path,\
+                                                     'stars',self.star_name,\
+                                                     self.plot_id,folder,pfn)
                     extra_stats = dict([('line_labels',line_labels),\
-                                        ('histoplot',not no_data \
-                                                        and [0] \
-                                                        or []),\
+                                        ('histoplot',not exclude_data \
+                                                        and [0] or []),\
                                         ('filename',plot_filename)])
-                    plot_filename = Plotting2.plotCols(\
-                        x=[wave]*(len(sphinx_flux)+(not no_data and 1 or 0)),\
-                        y=no_data and sphinx_flux or [flux]+sphinx_flux,\
-                        cfg=cfg,**extra_stats)
+                    w = [wave]*(len(sphinx_flux)+(not exclude_data and 1 or 0))
+                    f = exclude_data and sphinx_flux or [flux]+sphinx_flux
+                    plot_filename = Plotting2.plotCols(x=w,y=f,cfg=cfg,\
+                                                       **extra_stats)
                     print '** Segment finished and saved at:'
                     print plot_filename
                     
                     
 
-    def plotSpire(self,star_grid=[],models=[],exclude_data=0,cfg=''):
+    def plotSpire(self,star_grid=[],models=[],exclude_data=0,\
+                  fn_trans_marker='',number_subplots=3,cfg=''):
         
         '''
-        Plot SPIRE data along with Sphinx results.
+        Plot SPIRE data along with Sphinx results. In flux (Jy) vs wave number
+        (cm^-1).
         
         @keyword star_grid: star models for which SPIRE data will be fetched, 
                             default occurs when model_ids are passed instead, 
@@ -1674,6 +1733,17 @@ class PlotGas(PlottingSession):
         
                                (default: 0)
         @type exclude_data: bool
+        @keyword fn_trans_marker: A file that includes TRANSITION definitions.
+                                  These transitions will be marked up in the 
+                                  plot. For instance, when indicating a subset 
+                                  of transitions for one reason or another.
+                                  
+                                  (default: '')
+        @type fn_trans_marker: string
+        @keyword number_subplots: The number of subplots in plotCols.
+        
+                                  (default: 3)
+        @type number_subplots: int
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                           
@@ -1696,35 +1766,71 @@ class PlotGas(PlottingSession):
         if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) == set([0]): 
             return
         print '** Plotting now...'
-        sphinx_line_labels = self.createSphinxLineLabels(star_grid)
+
+        if cfg:
+            cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
+        else:
+            cfg_dict = dict()
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg_dict['filename']
+            del cfg_dict['filename']
+        if cfg_dict.has_key('exclude_data'):
+            exclude_data = bool(cfg_dict['exclude_data'])
+        if cfg_dict.has_key('fn_trans_marker'):
+            fn_trans_marker = cfg_dict['fn_trans_marker']
+        if cfg_dict.has_key('number_subplots'):
+            number_subplots = bool(cfg_dict['number_subplots'])
+ 
+        self.spire.prepareSphinx(star_grid)
+        sphinx_line_labels = self.createSphinxLineLabels(star_grid,unit='cm-1')
+
+        if fn_trans_marker:
+            lines = [line.split() 
+                     for line in DataIO.readFile(fn_trans_marker) 
+                     if line[0] != '#']
+            trans_markers = set([Transition.makeTransition(star=star_grid[0],\
+                                                           trans=line) 
+                                 for line in lines])
+            used_indices = list(set([ll[-1] for ll in sphinx_line_labels]))
+            this_index = [ii for ii in range(100) if ii not in used_indices][0]
+            extra_line_labels = [('---',t.wavelength*10**4,this_index) 
+                                 for t in trans_markers]
+            sphinx_line_labels = sphinx_line_labels + extra_line_labels
+        
         plot_filenames = []
         for wave,flux,filename in zip(self.spire.data_wave_list,\
                                       self.spire.data_flux_list,\
                                       self.spire.data_filenames):
-            this_filename = os.path.join(os.path.expanduser('~'),\
-                'GASTRoNOoM',self.path,'stars',self.star_name,self.plot_id,\
-                'spire_spectrum_%s'\
-                %os.path.split(filename)[1].replace('.dat',''))
-            x_list = exclude_data \
-                          and [wave]*(len(sphinx_flux)) \
-                          or [wave]*(len(sphinx_flux)+1)
+            if fn_plt:
+                fn_plt = os.path.splitext(fn_plt)[0]
+                this_filename = '%s_%.2f_%.2f'%(fn_plt,wave[0],wave[-1])
+            else:
+                pfn = 'spire_spectrum_%s'\
+                      %os.path.split(filename)[1].replace('.dat','')
+                this_filename = os.path.join(os.path.expanduser('~'),\
+                                             'GASTRoNOoM',self.path,'stars',\
+                                             self.star_name,self.plot_id,\
+                                             pfn)
             sphinx_flux = [self.spire.sphinx_convolution\
                                 [(star['LAST_GASTRONOOM_MODEL'],i)][filename] 
                            for i,star in enumerate(star_grid)]
-            y_list = exclude_data \
-                          and sphinx_flux \
-                          or sphinx_flux + [flux]
+            w = exclude_data \
+                          and [wave]*(len(sphinx_flux)) \
+                          or [wave]*(len(sphinx_flux)+1)
+            f = exclude_data and sphinx_flux or [flux] + sphinx_flux 
             keytags = ['Model %i: %s'%(i+1,star['LAST_GASTRONOOM_MODEL']\
                                     .replace('_','\_')) 
                        for i,star in enumerate(star_grid)]
             if not exclude_data: 
-                keytags = keytags + ['Spire Spectrum']
-            plot_filenames.append(Plotting2.plotCols(x=x_list,y=y_list,\
-                keytags=keytags,number_subplots=3,line_label_color=1,\
+                keytags = ['Spire Spectrum'] + keytags
+            plot_filenames.append(Plotting2.plotCols(x=w,y=f,\
+                keytags=keytags,number_subplots=number_subplots,\
+                line_label_color=1,\
                 plot_title='%s: %s' %(self.plot_id.replace('_','\_'),\
                 self.star_name_plots),line_labels=sphinx_line_labels,\
-                histoplot=[len(sphinx_flux)],filename=this_filename,cfg=cfg,\
-                line_label_spectrum=1))
+                histoplot= not exclude_data and [0] or [],\
+                filename=this_filename,cfg=cfg,\
+                line_label_spectrum=1,xaxis='$k$ (cm$^{-1}$)'))
         print '** Your plots can be found at:'
         print '\n'.join(plot_filenames)
         print '***********************************'

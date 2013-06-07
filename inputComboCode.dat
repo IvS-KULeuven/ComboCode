@@ -35,9 +35,10 @@ PACS_OVERSAMPLING=2                       # The oversampling factor of the PACS 
 PACS_LINEFIT=                              # folder name in $PATH_PACS$/$STAR_NAME$/ of line fit results, done by Pierre (assumes his structure and syntax, as well as the presence of a file called 'lineFitResults')
 
 #-- SPIRE convolution and plotting
-PATH_SPIRE=/home/robinl/Data/SPIRE/         # Path to Spire data, leave empty if not relevant/no dust data are used. Data will be taken from path_spire/star_name/cont_subtracted/.  The star_name does not have to be specified.
+PATH_SPIRE=/home/robinl/Data/SPIRE/         # Path to Spire data, leave empty if not relevant/no dust data are used. Data will be taken from path_spire/star_name/cont_subtracted/.  The star_name does not have to be specified. Syntax is assumed to be two columns, wave number (cm-1) vs flux (Jy).
 SPIRE_SEARCHSTRING=oversampling2           #searchstring used when looking for data, all data that include this string will be taken so make it unique
-SPIRE_RESOLUTION=2                       # The resolution of the SPire spectrum in cm^-1
+SPIRE_RESOLUTION=0.04                       # The resolution of the Spire spectrum in cm^-1
+SPIRE_OVERSAMPLING=4                        # The oversampling factor of the SPIRE spectrum.
 
 #-- SED data selection and plotting
 PATH_SED=/home/robinl/Data/SED/    #Path to the Data folder where the text files with SED data are stored. Leave open if no data are to be plotted.

@@ -198,13 +198,15 @@ class ComboCode(object):
         searchstring = self.processed_input.pop('SPIRE_SEARCHSTRING','')
         resolution = self.processed_input.pop('SPIRE_RESOLUTION',0)
         intrinsic = self.processed_input.pop('SPIRE_INTRINSIC',1)
+        oversampling = self.processed_input.pop('SPIRE_OVERSAMPLING',0)
         if path_spire:
             self.spire = Spire.Spire(star_name=self.star_name,\
                                      path_combocode=self.path_combocode,\
                                      path=self.path_gastronoom,\
                                      resolution=resolution,\
                                      path_spire=path_spire,\
-                                     intrinsic=intrinsic)
+                                     intrinsic=intrinsic,\
+                                     oversampling=oversampling)
             self.spire.setData(searchstring=searchstring)
         else:
             self.spire = None
