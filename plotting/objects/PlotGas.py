@@ -1556,8 +1556,8 @@ class PlotGas(PlottingSession):
 
 
     def plotPacsSegments(self,star_grid,pacs_segments_path='',mode='sphinx',\
-                         include_sphinx=None,exclude_data=0,fn_trans_marker='',\
-                         cfg=''):
+                         fn_plt='',fn_trans_marker='',cfg='',\
+                         include_sphinx=None,exclude_data=0):
         
         '''
         Plot segments of spectra only.
@@ -1593,6 +1593,11 @@ class PlotGas(PlottingSession):
                                 
                                (default: 0) 
         @type exclude_data: bool
+        @keyword fn_plt: A plot filename to which an index is added for each
+                         subband.
+                         
+                         (default: '')
+        @type fn_plt: string
         @keyword fn_trans_marker: A file that includes TRANSITION definitions.
                                   These transitions will be marked up in the 
                                   plot. For instance, when indicating a subset 
@@ -1711,7 +1716,7 @@ class PlotGas(PlottingSession):
                     
                     
 
-    def plotSpire(self,star_grid=[],models=[],exclude_data=0,\
+    def plotSpire(self,star_grid=[],models=[],exclude_data=0,fn_plt='',\
                   fn_trans_marker='',number_subplots=3,cfg=''):
         
         '''
@@ -1740,6 +1745,11 @@ class PlotGas(PlottingSession):
                                   
                                   (default: '')
         @type fn_trans_marker: string
+        @keyword fn_plt: A plot filename to which an index is added for each
+                         subband.
+                         
+                         (default: '')
+        @type fn_plt: string
         @keyword number_subplots: The number of subplots in plotCols.
         
                                   (default: 3)
