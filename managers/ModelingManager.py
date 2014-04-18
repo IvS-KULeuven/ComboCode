@@ -117,15 +117,18 @@ class ModelingManager():
         self.vic = vic_manager
         self.path_combocode = path_combocode
         self.replace_db_entry = replace_db_entry
+        self.new_entries_mcmax = []
+        self.new_entries_cooling = []
         self.trans_bool_list = []
-        self.done_mline_list = []
-        self.done_mcmax_list = []
+        self.mline_done_list = []
+        self.mcmax_done_list = []
         self.path_mcmax = path_mcmax
         self.path_gastronoom = path_gastronoom
         self.star_name = star_name
         self.recover_sphinxfiles = recover_sphinxfiles
         self.setDatabases()
-        
+        self.mcmax_done = False
+        self.mline_done = False
         
         
     def setDatabases(self):
@@ -182,26 +185,38 @@ class ModelingManager():
         
         """
         
+        #-- Note that db synchronisation is done every time a model is 
+        #   successfully calculated, every time a previous code has been ran,
+        #   and every time a change is made to the database, in terms of model
+        #   id reservation. 
+        
         for i in range(self.iterations):
             if self.mcmax: 
                 print '***********************************'
                 print '** Starting MCMax calculation.'
                 print '** Iteration # %i for Model %i.'%(i+1,star_index+1)
-                #- Initiate a dust session which is used for every iteration
+                #-- Check if the previously calculated GASTRoNOoM model was
+                #   calculated. This means a lot of time has passed since
+                #   the last synchronisation of the mcmax db, so sync it
+                if self.mline_done:
+                    self.mcmax_db.sync()
+                #-- Initiate a dust session which is used for every iteration
                 if i == 0: 
                     dust_session = MCMax(path_combocode=self.path_combocode,\
-                                        path_mcmax=self.path_mcmax,\
-                                        db=self.mcmax_db,\
-                                        replace_db_entry=self.replace_db_entry)
+                                         path_mcmax=self.path_mcmax,\
+                                         db=self.mcmax_db,\
+                                         new_entries=self.new_entries_mcmax,\
+                                         replace_db_entry=self.replace_db_entry)
+                self.mcmax_done = False
                 dust_session.doMCMax(star)
-                self.mcmax_db.sync()
-                
+                if dust_session.mcmax_done: 
+                    self.mcmax_done = True
                 #- If last iteration, ray trace.
                 if i+1 == self.iterations or self.iterative:
                     dust_session.rayTrace(star)
                      
                 #- Remember every iteration if iterative==True.
-                if self.iterative: 
+                if self.iterative:
                     self.star_grid_old[star_index].append(star.copy())
                 
                 #- add/change MUTABLE input keys, which MAY be overwritten by
@@ -210,6 +225,8 @@ class ModelingManager():
                 if dust_session.model_id:
                     star.removeMutableMCMax(dust_session.mutable,self.var_pars)
                     star.update(self.input_dict)
+                    if self.replace_db_entry:
+                        self.new_entries_mcmax.append(dust_session.model_id)
                 
             if self.gastronoom:    
                 print '***********************************'
@@ -227,26 +244,38 @@ class ModelingManager():
                                         sphinx=self.sphinx,\
                                         skip_cooling=self.skip_cooling,\
                                         replace_db_entry=self.replace_db_entry,\
+                                        new_entries=self.new_entries_cooling,\
                                         recover_sphinxfiles=self.recover_sphinxfiles)
-                gas_session.doGastronoom(star)     
-                self.cool_db.sync()
-
+                    self.mline_done = False
+                if self.mcmax_done:
+                    #-- MCMax was ran successfully, in other words, quite a bit 
+                    #   of time has passed, so update the cool database.
+                    self.cool_db.sync()
+                gas_session.doGastronoom(star)
+                
                 #- add/change MUTABLE input keys, which MAY be overwritten by 
                 #- the input file inputComboCode.dat
                 star.removeMutableGastronoom(gas_session.mutable,self.var_pars)
                 star.update(self.input_dict)
                 star.updateMolecules(parlist=gas_session.mutable)
                 
+                #-- Remember the new model_ids if the replace_db_entry option 
+                #   is on. 
+                if self.replace_db_entry:
+                    self.new_entries_cooling.append(gas_session.model_id)
+                
                 #- If last iteration, run mline and sphinx. Note that the 
                 #- model_id cannot have changed: it's either the original 
                 #- cooling model_id or no model_id at all in case of total fail
                 if (i+1 == self.iterations) and gas_session.model_id: 
+                    if gas_session.cool_done:
+                        self.ml_db.sync()
                     gas_session.doMline(star)
-                    self.ml_db.sync()
+                    if gas_session.mline_done:
+                        self.mline_done = True
                     #- Check if the model id is still valid after the mline run
                     if gas_session.model_id:
                         gas_session.doSphinx(star)
-                        self.sph_db.sync()
                 print '***********************************'
         
         #- remember trans bools if sphinx is enabled, so you can trace which 
@@ -254,13 +283,14 @@ class ModelingManager():
         #- from database. Also remember if mline was required to be ran this 
         #- session, or rather if everything was taken out of the db
         if self.gastronoom:
-            self.done_mline_list.append(gas_session.done_mline)
-            if self.sphinx: self.trans_bool_list.append(gas_session.trans_bools)
+            self.mline_done_list.append(self.mline_done)
+            if self.sphinx: 
+                self.trans_bool_list.append(gas_session.trans_bools)
         
         #- remember if mcmax was ran, or rather the model taken from the db.
         #- In first or second iteration, doesn't matter.
-        if self.mcmax:
-            self.done_mcmax_list.append(dust_session.done_mcmax)
+        if self.mcmax: 
+            self.mcmax_done_list.append(self.mcmax_done)
         
         #- old MCMax models are kept if iterative is requested. Before every
         #- change the model is saved to the logging list of models. In practice, 

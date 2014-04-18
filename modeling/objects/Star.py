@@ -19,11 +19,12 @@ import operator
 
 from cc.data import Data
 from cc.tools.io import Database
-from cc.tools.io import DataIO
+from cc.tools.io import DataIO, Atmosphere
 from cc.tools.numerical import Interpol
 from cc.modeling.objects import Molecule
 from cc.modeling.objects import Transition
 from cc.modeling.tools import ColumnDensity
+from cc.modeling.codes import MCMax
 
 
 def getStar(star_grid,modelid,idtype='GASTRONOOM'):
@@ -306,29 +307,43 @@ class Star(dict):
     def writeDensity(self):
         
         '''
-        Write full density (vs stellar radii) profile for a star.
+        Write dust mass density and n(h2) profile (in Rstar).
         
-        Only if MCMax model_id is available! 
+        Only if MCMax or GASTRoNOoM model_id is available! 
         
         '''
         
-        if not self['LAST_MCMAX_MODEL']: return
-        filename = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                self.path_mcmax,'models',\
-                                self['LAST_MCMAX_MODEL'],'denstemp.dat')
-        incr = int(self['NTHETA'])*int(self['NRAD'])
-        dens = DataIO.getMCMaxOutput(incr=incr,filename=filename,\
-                                     keyword='DENSITY')
-        rad = array(DataIO.getMCMaxOutput(incr=int(self['NRAD']),\
-                                          filename=filename))\
-                    /self.r_solar/self['R_STAR']
-        dens = Data.reduceArray(dens,self['NTHETA'])
-        DataIO.writeCols(os.path.join(os.path.expanduser('~'),'MCMax',\
-                                      self.path_mcmax,'models',\
-                                      self['LAST_MCMAX_MODEL'],\
-                                      'density_profile_%s.dat'%\
-                                      self['LAST_MCMAX_MODEL']),[rad,dens])
-        
+        if self['LAST_MCMAX_MODEL']:    
+            filename = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                    self.path_mcmax,'models',\
+                                    self['LAST_MCMAX_MODEL'],'denstemp.dat')
+            incr = int(self['NTHETA'])*int(self['NRAD'])
+            dens = DataIO.getMCMaxOutput(incr=incr,filename=filename,\
+                                        keyword='DENSITY')
+            rad = array(DataIO.getMCMaxOutput(incr=int(self['NRAD']),\
+                                              filename=filename))\
+                        /self.r_solar/self['R_STAR']
+            dens = Data.reduceArray(dens,self['NTHETA'])
+            DataIO.writeCols(os.path.join(os.path.expanduser('~'),'MCMax',\
+                                        self.path_mcmax,'models',\
+                                        self['LAST_MCMAX_MODEL'],\
+                                        'density_profile_%s.dat'%\
+                                        self['LAST_MCMAX_MODEL']),[rad,dens])
+        if self['LAST_GASTRONOOM_MODEL']:
+            filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                    self.path_gastronoom,'models',\
+                                    self['LAST_GASTRONOOM_MODEL'],\
+                                    'coolfgr_all%s.dat'\
+                                    %self['LAST_GASTRONOOM_MODEL'])
+            dens = DataIO.getGastronoomOutput(filename,keyword='N(H2)')  
+            rad = array(DataIO.getGastronoomOutput(filename,keyword='Radius'))\
+                        /self.r_solar/self['R_STAR']
+            DataIO.writeCols(os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                        self.path_gastronoom,'models',\
+                                        self['LAST_GASTRONOOM_MODEL'],\
+                                        'nh2_density_profile_%s.dat'%\
+                                        self['LAST_GASTRONOOM_MODEL']),\
+                             [rad,dens])
 
 
     def readKappas(self):
@@ -991,8 +1006,80 @@ class Star(dict):
         else:
             pass
 
-    
 
+    def calcFD2_CONT_63(self):
+        
+        """
+        If F_CONT_63 is available, that value is multiplied by distance^2 for 
+        this key. 
+        
+        """
+        
+        if not self.has_key('FD2_CONT_63'):
+            if self['F_CONT_63'] <> None: 
+                self['FD2_CONT_63'] = self['F_CONT_63']*self['DISTANCE']**2
+            else:
+                self['FD2_CONT_63'] = None
+        else:
+            pass
+
+
+    def calcFD2M_CONT_63(self):
+        
+        """
+        If F_CONT_63 is available, that value is multiplied by distance^2 and 
+        divided by MDOT_GAS for this key. 
+        
+        """
+        
+        if not self.has_key('FD2M_CONT_63'):
+            if self['F_CONT_63'] <> None: 
+                self['FD2M_CONT_63'] = self['F_CONT_63']*self['DISTANCE']**2 \
+                                            /self['MDOT_GAS']
+            else:
+                self['FD2M_CONT_63'] = None
+        else:
+            pass
+
+
+    def calcF_CONT_63(self):
+        
+        """
+        Set the default value of F_CONT_63 to the monochromatic flux calculated
+        by MCMax. If no MCMax model is available, it is set to None.
+        
+        If set in the inputfile, it is assumed to be the measured monochromatic
+        flux. A difference between measured and modeled currently is not 
+        available. 
+        
+        """
+        
+        if not self.has_key('F_CONT_63'):
+            if self['LAST_MCMAX_MODEL']: 
+                w,f = MCMax.readModelSpectrum(self.path_mcmax,\
+                                            self['LAST_MCMAX_MODEL'],1)
+                fi = f[argmin(abs(w-6.3))]
+                self['F_CONT_63'] = fi
+            else:
+                self['F_CONT_63'] = None
+        else:
+            pass
+
+
+    def calcF_CONT_63_TYPE(self):
+        
+        """
+        Set the default value of F_CONT_63_TYPE to MCMax. This is the type of 
+        derivation of the measured 6.3 mic flux. Can be: ISO, MSX, PHOT, MCMax
+        
+        """
+        
+        if not self.has_key('F_CONT_63_TYPE'):
+            self['F_CONT_63_TYPE'] = 'MCMax'
+        else:
+            pass
+        
+        
     def calcT_INNER_DUST(self):
         
         """
@@ -1177,7 +1264,7 @@ class Star(dict):
             - MAX: Density reaches a maximum value, depends on the different 
                    condensation temperatures of the dust species taken into 
                    account 
-            - ABSOLUTE: Density becomes larger than 10**(-51)
+            - ABSOLUTE: Density becomes larger than 10**(-30)
             - RELATIVE: Density becomes larger than 1% of maximum density
         
         Unless defined in the CC input file, the dust radius is updated every 
@@ -1209,7 +1296,7 @@ class Star(dict):
                     if self['R_INNER_DUST_MODE'] == 'MAX':
                         ri_cm = rad[argmax(dens)]
                     elif self['R_INNER_DUST_MODE'] == 'ABSOLUTE':
-                        ri_cm = rad[dens>10**(-50)][0]
+                        ri_cm = rad[dens>10**(-30)][0]
                     else:
                         ri_cm = rad[dens>0.01*max(dens)][0]
                     self['R_INNER_DUST'] = ri_cm/self.r_solar\
@@ -1491,7 +1578,145 @@ class Star(dict):
             pass
         
 
-
+    def calcMDOT_CLASS(self):
+        
+        '''
+        Set the order of magnitude of MDOT. 
+        0: Mdot < 1e-6
+        1: 1e-6 <= Mdot < 3e-6
+        2: 3e-6 <= Mdot < 1e-5
+        3: 1e-5 <= Mdot
+        
+        '''
+        
+        if not self.has_key('MDOT_CLASS'):
+            if self['MDOT_GAS'] < 1e-6: 
+                self['MDOT_CLASS'] = (0,r'$\dot{M}_\mathrm{g} < 1 \times 10^{-6}$ M$_\odot$/yr')
+            elif self['MDOT_GAS'] >= 1e-5: 
+                self['MDOT_CLASS'] = (3,r'$\dot{M}_\mathrm{g} \geq 1 \times 10^{-5}$ M$_\odot$/yr')
+            elif self['MDOT_GAS'] >= 1e-6 and self['MDOT_GAS'] < 3e-6: 
+                self['MDOT_CLASS'] = (1,r'$1 \times 10^{-6}$ M$_\odot$/yr $\leq \dot{M}_\mathrm{g} < 3 \times 10^{-6}$ M$_\odot$/yr') 
+            else: 
+                self['MDOT_CLASS'] = (2,r'$3 \times 10^{-6}$ M$_\odot$/yr $\leq \dot{M}_\mathrm{g} < 1 \times 10^{-5}$ M$_\odot$/yr') 
+        else:
+            pass
+        
+        
+    def calcQ_STAR(self):
+        
+        ''' 
+        Set the stellar pulsation constant (che1992).
+        
+        '''
+        
+        if not self.has_key('Q_STAR'):
+            self['Q_STAR'] = self['P_STAR']*self['M_STAR']**0.5\
+                                    *self['R_STAR']**(-3/2.)
+        else:
+            pass
+        
+    
+    def calcSCD_CLASS(self):
+        
+        '''
+        Set the order of magnitude of SHELLCOLDENS. 
+        0: scd < 0.06
+        1: 0.06 <= scd < 0.15
+        2: 0.15 <= scd < 0.4
+        3: 0.4 <= scd
+        
+        '''
+        
+        if not self.has_key('SCD_CLASS'):
+            if self['SHELLCOLDENS'] < 0.07: 
+                self['SCD_CLASS'] = (0,r'$\bar{m} < 0.07$ g/cm$^2$')
+            elif self['SHELLCOLDENS'] >= 0.07 and self['SHELLCOLDENS'] < 0.15: 
+                self['SCD_CLASS'] = (1,r'$0.07$ g/cm$^2$ $\leq \bar{m} < 0.15$ g/cm$^2$')
+            elif self['SHELLCOLDENS'] >=0.4: 
+                self['SCD_CLASS'] = (3,r'$\bar{m} \geq 0.4$ g/cm$^2$')
+            else: 
+                self['SCD_CLASS'] = (2,r'$0.15$ g/cm$^2$ $\leq \bar{m} < 0.4$ g/cm$^2$')
+        else:
+            pass
+            
+    
+    def calcL_CLASS(self):
+        
+        '''
+        Set the order of magnitude of L_STAR.
+        
+        0: lstar < 6000
+        1: 6000 <= lstar < 8000
+        2: 8000 <= lstar < 10000
+        3: 10000 <= lstar
+        
+        '''
+        
+        if not self.has_key('L_CLASS'):
+            if self['L_STAR'] < 6000: 
+                self['L_CLASS'] = (0,r'$L_\star < 6000$ L$_\odot$')
+            elif self['L_STAR'] >= 10000: 
+                self['L_CLASS'] = (3,r'$L_\star \geq 10000$ L$_\odot$')
+            elif self['L_STAR'] >= 8000 and self['L_STAR'] < 10000: 
+                self['L_CLASS'] = (2,r'$8000$ L$_\odot$ $\leq L_\star < 10000$ L$_\odot$')
+            else: 
+                self['L_CLASS'] = (1,r'$6000$ L$_\odot$ $\leq L_\star < 8000$ L$_\odot$')
+        else:
+            pass
+        
+        
+    
+    def calcT_CLASS(self):
+        
+        '''
+        Set the order of magnitude of T_STAR.
+        
+        0: tstar < 2000
+        1: 2000 <= tstar < 2200
+        2: 2200 <= tstar < 2500
+        3: 2500 <= tstar
+        
+        '''
+        
+        if not self.has_key('T_CLASS'):
+            if self['T_STAR'] < 2000: 
+                self['T_CLASS'] = (0,r'$T_\star < 2000$ K')
+            elif self['T_STAR'] >= 2500: 
+                self['T_CLASS'] = (3,r'$T_\star \geq 2500$ K')
+            elif self['T_STAR'] >= 2250 and self['T_STAR'] < 2500: 
+                self['T_CLASS'] = (2,r'$2250$ K $\leq T_\star < 2500$ K') 
+            else: 
+                self['T_CLASS'] = (1,r'$2000$ K $\leq T_\star < 2250$ K')
+        else:
+            pass
+    
+    
+    def calcVG_CLASS(self):
+        
+        '''
+        Set the order of magnitude of VEL_INFINITY_GAS
+        
+        0: vg < 10
+        1: 10 <= vg < 15
+        2: 15 <= vg < 20
+        3: 20 <= vg
+        
+        '''
+        
+        if not self.has_key('VG_CLASS'):
+            if self['VEL_INFINITY_GAS'] < 10.: 
+                self['VG_CLASS'] = (0,r'$v_{\infty\mathrm{,g}} < 10$ km/s')
+            elif self['VEL_INFINITY_GAS'] >= 20.: 
+                self['VG_CLASS'] = (3,r'$v_{\infty\mathrm{,g}} \geq 20$ km/s')
+            elif self['VEL_INFINITY_GAS'] >= 15. and self['VEL_INFINITY_GAS'] < 20.: 
+                self['VG_CLASS'] = (2,r'$15$ km/s $\leq v_{\infty\mathrm{,g}} < 20$ km/s') 
+            else: 
+                self['VG_CLASS'] = (1,r'$10$ km/s $\leq v_{\infty\mathrm{,g}} < 15$ km/s') 
+        else:
+            pass
+        
+        
+    
     def calcV_EXP_DUST(self):
         
         """
@@ -1536,6 +1761,17 @@ class Star(dict):
             pass    
 
 
+    def calcVISIBILITIES(self):
+        
+        '''
+        Set the default value of MCMax visibilities to False.
+        
+        '''
+        
+        if not self.has_key('VISIBILITIES'):
+            self['VISIBILITIES']= 0
+        else:
+            pass    
 
     def calcREDO_OBS(self):
         
@@ -1780,6 +2016,75 @@ class Star(dict):
 
 
 
+    def calcSHELLDENS(self):
+        
+        """
+        Calculate the average density of the circumstellar envelope. 
+    
+        """
+        
+        if not self.has_key('SHELLDENS'):
+            self['SHELLDENS'] = float(self['MDOT_GAS'])*self.m_solar\
+                                  /((self['VEL_INFINITY_GAS']*10**5)*self.year\
+                                    *(self['R_STAR']*self.r_solar)**2*4.*pi)
+        else:
+            pass
+        
+        
+        
+    def calcSHELLCOLDENS(self):
+        
+        """
+        Calculate a proxy for the average column density of the circumstellar 
+        shell. 
+        
+        This is (intuitively) rho * R_STAR, which is important for radiative 
+        excitation (density tracing the source of the radiation, R_STAR setting
+        the scale of the envelope). Two types of radiative excitation can be 
+        related to this: direct stellar light, and thermal dust emission.
+        
+        Especially important for water, but in a balance with other excitation
+        mechanisms.
+        
+        Note that this quantity is also related to the optical depth through
+        tau = kappa*coldens.
+    
+        """
+        
+        if not self.has_key('SHELLCOLDENS'):
+            self['SHELLCOLDENS'] = self['SHELLDENS']\
+                                    *self['R_STAR']*self.r_solar
+        else:
+            pass
+        
+        
+    def calcSHELLDENS2(self):
+        
+        """
+        Calculate a proxy for the average degree of collisional excitation in 
+        the circumstellar shell.
+        
+        This is (intuitively) sqrt(rho * rho * R_STAR): two density factors 
+        tracing both collisional partners, and R_STAR setting the scale of the 
+        envelope.
+        
+        Sqrt is taken for easy comparison between this and the mass-loss rate
+        to which it is directly proportional.
+        
+        Especially important for CO, but also to some degree for water where it 
+        is in balance with other excitation mechanisms.
+        
+        Calculated by taking SHELLDENS**2*R_STAR ~ R_STAR^3/2.
+        
+        """
+        
+        if not self.has_key('SHELLDENS2'):
+            self['SHELLDENS2'] = sqrt(self['SHELLDENS']**2\
+                                         *self['R_STAR']*self.r_solar)
+        else:
+            pass
+
+        
     def calcDENSFILE(self):
         
         """
@@ -1802,9 +2107,9 @@ class Star(dict):
             self['DUST_LIST'] = [species 
                                  for species in self.species_list 
                                  if self.has_key('A_' + species)]
-            self['DUST_LIST'] = [species 
-                                 for species in self['DUST_LIST'] 
-                                 if float(self['A_' + species]) != 0]
+            self['DUST_LIST'] = tuple([species 
+                                       for species in self['DUST_LIST'] 
+                                       if float(self['A_' + species]) != 0])
             print '=========='
             print 'Dust species that are taken into account during modeling '+\
                   'are %s.'%(', '.join(self['DUST_LIST']))
@@ -2013,7 +2318,11 @@ class Star(dict):
                                     and self['%s_H2O'%key] 
                                     or str(entry) 
                               for i,entry in enumerate(molec)]
-                             for molec in self['MOLECULE']]                          
+                             for molec in self['MOLECULE']]                        
+                #-- Check if startype is not BB, because if starfile is given 
+                #   while BB is requested, the starfile cannot be given to the
+                #   Molecule class. 
+                starfile = self['STARTYPE'] != 'BB' and self['STARFILE'] or ''
                 self['GAS_LIST'] = \
                     [Molecule.Molecule(\
                         molecule=molec[0],ny_low=int(molec[1]),\
@@ -2042,7 +2351,9 @@ class Star(dict):
                         set_keyword_change_abundance=int(molec[17]),\
                         change_fraction_filename=molec[16],\
                         set_keyword_change_temperature=int(molec[19]),\
-                        new_temperature_filename=molec[18])
+                        new_temperature_filename=molec[18],\
+                        starfile=starfile)
+                     
                      for molec in self['MOLECULE']]
             
             #- safety check
@@ -2352,7 +2663,7 @@ class Star(dict):
                 #   list
                 if self['DATA_MOL']:
                     self['GAS_LINES'] = Transition.checkUniqueness(trans_list)
-                    self.updateSelectTargetData(raw_data_list)
+                    #self.updateSelectTargetData(raw_data_list)
             else:
                 raw_data_list = []
             #- Check if specific transition were requested in addition to data
@@ -2365,7 +2676,7 @@ class Star(dict):
                 new_lines = [Transition.makeTransition(star=self,trans=trans) 
                              for trans in self['TRANSITION']]
                 for trans in new_lines: 
-                    if str(trans) not in [str(t) for t in self['GAS_LINES']]:
+                    if trans and str(trans) not in [str(t) for t in self['GAS_LINES']]:
                         #-- Check if there's data available for this transition
                         if raw_data_list and trans in trans_list: 
                             dtrans = [t for t in trans_list if t == trans][0]
@@ -2378,21 +2689,15 @@ class Star(dict):
             if self['LINE_LISTS']:
                 if self['LINE_LISTS'] == 1: self.__addLineList()
                 elif self['LINE_LISTS'] == 2: 
-                    ll_filename = os.path.split(self['LL_FILE'].strip())[0] \
+                    llfn = os.path.split(self['LL_FILE'].strip())[0] \
                             and self['LL_FILE'].strip() \
                             or os.path.join(os.path.expanduser('~'),\
                                             'GASTRoNOoM','LineLists',\
                                             os.path.split(self['LL_FILE']\
                                                                 .strip())[1])
-                    lines = [line.split() 
-                            for line in DataIO.readFile(ll_filename) 
-                            if line[0] != '#' \
-                              and line.split()[0].replace('TRANSITION=','') in \
-                                  [molec[0] for molec in self['MOLECULE']]]
-                    new_lines = [Transition.makeTransition(star=self,trans=line) 
-                                 for line in lines]
-                    for trans in new_lines: 
-                        if str(trans) not in [str(t) for t in self['GAS_LINES']]:
+                    nls = Transition.makeTransitionsFromTransList(filename=llfn,star=self) 
+                    for trans in nls: 
+                        if trans and str(trans) not in [str(t) for t in self['GAS_LINES']]:
                             self['GAS_LINES'].append(trans)
             self['GAS_LINES'] = sorted(list(self['GAS_LINES']),\
                                        key=lambda x: str(x))
@@ -2421,7 +2726,7 @@ class Star(dict):
         
         """
         Set the default value for STARTYPE, which is the blackbody 
-        assumption (BB). Currently only for MCMax.
+        assumption (BB). 
         
         """
         
@@ -2436,93 +2741,127 @@ class Star(dict):
         
         """
         Set the default value for STARFILE, which is an empty string 
-        (ie STARTYPE is BB, no inputfile). Currently only for MCMax.
+        (ie STARTYPE is BB, no inputfile). 
         
         """
         
         if not self.has_key('STARFILE'):
-            self['STARFILE'] = ''
+            if self['STARTYPE'] == 'BB':
+                self['STARFILE'] = ''
+            elif self['STARTYPE'] == 'ATMOSPHERE':
+                modeltypes = ['comarcs','marcs','kurucz']
+                modeltype = None
+                for mt in modeltypes:
+                    if mt in self['ATM_FILENAME']:
+                        modeltype = mt
+                        continue
+                if modeltype is None: 
+                    raise IOError('Atmosphere model type is unknown.')
+                path = os.path.join(os.path.expanduser('~'),\
+                                    self.path_combocode,'StarFiles')
+                DataIO.testFolderExistence(path)
+                atmfile = self['ATM_FILENAME']
+                atmos = Atmosphere.Atmosphere(modeltype,filename=atmfile)
+                atmosmodel = atmos.getModel(teff=self['T_STAR'],\
+                                            logg=self['LOGG'])
+                starfile = os.path.join(path,'%s_teff%s_logg%s.dat'\
+                                        %(os.path.splitext(atmos.filename)[0],\
+                                        str(atmos.teff_actual),\
+                                        str(atmos.logg_actual)))
+                if not os.path.isfile(starfile):
+                    savetxt(starfile,atmosmodel,fmt=('%.8e'))
+                print 'Using input model atmosphere at '
+                print starfile
+                self['STARFILE'] = starfile
+            elif star['STARTYPE'] == 'FILE':
+                if not os.path.split(self['STARFILE'])[0]:
+                    self['STARFILE'] = os.path.join(os.path.expanduser('~'),\
+                                                    self.path_combocode,\
+                                                    'StarFiles',\
+                                                    self['STARFILE'])
+                print 'Using input star spectrum at '
+                print self['STARFILE']
         else:
             pass
 
 
 
-    def updateSelectTargetData(self,raw_data_list):
+    #def updateSelectTargetData(self,raw_data_list):
         
-        ''' 
-        Updating select_target_data.pro if necessary.
+        #''' 
+        #Updating select_target_data.pro if necessary.
         
-        @param raw_data_list: sorted filenames of the data in PATH_GAS_DATA
-        @type raw_data_list: list[string]
+        #@param raw_data_list: sorted filenames of the data in PATH_GAS_DATA
+        #@type raw_data_list: list[string]
                 
-        '''
+        #'''
         
-        filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                'scripts','select_target_data.pro')
-        select_target_data = DataIO.readFile(filename=filename)
-        i = 0
-        while True:
-            if select_target_data[i].find('stars=[') != -1: break
-            i += 1
-        stars_list = [starname.strip("'") 
-                      for starname in select_target_data[i].rstrip(']')\
-                                          .replace('stars=[','',1).split(',')
-                      if starname]
-        try:
-            #- Is the star present? Then no error, and star_presence will be 
-            #- put to True
-            star_presence = False
-            which_star = stars_list.index(self['STAR_NAME_GASTRONOOM'])
-            star_presence = True
-            j = 0
-            while True:
-                j += 1
-                if select_target_data[i+j]\
-                        .find('files_' + self['STAR_NAME_GASTRONOOM']) != -1: 
-                    break
-            starnames = select_target_data[i+j].rstrip(']').replace('files_'+\
-                           self['STAR_NAME_GASTRONOOM'] + '=[','',1).split(',')
-            files_list = [starname.strip("'") for starname in starnames]
-            if len(files_list) != len(raw_data_list) \
-                    or float(select_target_data[i+j+1].split('=')[1]) \
-                                != self['V_LSR'] \
-                    or float(select_target_data[i+j+2].split('=')[1]) \
-                                != self['VEL_INFINITY_GAS']:
-                raise ValueError
-        except ValueError:
-            #- add star to the list and find star_information entry point
-            if not star_presence:
-                stars_list.append(self['STAR_NAME_GASTRONOOM'])
-                select_target_data[i:i] = ['stars=[' \
-                                           + ','.join(["'" + starname + "'" 
-                                                  for starname in stars_list])\
-                                           + ']']
-                del select_target_data[i+1]
-                j = 0
-                while True:
-                    if select_target_data[i+j+1]\
-                            .find('remarks,extra=extra,remarks=remarks') != -1:
-                        break
-                    j += 1
-            select_target_data[i+j:i+j] \
-                    = ['files_' + self['STAR_NAME_GASTRONOOM'] + \
-                       '=[' + ','.join(["'" + os.path.split(f)[1] + "'" 
-                                        for f in raw_data_list]) + \
-                       ']']
-            select_target_data[i+j+1:i+j+1] \
-                    = ['vlsr_' + self['STAR_NAME_GASTRONOOM'] + \
-                       '=' + str(float(self['V_LSR']))]
-            select_target_data[i+j+2:i+j+2] \
-                    = ['vinfty_' + self['STAR_NAME_GASTRONOOM'] + \
-                       '=' + str(float(self['VEL_INFINITY_GAS']))]
-            select_target_data[i+j+3:i+j+3] = [' ']
-            if star_presence:
-                for k in range(4):
-                    del select_target_data[i+j+4]
-            DataIO.writeFile(os.path.join(os.path.expanduser('~'),\
-                                          'GASTRoNOoM','scripts',\
-                                          'select_target_data.pro'),\
-                             select_target_data)
+        #filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                #'scripts','select_target_data.pro')
+        #select_target_data = DataIO.readFile(filename=filename)
+        #i = 0
+        #while True:
+            #if select_target_data[i].find('stars=[') != -1: break
+            #i += 1
+        #stars_list = [starname.strip("'") 
+                      #for starname in select_target_data[i].rstrip(']')\
+                                          #.replace('stars=[','',1).split(',')
+                      #if starname]
+        #try:
+            ##- Is the star present? Then no error, and star_presence will be 
+            ##- put to True
+            #star_presence = False
+            #which_star = stars_list.index(self['STAR_NAME_GASTRONOOM'])
+            #star_presence = True
+            #j = 0
+            #while True:
+                #j += 1
+                #if select_target_data[i+j]\
+                        #.find('files_' + self['STAR_NAME_GASTRONOOM']) != -1: 
+                    #break
+            #starnames = select_target_data[i+j].rstrip(']').replace('files_'+\
+                           #self['STAR_NAME_GASTRONOOM'] + '=[','',1).split(',')
+            #files_list = [starname.strip("'") for starname in starnames]
+            #if len(files_list) != len(raw_data_list) \
+                    #or float(select_target_data[i+j+1].split('=')[1]) \
+                                #!= self['V_LSR'] \
+                    #or float(select_target_data[i+j+2].split('=')[1]) \
+                                #!= self['VEL_INFINITY_GAS']:
+                #raise ValueError
+        #except ValueError:
+            ##- add star to the list and find star_information entry point
+            #if not star_presence:
+                #stars_list.append(self['STAR_NAME_GASTRONOOM'])
+                #select_target_data[i:i] = ['stars=[' \
+                                           #+ ','.join(["'" + starname + "'" 
+                                                  #for starname in stars_list])\
+                                           #+ ']']
+                #del select_target_data[i+1]
+                #j = 0
+                #while True:
+                    #if select_target_data[i+j+1]\
+                            #.find('remarks,extra=extra,remarks=remarks') != -1:
+                        #break
+                    #j += 1
+            #select_target_data[i+j:i+j] \
+                    #= ['files_' + self['STAR_NAME_GASTRONOOM'] + \
+                       #'=[' + ','.join(["'" + os.path.split(f)[1] + "'" 
+                                        #for f in raw_data_list]) + \
+                       #']']
+            #select_target_data[i+j+1:i+j+1] \
+                    #= ['vlsr_' + self['STAR_NAME_GASTRONOOM'] + \
+                       #'=' + str(float(self['V_LSR']))]
+            #select_target_data[i+j+2:i+j+2] \
+                    #= ['vinfty_' + self['STAR_NAME_GASTRONOOM'] + \
+                       #'=' + str(float(self['VEL_INFINITY_GAS']))]
+            #select_target_data[i+j+3:i+j+3] = [' ']
+            #if star_presence:
+                #for k in range(4):
+                    #del select_target_data[i+j+4]
+            #DataIO.writeFile(os.path.join(os.path.expanduser('~'),\
+                                          #'GASTRoNOoM','scripts',\
+                                          #'select_target_data.pro'),\
+                             #select_target_data)
 
 
 
@@ -2874,7 +3213,7 @@ class Star(dict):
         
         if missing_key in ('T_STAR','L_STAR','R_STAR'):
             self.calcTLR()
-        elif missing_key in ('V_LSR','STAR_NAME_GASTRONOOM'):
+        elif missing_key in ('STAR_NAME_GASTRONOOM'):
             self.getClassAttr(missing_key)
         elif missing_key in ['R_MAX_' + species 
                              for species in self.species_list]:

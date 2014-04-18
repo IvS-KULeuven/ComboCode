@@ -178,7 +178,7 @@ class ResoStats(Statistics):
         
         
         
-    def setIntensities(self):
+    def setIntensities(self,use_bestvlsr=1):
         
         """
         The data intensities are stored in the dictionary 
@@ -191,6 +191,16 @@ class ResoStats(Statistics):
         The model values are lists in accordance with self.star_grid, the data
         values are single floats for the first dataset for the transition.
 
+        In addition, the loglikelihoods are calculated.
+
+        @keyword use_bestvlsr: Use the fitted best-guess for the v_lsr when 
+                               determining the velocity grid for the model. If 
+                               not, the vlsr from the Star.dat file or the fits
+                               file is used. 
+                               
+                               (default: 1)
+        @type use_bestvlsr: bool
+        
         """
         
         tnodata = [t for t in self.instruments['FREQ_RESO'] 
@@ -204,7 +214,6 @@ class ResoStats(Statistics):
         #- for both data and model. 
         for ist,st in enumerate(self.translist):
             #-- make sure the noise value is set in the data object.
-            print 'Calculating best Vlsr of models for %s.'%str(st)
             vexp = st.lpdata[0].getVexp()
             noise = st.lpdata[0].getNoise(vexp)
             
@@ -259,7 +268,7 @@ class ResoStats(Statistics):
                 self.noisy[ist] = False
             
             #-- Collect the loglikelihoods for all models
-            self.loglikelihood[st] = array([mt.getLoglikelihood() 
+            self.loglikelihood[st] = array([mt.getLoglikelihood(use_bestvlsr) 
                                             for mt in self.trans_models[st]])
             
             #-- Calculate the ratios for integrated and peak Tmbs (model/data)
@@ -358,7 +367,7 @@ class ResoStats(Statistics):
             print 'Statistics for %i: %s:'%(ist,str(st))
             print '-------------------------------------'
             print 'Data intensities [integrated --- peak --- STD (noise)]:'
-            print '%f K \t---\t %f K km/s \t---\t %f K'\
+            print '%f K km/s \t---\t %f K \t---\t %f K'\
                     %(self.dinttmb[st],self.dpeaktmb[st],noise)
             print '-------------------------------------'
             print 'Model/Data intensities [integrated --- peak --- lll]:'

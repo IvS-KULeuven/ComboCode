@@ -96,7 +96,9 @@ class Vic():
         subprocess.call('ssh %s@login.vic3.cc.kuleuven.be mkdir %s'\
                         %(self.account,main_vic_folder) +'/CustomAbundances/',\
                         shell=True)
-
+        subprocess.call('ssh %s@login.vic3.cc.kuleuven.be mkdir %s'\
+                        %(self.account,main_vic_folder) +'/StarFiles/',\
+                        shell=True)
 
 
     def setSphinxDb(self,sph_db):
@@ -421,6 +423,7 @@ class Vic():
         will_calculate_stuff = 0
         custom_files = []
         opacity_files = []
+        starfiles = []
         for model_id_sphinx in self.sphinx_model_ids[self.current_model]:
             these_trans = [trans 
                            for trans in self.transitions[self.current_model]
@@ -451,6 +454,7 @@ class Vic():
                 path = '/data/leuven/%s/%s/COCode/CustomFiles/'\
                        %(self.disk,self.account)
                 molec_dict = trans.molecule.makeDict(path)
+                starfiles.append(molec_dict.pop('STARFILE',''))
                 commandfile = \
                      ['%s=%s'%(k,v) 
                       for k,v in sorted(actual_command_list.items()) 
@@ -493,6 +497,15 @@ class Vic():
         if not will_calculate_stuff:
             return
         else:
+            starfiles = list(set([f for f in starfiles if f]))
+            if len(starfiles) > 1: 
+                print('WARNING! Multiple starfiles detected in grid in Vic.py!')
+            if starfiles:
+                path = os.path.join('/data','leuven',self.disk,self.account,\
+                                 'COCode','StarFiles','starfile_tablestar.dat')
+                subprocess.call(['scp ' + starfiles[0] + ' ' + self.account + \
+                                 '@login.vic3.cc.kuleuven.be:' + \
+                                 path],shell=True)
             opacity_files = [f 
                              for f in set(opacity_files)
                              if f != 'temdust.kappa']

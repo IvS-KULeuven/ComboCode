@@ -26,6 +26,144 @@ from cc.tools.numerical import Interpol
 from cc.statistics import BasicStats as bs
 
 
+def getLineStrengths(trl,mode='dint',nans=1,n_data=0):
+    
+    '''
+    Get the line strengths from Transition() objects, either from data or from
+    models defined by the mode.
+    
+    Modes:
+    - dint: Integrated line strength of an observed line in spectral mode
+    - mint: Intrinsic integrated line strength of a modeled line
+    - dtmb: Integrated line strength in main-beam temperature (Kelvin*km/s) of 
+            a heterodyne instrument
+    - mtmb: Modeled line strength after convolution with beam profile and 
+            conversion to main-beam temperature.
+    - cint: A combination of dint and mint. Data objects are assumed to be 
+            listed first.
+    - ctmb: A combination of dtmb and mtmb. Data objects are assumed to be 
+            listed first.
+    For data: Blended lines are returned as negative. If a line is in a blend,
+    but not attributed a line strength, the line strength of the 'main 
+    component' is returned, also as a negative value.
+    
+    For now no errors for any mode, except mode==dint or cint.
+    
+    @param trl: The Transition() objects.
+    @type trl: list[Transition()]
+    
+    @keyword mode: The mode in which the method is called. Either 'dint', 
+                   'mint', 'mtmb', 'dtmb', 'cint' or 'ctmb' values.
+                   
+                   (default: 'dint')
+    @type mode: str
+    @keyword nans: Set undefined line strengths as nans. Errors are set as a 
+                   nan if it concerns mode==dint. Otherwise, they are not set.
+                   
+                   (default: 1)
+    @type nans: bool
+    @keyword n_data: The number of data Star() objects, assuming they are the 
+                     first in the star_grid. Only required if mode == 'combo'.
+                     
+                     (default: 0)
+    @type n_data: int
+    
+    @return: The requested line strengths in W/m2, or K*km/s, as well as errors
+             if applicable. If a combo mode is requested, errors are given when
+             available, and listed as None if not available (Plotting2 module 
+             knows how to deal with this).
+    @rtype: (list[float],list[float])
+    
+    '''
+    
+    modes = {'dint': 'getIntIntPacs',\
+             'mint': 'getIntIntIntSphinx',\
+             'dtmb': 'getIntTmbData',\
+             'mtmb': 'getIntTmbSphinx'}
+    
+    n_data = int(n_data)
+    if mode[0] == 'c':
+        mode = 'd%s'%mode[1:]
+    elif mode[0] == 'd':
+        n_data = len(trl)
+    else: 
+        n_data = 0
+    mode = mode.lower()
+    if mode not in modes.keys():
+        print 'Mode unrecognized. Can be dint, mint, dtmb, mtmb, cint or ctmb.'
+        return
+    
+    allints = []
+    allerrs = []
+    for it,t in enumerate(trl):
+        if n_data and it == n_data:
+            mode = 'm%s'%mode[1:]
+        if t is None:
+            allints.append(nans and float('nan') or None)
+            continue
+        nls = getattr(t,modes[mode])()
+        if mode == 'dint':
+            if nls[0] == 'inblend':
+                for tb in nls[2]:
+                    bls,ebls,blends = getattr(tb,modes[mode])()
+                    if bls != 'inblend': 
+                        nls = (abs(bls)*(-1),ebls,blends)
+                        break
+            nint = (nans and nls[0] is None) and float('nan') or nls[0]
+            nerr = (nans and nls[0] is None) and float('nan') or nls[1]
+            allints.append(nint)
+            allerrs.append(nerr)
+        else:
+            allints.append((nans and nls is None) and float('nan') or nls)
+            allerrs.append((nans and nls is None) and float('nan') or nls)
+    
+    allints, allerrs = array(allints), array(allerrs)
+    return (allints,allerrs)
+
+
+def getTransFromStarGrid(sg,criterion,mode='index'):
+    
+    '''
+    Select a transition from a list of Star() objects based on a given 
+    criterion.
+    
+    Different modes are possible: 'index' and 'sample'. The former returns a 
+    transition with given list-index in the Star()['GAS_LINES'] which should
+    always return the same transition for every object. The latter returns all 
+    transitions that are equal to the a given sample transition (ie following 
+    the equality rules of a Transition() object).
+    
+    @param sg: The grid of Star() objects.
+    @type sg: list[Star()]
+    @param criterion: The selection criterion, based on the mode.
+    @type criterion: int/Transition()
+    
+    @keyword mode: The selection mode. For now either 'index' or 'sample'.
+    
+                   (default: 'index')
+    @type mode: string
+    
+    @return: The selected Transition() objects are returned. 
+    @rtype: list[Transition()]
+    
+    '''
+    
+    if mode.lower() == 'index':
+        criterion = int(criterion)
+    elif mode.lower() == 'sample':
+        pass
+    else:
+        print 'Keyword mode was not recognized. Set to "index" or "sample".'
+        return
+    
+    if mode == 'index':
+        trl = [s['GAS_LINES'][criterion] for s in sg]
+    elif mode == 'sample':
+        trl = [s.getTransition(criterion) for s in sg]
+    return trl
+
+
+
 def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,pacs=0):
     
     '''
@@ -131,13 +269,20 @@ def makeTransition(trans,star=None,def_molecs=None,\
     
     '''
     Create a Transition instance based on a Star object and a standard CC input 
-    line, with 12 entries in a list.
+    line, with 12 entries in a list. This method assumes the Transition 
+    definition has been screened by DataIO.checkEntryInfo. If the 12th entry is
+    not an integer, n_quad is taken from the Star()object if available, and 
+    otherwise set to 100.
     
     If a star object is not given, the method creates Molecule() objects itself
     For now only 12C16O, 1H1H16O and p1H1H16O are possible.
     
     @param trans: the input line with 12 entries, the first being the molecule,
-                  followed by all 11 CC input parameters for a transition
+                  followed by all 11 CC input parameters for a transition. It 
+                  is possible also to give the GASTRoNOoM syntax for a 
+                  transition, without n_quad in the end. In that case, n_quad 
+                  is equal to 100. Any parameters given after the 11th, 
+                  respectively the 10th, parameter are ignored.                 
     @type trans: list[string]
     
     @keyword star: The star object providing basic info
@@ -161,6 +306,16 @@ def makeTransition(trans,star=None,def_molecs=None,\
     
     '''
     
+    if trans[0].find('.') != -1:
+        path = os.path.join(path_combocode,'Data')
+        imolec = DataIO.getInputData(keyword='MOLEC_TYPE',path=path,\
+                                     filename='Molecule.dat',\
+                                     make_float=0).index(trans[0])
+        molec_short = DataIO.getInputData(keyword='TYPE_SHORT',path=path,\
+                                          filename='Molecule.dat')[imolec]
+    else:
+        molec_short = trans[0]
+
     if star is None and def_molecs is None: 
         def_molecs = {'12C16O':Molecule.Molecule('12C16O',61,61,240,\
                                                path_combocode=path_combocode),\
@@ -168,19 +323,30 @@ def makeTransition(trans,star=None,def_molecs=None,\
                                                path_combocode=path_combocode),\
                       'p1H1H16O':Molecule.Molecule('p1H1H16O',32,90,1029,\
                                                path_combocode=path_combocode)}
-        molec = def_molecs.get(trans[0].replace('TRANSITION=',''),None)
+        molec = def_molecs.get(molec_short,None)
         path_gastronoom = None
         umis = 0
     elif star is None:
-        molec = def_molecs.get(trans[0].replace('TRANSITION=',''),None)
+        molec = def_molecs.get(molec_short,None)
         path_gastronoom = None
         umis = 0
     else:
-        molec = star.getMolecule(trans[0].replace('TRANSITION=',''))
+        molec = star.getMolecule(molec_short)
         umis = star['USE_MASER_IN_SPHINX']
         path_combocode = star.path_combocode
         path_gastronoom = star.path_gastronoom
-        
+    
+    n_quad = None
+    if len(trans) > 11:
+        try:
+            n_quad = int(trans[11])
+        except ValueError:
+            pass
+    if n_quad is None and star <> None:
+        n_quad = star['N_QUAD']
+    elif n_quad is None:
+        n_quad = 100
+    
     if molec <> None:
         return Transition(molecule=molec,\
                           vup=int(trans[1]),jup=int(trans[2]),\
@@ -188,7 +354,7 @@ def makeTransition(trans,star=None,def_molecs=None,\
                           vlow=int(trans[5]),jlow=int(trans[6]),\
                           kalow=int(trans[7]),kclow=int(trans[8]),\
                           telescope=trans[9],offset=float(trans[10]),\
-                          n_quad=int(trans[11]),use_maser_in_sphinx=umis,\
+                          n_quad=n_quad,use_maser_in_sphinx=umis,\
                           path_combocode=path_combocode,\
                           path_gastronoom=path_gastronoom)
     else:
@@ -196,7 +362,7 @@ def makeTransition(trans,star=None,def_molecs=None,\
 
 
 
-def makeTransitionsFromTransList(filename,n_entry=14,\
+def makeTransitionsFromTransList(filename,star=None,\
                                  path_combocode=os.path.join(os.path\
                                             .expanduser('~'),'ComboCode')):
     
@@ -209,11 +375,11 @@ def makeTransitionsFromTransList(filename,n_entry=14,\
     @param filename: The filename to the linelist
     @type filename: string
     
-    @keyword n_entry: The number of entries on the TRANSITION input line, 
-                      including the TRANSITION=MOLECULE entry.
+    @keyword star: The star object providing basic info. Not required, in which
+                   case assumptions concerning the Molecule() objects are made.
     
-                      (default: 14)
-    @type n_entry: int
+                   (default: None)
+    @type star: Star()
     @keyword path_combocode: The CC home folder
     
                              (default: ~/ComboCode/)
@@ -226,13 +392,16 @@ def makeTransitionsFromTransList(filename,n_entry=14,\
     
     def_molecs = {'12C16O':Molecule.Molecule('12C16O',61,61,240,\
                                              path_combocode=path_combocode),\
+                  '13C16O':Molecule.Molecule('13C16O',61,61,240,\
+                                             path_combocode=path_combocode),\
                   '1H1H16O':Molecule.Molecule('1H1H16O',39,90,1157,\
                                               path_combocode=path_combocode),\
                   'p1H1H16O':Molecule.Molecule('p1H1H16O',32,90,1029,\
                                                path_combocode=path_combocode)}
     trl = DataIO.readDict(filename,multi_keys=['TRANSITION'])
+    n_entry = len(trl['TRANSITION'][0].split())
     trl_sorted = DataIO.checkEntryInfo(trl['TRANSITION'],n_entry,'TRANSITION')
-    trans = [makeTransition(trans=t,def_molecs=def_molecs,\
+    trans = [makeTransition(trans=t,def_molecs=def_molecs,star=star,\
                             path_combocode=path_combocode) 
              for t in trl_sorted]
     return trans
@@ -995,7 +1164,35 @@ class Transition():
             raw_input('Something fishy is going on in Transition.py... '+\
                     'non-unique transition indices! Abort')
         self.frequency = float(self.radiat_trans['frequency'])
-         
+
+
+    def makeAxisLabel(self,include_mol=1):
+        
+        '''
+        Make a label suitable to be used on an axis in a plot.
+        
+        At the moment always returns a label typical for integrated line 
+        strength.
+        
+        @keyword include_mol: Include the molecule name in the label.
+        
+                              (default: 1)
+        @type include_mol: bool
+        
+        @return: The label
+        @rtype: str
+        
+        '''
+        
+        t = self.makeLabel(inc_vib=0).replace('$','',2)
+        if include_mol:
+            m = self.molecule.molecule_plot.replace('$','',4)
+            axislabel = 'I_{\mathrm{%s} (%s)}'%(m,t)
+        else:
+            axislabel = 'I_{%s}'%(t)
+        return axislabel
+    
+        
 
     def makeLabel(self,inc_vib=1,return_vib=0):
         
@@ -1048,7 +1245,7 @@ class Transition():
                 elif return_vib:
                     return r'$\nu=%i$' %(self.vup)
                 else:
-                    return r'$\nu=%i$, $J=%i-%i' \
+                    return r'$\nu=%i$, $J=%i-%i$' \
                            %(self.vup,self.jup,self.jlow)
             elif self.molecule.isWater():
                 ugly = r'J_{\mathrm{K}_\mathrm{a}, \mathrm{K}_\mathrm{c}}'
@@ -1481,6 +1678,8 @@ class Transition():
         mvel = self.sphinx.getVelocityIntrinsic()*10**5
         #-- Get the intrinsic intensity of the line in erg/s/cm2/Hz
         mint = self.sphinx.getLPIntrinsic()
+        #-- Subtract the stellar continuum, which is not part of the line.
+        mint = mint - mint[0]
         
         #-- Convert velocity grid to frequency grid, with self.frequency as 
         #   zero point (the rest frequency of the line, without vlsr) in Hz
@@ -1522,6 +1721,9 @@ class Transition():
             return
         mvel = self.sphinx.getVelocity()
         mcon = self.sphinx.getLPConvolved()
+        #-- Subtract the stellar continuum, which is not part of the line.
+        mcon = mcon - mcon[0]
+        
         return trapz(x=mvel,y=mcon)
     
     
@@ -1544,6 +1746,9 @@ class Transition():
             return
         mvel = self.sphinx.getVelocity()
         mtmb = self.sphinx.getLPTmb()
+        #-- Subtract the stellar continuum, which is not part of the line.
+        mtmb = mtmb -mtmb[0]
+        
         return trapz(x=mvel,y=mtmb)
     
     
@@ -1567,6 +1772,8 @@ class Transition():
         if self.sphinx is None:
             return
         mtmb = self.sphinx.getLPTmb()
+        #-- Subtract the stellar continuum, which is not part of the line.
+        mtmb = mtmb -mtmb[0]
         imid = len(mtmb)/2
         return mean(mtmb[imid-2:imid+3])
          
@@ -1655,7 +1862,8 @@ class Transition():
         @type fn: string
         @param dint: The value for the integrated intensity in W/m2. If the 
                      line is part of a blend that has already been added, this
-                     may also say 'inblend'.
+                     may also say 'inblend'. All transitions involved in the 
+                     blend are then given by st_blends. 
         @type dint: float or string
         @param dint_err: The fitting uncertainty on the intensity  + absolute 
                          flux calibration uncertainty of 20%.
@@ -1678,7 +1886,7 @@ class Transition():
         self.intintpacs_blends[fn] = st_blends
         
     
-    def getIntIntPacs(self,fn):
+    def getIntIntPacs(self,fn=''):
     
         '''
         If already set, the integrated intensity can be accessed here based on
@@ -1693,14 +1901,18 @@ class Transition():
         both by having at least 2 model transitions in a fitted line's breadth
         or by having a fitted_fwhm/pacs_fwhm of ~ 1.4 or more.
         
-        @param fn: The data filename of PACS that contains the measured 
-                   integrated intensity.
+        @keyword fn: The data filename of PACS that contains the measured 
+                     integrated intensity. Can be set to '' or None if simply the
+                     first entry in the keys() list is to be used. Mostly only 
+                     one line strength is associated with the object anyway.
+                     
+                     (default: '')
         @type fn: string
         
         @return: The integrated intensity measured in PACS for this filename, 
                  in SI units of W/m2, and the fitting uncertainty + absolute 
                  flux calibration uncertainty of 20%.
-        @rtype: (float,float)
+        @rtype: (float,float,list)
         
         '''
         
@@ -1708,11 +1920,16 @@ class Transition():
             return (self.intintpacs[fn],\
                     self.intinterrpacs[fn],\
                     self.intintpacs_blends[fn])
+        elif not fn and self.intintpacs.keys():
+            k = self.intintpacs.keys()[0]
+            return (self.intintpacs[k],\
+                    self.intinterrpacs[k],\
+                    self.intintpacs_blends[k])
         else:
             return (None,None,None)
         
     
-    def getLoglikelihood(self):
+    def getLoglikelihood(self,use_bestvlsr=1):
         
         """
         Calculate the loglikelihood of comparison between sphinx and dataset.
@@ -1721,22 +1938,34 @@ class Transition():
         profiles.
         
         Done only for the first dataset! Makes use of the filtered sphinx 
-        profile for the best vlsr, see self.getBestVlsr()
+        profile for the best vlsr, see self.getBestVlsr() if use_bestvlsr is 
+        True. If this keyword is False, filters the sphinx model for the vlsr 
+        from Star.dat or the fits file.
         
         Returns None if sphinx or data profile are not available. 
         
         Rescales the sphinx profile according to the difference in integrated
         Tmb between dataset and sphinx profile.
 
+        @keyword use_bestvlsr: Use the fitted best-guess for the v_lsr when 
+                               determining the velocity grid for the model. If 
+                               not, the vlsr from the Star.dat file or the fits
+                               file is used. 
+                               
+                               (default: 1)
+        @type use_bestvlsr: bool
+
         @return: The loglikelihood
         @rtype: float
         
         """
         
-        if self.best_vlsr is None:
+        if use_bestvlsr and self.best_vlsr is None:
             self.getBestVlsr()
-        if self.best_vlsr is None:
-            return None
+        if use_bestvlsr and self.best_vlsr is None:
+            print 'Using standard v_lsr from Star.dat or fits file for LLL.'
+            use_bestvlsr = 0
+            
         vel = self.lpdata[0].getVelocity()
         noise = self.lpdata[0].getNoise()
         window = self.fittedlprof['intwindow']
@@ -1755,6 +1984,18 @@ class Transition():
             #-- Note that even if data are not noisy, the fitted lprof is still
             #   used here, in case an absorption is detected. 
             shift_factor = self.getIntTmbData()/self.getIntTmbSphinx()
-        msel = self.best_mfilter[abs(vel-vlsr)<=window*vexp]
-        msel = msel*shift_factor
+        
+        if use_bestvlsr:
+            msel = self.best_mfilter[abs(vel-vlsr)<=window*vexp]
+            msel = msel*shift_factor
+        else:
+            mvel = self.sphinx.getVelocity()
+            mtmb = self.sphinx.getLPTmb()
+            res = vel[1]-vel[0]
+            mtmb_filter = filtering.filter_signal(x=mvel+vlsr,y=mtmb,\
+                                                  ftype='box',x_template=vel,\
+                                                  window_width=res)
+            msel = mtmb_filter[1][abs(vel-vlsr)<=window*vexp]
+            msel = msel*shift_factor
+
         return bs.calcLoglikelihood(data=dsel,model=msel,noise=noise)

@@ -72,17 +72,19 @@ class PlotDust(PlottingSession):
                 
 
 
-    def plotSed(self,star_grid,cfg='',iterative=0,no_models=0):
+    def plotSed(self,star_grid=[],cfg='',iterative=0,no_models=0,\
+                fn_add_star=0,fn_plt=''):
         
         """ 
-        Creating an SED with 1 or more models and data. 
+        Creating an SED with 0, 1 or more models and data. 
         
         Includes data preparation on the spot.
         
-        @param star_grid: list of Star() models to plot. If star_grid is [], 
-                          only data are plotted.
+        @keyword star_grid: list of Star() models to plot. If star_grid is [], 
+                            only data are plotted.
+                            
+                            (default: [])
         @type star_grid: list[Star()]
-        
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                         
@@ -99,7 +101,15 @@ class PlotDust(PlottingSession):
                                   
                             (default: 0)
         @type no_models: bool
-                
+        @keyword fn_add_star: Add the star name to the requested plot filename.
+        
+                              (default: 1)
+        @type fn_add_star: bool
+        @keyword fn_plt: A plot filename for the SED plot.
+                         
+                         (default: '')
+        @type fn_plt: string
+        
         """
         
         if self.sed is None:
@@ -108,31 +118,37 @@ class PlotDust(PlottingSession):
         print '***********************************'
         print '** Creating SED plot.'
         
-        if cfg:
-            cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
-        else:
-            cfg_dict = dict()
+        cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('no_models'):
             no_models = cfg_dict['no_models']
+        if cfg_dict.has_key('fn_add_star'):
+            fn_add_star = bool(cfg_dict['fn_add_star'])
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg_dict['filename']
+            del cfg_dict['filename']
         ccpath = os.path.join(self.path_combocode,'Data')
         data_labels = dict([(dt,(n,ls))
                             for n,dt,ls in zip(DataIO.getInputData(path=ccpath,\
                                                         keyword='PLOT_NAMES',\
-                                                        filename='Dust.dat',\
+                                                        filename='Sed.dat',\
                                                         remove_underscore=1),\
                                                DataIO.getInputData(path=ccpath,\
                                                         keyword='DATA_TYPES',\
-                                                        filename='Dust.dat'),\
+                                                        filename='Sed.dat'),\
                                                DataIO.getInputData(path=ccpath,\
                                                         keyword='LINE_TYPES',\
-                                                        filename='Dust.dat'))])
+                                                        filename='Sed.dat'))])
         
         #- filename settings and copying inputfiles to plot output folder
-        filename = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
-                                'stars',self.star_name,self.plot_id,\
-                                'SED_%s'%self.star_name)
+        if not fn_plt:
+            fn_plt = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
+                                  'stars',self.star_name,self.plot_id,\
+                                  'SED_%s'%self.star_name)
+        if fn_add_star:
+            fn_plt = '_'.join([fn_plt,self.star_name])
         if iterative:
-            filename = filename + '_iterative_%i'%iterative
+            fn_plt = fn_plt + '_iterative_%i'%iterative
+        
         if self.inputfilename <> None:
             subprocess.call(['cp ' + self.inputfilename + ' ' + \
                              os.path.join(os.path.expanduser('~'),'MCMax',\
@@ -146,21 +162,21 @@ class PlotDust(PlottingSession):
         data_x = []
         data_y = []
         line_types = []
-        for k,(w,f) in sorted([datatype 
-                               for datatype in self.sed.data.items()
-                               if 'PHOT' not in datatype[0].upper()]):
-             keytags.append(data_labels[k][0])
-             data_x.append(self.sed.data[k][0])
-             data_y.append(self.sed.data[k][1])
-             line_types.append(data_labels[k][1])
+        for (dt,fn),(w,f) in sorted([dset
+                                     for dset in self.sed.data.items()
+                                     if 'PHOT' not in dset[0][0].upper()]):
+             keytags.append(data_labels[dt][0])
+             data_x.append(self.sed.data[(dt,fn)][0])
+             data_y.append(self.sed.data[(dt,fn)][1])
+             line_types.append(data_labels[dt][1])
         
-        for k,(w,f) in sorted([datatype 
-                               for datatype in self.sed.data.items()
-                               if 'PHOT' in datatype[0].upper()]):
-             keytags.append(data_labels[k][0])
-             data_x.append(self.sed.data[k][0])
-             data_y.append(self.sed.data[k][1])
-             line_types.append(data_labels[k][1])
+        for (dt,fn),(w,f) in sorted([dset 
+                                     for dset in self.sed.data.items()
+                                     if 'PHOT' in dset[0][0].upper()]):
+             keytags.append(data_labels[dt][0])
+             data_x.append(self.sed.data[(dt,fn)][0])
+             data_y.append(self.sed.data[(dt,fn)][1])
+             line_types.append(data_labels[dt][1])
         
         #- Collect model data as well as keytags and set line types
         model_ids = [s['LAST_MCMAX_MODEL'] 
@@ -179,24 +195,25 @@ class PlotDust(PlottingSession):
             keytags.append(model_id.replace('_','\_'))
         line_types += [0]*len(star_grid)
         keytags = [tag.replace('#','') for tag in keytags]
+        extra_pars = dict()
         try:
-            ymax = 1.3*max([max(dy) for dy in data_y])
+            extra_pars['ymax'] = 1.3*max([max(dy) for dy in data_y])
         except ValueError:
             pass
         try:    
-            ymin = 0.5*min([min(dy) for dy in data_y])
+            extra_pars['ymin'] = 0.5*min([min(dy) for dy in data_y])
         except ValueError:
             pass        
-        filename = Plotting2.plotCols(x=data_x,y=data_y,filename=filename,\
+        filename = Plotting2.plotCols(x=data_x,y=data_y,filename=fn_plt,\
                                       figsize=(20,10),number_subplots=1,\
                                       plot_title=plot_title,fontsize_axis=20,\
                                       keytags=keytags,fontsize_title=24,\
                                       linewidth=3,key_location=(0.0,0.75),\
-                                      xlogscale=1,transparent=0,cfg=cfg,\
+                                      xlogscale=1,transparent=0,cfg=cfg_dict,\
                                       line_types=line_types,ylogscale=0,\
                                       fontsize_ticklabels=20,fontsize_key=18,\
-                                      xmin=2,xmax=200,ymin=ymin,ymax=ymax,\
-                                      extension='.pdf')
+                                      xmin=2,xmax=200,extension='.pdf',\
+                                      **extra_pars)
         print '** Your SED plots can be found at:'
         print filename
         print '***********************************'
@@ -325,10 +342,7 @@ class PlotDust(PlottingSession):
                           ' list only, not yet implemented.')
             #- Requires DUST_LIST and T_CONTACT to be taken from the log file. 
             #- It's possible, but needs some programming
-        if cfg:
-            cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
-        else:
-            cfg_dict = dict()
+        cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('powerlaw'):
             powerlaw = cfg_dict['powerlaw']
         plot_filenames = []
@@ -464,8 +478,8 @@ class PlotDust(PlottingSession):
                                     'dust_opacities_%s'%'_'.join(species))
             filename = Plotting2.plotCols(x=wl_list,y=q_list,\
                                           filename=filename,\
-                                          xaxis='$\lambda$ ($\mu$m)',cfg=cfg,\
-                                          yaxis='$\kappa_\lambda$ (cm$^2$/g)',\
+                                          xaxis='$\lambda$ ($\mu \mathrm{m}$)',cfg=cfg,\
+                                          yaxis='$\kappa_\lambda$ ($\mathrm{cm}^2\mathrm{/g}$)',\
                                           keytags=species,fontsize_key=20,\
                                           plot_title='Dust Opacities',\
                                           key_location=(0.05,0.05),\
@@ -496,8 +510,8 @@ class PlotDust(PlottingSession):
                            %(sp,str(star['A_%s'%sp]),int(star['T_DES_%s'%sp])) 
                            for sp in star['DUST_LIST']]
                 filenames.append(Plotting2.plotCols(x=wave,y=opacities,\
-                                 xaxis='$\lambda$ ($\mu$m)',\
-                                 yaxis='$\kappa_\lambda$ (cm$^2$/g)',\
+                                 xaxis='$\lambda$ ($\mu \mathrm{m}$)',\
+                                 yaxis='$\kappa_\lambda$ ($\mathrm{cm}^2\mathrm{/g}$)',\
                                  keytags=keytags,plot_title=title,\
                                  key_location=(0.05,0.05),filename=filename,\
                                  cfg=cfg,number_subplots=1,xlogscale=1,\
@@ -559,10 +573,7 @@ class PlotDust(PlottingSession):
             return      
         elif not star_grid and models:
             star_grid = self.makeMCMaxStars(models=models)
-        if cfg:
-            cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
-        else:
-            cfg_dict = dict()
+        cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('plot_default'):
             plot_default = int(cfg['plot_default'])
         x = []

@@ -112,7 +112,6 @@ class ColumnDensity(object):
             self.dustfractions[species] = comp.pop(0)
             self.compd[species] = self.dustfractions[species]*dens
             self.fullcoldens[species] = trapz(x=self.rad,y=self.compd[species])      
-            
             #- Determine the column density from 90% of the dust species formed
             #- onward, based on the mass fractions!
             #- Not before, because the comparison with H2 must be made,
@@ -127,10 +126,14 @@ class ColumnDensity(object):
             denssel = self.compd[species]\
                                 [(self.dustfractions[species]>0.9*a_species)*\
                                  (self.compd[species]>mindens)]
-            self.coldens[species] = trapz(x=radsel,y=denssel)        
-            self.r_min_cd[species] = radsel[0]
-            self.r_max_cd[species] = radsel[-1]
-            
+            self.coldens[species] = trapz(x=radsel,y=denssel)   
+            if radsel.size:
+                self.r_min_cd[species] = radsel[0]
+                self.r_max_cd[species] = radsel[-1]
+            else:
+                print 'Threshold dust mass fraction not reached for %s.'%species
+                self.r_min_cd[species] = 0
+                self.r_max_cd[species] = 0
             #- Determine the actual destruction radius and temperature.
             #- Taken where the density reaches 1% of the maximum density
             #- (not mass fraction).
@@ -235,6 +238,9 @@ class ColumnDensity(object):
         if not self.dustmolar[ispecies]:
             print 'No molar weight given for dust species %s in Dust.dat.'\
                   %species
+            return 0
+        if self.r_min_cd[species] == 0:
+            print 'No significant amount of dust species %s found.'%species
             return 0
         nspecies = self.coldens[species]*self.avogadro/self.dustmolar[ispecies]
         nh2 = self.hydrogenColDens(species)

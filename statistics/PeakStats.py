@@ -149,7 +149,6 @@ class PeakStats(Statistics):
         
         for ifn,(fn,dwav) in enumerate(zip(inst.data_filenames,\
                                            inst.data_wave_list)):
-            fn = os.path.split(fn)[1]
             #-- Create a list of sample transitions
             self.sample_trans[fn] = [trans
                                      for trans in sample_trans
@@ -202,7 +201,6 @@ class PeakStats(Statistics):
             all_mflux = []
             all_dstd = []
             for fn,dflux in zip(inst.data_filenames,inst.data_flux_list):
-                fn = os.path.split(fn)[1]
                 dstd = self.data_stats[self.instrument][fn]['std']
                 sphinx_file = os.path.join(os.path.expanduser('~'),\
                                            'GASTRoNOoM',self.path_code,\
@@ -424,7 +422,6 @@ class PeakStats(Statistics):
 
         inst = self.instruments[self.instrument]
         filenames = filename is None and inst.data_filenames or [filename]
-        filenames = [os.path.split(fn)[1] for fn in filenames]
         if data_type == 'central_wav':
             return array([v2     
                           for fn in filenames

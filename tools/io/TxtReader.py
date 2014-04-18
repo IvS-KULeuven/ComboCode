@@ -62,6 +62,9 @@ class TxtReader(LPDataReader):
         
         start_i = self.filename[-6:] == '.table' and 1 or 0
         data = DataIO.readCols(filename=self.filename,start_row=start_i,nans=1)
+        if self.filename[-6:] == '.ISPEC':
+            del data[0]
+            data[0] = data[0]/1000.
         self.contents['velocity'] = data[0]
         self.contents['flux'] = data[1]
         if self.contents['velocity'][0] > self.contents['velocity'][-1]: 

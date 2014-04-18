@@ -134,6 +134,7 @@ class Atmosphere(object):
         
         """
         
+        if self.modelgrid is None: self.readModelGrid()
         return self.modelgrid
         
         

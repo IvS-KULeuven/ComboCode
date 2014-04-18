@@ -14,6 +14,7 @@ import subprocess
 from scipy import array
 
 from cc.tools.io import DataIO
+from cc.tools.io import Atmosphere
 from cc.modeling.ModelingSession import ModelingSession
 from cc.modeling.objects.Molecule import Molecule
 
@@ -30,7 +31,8 @@ class Gastronoom(ModelingSession):
                                                   'ComboCode'),\
                  path_gastronoom='runTest',vic=None,sphinx=0,\
                  replace_db_entry=0,cool_db=None,ml_db=None,sph_db=None,\
-                 pacs_db=None,skip_cooling=0,recover_sphinxfiles=0):
+                 pacs_db=None,skip_cooling=0,recover_sphinxfiles=0,\
+                 new_entries=[]):
     
         """ 
         Initializing an instance of a GASTRoNOoM modeling session.
@@ -61,6 +63,12 @@ class Gastronoom(ModelingSession):
                                    
                                    (default: 0)
         @type replace_db_entry: bool
+        @keyword new_entries: The new model_ids when replace_db_entry is 1
+                                   of other models in the grid. These are not 
+                                   replaced!
+                                   
+                                   (default: [])
+        @type new_entries: list[str]     
         @keyword skip_cooling: Skip running cooling in case a model is not 
                                found in the database, for instance if it is 
                                already known that the model will fail
@@ -96,15 +104,16 @@ class Gastronoom(ModelingSession):
         super(Gastronoom,self).__init__(code='GASTRoNOoM',\
                                         path=path_gastronoom,\
                                         path_combocode=path_combocode,\
-                                        replace_db_entry=replace_db_entry)
+                                        replace_db_entry=replace_db_entry,\
+                                        new_entries=new_entries)
         self.vic = vic
         self.trans_in_progress = []
         self.sphinx = sphinx
-        cool_keys = os.path.join(self.path_combocode,'CC',\
+        cool_keys = os.path.join(self.path_combocode,'cc',\
                                  'Input_Keywords_Cooling.dat')
-        ml_keys = os.path.join(self.path_combocode,'CC',\
+        ml_keys = os.path.join(self.path_combocode,'cc',\
                                'Input_Keywords_Mline.dat')
-        sph_keys = os.path.join(self.path_combocode,'CC',\
+        sph_keys = os.path.join(self.path_combocode,'cc',\
                                 'Input_Keywords_Sphinx.dat')
         self.cooling_keywords = [line.strip() 
                                  for line in DataIO.readFile(cool_keys) 
@@ -118,7 +127,8 @@ class Gastronoom(ModelingSession):
         DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
                                    'GASTRoNOoM',self.path,'data_for_mcmax'))
         self.trans_bools = []
-        self.done_mline = False
+        self.mline_done = False
+        self.cool_done = False
         self.cooling_molec_keys = ['ENHANCE_ABUNDANCE_FACTOR',\
                                    'ABUNDANCE_FILENAME',\
                                    'NUMBER_INPUT_ABUNDANCE_VALUES',\
@@ -271,12 +281,13 @@ class Gastronoom(ModelingSession):
         
         """
         
-        for model_id,cool_dict in self.cool_db.items():
+        for model_id,cool_dict in sorted(self.cool_db.items()):
             model_bool = self.compareCommandLists(self.command_list.copy(),\
                                                   cool_dict,'cooling',\
                                                   extra_dict=molec_dict)
             if model_bool:
-                if self.replace_db_entry: 
+                if self.replace_db_entry \
+                        and model_id not in self.new_entries: 
                     self.deleteCoolingId(model_id)
                     return False
                 else:
@@ -309,7 +320,7 @@ class Gastronoom(ModelingSession):
         model_bools = []
         new_molec_id = ''
         for molec in self.molec_list:
-            for molec_id in [k for k,v in self.ml_db[self.model_id].items() 
+            for molec_id in [k for k,v in sorted(self.ml_db[self.model_id].items())
                                if molec.molecule in v.keys()]:
                 if self.compareCommandLists(this_list=molec.makeDict(),\
                                          modellist=self.ml_db[self.model_id]\
@@ -338,6 +349,7 @@ class Gastronoom(ModelingSession):
                         self.copyOutput(molec,self.model_id,new_molec_id)
                         self.ml_db[self.model_id][new_molec_id] = dict()
                         self.ml_db.addChangedKey(self.model_id)
+                        self.ml_db.sync()
                     molec.setModelId(new_molec_id)    
                 print 'Mline model for %s '%molec.molecule + \
                       'has not been calculated before. Calculate anew with '+ \
@@ -372,9 +384,10 @@ class Gastronoom(ModelingSession):
                     dict([(molec_id,dict([(str(trans),trans.makeDict(1))]))])
                 self.sph_db.addChangedKey(self.model_id)
                 self.trans_bools.append(False)
+                self.sph_db.sync()
             else:    
-                for trans_id in [k for k,v in self.sph_db[self.model_id]\
-                                                         [molec_id].items() 
+                for trans_id in [k for k,v in sorted(self.sph_db[self.model_id]\
+                                                        [molec_id].items())
                                    if str(trans) in v.keys()]:
                     db_trans_dict = self.sph_db[self.model_id][molec_id]\
                                                [trans_id][str(trans)].copy()
@@ -427,7 +440,7 @@ class Gastronoom(ModelingSession):
                     self.sph_db[self.model_id][molec_id][trans.getModelId()]\
                             [str(trans)] = trans.makeDict(1)
                     self.sph_db.addChangedKey(self.model_id)
-                    
+                    self.sph_db.sync()
 
 
     def copyOutput(self,entry,old_id,new_id):
@@ -532,7 +545,8 @@ class Gastronoom(ModelingSession):
                                        self.model_id))
             commandfile = ['%s=%s'%(k,v) 
                            for k,v in sorted(self.command_list.items())
-                           if k != 'R_POINTS_MASS_LOSS'] + ['####'] + \
+                           if k != 'R_POINTS_MASS_LOSS'] +\
+                          ['####'] + \
                           ['%s=%s'%(k,co_dict[k]) 
                            for k in self.cooling_molec_keys + ['MOLECULE'] 
                            if co_dict.has_key(k)] + \
@@ -550,12 +564,14 @@ class Gastronoom(ModelingSession):
             DataIO.writeFile(filename,commandfile)                
             if not self.skip_cooling:
                 self.execGastronoom(subcode='cooling',filename=filename)
+                self.cool_done = True
             if os.path.isfile(os.path.join(os.path.expanduser("~"),\
                                            'GASTRoNOoM',self.path,'models',\
                                            self.model_id,'coolfgr_all%s.dat'\
                                            %self.model_id)):
                 molec_dict.update(self.command_list)                  
                 self.cool_db[self.model_id] = molec_dict
+                self.cool_db.sync()
             else:
                 print 'Cooling model calculation failed. No entry is added '+ \
                       'to the database.'
@@ -583,9 +599,11 @@ class Gastronoom(ModelingSession):
                 self.updateModel(molec.getModelId())
                 commandfile = ['%s=%s'%(k,v) 
                                for k,v in sorted(self.command_list.items())
-                               if k != 'R_POINTS_MASS_LOSS'] + ['####'] + \
+                               if k != 'R_POINTS_MASS_LOSS'] +\
+                              ['####'] + \
                               ['%s=%s'%(k,v) 
-                               for k,v in sorted(molec.makeDict().items())] +\
+                               for k,v in sorted(molec.makeDict().items())
+                               if k != 'STARFILE'] +\
                               ['####']
                 if self.command_list.has_key('R_POINTS_MASS_LOSS'):
                     commandfile.extend(['%s=%s'%('R_POINTS_MASS_LOSS',v) 
@@ -597,7 +615,7 @@ class Gastronoom(ModelingSession):
                                         %molec.getModelId())
                 DataIO.writeFile(filename,commandfile)                
                 self.execGastronoom(subcode='mline',filename=filename)
-                self.done_mline=True
+                self.mline_done=True
                 if len([f for f in glob(os.path.join(os.path.expanduser("~"),\
                                         'GASTRoNOoM',self.path,'models',\
                                         molec.getModelId(),'ml*%s_%s.dat'\
@@ -663,7 +681,8 @@ class Gastronoom(ModelingSession):
                                    if k != 'R_POINTS_MASS_LOSS'] + ['####'] + \
                                   ['%s=%s'%(k,v) 
                                    for k,v in sorted(trans.molecule.makeDict()\
-                                                                .items())] + \
+                                                                .items())
+                                   if k != 'STARFILE'] + \
                                   ['####'] + \
                                   ['%s=%s'%(k,v) 
                                    for k,v in sorted(trans.makeDict()\
@@ -823,6 +842,14 @@ class Gastronoom(ModelingSession):
 
         print '***********************************'
         print '** Making input file for GASTRoNOoM'
+        
+        #-- Add the previous cooling model_id to the list of new entries, so it
+        #   does not get deleted if replace_db_entry == 1. 
+        #   This id is not known in new_entries, as the new_entries are passed
+        #   for the previous models, not the current one.(ie when iterations>1)
+        if self.model_id: 
+            self.new_entries.append(self.model_id)
+        self.cool_done = False
         self.model_id = self.makeNewId()
         self.trans_list=star['GAS_LINES']    
         self.molec_list=star['GAS_LIST']
@@ -879,7 +906,7 @@ class Gastronoom(ModelingSession):
                             = star['TEMPERATURE_EPSILON3_GAS']
                     self.command_list['RADIUS_EPSILON3'] \
                             = star['RADIUS_EPSILON3_GAS']    
-        
+            
         self.setCommandKey('DUST_TO_GAS',star,'DUST_TO_GAS_INITIAL',\
                            self.standard_inputfile['DUST_TO_GAS'])
         

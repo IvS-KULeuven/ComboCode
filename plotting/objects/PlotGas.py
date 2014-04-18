@@ -12,6 +12,7 @@ from scipy import array
 import operator
 import subprocess
 from scipy.interpolate import interp1d
+import numpy as np
 
 from cc.plotting.PlottingSession import PlottingSession
 from cc.tools.io import DataIO
@@ -30,7 +31,7 @@ class PlotGas(PlottingSession):
     
     """    
     
-    def __init__(self,star_name,path_gastronoom='codeSep2010',
+    def __init__(self,star_name,path_gastronoom='codeJun2013',
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode'),\
                  inputfilename=None,pacs=None,spire=None):
@@ -48,7 +49,7 @@ class PlotGas(PlottingSession):
         @type path_combocode: string
         @keyword path_gastronoom: Output modeling folder in MCMax home folder
         
-                                  (default: 'codeSep2010')
+                                  (default: 'codeJun2013')
         @type path_gastronoom: string
         @keyword inputfilename: name of inputfile that is also copied to the 
                                 output folder of the plots, 
@@ -80,6 +81,11 @@ class PlotGas(PlottingSession):
                                   keyword='STAR_NAME_GASTRONOOM')\
                                  [self.star_index]
         self.pacs = pacs
+        if self.pacs:
+            DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
+                                       'GASTRoNOoM',self.path,'stars',\
+                                       self.star_name,self.plot_id,\
+                                       'PACS_results'))
         self.spire = spire
         self.sphinx_flux_list = []
 
@@ -533,10 +539,7 @@ class PlotGas(PlottingSession):
         print '***********************************'
         print '** Creating Transition plots.'
         #- Default dimension is (4,3), but can be adapted in cfg
-        if cfg:
-            cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
-        else:
-            cfg_dict = dict()
+        cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('dimensions'):
             x_dim = int(cfg_dict['dimensions'][0])
             y_dim = int(cfg_dict['dimensions'][1])
@@ -624,7 +627,7 @@ class PlotGas(PlottingSession):
             @param keytags: list of keys for the different models in star_grid
             @type keytags: list[string]
             @param cfg: The config filename passed to the plotTiles method
-            @type cfg: string
+            @type cfg: string/dict
             @param vg_factor: The factor with which the terminal velocity is 
                               multiplied. This determines the xrange of the 
                               plots
@@ -834,7 +837,7 @@ class PlotGas(PlottingSession):
                 #- up multiple tile plot runs if n_models > n_max_models
                 createTilePlots(trans_list=list(trans_list),\
                                 vg_factor=vg_factor,\
-                                no_data=no_data,cfg=cfg,star_grid=subgrid,\
+                                no_data=no_data,cfg=cfg_dict,star_grid=subgrid,\
                                 x_dim=x_dim,y_dim=y_dim,keytags=subkeys,\
                                 intrinsic=0,no_models=no_models,\
                                 telescope_label=telescope_label,\
@@ -854,7 +857,7 @@ class PlotGas(PlottingSession):
                     i += 1
                 createTilePlots(trans_list=list(pacs_list),\
                                 vg_factor=vg_factor,\
-                                no_data=1,cfg=cfg,star_grid=subgrid,\
+                                no_data=1,cfg=cfg_dict,star_grid=subgrid,\
                                 intrinsic=1,keytags=subkeys,\
                                 x_dim=x_dim,y_dim=y_dim,date_tag=date_tag,\
                                 telescope_label=telescope_label,no_models=0,\
@@ -864,11 +867,12 @@ class PlotGas(PlottingSession):
                 
 
 
-    def createLineLabels(self,star,xmin,xmax):
+    def createLineLabelsFromLineLists(self,star,xmin,xmax,xunit='micron',\
+                                      fn_trans_marker=''):
         
         '''
         Create a list of line labels for all molecules and transitions 
-        in the molecular databases requested.
+        in the molecular linelists requested.
         
         This is used for spectroscopic databases only! Such as JPL, CDMS, LAMDA
         
@@ -878,6 +882,24 @@ class PlotGas(PlottingSession):
         @type xmin: float
         @param xmax: maximum wavelength
         @type xmax: float
+        
+        @keyword xunit: The unit of the xmax/xmin
+                         
+                         (default: micron)
+        @type xunit: string
+        @keyword fn_trans_marker: A file that includes TRANSITION definitions.
+                                  These transitions will be marked up in the 
+                                  plot. For instance, when indicating a subset 
+                                  of transitions for one reason or another.
+                                  The line type can be set for this specific 
+                                  subset, differently from other lines and 
+                                  regardless of the molecule. In combination
+                                  with a doubly defined line label (through the
+                                  star_grid['GAS_LINES']), lines can be marked
+                                  up.
+                                  
+                                  (default: '')
+        @type fn_trans_marker: string
         
         @return: The labels with x location and a molecule index.
         @rtype: list[string, float, index]
@@ -892,32 +914,23 @@ class PlotGas(PlottingSession):
         max_exc = float(star['LL_MAX_EXC']) \
                         and float(star['LL_MAX_EXC']) or None
         path = star['LL_PATH']
-        xunit = star['LL_UNIT']
-        linelisters = []
-        if xunit.lower() != 'micron': 
-            raise IOError('Units other than micron for the LineLists not ' + \
-                          'yet supported!')
+        linelists = []
         for molecule in star['LL_GAS_LIST']:
             if not 'p1H' in molecule.molecule:
-                linelisters.append(\
-                    LineList.LineList(molecule=molecule,x_min=xmin,x_max=xmax,\
-                                      x_unit=xunit,cdms=cdms,jpl=jpl,\
-                                      lamda=lamda,path=path,\
-                                      min_strength=min_strength,\
-                                      max_exc=max_exc,include_extra=1))
-        line_labels = sorted([('%s %s'%(ll.molecule.molecule,\
-                                        trans.makeLabel()),\
-                               trans.wavelength*10**4,i)  
-                              for i,ll in enumerate(linelisters)
-                              for trans in ll.makeTransitions()
-                              if trans.wavelength*10**4 >= xmin \
-                                    and trans.wavelength*10**4 <= xmax],\
-                             key=operator.itemgetter(1))
-        return line_labels     
+                ll = LineList.LineList(molecule=molecule,x_min=xmin,\
+                                       x_unit=xunit,cdms=cdms,jpl=jpl,\
+                                       lamda=lamda,path=path,x_max=xmax,\
+                                       min_strength=min_strength,\
+                                       max_exc=max_exc,include_extra=1)
+                linelists.append(ll)
+        lls = self.createLineLabels(linelists=linelists,\
+                                    fn_trans_marker=fn_trans_marker)
+        return lls     
     
     
     
-    def plotLineLists(self,star_grid,include_sphinx=1,cfg=''):
+    def plotLineLists(self,star_grid,include_sphinx=1,cfg='',\
+                      fn_trans_marker=''):
         
         '''
         Plot linelists along with the indicated data.
@@ -935,6 +948,19 @@ class PlotGas(PlottingSession):
                           
                           (default: '')
         @type cfg: string
+        @keyword fn_trans_marker: A file that includes TRANSITION definitions.
+                                  These transitions will be marked up in the 
+                                  plot. For instance, when indicating a subset 
+                                  of transitions for one reason or another.
+                                  The line type can be set for this specific 
+                                  subset, differently from other lines and 
+                                  regardless of the molecule. In combination
+                                  with a doubly defined line label (through the
+                                  star_grid['GAS_LINES']), lines can be marked
+                                  up.
+                                  
+                                  (default: '')
+        @type fn_trans_marker: string
         
         '''
         
@@ -945,9 +971,18 @@ class PlotGas(PlottingSession):
             print '** No PATH_PACS given. Cannot plot linelists without ' + \
                   'data information. Aborting...'
             return
+        cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('fn_trans_marker'):
+            fn_trans_marker = cfg_dict['fn_trans_marker']
+        if cfg_dict.has_key('include_sphinx'):
+            include_sphinx = bool(cfg_dict['include_sphinx'])
         xmins = [min(wave_list) for wave_list in self.pacs.data_wave_list]
         xmaxs = [max(wave_list) for wave_list in self.pacs.data_wave_list]
-        line_labels = self.createLineLabels(star_grid[0],min(xmins),max(xmaxs))
+        lls = self.createLineLabelsFromLineLists(star=star_grid[0],\
+                                                 xmin=min(xmins),\
+                                                 xmax=max(xmaxs),\
+                                                 fn_trans_marker=\
+                                                     fn_trans_marker)
         plot_filenames = []
         DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
                                                 'GASTRoNOoM',self.path,\
@@ -970,9 +1005,6 @@ class PlotGas(PlottingSession):
                                if list(sphinx)]
             else:
                 sphinx_flux = []
-            these_line_labels = [(label,wl,index) 
-                                 for label,wl,index in line_labels 
-                                 if wl >= xmin and wl <= xmax]
             plot_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                          self.path,'stars',self.star_name,\
                                          self.plot_id,'LineLists',\
@@ -986,9 +1018,9 @@ class PlotGas(PlottingSession):
                        if star['LAST_GASTRONOOM_MODEL'] and include_sphinx]
             plot_filenames.append(Plotting2.plotCols(\
                     x=[wave]*(len(sphinx_flux)+1),y=[flux]+sphinx_flux,\
-                    cfg=cfg,filename=plot_filename,keytags=keytags,\
+                    cfg=cfg_dict,filename=plot_filename,keytags=keytags,\
                     plot_title=self.star_name_plots,histoplot=[0],\
-                    number_subplots=3,line_labels=these_line_labels,\
+                    number_subplots=3,line_labels=lls,\
                     line_label_color=1,line_label_lines=1,line_label_spectrum=1))
         new_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                     self.path,'stars',self.star_name,\
@@ -1110,7 +1142,7 @@ class PlotGas(PlottingSession):
                           extension=extension,fontsize_axis=28,linewidth=4,\
                           ylogscale=1,key_location=(.05,.1),\
                           fontsize_ticklabels=26,\
-                          xlogscale=1,ymin=10**(-5),ymax=10**(-3),\
+                          xlogscale=1,ymin=10**(-9),ymax=10**(-3),\
                           fontsize_key=18,xmax=1e18,\
                           xmin=star['R_INNER_GAS']*star['R_STAR']*star.r_solar))
         if plot_filenames and plot_filenames[0][-4:] == '.pdf':    
@@ -1166,10 +1198,7 @@ class PlotGas(PlottingSession):
         
         print '***********************************'
         print '** Plotting Line Contributions'
-        if cfg:
-             cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
-        else:
-             cfg_dict = dict()
+        cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('do_sort'):
              do_sort = int(cfg_dict['do_sort'])
         if cfg_dict.has_key('normalized'):
@@ -1189,10 +1218,7 @@ class PlotGas(PlottingSession):
                                       if trans.getModelId()],\
                                      key=lambda x:x.wavelength)
             else:
-                transitions = sorted([trans 
-                                      for trans in star['GAS_LINES'] 
-                                      if trans.getModelId()],\
-                                     key=lambda x:trans_sel.index(x))
+                transitions = star['GAS_LINES']
             if include_velocity:
                 radius,vel = star.getGasVelocity()
                 radius = radius/star['R_STAR']/star.r_solar
@@ -1212,21 +1238,26 @@ class PlotGas(PlottingSession):
                                          self.plot_id,'LineContributions',\
                                          'linecontrib_%s_%i'\
                                          %(star['LAST_GASTRONOOM_MODEL'],i))
-            keytags=['%s: %s'%(trans.molecule.molecule,trans.makeLabel())
+            keytags=['%s: %s'%(trans.molecule.molecule_plot,trans.makeLabel())
                      for trans in transitions]
             ymin = normalized and -0.01 or None
             ymax = normalized and 1.02 or None
-            plot_title = '%s: Line Contributions for %s'\
-                         %(self.star_name_plots,\
-                           star['LAST_PACS_MODEL'].replace('_','\_') \
-                            or star['LAST_GASTRONOOM_MODEL'].replace('_','\_'))
+            xmin = 1
+            #plot_title = '%s: Line Contributions for %s'\
+                         #%(self.star_name_plots,\
+                           #star['LAST_PACS_MODEL'].replace('_','\_') \
+                            #or star['LAST_GASTRONOOM_MODEL'].replace('_','\_'))
+            plot_title = 'Line Contributions for %s with SCD = %.2e and Fh2o = %.1e.'\
+                         %(star['LAST_PACS_MODEL'].replace('_','\_') \
+                             or star['LAST_GASTRONOOM_MODEL'].replace('_','\_'),\
+                           star['SHELLCOLDENS'],star['F_H2O'])
             plot_filename = Plotting2.plotCols(\
-                x=radii,y=linecontribs,filename=plot_filename,cfg=cfg,\
+                x=radii,y=linecontribs,filename=plot_filename,cfg=cfg_dict,\
                 xaxis='$p$ (R$_*$)',yaxis='$I(p) \\times g(p^2)$',\
-                plot_title=plot_title,keytags=keytags,extension='.png',\
-                xlogscale=1,figsize=(20,10),fontsize_axis=26,fontsize_title=22,\
-                key_location=(0.70,0.1),fontsize_ticklabels=22,\
-                fontsize_key=20,linewidth=3,ymin=ymin,ymax=ymax,**extra_pars)
+                plot_title=plot_title,keytags=keytags,extension='.pdf',\
+                xlogscale=1,\
+                key_location='lower right',xmin=xmin,\
+                linewidth=3,ymin=ymin,ymax=ymax,**extra_pars)
             print '** Plot can be found at:'
             print plot_filename
             print '***********************************'                            
@@ -1238,7 +1269,8 @@ class PlotGas(PlottingSession):
         ''' 
         Prepare Sphinx output in Pacs format (including convolution).
         
-        @param star_grid: Parameter sets
+        @param star_grid: Parameter sets. If empty list, no sphinx models are 
+                          setm, but an empty list is set for each datafile.
         @type star_grid: list[Star()]
         @keyword refresh_sphinx_flux: redo the sphinx flux list by pulling from
                                       db, regardless of whether it's already
@@ -1271,56 +1303,119 @@ class PlotGas(PlottingSession):
 
 
 
-    def createSphinxLineLabels(self,star_grid,unit='micron'):
-         
-         '''
-         Create line labels for all transitions in list of Star() models.
-         
-         @param star_grid: The Star() models
-         @type star_grid: list[Star()]
-         
-         @keyword unit: The unit of the location number. Can be 'micron' or 
-                        'cm-1'.
-                        
-                        (default: 'micron')
-         @type unit: string
-         
-         @return: a sorted list(set) of line labels
-         @rtype: list[string]
-         
-         '''
-         
-         sphinx_line_labels = list(set(\
-                        [('%s %s'\
-                          %(trans.molecule.molecule,trans.makeLabel()),\
-                          star.c/trans.frequency*10**(4),\
-                          trans.molecule.molecule_index)
-                         for star in star_grid 
-                         for trans in star['GAS_LINES'] 
-                         if trans.getModelId()]))
-         if unit == 'cm-1':
-             sphinx_line_labels = [(l,1./w*10**4,i) 
-                                   for l,w,i in sphinx_line_labels]
-         sphinx_line_labels = sorted(sphinx_line_labels,\
-                                     key=operator.itemgetter(1))
-         return sphinx_line_labels
-         
-         
-
-    def plotPacsFull(self,star_grid=[],models=[],exclude_data=0,cfg=''):
+    def createLineLabels(self,star_grid=[],linelists=[],fn_trans_marker='',\
+                         unit='micron',mark_undetected=0):
          
         '''
-        Plot the full PACS spectrum for a series of models along with the data.
+        Create line labels for all transitions in Star() objects or in 
+        LineList() objects or in a TRANSITION definition file. Priority:
+        star_grid > linelists. fn_trans_marker is always added in addition.
+
+        @keyword star_grid: The Star() models. 
+                            
+                            (default: [])
+        @type star_grid: list[Star()]
+        @keyword linelists: The LineList() objects. 
         
-        @keyword star_grid: star models for which PACS data will be fetched, 
-                            default occurs when model_ids are passed instead, 
-                            ie outside a CC modeling session
+                            (default: [])
+        @type linelists: list[LineList()]
+        @keyword fn_trans_marker: A file that includes TRANSITION definitions.
+                                  These transitions will be marked up in the 
+                                  plot. For instance, when indicating a subset 
+                                  of transitions for one reason or another.
+                                  The line type can be set for this specific 
+                                  subset, differently from other lines and 
+                                  regardless of the molecule. In combination
+                                  with a doubly defined line label (through 
+                                  star_grid/linelists), lines can be marked
+                                  up.
+                                                                    
+                                  (default: '')
+        @type fn_trans_marker: string
+        @keyword mark_undetected: Mark the undetected transitions in the same
+                                  way extra marked transitions would be marked
+                                  by fn_trans_marker. 
+                                  
+                                  (default: 0)
+        @type mark_undetected: bool
+        @keyword unit: The unit of the location number. Can be 'micron' or 
+                       'cm-1'.
+                    
+                       (default: 'micron')
+        @type unit: string
+        
+        @return: a sorted list(set) of line labels
+        @rtype: list[string]
+
+        '''
+        
+        if star_grid:
+            alltrans = [t   for star in star_grid 
+                            for t in star['GAS_LINES']]
+        elif linelists:
+            alltrans = [t   for ll in linelists
+                            for t in ll.makeTransitions()]
+        else:
+            alltrans = []
+            
+        lls = [('%s %s'%(t.molecule.molecule,t.makeLabel()),\
+                t.wavelength*10**4*1./(1-self.pacs.vlsr/t.c),\
+                t.molecule.molecule_index,\
+                t.vup>0)
+               for t in alltrans]
+        
+        used_indices = list(set([ll[-2] for ll in lls]))
+        if fn_trans_marker:
+            extra_trans = Transition.makeTransitionsFromTransList(\
+                                    filename=fn_trans_marker,\
+                                    star=star_grid and star_grid[0] or None,\
+                                    path_combocode=self.path_combocode)
+            this_index = max(used_indices)+1
+            used_indices = used_indices + [this_index]
+            ells = [('%s %s'%(t.molecule.molecule,t.makeLabel()),\
+                    t.wavelength*10**4*1./(1-self.pacs.vlsr/t.c),\
+                    this_index,\
+                    t.vup>0)
+                   for t in extra_trans]
+            lls = lls + ells
+            
+        if mark_undetected:
+            this_index = max(used_indices)+1
+            extra_trans = [t for t in alltrans if t.getIntIntPacs()[0] is None]
+            ells = [('%s %s'%(t.molecule.molecule,t.makeLabel()),\
+                     t.wavelength*10**4*1./(1-self.pacs.vlsr/t.c),\
+                     this_index,\
+                     t.vup>0)
+                    for t in extra_trans]
+            lls = lls + ells
+            
+        if unit == 'cm-1':
+            lls = [(l,1./w*10**4,i,vib) for l,w,i,vib in lls]
+        lls = sorted(lls,key=operator.itemgetter(1))
+        return lls
+    
+        
+        
+    def plotPacsLineScans(self,star_grid=[],models=[],exclude_data=0,cfg='',\
+                          cont_subtracted=1,fn_trans_marker='',fn_plt='',\
+                          dimensions=(5,2),fn_add_star=1,mark_undetected=0,\
+                          remove_axis_titles=1,include_band=1):
+         
+        '''
+        Plot PACS line scans.
+        
+        Data can be in- or excluded, as can models.
+        
+        Both continuum subtracted data as well as the original spectra can be 
+        plotted.
+        
+        @keyword star_grid: star models for which PACS data will be fetched. 
                                
                             (default: [])
         @type star_grid: list[Star()]
-        @keyword models: list of pacs_ids or gastronoom model ids, default if 
-                         Star models are passed instead
-                               
+        @keyword models: list of pacs_ids or gastronoom model ids. If neither 
+                         this or star_grid are defined, only data are plotted.
+                         If star_grid is defined, this keyword is ignored.
                          (default: [])
         @type models: list[strings]
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
@@ -1328,75 +1423,148 @@ class PlotGas(PlottingSession):
                        
                       (default: '')
         @type cfg: string         
+        @keyword fn_add_star: Add the star name to the requested plot filename.
+        
+                              (default: 1)
+        @type fn_add_star: bool
+        @keyword fn_plt: A plot filename for the tiled plot.
+                         
+                         (default: '')
+        @type fn_plt: string
+        @keyword fn_trans_marker: A file that includes TRANSITION definitions.
+                                  These transitions will be marked up in the 
+                                  plot. For instance, when indicating a subset 
+                                  of transitions for one reason or another.
+                                  The line type can be set for this specific 
+                                  subset, differently from other lines and 
+                                  regardless of the molecule. In combination
+                                  with a doubly defined line label (through the
+                                  star_grid['GAS_LINES']), lines can be marked
+                                  up.
+                                  
+                                  (default: '')
+        @type fn_trans_marker: string
+        @keyword mark_undetected: Mark the undetected transitions in the same
+                                  way extra marked transitions would be marked
+                                  by fn_trans_marker. 
+                                  
+                                  (default: 0)
+        @type mark_undetected: bool
+        @keyword remove_axis_titles: Remove axis titles in between different 
+                                     tiles in the plot. Only keeps the ones on
+                                     the left and the bottom of the full plot.
+                                     
+                                     (default: 1)
+        @type remove_axis_titles: bool
+        @keyword include_band: Include a label that names the band. 
+        
+                               (default: 1)
+        @type include_band: bool
         @keyword exclude_data: if enabled only the sphinx mdels are plotted.
          
                                (default: 0)
         @type exclude_data: bool
+        @keyword cont_subtracted: Plot the continuum subtracted data.
+        
+                                  (default: 1)
+        @type cont_subtracted: bool
+        @keyword dimensions: The number of tiles in the x and y direction is 
+                             given: (x-dim,y-dim)
+                             
+                             (default: (5,2))
+        @type dimensions: tuple(int,int)
         
         '''
          
         print '***********************************'
-        print '** Creating full PACS spectrum plot.'
+        print '** Plotting line scans.'
         if self.pacs is None: 
             print '** No PATH_PACS given. Cannot plot PACS spectra without '+\
                   'data information. Aborting...'
             return
         if not star_grid and models:
             star_grid = self.makeStars(models=models)
-        elif (not models and not star_grid) or (models and star_grid):
-            print '** Input is undefined or doubly defined. Aborting.'
-            return
-        if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) == set([0]): 
-            return
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-            'GASTRoNOoM',self.path,'stars',self.star_name,self.plot_id,\
-            'PACS_results'))
+                
         self.setSphinx(star_grid)
-        if cfg:
-            cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
-        else:
-            cfg_dict = dict()
+        cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg_dict['filename']
+            del cfg_dict['filename']
         if cfg_dict.has_key('exclude_data'):
             exclude_data = bool(cfg_dict['exclude_data'])
-        print '** Plotting now...'
-        sphinx_line_labels = self.createSphinxLineLabels(star_grid)
-        tiles = []
+        if cfg_dict.has_key('fn_trans_marker'):
+            fn_trans_marker = cfg_dict['fn_trans_marker']
+        if cfg_dict.has_key('cont_subtracted'):
+            cont_subtracted = cfg_dict['cont_subtracted']
+        if cfg_dict.has_key('fn_add_star'):
+            fn_add_star = cfg_dict['fn_add_star']
+        if cfg_dict.has_key('mark_undetected'):
+            mark_undetected = cfg_dict['mark_undetected']
+        if cfg_dict.has_key('remove_axis_titles'):
+            remove_axis_titles = cfg_dict['remove_axis_titles']
+        if cfg_dict.has_key('dimensions'):
+            dimensions = (int(cfg_dict['dimensions'][0]),\
+                          int(cfg_dict['dimensions'][1]))
         
-        for wave,flux,sphinx_flux,filename,ordername in \
-                        zip(self.pacs.data_wave_list,self.pacs.data_flux_list,\
-                            self.sphinx_flux_list,self.pacs.data_filenames,\
-                            self.pacs.data_ordernames):
+        if not star_grid: 
+            exclude_data = 0
+
+        lls = self.createLineLabels(star_grid=star_grid,\
+                                    fn_trans_marker=fn_trans_marker,\
+                                    mark_undetected=mark_undetected)
+        tiles = []            
+        print '** Plotting now...'
+        for idd,(wave,flux,flux_ori,sphinx_flux,filename,ordername) in \
+              enumerate(sorted(zip(self.pacs.data_wave_list,\
+                                   self.pacs.data_flux_list,\
+                                   self.pacs.data_original_list,\
+                                   self.sphinx_flux_list,\
+                                   self.pacs.data_filenames,\
+                                   self.pacs.data_ordernames),\
+                               key=lambda x: x[0][0])):
             ddict = dict()
             ddict['x'] = exclude_data \
                             and [wave]*(len(sphinx_flux)) \
                             or [wave]*(len(sphinx_flux)+1)
-            ddict['y'] = exclude_data and sphinx_flux or [flux]+sphinx_flux
-            ddict['labels'] = [(ordername,0.01,0.01)]
+            d_yvals = cont_subtracted and [flux] or [flux_ori]
+            ddict['y'] = exclude_data and sphinx_flux or d_yvals+sphinx_flux
+            if include_band:
+                ddict['labels'] = [(ordername,0.08,0.80)]
             ddict['xmin'] = wave[0]
             ddict['xmax'] = wave[-1]
+            ddict['ymin'] = 0.95*min([min(ff) for ff in ddict['y'] if ff.size])
+            ddict['ymax'] = 1.2*max([max(ff) for ff in ddict['y'] if ff.size])
             ddict['histoplot'] = (not exclude_data) and [0] or []
-            ddict['line_labels'] = [('',x,index) 
-                                    for l,x,index in sphinx_line_labels
-                                    if x >= wave[0] and x <= wave[-1]]
+            ddict['line_labels'] = lls
+                                    #[(label,wl,i) 
+                                    #for label,wl,i in lls
+                                    #if wl <= wave[-1] and wl >= wave[0]]
+            if remove_axis_titles: 
+                n_tiles = len(self.pacs.data_filenames)
+                ddict['xaxis'] = idd in range(n_tiles-dimensions[0],n_tiles)\
+                                    and r'$\lambda$ ($\mu$m)' or ''
+                ddict['yaxis'] = idd%dimensions[0] == 0 \
+                                    and r'$F_\nu$ (Jy)' or ''
             tiles.append(ddict)
-        filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',self.path,\
-                                'stars',self.star_name,self.plot_id,\
-                                'PACS_results','PACS_spectrum_full')
-        tiles = sorted(tiles,key = lambda x: x['x'][0][0])
-        filename = Plotting2.plotTiles(data=tiles,filename=filename,cfg=cfg,\
-                                       line_label_color=1,\
-                                       line_label_spectrum=1,fontsize_label=30,\
-                                       line_label_lines=1,no_line_label_text=1,\
-                                       dimensions=\
-                                            (1,len(self.pacs.data_filenames)))
+        if not fn_plt:
+            fn_plt = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                  self.path,'stars',self.star_name,\
+                                  self.plot_id,'PACS_results','PACS_linescans')
+        if fn_add_star:
+            fn_plt = '_'.join([fn_plt,self.star_name])
+        #tiles = sorted(tiles,key = lambda x: x['x'][0][0])
+        pfn = Plotting2.plotTiles(filename=fn_plt,data=tiles,cfg=cfg_dict,\
+                                  line_label_color=1,fontsize_label=15,\
+                                  line_label_lines=1,dimensions=dimensions)
         print '** Your plot can be found at:'
-        print filename
+        print pfn
         print '***********************************'
 
        
 
     def plotPacs(self,star_grid=[],models=[],exclude_data=0,fn_plt='',cfg='',\
-                 fn_trans_marker='',include_ordername=1,number_subplots=3,):
+                 fn_trans_marker='',include_band=1,number_subplots=3,\
+                 mark_undetected=0,fn_add_star=1):
         
         '''
         Plot PACS data along with Sphinx results, one plot per band.
@@ -1430,18 +1598,36 @@ class PlotGas(PlottingSession):
                                   These transitions will be marked up in the 
                                   plot. For instance, when indicating a subset 
                                   of transitions for one reason or another.
+                                  The line type can be set for this specific 
+                                  subset, differently from other lines and 
+                                  regardless of the molecule. In combination
+                                  with a doubly defined line label (through the
+                                  star_grid['GAS_LINES']), lines can be marked
+                                  up.
                                   
                                   (default: '')
         @type fn_trans_marker: string
-        @keyword include_ordername: Include a name tag for the band order in 
+        @keyword fn_add_star: Add the star name to the requested plot filename.
+                              Only relevant if fn_plt is given.
+                              
+                              (default: 1)
+        @type fn_add_star: bool
+        @keyword mark_undetected: Mark the undetected transitions in the same
+                                  way extra marked transitions would be marked
+                                  by fn_trans_marker. 
+                                  
+                                  (default: 0)
+        @type mark_undetected: bool
+        @keyword include_band: Include a name tag for the band order in 
                                     the plot.
                                     
                                     (default: 1)
-        @type include_ordername: bool
-        @keyword number_subplots: The number of subplots in plotCols.
-        
-                                  (default: 3)
-        @type number_subplots: int
+        @type include_band: bool
+        @keyword line_label_dashedvib: Use dashed lines for vibrational 
+                                       transitions in line label lines. 
+                             
+                                       (default: 0)
+        @type line_label_dashedvib: bool
         
         '''
         
@@ -1464,12 +1650,7 @@ class PlotGas(PlottingSession):
         self.setSphinx(star_grid)
         print '** Plotting now...'
         
-        sphinx_line_labels = self.createSphinxLineLabels(star_grid)
-        plot_filenames = []
-        if cfg:
-            cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
-        else:
-            cfg_dict = dict()
+        cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
             fn_plt = cfg_dict['filename']
             del cfg_dict['filename']
@@ -1477,37 +1658,34 @@ class PlotGas(PlottingSession):
             exclude_data = bool(cfg_dict['exclude_data'])
         if cfg_dict.has_key('fn_trans_marker'):
             fn_trans_marker = cfg_dict['fn_trans_marker']
-        if cfg_dict.has_key('include_ordername'):
-            include_ordername = bool(cfg_dict['include_ordername'])
-        if cfg_dict.has_key('number_subplots'):
-            number_subplots = bool(cfg_dict['number_subplots'])
+        if cfg_dict.has_key('include_band'):
+            include_band = bool(cfg_dict['include_band'])
+        if cfg_dict.has_key('mark_undetected'):
+            mark_undetected = cfg_dict['mark_undetected']
+        if cfg_dict.has_key('fn_add_star'):
+            fn_add_star = cfg_dict['fn_add_star']
         if cfg_dict.has_key('labels'):
             labels = bool(cfg_dict['labels'])
         else:
             labels = []
-        if fn_trans_marker:
-            lines = [line.split() 
-                     for line in DataIO.readFile(fn_trans_marker) 
-                     if line[0] != '#']
-            trans_markers = set([Transition.makeTransition(star=star_grid[0],\
-                                                           trans=line) 
-                                 for line in lines])
-            used_indices = list(set([ll[-1] for ll in sphinx_line_labels]))
-            this_index = [ii for ii in range(100) if ii not in used_indices][0]
-            extra_line_labels = [('---',t.wavelength*10**4,this_index) 
-                                 for t in trans_markers]
-            sphinx_line_labels = sphinx_line_labels + extra_line_labels
         
+        lls = self.createLineLabels(star_grid=star_grid,\
+                                    fn_trans_marker=fn_trans_marker,\
+                                    mark_undetected=mark_undetected)
+        
+        plot_filenames = []
         for wave,flux,sphinx_flux,filename,ordername in \
                     zip(self.pacs.data_wave_list,\
                         self.pacs.data_flux_list,\
                         self.sphinx_flux_list,\
                         self.pacs.data_filenames,\
                         self.pacs.data_ordernames):
-            if fn_plt:
+            if fn_plt and not fn_add_star:
                 fn_plt = os.path.splitext(fn_plt)[0]
-                this_filename = '%s_%s_%.2f_%.2f'%(fn_plt,ordername,\
-                                                   wave[0],wave[-1])
+                this_filename = '%s_%s'%(fn_plt,ordername)
+            elif fn_plt and fn_add_star:
+                fn_plt = os.path.splitext(fn_plt)[0]
+                this_filename = '%s_%s_%s'%(fn_plt,self.star_name,ordername)
             else:    
                 this_filename = os.path.join(os.path.expanduser('~'),\
                                              'GASTRoNOoM',self.path,'stars',\
@@ -1525,15 +1703,17 @@ class PlotGas(PlottingSession):
                 x_list = [wave]*(len(sphinx_flux)+1)
                 y_list = [flux]+sphinx_flux
                 keytags = ['PACS Spectrum'] + keytags
-            if include_ordername:
-                labels.extend([(ordername,0.01,0.01)])
+            if include_band:
+                elabel = [(ordername,0.05,0.80)]
+            else:
+                elabel = []
             plot_filenames.append(Plotting2.plotCols(x=x_list,y=y_list,\
-                    keytags=keytags,number_subplots=number_subplots,\
+                    keytags=keytags,number_subplots=3,\
                     plot_title='%s: %s - %s'%(self.plot_id.replace('_','\_'),\
                     self.star_name_plots,ordername),cfg=cfg_dict,\
-                    line_labels=sphinx_line_labels,\
+                    line_labels=lls,\
                     histoplot=not exclude_data and [0] or [],\
-                    filename=this_filename,labels=labels,\
+                    filename=this_filename,labels=labels+elabel,\
                     line_label_spectrum=1,line_label_color=1))
         if plot_filenames and plot_filenames[0][-4:] == '.pdf':
             if not fn_plt:
@@ -1541,6 +1721,8 @@ class PlotGas(PlottingSession):
                                     self.path,'stars',self.star_name,\
                                     self.plot_id,'PACS_results',\
                                     'PACS_spectrum.pdf')
+            elif fn_plt and fn_add_star:
+                newf = '%s_%s.pdf'%(fn_plt,self.star_name)
             else:
                 newf = '%s.pdf'%fn_plt
             DataIO.joinPdf(old=sorted(plot_filenames),new=newf,\
@@ -1602,6 +1784,12 @@ class PlotGas(PlottingSession):
                                   These transitions will be marked up in the 
                                   plot. For instance, when indicating a subset 
                                   of transitions for one reason or another.
+                                  The line type can be set for this specific 
+                                  subset, differently from other lines and 
+                                  regardless of the molecule. In combination
+                                  with a doubly defined line label (through the
+                                  star_grid['GAS_LINES']), lines can be marked
+                                  up.
                                   
                                   (default: '')
         @type fn_trans_marker: string
@@ -1613,10 +1801,7 @@ class PlotGas(PlottingSession):
         
         '''
         
-        if cfg:
-            cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
-        else:
-            cfg_dict = dict()
+        cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('mode'):
             mode = cfg_dict['mode']
         if cfg_dict.has_key('pacs_segments_path'):
@@ -1644,34 +1829,17 @@ class PlotGas(PlottingSession):
         if mode == 'll':
             xmins=[min(wave_list) for wave_list in self.pacs.data_wave_list]
             xmaxs=[max(wave_list) for wave_list in self.pacs.data_wave_list]
-            line_labels = self.createLineLabels(star_grid[0],min(xmins),\
-                                                max(xmaxs))
+            lls = self.createLineLabelsFromLineLists(star=star_grid[0],\
+                                                     xmin=min(xmins),\
+                                                     xmax=max(xmaxs),\
+                                                     fn_trans_marker=\
+                                                            fn_trans_marker)
         elif mode == 'sphinx':
-            line_labels = list(set([(trans.molecule.molecule_plot,\
-                                        star.c/trans.frequency*10**(4),\
-                                        trans.molecule.molecule_index)
-                                    for star in star_grid
-                                    for trans in star['GAS_LINES']
-                                    if trans.getModelId()]))
-            line_labels = sorted(line_labels,key=operator.itemgetter(1))
+            lls = self.createLineLabels(star_grid=star_grid,\
+                                        fn_trans_marker=fn_trans_marker)
         else:
             print 'Mode for plotting PACS segments not recognized. Aborting...'
             return
-
-
-        if fn_trans_marker:
-            lines = [line.split() 
-                     for line in DataIO.readFile(fn_trans_marker) 
-                     if line[0] != '#']
-            trans_markers = set([Transition.makeTransition(star=star_grid[0],\
-                                                           trans=line) 
-                                 for line in lines])
-            used_indices = list(set([ll[-1] for ll in line_labels]))
-            this_index = [ii for ii in range(100) if ii not in used_indices][0]
-            extra_line_labels = [('---',t.wavelength*10**4,this_index) 
-                                 for t in trans_markers]
-            line_labels = line_labels + extra_line_labels
-        
         
         if include_sphinx is None:
             include_sphinx = self.sphinx_flux_list and 1 or 0
@@ -1703,13 +1871,13 @@ class PlotGas(PlottingSession):
                                                      'GASTRoNOoM',self.path,\
                                                      'stars',self.star_name,\
                                                      self.plot_id,folder,pfn)
-                    extra_stats = dict([('line_labels',line_labels),\
+                    extra_stats = dict([('line_labels',lls),\
                                         ('histoplot',not exclude_data \
                                                         and [0] or []),\
                                         ('filename',plot_filename)])
                     w = [wave]*(len(sphinx_flux)+(not exclude_data and 1 or 0))
                     f = exclude_data and sphinx_flux or [flux]+sphinx_flux
-                    plot_filename = Plotting2.plotCols(x=w,y=f,cfg=cfg,\
+                    plot_filename = Plotting2.plotCols(x=w,y=f,cfg=cfg_dict,\
                                                        **extra_stats)
                     print '** Segment finished and saved at:'
                     print plot_filename
@@ -1742,6 +1910,12 @@ class PlotGas(PlottingSession):
                                   These transitions will be marked up in the 
                                   plot. For instance, when indicating a subset 
                                   of transitions for one reason or another.
+                                  The line type can be set for this specific 
+                                  subset, differently from other lines and 
+                                  regardless of the molecule. In combination
+                                  with a doubly defined line label (through the
+                                  star_grid['GAS_LINES']), lines can be marked
+                                  up.
                                   
                                   (default: '')
         @type fn_trans_marker: string
@@ -1750,10 +1924,6 @@ class PlotGas(PlottingSession):
                          
                          (default: '')
         @type fn_plt: string
-        @keyword number_subplots: The number of subplots in plotCols.
-        
-                                  (default: 3)
-        @type number_subplots: int
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                           
@@ -1777,10 +1947,7 @@ class PlotGas(PlottingSession):
             return
         print '** Plotting now...'
 
-        if cfg:
-            cfg_dict = DataIO.readDict(cfg,convert_lists=1,convert_floats=1)
-        else:
-            cfg_dict = dict()
+        cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
             fn_plt = cfg_dict['filename']
             del cfg_dict['filename']
@@ -1788,25 +1955,16 @@ class PlotGas(PlottingSession):
             exclude_data = bool(cfg_dict['exclude_data'])
         if cfg_dict.has_key('fn_trans_marker'):
             fn_trans_marker = cfg_dict['fn_trans_marker']
-        if cfg_dict.has_key('number_subplots'):
-            number_subplots = bool(cfg_dict['number_subplots'])
  
         self.spire.prepareSphinx(star_grid)
-        sphinx_line_labels = self.createSphinxLineLabels(star_grid,unit='cm-1')
+        lls = self.createLineLabels(star_grid,unit='cm-1')
 
         if fn_trans_marker:
-            lines = [line.split() 
-                     for line in DataIO.readFile(fn_trans_marker) 
-                     if line[0] != '#']
-            trans_markers = set([Transition.makeTransition(star=star_grid[0],\
-                                                           trans=line) 
-                                 for line in lines])
-            used_indices = list(set([ll[-1] for ll in sphinx_line_labels]))
+            used_indices = list(set([ll[-2] for ll in lls]))
             this_index = [ii for ii in range(100) if ii not in used_indices][0]
-            extra_line_labels = [('---',t.wavelength*10**4,this_index) 
-                                 for t in trans_markers]
-            sphinx_line_labels = sphinx_line_labels + extra_line_labels
-        
+            ells = self.createLineLabels(fn_trans_marker=fn_trans_marker,\
+                                         ilabel=this_index,unit='cm-1')
+            lls = lls + ells
         plot_filenames = []
         for wave,flux,filename in zip(self.spire.data_wave_list,\
                                       self.spire.data_flux_list,\
@@ -1834,12 +1992,12 @@ class PlotGas(PlottingSession):
             if not exclude_data: 
                 keytags = ['Spire Spectrum'] + keytags
             plot_filenames.append(Plotting2.plotCols(x=w,y=f,\
-                keytags=keytags,number_subplots=number_subplots,\
-                line_label_color=1,\
+                keytags=keytags,number_subplots=3,\
+                line_label_color=1,line_labels=lls,\
                 plot_title='%s: %s' %(self.plot_id.replace('_','\_'),\
-                self.star_name_plots),line_labels=sphinx_line_labels,\
+                                      self.star_name_plots),\
                 histoplot= not exclude_data and [0] or [],\
-                filename=this_filename,cfg=cfg,\
+                filename=this_filename,cfg=cfg_dict,\
                 line_label_spectrum=1,xaxis='$k$ (cm$^{-1}$)'))
         print '** Your plots can be found at:'
         print '\n'.join(plot_filenames)

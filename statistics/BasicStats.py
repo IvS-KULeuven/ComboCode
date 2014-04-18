@@ -57,8 +57,6 @@ def calcLoglikelihood(data,model,noise):
     """
     
     data, model, noise = array(data), array(model), array(noise) 
-    print data, model, noise
-    print -log(sqrt(2.*pi)),   - log(noise) , 1./2.*((data-model)/noise)**2.
     lll = (-log(sqrt(2.*pi)) - log(noise) - 1./2.*((data-model)/noise)**2.).sum()
     return lll
     

@@ -86,7 +86,7 @@ class Molecule():
                                              'ComboCode'),\
                  change_fraction_filename=None,set_keyword_change_abundance=0,\
                  set_keyword_change_temperature=0,enhance_abundance_factor=0,\
-                 new_temperature_filename=None,linelist=0):
+                 new_temperature_filename=None,linelist=0,starfile=''):
         
         '''
         Initiate a Molecule class, setting all values for the allowed 
@@ -245,6 +245,17 @@ class Molecule():
         
                            (default: 0)
         @type linelist: bool
+        @keyword starfile: input filename for a stellar input spectrum (either
+                           user defined or from a model atmosphere spectrum)
+                           Note that the file must be linked to
+                           ~/ComboCode/StarFiles/starfile_tablestar.dat
+                           for it to be used by GASTRoNOoM, and that the code 
+                           itself must have been compiled with the correct 
+                           b.f and table_star.f files. 
+                           
+                           (default: '')
+        @type starfile: str
+                           
         
         '''
  
@@ -342,7 +353,7 @@ class Molecule():
         else:
             self.radiat = None
             self.radiat_indices = None
-        
+        self.starfile = starfile
 
 
     def __str__(self):
@@ -443,6 +454,8 @@ class Molecule():
             else:
                  new_dict['NEW_TEMPERATURE_FILENAME'] \
                     = '"%s"'%self.new_temperature_filename
+        if self.starfile:
+            new_dict['STARFILE'] = self.starfile
         return new_dict        
                          
 

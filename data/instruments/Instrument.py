@@ -162,7 +162,10 @@ class Instrument(object):
         '''
         Read in data, taking special care of NaNs. 
         
-        Two colums are taken as input!
+        Four colums are taken as input! wave - contsub - original - continuum
+        
+        Two columns still works, but may result in errors in other places in 
+        the code. 
         
         @param data_filenames: list of filenames to read
         @type data_filenames: list[string]
@@ -170,12 +173,17 @@ class Instrument(object):
         '''
         
         self.data_wave_list = [] 
-        self.data_flux_list = [] 
+        self.data_flux_list = []
+        self.data_original_list = [] 
+        self.data_continuum_list = [] 
         for filename in data_filenames:
             data = DataIO.readCols(filename=filename,nans=1)
             self.data_wave_list.append(data[0])
             self.data_flux_list.append(data[1])
-            
+            if len(data) == 2: 
+                continue
+            self.data_original_list.append(data[2])
+            self.data_continuum_list.append(data[3])
             
             
     def mergeSphinx(self,star):

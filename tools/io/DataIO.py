@@ -540,6 +540,10 @@ def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
         return [array([line[i] for line in lines]) 
                 for i in xrange(len(lines[0]))]
     else:
+        #for line in lines: 
+            #print line
+            #print len(line), len(lines[0])
+            #if len(line) != len(lines[0]): raw_input()
         return [[line[i] for line in lines] for i in xrange(len(lines[0]))]
       
       
@@ -637,7 +641,7 @@ def writeFile(filename,input_lines,mode='w'):
     
     
     
-def writeCols(filename,cols,mode='w'):
+def writeCols(filename,cols,mode='w',delimiter='\t'):
     
     """
     Write columns of data.
@@ -648,7 +652,13 @@ def writeCols(filename,cols,mode='w'):
     @type cols: list[list or array]
     
     @keyword mode: writing mode ('w' is new file, 'a' appends to existing file)
+    
+                   (default: 'w')
     @type mode: string
+    @keyword delimiter: The delimiter used between columns
+    
+                        (default: '\t')
+    @type delimiter: string
     
     """
     
@@ -656,8 +666,10 @@ def writeCols(filename,cols,mode='w'):
     if mode == 'w':                                
         testFolderExistence(os.path.split(filename)[0])
     FILE = open(filename,mode)
-    FILE.write('\n'.join([' '.join(['%.15e' %col[i]  
-                                    for col in cols]) 
+    FILE.write('\n'.join([delimiter.join(\
+                            [type(col[i]) is types.StringType and '%s'%col[i] \
+                                or '%.3e'%col[i]  
+                             for col in cols])
                           for i in xrange(len(cols[0]))]))
     FILE.close()
 
@@ -898,8 +910,8 @@ def checkEntryInfo(input_list,number_of_keys,info_type):
     if set([len(line) for line in input_list]) != set([number_of_keys]):
         print 'Number of keys should be: %i'%number_of_keys
         print '\n'.join(['%i  for  %s'%(len(line),line) for line in input_list])
-        raise IOError('Input for one of the %s lines has wrong number of ' + \
-                      'values. Double check, and abort.'%info_type)
+        raise IOError('Input for one of the %s lines has wrong '%info_type + \
+                      'number of values. Double check, and abort.')
     else:
         #- if MOLECULE: only molecule string, 
         #- if R_POINTS_MASS_LOSS: only grid id number, 

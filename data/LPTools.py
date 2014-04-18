@@ -158,6 +158,32 @@ def getPeakLPData(filename=None,lprof=None,vlsr=None,\
     
     i_mid = argmin(np.abs(vel-vlsr))
     return mean(flux[i_mid-2:i_mid+3])
+
+    
+    
+def getLPDataFWHM(lprof):
+
+    '''
+    Calculate the FWHM of the line profile.
+    
+    @param lprof: the line profile object. 
+    @type lprof: LPDataReader()
+    
+    @return: the fwhm of the line
+    @rtype: float
+    
+    '''
+    
+    flux = lprof.getFlux()
+    vel = lprof.getVelocity()
+    vlsr = lprof.getVlsr()
+    maxval = max(flux)
+    i_mid = argmax(flux)
+    flux1 = flux[:i_mid]
+    flux2 = flux[i_mid:]
+    v1 = vel[argmin(abs(flux1-maxval/2.))]
+    v2 = vel[argmin(abs(flux2-maxval/2.))+i_mid]
+    return v2-v1
     
     
     
@@ -400,6 +426,7 @@ def checkLPShape(vel,flux,vlsr,vexp,window=2.,show=0):
     
 
 
+
 def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
           vary_pars=['vexp'],i_vexp=15.0,i_gamma=1.0,do_gauss=0,\
           info_path=os.path.join(os.path.expanduser('~'),'ComboCode','Data')):
@@ -606,6 +633,8 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
         
     #-- If the relative error on vexp is larger than 30%, usually something 
     #   funky is going on in the emission line. Try a Gaussian instead.
+    fvlsr = finalfit.get_parameters()[0][1]
+    fevlsr = finalfit.get_parameters()[1][1]
     vexp = abs(finalfit.get_parameters()[0][2])
     evexp = abs(finalfit.get_parameters()[1][2])
     gamma = finalfit.get_parameters()[0][3]
@@ -617,6 +646,7 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
         #-- Go back to default window to try a Gaussian fit
         #keep = np.abs(vel-vlsr)<=(80)
         #velselg,fluxselg = vel[keep],flux[keep]
+        do_gauss = 1
         include_gauss = None
         #-- FWHM is twice vexp!
         sigmas = 2*ivexps/(2.*sqrt(2.*log(2.)))
@@ -625,6 +655,8 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
                                   vary_window=1,vary=[True,True,True,False])
         vexp = abs(finalfit.get_parameters()[0][2])*(2.*sqrt(2.*log(2.)))/2.
         evexp = abs(finalfit.get_parameters()[1][2])*(2.*sqrt(2.*log(2.)))/2.
+        fvlsr = finalfit.get_parameters()[0][1]
+        fevlsr = finalfit.get_parameters()[1][1]
         window = 3.
         print 'Improved fit, using a gaussian instead of soft parabola:'
         print finalfit.param2str(accuracy=5)
@@ -650,7 +682,10 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
               %trapz(y=fitted_flux,x=velsel))
     print('Final v_exp guess: %.4f +/- %.4f km/s'%(vexp,evexp))
     print('Final gamma guess: %.4f +/- %.4f'%(gamma,egamma))
-    
+    print('Final vlsr guess: %.4f +/- %.4f'%(fvlsr,fevlsr))
+    fwhm = getLPDataFWHM(lprof)
+    print('The FWHM is %.2f km/s.'%(fwhm))
+
     #-- plot
     if show or cfg:
         plt.clf()    
@@ -676,7 +711,8 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
             leg.get_frame().set_alpha(0.5)
             plt.show()
         if cfg:
-            pf = 'lprof_fitted_%s'%filename
+            pf = '%s_fitted_%s'%(do_gauss and 'gaussFit' or 'SPFit',\
+                                 os.path.split(filename)[1])
             keytags = ['Observed profile','Improved guess']
             line_types = ['-r','-b',]
             x = [velsel,vel_highres]
@@ -694,6 +730,9 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
             print 'Your figure can be found at %s .'%pf
     #-- Collecting all relevant results and returning.
     results = dict()
+    results['do_gauss'] = do_gauss
+    results['fvlsr'] = fvlsr
+    results['fevlsr'] = fevlsr
     results['vexp'] = vexp
     results['evexp'] = evexp
     results['gamma'] = gamma
@@ -703,6 +742,8 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
     results['fgintint'] = fifg
     results['dintint'] = dimb
     results['intwindow'] = window*0.6
+    results['fwhm'] = fwhm
     #-- The full model, includes gaussian if applicable, otherwise == finalfit
     results['fullfit'] = not include_gauss is None and mymodel or finalfit
     return results
+

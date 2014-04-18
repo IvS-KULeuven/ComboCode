@@ -15,6 +15,8 @@ from scipy.integrate import trapz
 from glob import glob
 import operator
 
+from ivs.sed import extinctionmodels as em 
+
 from cc.tools.numerical import Interpol
 from cc.tools.io import DataIO
 from cc.plotting import Plotting2
@@ -48,7 +50,7 @@ class Sed(object):
     
     '''
     
-    def __init__(self,star_name,path,plot_extrapol_extinction=0,\
+    def __init__(self,star_name,path,distance=None,plot_extrapol_extinction=0,\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
         
@@ -62,6 +64,12 @@ class Sed(object):
         @param path: The path to the folder containing the SED data
         @type path: string
         
+        @keyword distance: The distance to the star. If not None, the K-band
+                           absorption coefficient is taken from the Marshall
+                           or Drimmel catalogs.
+                           
+                           (default: None)
+        @type distance: float
         @keyword path_combocode: path to the combocode folder
         
                                (default: ~/ComboCode/)
@@ -77,7 +85,9 @@ class Sed(object):
         
         self.star_name = star_name
         self.path = path
+        self.distance = distance 
         self.path_combocode = path_combocode
+        self.ak = None
         self.plot_extrapol_extinction = plot_extrapol_extinction
         self.data = dict()
         self.data_raw = dict()
@@ -96,22 +106,27 @@ class Sed(object):
         """
         
         cc_path = os.path.join(self.path_combocode,'Data')
-        star_index = DataIO.getInputData(cc_path).index(self.star_name)
-        self.ak = DataIO.getInputData(path=cc_path,keyword='A_K')[star_index]
-        longitude = DataIO.getInputData(path=cc_path,keyword='LONG')[star_index]
-        latitude = DataIO.getInputData(path=cc_path,keyword='LAT')[star_index]
-        if (abs(longitude) < 5.0 or longitude > 355.0) and abs(latitude) < 5.0:
+        si = DataIO.getInputData(cc_path).index(self.star_name)
+        self.star_index = si
+        ll = DataIO.getInputData(path=cc_path,keyword='LONG')[si]
+        bb = DataIO.getInputData(path=cc_path,keyword='LAT')[si]
+        if self.distance <> None:
+            self.ak = em.findext_marshall(ll=ll,bb=bb,distance=self.distance,\
+                                          norm='Ak')
+            if self.ak is None:
+                self.ak = em.findext_drimmel(lng=ll,lat=bb,norm='Ak',\
+                                             distance=self.distance)
+        if self.ak is None:
+            self.ak = float(DataIO.getInputData(path=cc_path,\
+                                                keyword='A_K')[si])
+        snp = DataIO.getInputData(path=cc_path,keyword='STAR_NAME_PLOTS',\
+                                  remove_underscore=1)[si]
+        self.star_name_plots = snp    
+        if (abs(ll) < 5.0 or ll > 355.0) and abs(bb) < 5.0:
             self.gal_position = 'GC'
         else:
             self.gal_position = 'ISM'    
-        self.star_index = DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'Data'))\
-                              .index(self.star_name)
-        self.star_name_plots = DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'Data'),\
-                                keyword='STAR_NAME_PLOTS',remove_underscore=1)\
-                               [self.star_index]
-    
+        
        
        
     def setData(self):
@@ -119,20 +134,24 @@ class Sed(object):
         '''
         Select available data.
         
-        Based on the data file types in Dust.dat and the available data files.
+        Based on the data file types in Sed.dat and the available data files.
         
         '''
         
         cc_path = os.path.join(self.path_combocode,'Data')
-        all_data_types = DataIO.getInputData(path=cc_path,keyword='DATA_TYPES',\
-                                             filename='Dust.dat')
-        searchpath = os.path.join(self.path,'*_%s*.dat'%self.star_name)
-        all_files = glob(searchpath)
-        data_list = [os.path.split(f)[1].split('_')[0]
-                     for f in all_files] 
-        self.data_types = [dt for dt in data_list if dt in all_data_types]
-        self.data_filenames = [fn for fn,dt in zip(all_files,data_list)
-                               if dt in all_data_types]
+        data_types = DataIO.getInputData(path=cc_path,keyword='DATA_TYPES',\
+                                         filename='Sed.dat')
+        self.data_types = []
+        self.data_filenames = []
+        for dt in data_types:
+            searchpath = os.path.join(self.path,'%s_*%s*.dat'\
+                                                 %(dt,self.star_name))
+            add_files = glob(searchpath)
+            for ff in add_files: 
+                if ff not in self.data_filenames:
+                    self.data_filenames.append(ff)
+                    self.data_types.append(dt)
+        
         
     
     def readData(self):
@@ -148,7 +167,7 @@ class Sed(object):
                                  for x,y in sorted(zip(data[0],data[1]),\
                                                    key=operator.itemgetter(0)) 
                                  if y])
-            self.data_raw[dt] = (data_sorted[:,0],data_sorted[:,1])
+            self.data_raw[(dt,fn)] = (data_sorted[:,0],data_sorted[:,1])
             
         #print '** LWS is not being aligned automatically with SWS for now.'
         #- Check if SWS and LWS are present (for now, LWS is not aligned automatically)
@@ -191,16 +210,22 @@ class Sed(object):
         The extrapolation is done with a power law fitted to the long
         wavelength region (lambda > 22 micron).
         
+        For short wavelength points below 1.24 micron, the cardelli extinction
+        curve is used.
+        
         '''
     
         #- Read the extinction curve, then inter/extrapolate it
         ext_x,ext_y = getExtinctionCurve(self.gal_position,'chiar_tielens',\
                                          0.112)
+        ext_car_x, ext_car_y = getExtinctionCurve(curve_type='cardelli',\
+                                                  av_to_ak_conv=0.112)
         #- Initial param guess for extrapolation of long wavelength extinction curve
         p0 = [ -2,  0.01 ,  1, -1]
         #- Assuming a power law for the extrapolation, and fitting from 22 mic  
         deredfunc = 'power'
         extrapol_xmin = 22.0
+        chiar_min = ext_x[0]
         #- Fit the power law to the > 22 micron wavelength range
         plsq = leastsq(Interpol.getResiduals,p0,\
                        args=(ext_x[ext_x>=extrapol_xmin],\
@@ -208,14 +233,16 @@ class Sed(object):
                              deredfunc),maxfev=20000)[0]
         #- Calculate the extrapolation and interpolation for the datagrids
         #- Then combine and apply the correction to the data
-        for dt,(data_x, data_y) in self.data_raw.items():
+        for (dt,fn),(data_x, data_y) in self.data_raw.items():
             extra = Interpol.pEval(data_x[data_x>=extrapol_xmin],plsq,deredfunc)
-            inter = interp1d(ext_x,ext_y)(data_x[data_x<extrapol_xmin])
-            corr = hstack([inter,extra])
+            inter = interp1d(ext_x,ext_y)(data_x[(data_x<extrapol_xmin)\
+                                                    *(data_x>=chiar_min)])
+            short = interp1d(ext_car_x,ext_car_y)(data_x[data_x<chiar_min])
+            corr = hstack([short,inter,extra])
             if self.plot_extrapol_extinction: 
                 Plotting2.plotCols(x=[ext_x,data_x],y=[ext_y,corr],\
                                    xlogscale=1,ylogscale=1)
-            self.data[dt] = (data_x,data_y*10**(corr*self.ak*0.4))
+            self.data[(dt,fn)] = (data_x,data_y*10**(corr*self.ak*0.4))
                     
         
 
@@ -266,6 +293,9 @@ def getExtinctionCurve(gal_position='ism',curve_type='chiar_tielens',\
     elif curve_type.lower() == 'cardelli':
         #- putting wavelength in micron
         extcurve_x = array(extcurve_x)*10**(-4)                  
+        extcurve_y = [float(row[1]) 
+                      for row in extcurve_input 
+                      if row[0][0] != '#']
         #- Put values to Alambda/Ak
         extcurve_y = array(extcurve_y)/(3.1*av_to_ak_conv)       
     else:
@@ -273,6 +303,4 @@ def getExtinctionCurve(gal_position='ism',curve_type='chiar_tielens',\
                       for row in extcurve_input 
                       if row[0][0] != '#']
     
-    extcurve = [[x,y] for x,y in zip(extcurve_x,extcurve_y)]
-
     return (array(extcurve_x),array(extcurve_y))

@@ -116,7 +116,7 @@ class ComboCode(object):
             self.runPlotManager()
             self.runStatistics()
             self.doContDiv()
-            self.appendResults() 
+            #self.appendResults() 
             if self.write_dust_density:
                 [star.writeDensity() for star in self.star_grid]
             self.printStarInfo()
@@ -532,13 +532,13 @@ class ComboCode(object):
                       %(star_index+1,len(self.star_grid))
                 print '***********************************'
                 self.model_manager.startModeling(star,star_index)
-                #-- done_mline is True if in previous model an mline calculation 
+                #-- mline_done is True if in previous model an mline calculation 
                 #-- was done: Only then do a progress check, because a lot of time 
                 #-- has passed, but then a wait time is used to make sure the newly
                 #-- queued sphinx models after the mline model are properly queued.
                 if self.vic_manager \
                         and self.vic_manager.getQueue() \
-                        and self.model_manager.done_mline_list[-1]:    
+                        and self.model_manager.mline_done_list[-1]:    
                     print '***********************************'
                     print '** Current VIC queue:'
                     print self.vic_manager.getQueue()
@@ -664,10 +664,10 @@ class ComboCode(object):
                                         'models',model_id,\
                                         os.path.split(self.inputfilename)[1]+\
                                         '_%s_%i'%(model_id,i)))],shell=True)
-        if self.model_manager.done_mcmax_list:
+        if self.model_manager.mcmax_done_list:
             model_ids = [star['LAST_MCMAX_MODEL'] 
                          for star,boolean in zip(self.star_grid,\
-                                            self.model_manager.done_mcmax_list) 
+                                            self.model_manager.mcmax_done_list) 
                          if boolean or self.append_results]
             if model_ids:
                 appendage += ['#########################################',\

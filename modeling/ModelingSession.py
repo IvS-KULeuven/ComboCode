@@ -22,7 +22,7 @@ class ModelingSession(object):
     
     """
       
-    def __init__(self,code,path,replace_db_entry=0,\
+    def __init__(self,code,path,replace_db_entry=0,new_entries=[],\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
         
@@ -46,13 +46,21 @@ class ModelingSession(object):
                                               
                                    (default: 0)
         @type replace_db_entry: bool
+        @keyword new_entries: The new model_ids when replace_db_entry is 1
+                              of other models in the grid. These are not 
+                              replaced!
+                                   
+                              (default: [])
+        @type new_entries: list[str]        
           
         """
         
         self.path_combocode = path_combocode
         self.path = path
         self.code = code
+        self.model_id = ''
         self.replace_db_entry = replace_db_entry
+        self.new_entries = new_entries
         mutablefile = os.path.join(self.path_combocode,'cc',\
                                    'Mutable_Parameters_' + code + '.dat')
         self.mutable = [line[0] 

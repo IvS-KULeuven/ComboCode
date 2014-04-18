@@ -35,7 +35,7 @@ def readModelSpectrum(path_mcmax,model_id,rt_sed=1):
                      (default: 1)
     @type rt_sed: bool
     
-    @return: The wavelength and flux grids
+    @return: The wavelength and flux grids (micron,Jy)
     @rtype: (array,array)
      
     '''
@@ -68,8 +68,9 @@ def rayTraceSpectrum(model_id,path_mcmax='runTestDec09',inputfilename='',\
                      redo_rt=0):
     
     '''
-    Do the ray-tracing of the spectrum according to ~/MCMax/src/Spec.out, 
-    but only if spectrum45.0.dat does not exist yet.
+    Do the ray-tracing of the spectrum according to 
+    ~/MCMax/Observation_Files/Spec.out, but only if spectrum45.0.dat does not 
+    exist yet.
     
     @param model_id: the model_id of the requested model
     @type model_id: string
@@ -100,8 +101,8 @@ def rayTraceSpectrum(model_id,path_mcmax='runTestDec09',inputfilename='',\
                                        'inputMCMax_%s.dat'%model_id)
         output_folder = os.path.join(os.path.expanduser("~"),'MCMax',\
                                      path_mcmax,'models',model_id)
-        spec_file = os.path.join(os.path.expanduser('~'),'MCMax','src',\
-                                 'Spec.out')
+        spec_file = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                 'Observation_Files','Spec.out')
         subprocess.call([' '.join(['MCMax ' + inputfilename,'0','-o',\
                                    output_folder,spec_file])],shell=True)
     else:
@@ -113,7 +114,8 @@ def rayTraceImage(model_id,path_mcmax='runTestDec09',inputfilename='',\
                   remove_source=0):
     
     '''
-    Do the ray-tracing of images, according to ~/MCMax/src/Image.out.
+    Do the ray-tracing of images, according to 
+    ~/MCMax/Observation_Files/Image.out.
     
     @param model_id: the model_id of the requested model
     @type model_id: string
@@ -139,8 +141,8 @@ def rayTraceImage(model_id,path_mcmax='runTestDec09',inputfilename='',\
                                    'models','inputMCMax_%s.dat'%model_id)
     output_folder = os.path.join(os.path.expanduser("~"),'MCMax',path_mcmax,\
                                  'models',model_id)
-    image_file = os.path.join(os.path.expanduser('~'),'MCMax','src',\
-                              'Image.out')
+    image_file = os.path.join(os.path.expanduser('~'),'MCMax',\
+                              'Observation_Files','Image.out')
     if remove_source:
         subprocess.call([' '.join(['MCMax ' + inputfilename,'0',\
                                    '-s tracestar=.false.','-o',output_folder,\
@@ -153,6 +155,40 @@ def rayTraceImage(model_id,path_mcmax='runTestDec09',inputfilename='',\
                                 
 
 
+def rayTraceVisibilities(model_id,path_mcmax='runTestDec09',inputfilename=''):
+    
+    '''
+    Do the ray-tracing of visibilities, according to 
+    ~/MCMax/Observation_Files/Visibilities.out.
+    
+    @param model_id: the model_id of the requested model
+    @type model_id: string
+        
+    @keyword path_mcmax: modeling folder in MCMax home
+    @type path_mcmax: string
+    @keyword inputfilename: the inputfilename of the model. if '': filename is 
+                            inputMCMax_model_YYYY-MM-DDhHH-mm-ss.
+                            
+                            (default: '')
+    @type inputfilename: string                        
+    
+    '''
+    
+    print '** Ray-tracing visibilities now...'
+    if not inputfilename:
+        inputfilename=os.path.join(os.path.expanduser('~'),'MCMax',path_mcmax,\
+                                   'models','inputMCMax_%s.dat'%model_id)
+    output_folder = os.path.join(os.path.expanduser("~"),'MCMax',path_mcmax,\
+                                 'models',model_id)
+    visibilities_file = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                     'Observation_Files','Visibilities.out')
+    subprocess.call([' '.join(['MCMax ' + inputfilename,'0','-o',\
+                               output_folder,visibilities_file])],shell=True)
+    print '** Your visibilities can be found at:'
+    print output_folder
+                               
+                               
+
 class MCMax(ModelingSession):
     
     """ 
@@ -160,7 +196,8 @@ class MCMax(ModelingSession):
     
     """
     
-    def __init__(self,path_mcmax='runTest',replace_db_entry=0,db=None,
+    def __init__(self,path_mcmax='runTest',replace_db_entry=0,db=None,\
+                 new_entries=[],\
                  path_kappas=os.path.join(os.path.expanduser('~'),'MCMax',\
                                           'src'),\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
@@ -193,21 +230,28 @@ class MCMax(ModelingSession):
         
                               (default: /home/<user>/MCMax/src/')
         @type path_kappas: string
+        @keyword new_entries: The new model_ids when replace_db_entry is 1
+                                   of other models in the grid. These are not 
+                                   replaced!
+                                   
+                                   (default: [])
+        @type new_entries: list[str]     
         
         """
         
         super(MCMax, self).__init__(code='MCMax',path=path_mcmax,\
                                     path_combocode=path_combocode,\
-                                    replace_db_entry=replace_db_entry)
+                                    replace_db_entry=replace_db_entry,\
+                                    new_entries=new_entries)
         DataIO.testFolderExistence(os.path.join(os.path.expanduser("~"),\
                                    'MCMax',self.path,'data_for_gastronoom'))
         self.db = db
         self.path_kappas = path_kappas
-        self.done_mcmax = False
+        self.mcmax_done = False
         
         #- Read standard input file with all parameters that should be included
         #- as well as some dust specific information
-        inputfilename = os.path.join(os.path.expanduser("~"),'MCMax','src',\
+        inputfilename = os.path.join(os.path.expanduser("~"),'MCMax',\
                                      'inputMCMax.dat')
         self.standard_inputfile = DataIO.readDict(inputfilename,\
                                                   convert_floats=1,\
@@ -239,6 +283,8 @@ class MCMax(ModelingSession):
         if self.model_id and int(star['IMAGE']):
             rayTraceImage(model_id=self.model_id,path_mcmax=self.path,\
                           remove_source=star['IMAGE_NOSOURCE'])
+        if self.model_id and int(star['VISIBILITIES']):
+            rayTraceVisibilities(model_id=self.model_id,path_mcmax=self.path)
 
 
             
@@ -336,11 +382,12 @@ class MCMax(ModelingSession):
         
         """
         
-        for model_id,cool_dict in self.db.items():
+        for model_id,cool_dict in sorted(self.db.items()):
             model_bool = self.compareCommandLists(self.command_list.copy(),\
                                                   cool_dict)
             if model_bool:
-                if self.replace_db_entry: 
+                if self.replace_db_entry \
+                        and model_id not in self.new_entries: 
                     print 'Replacing MCMax database entry for old ID %s.'\
                           %model_id
                     del self.db[model_id]
@@ -368,51 +415,21 @@ class MCMax(ModelingSession):
         print '***********************************'                                       
         #- Create the input dictionary for this MCMax run
         print '** Making input file for MCMax'
+        #-- Add the previous model_id to the list of new entries, so it does 
+        #   not get deleted if replace_db_entry == 1. 
+        if self.model_id: 
+            self.new_entries.append(self.model_id)
         self.model_id = ''
         self.command_list = dict()
         self.command_list['photon_count'] = star['PHOTON_COUNT']
         if star['STARTYPE'] == 'BB':
             self.command_list['Tstar'] = float(star['T_STAR'])
             self.command_list['Rstar'] = float(star['R_STAR'])
-        elif star['STARTYPE'] == 'ATMOSPHERE':
-            modeltypes = ['comarcs','marcs','kurucz']
-            modeltype = None
-            for mt in modeltypes:
-                if mt in star['ATM_FILENAME']:
-                    modeltype = mt
-                    continue
-            if modeltype is None: 
-                raise IOError('Atmosphere model type is unknown.')
+        elif star['STARTYPE'] == 'ATMOSPHERE' or star['STARTYPE'] == 'FILE':
             self.command_list['startype'] = "'FILE'"
             self.command_list['Lstar'] = star['L_STAR']
-            path = os.path.join(os.path.expanduser('~'),\
-                                self.path_combocode,'StarFiles')
-            DataIO.testFolderExistence(path)
-            atmfile = star['ATM_FILENAME']
-            atmos = Atmosphere.Atmosphere(modeltype,filename=atmfile)
-            atmosmodel = atmos.getModel(teff=star['T_STAR'],logg=star['LOGG'])
-            #atmosmodel['flux'] = atmosmodel['flux'] \
-                                  #*(star['R_STAR']*star.r_solar)**2 \
-                                  #/(star['DISTANCE']*star.pc)**2
-            starfile = os.path.join(path,'%s_teff%s_logg%s.dat'\
-                                    %(os.path.splitext(atmos.filename)[0],\
-                                      str(atmos.teff_actual),\
-                                      str(atmos.logg_actual)))
-            savetxt(starfile,atmosmodel,fmt=('%.8e'))
-            print 'Using input model atmosphere at '
-            print starfile
-            self.command_list['starfile'] = "'%s'"%starfile
-        elif star['STARTYPE'] == 'FILE':
-            self.command_list['startype'] = "'%s'" %star['STARTYPE']
-            if os.path.split(star['STARFILE'])[0]:
-                starfile = star['STARFILE']
-            else:
-                starfile = os.path.join(os.path.expanduser('~'),\
-                                        self.path_combocode,'StarFiles',\
-                                        star['STARFILE'])
-            self.command_list['starfile'] = "'%s'"%starfile
-            self.command_list['Lstar'] = star['L_STAR']
-        
+            self.command_list['Rstar'] = star['R_STAR']
+            self.command_list['starfile'] = "'%s'"%star['STARFILE']
         self.command_list['tcontact'] = star['T_CONTACT'] \
                                             and '.true.' \
                                             or '.false.'
@@ -523,7 +540,7 @@ class MCMax(ModelingSession):
                 path = os.path.split(speciesfile)[0]
                 if not path: path = self.path_kappas
                 input_dict['%s%.2i'%(ftype,index+1)] = "'%s'"\
-                                         %(os.path.join(path,speciesfile))       
+                            %(os.path.join(path,os.path.split(speciesfile)[1]))       
             input_filename = os.path.join(os.path.expanduser("~"),'MCMax',\
                                           self.path,'models',\
                                           'inputMCMax_%s.dat'%self.model_id)
@@ -535,12 +552,13 @@ class MCMax(ModelingSession):
             subprocess.call(' '.join(['MCMax',input_filename,\
                                       str(self.command_list['photon_count']),\
                                       '-o',output_folder]),shell=True)
+            self.mcmax_done = True
             testf1 = os.path.join(output_folder,'denstemp.dat')
             testf2 = os.path.join(output_folder,'kappas.dat')
             if os.path.exists(testf1) and os.path.exists(testf2) and \
                     os.path.isfile(testf1) and os.path.isfile(testf2):
                 self.db[self.model_id] = self.command_list
-                self.done_mcmax = True
+                self.db.sync()
             else:
                 print '** Model calculation failed. No entry is added to ' + \
                       'the database and LAST_MCMAX_MODEL in STAR dictionary '+\

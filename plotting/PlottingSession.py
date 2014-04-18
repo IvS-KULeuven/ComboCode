@@ -95,7 +95,7 @@ class PlottingSession(object):
                                                 self.code,self.path,'stars'))
         DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
                                                 self.code,self.path,'stars',\
-                                    self.star_name))
+                                                self.star_name))
         DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
                                                 self.code,self.path,'stars',\
                                                 self.star_name,self.plot_id))
