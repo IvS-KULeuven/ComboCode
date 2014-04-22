@@ -485,22 +485,24 @@ class Database(dict):
         '''
         
         try:
-            dbfile = open(self.db_path,'r')
             while True:
+                dbfile = open(self.db_path,'r')
                 try:
                     try:
                         db = cPickle.load(dbfile)
+                        dbfile.close()
                         break
                     except ValueError:
                         print 'Loading database failed: ValueError ~ ' + \
-                              'insecure string pickle. Waiting 10 seconds ' + \
+                              'insecure string pickle. Waiting 5 seconds ' + \
                               'and trying again.' 
-                        time.sleep(10)
+                        dbfile.close()
+                        time.sleep(5)
                 except EOFError:
-                    print 'Loading database failed: EOFError. Waiting 10 ' + \
+                    print 'Loading database failed: EOFError. Waiting 5 ' + \
                           'seconds and trying again.'
-                    time.sleep(10)
-            dbfile.close()
+                    dbfile.close()
+                    time.sleep(5)
             self.clear()
             super(Database,self).update(db)
         except IOError:

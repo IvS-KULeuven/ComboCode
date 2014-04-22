@@ -2601,7 +2601,53 @@ class Star(dict):
             pass                        
                               
   
-                            
+    def calcGAS_LINES2(self):
+        
+        """
+        Making transition line input for gas data (auto search) 
+        and additional no-data lines.
+        
+        The Transition() objects are created then for these lines and added
+        to the GAS_LINES list.
+    
+        """
+        
+        if not self.has_key('GAS_LINES2'):
+            self['GAS_LINES2'] = list()
+            #- To make sure the GAS_LIST is done, and the conversion of 
+            #- TRANSITION to the right molecule names is done 
+            #- (in case of PlottingSession.setPacsFromDb is used)
+            self.calcGAS_LIST()     
+            if self['PATH_GAS_DATA']:
+                pass
+            if self.has_key('TRANSITION'):
+                pass
+            if self['LINE_LISTS']:
+                pass
+                
+            self['GAS_LINES2'] = sorted(list(self['GAS_LINES2']),\
+                                       key=lambda x: str(x))
+            requested_transitions = set([str(trans) 
+                                         for trans in self['GAS_LINES2']]) 
+            if not len(self['GAS_LINES2']) == len(requested_transitions):
+                print 'Length of the requested transition list: %i'\
+                      %len(self['GAS_LINES2'])
+                print 'Length of the requested transition list with only ' + \
+                      'the "transition string" parameters: %i'\
+                      %len(requested_transitions)
+                print 'Guilty transitions:'
+                trans_strings = [str(trans) for trans in self['GAS_LINES2']]
+                print '\n'.join([str(trans) 
+                                 for trans in self['GAS_LINES2'] 
+                                 if trans_strings.count(str(trans))>1])
+                raise IOError('Multiple parameter sets for a single ' + \
+                              'transition requested. This is impossible! '+ \
+                              'Check code/contact Robin.')
+        else:
+            pass
+    
+    
+    
     def calcGAS_LINES(self):
         
         """
