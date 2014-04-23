@@ -16,6 +16,7 @@ from scipy import array, exp
 from scipy import integrate, linspace
 from scipy import argmin,argmax
 import operator
+from numpy import savetxt
 
 from cc.data import Data
 from cc.tools.io import Database
@@ -2614,19 +2615,50 @@ class Star(dict):
         
         if not self.has_key('GAS_LINES2'):
             self['GAS_LINES2'] = list()
-            #- To make sure the GAS_LIST is done, and the conversion of 
-            #- TRANSITION to the right molecule names is done 
-            #- (in case of PlottingSession.setPacsFromDb is used)
+            #-- To make sure the GAS_LIST is done, and the conversion of 
+            #   TRANSITION to the right molecule names is done 
+            #   (in case of PlottingSession.setPacsFromDb is used)
             self.calcGAS_LIST()     
-            if self['PATH_GAS_DATA']:
-                pass
+            
+            #-- Check if specific transition were requested in addition to data            
+            #   Note that these include autosearch transitions if requested
+            #   (See ComboCode.py)
             if self.has_key('TRANSITION'):
-                pass
-            if self['LINE_LISTS']:
-                pass
+                self['TRANSITION'] = [trans 
+                                      for trans in self['TRANSITION'] 
+                                      if trans[0] in [molec[0] 
+                                                      for molec in self\
+                                                                 ['MOLECULE']]]
+                new_lines = [Transition.makeTransition(star=self,trans=trans) 
+                             for trans in self['TRANSITION']]
+                new_lines = [trans for trans in new_lines if trans]
+                self['GAS_LINES2'].extend(new_lines)
                 
+            #- Check if molecular line catalogues have to be browsed to create 
+            #- line lists in addition to the data
+            if self['LINE_LISTS']:
+                if self['LINE_LISTS'] == 1: 
+                    pass
+                    #self.__addLineList()
+                elif self['LINE_LISTS'] == 2: 
+                    ll_path = os.path.split(self['LL_FILE'].strip())[0]
+                    if not ll_path:
+                        ll_path = os.path.join(os.path.expanduser('~'),\
+                                               'GASTRoNOoM','LineLists')
+                    ll_file = os.path.split(self['LL_FILE'].strip())[1]
+                    llf = os.path.join(ll_path,ll_file)
+                    nt = Transition.makeTransitionsFromTransList(filename=llf,\
+                                                                 star=self) 
+                    nt = [trans for trans in nt if trans]
+                    self['GAS_LINES2'].extend(nt)
+            
+            #-- Sort the transitions.
             self['GAS_LINES2'] = sorted(list(self['GAS_LINES2']),\
                                        key=lambda x: str(x))
+            #-- Check uniqueness.
+            self['GAS_LINES2'] = Transition.checkUniqueness(self['GAS_LINES2'])
+            
+            #-- Is this still needed? 
             requested_transitions = set([str(trans) 
                                          for trans in self['GAS_LINES2']]) 
             if not len(self['GAS_LINES2']) == len(requested_transitions):

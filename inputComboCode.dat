@@ -28,20 +28,27 @@ VIC_TIME_PER_SPHINX=30                 # Pre-allocated time in minutes per Sphin
 VIC_CREDITS=                       # Credits account to be charged, leave open or remove for making use of your own personal credits.
 
 #-- PACS convolution and plotting
-PATH_PACS=#/home/robinl/Data/PACS/         # Path to PACS data, leave empty if not relevant/no dust data are used. Data will be taken from path_pacs/star_name/cont_subtracted/.  The star_name does not have to be specified.
+PACS_PATH=#/home/robinl/Data/PACS/         # Path to PACS data, leave empty if not relevant/no dust data are used. Data will be taken from path_pacs/star_name/cont_subtracted/.  The star_name does not have to be specified.
 PACS_REDO_CONVOLUTION=0                  # Re-do the convolution of sphinx output to PACS resolution (fi if the data has changed, sphinx convolution output depends on the wavelength list in the data lists)
 PACS_SEARCHSTRING=oversampling2           #searchstring used when looking for data, all data that include this string will be taken so make it unique
 PACS_OVERSAMPLING=2                       # The oversampling factor of the PACS data, this should also be included in the filenames of the data
 PACS_LINEFIT=                              # folder name in $PATH_PACS$/$STAR_NAME$/ of line fit results, done by Pierre (assumes his structure and syntax, as well as the presence of a file called 'lineFitResults')
 
 #-- SPIRE convolution and plotting
-PATH_SPIRE=#/home/robinl/Data/SPIRE/         # Path to Spire data, leave empty if not relevant/no dust data are used. Data will be taken from path_spire/star_name/cont_subtracted/.  The star_name does not have to be specified. Syntax is assumed to be two columns, wave number (cm-1) vs flux (Jy).
+SPIRE_PATH=#/home/robinl/Data/SPIRE/         # Path to Spire data, leave empty if not relevant/no dust data are used. Data will be taken from path_spire/star_name/cont_subtracted/.  The star_name does not have to be specified. Syntax is assumed to be two columns, wave number (cm-1) vs flux (Jy).
 SPIRE_SEARCHSTRING=oversampling2           #searchstring used when looking for data, all data that include this string will be taken so make it unique
 SPIRE_RESOLUTION=0.04                       # The resolution of the Spire spectrum in cm^-1
 SPIRE_OVERSAMPLING=4                        # The oversampling factor of the SPIRE spectrum.
 
 #-- SED data selection and plotting
-PATH_SED=#/home/robinl/Data/SED/    #Path to the Data folder where the text files with SED data are stored. Leave open if no data are to be plotted.
+SED_PATH=#/home/robinl/Data/SED/    #Path to the Data folder where the text files with SED data are stored. Leave open if no data are to be plotted.
+
+#-- RADIO data selection (including autosearch) and plotting (typically resolved lines in K vs km/s)
+RADIO_PATH=#/home/robinl/Data/Molecular/  # Path for gas radio data, leave empty if not relevant/no gas data are used other than pacs. Any requested transition that matches data in this folder will have the data plotted alongside the model! Folder requires database for data named radio_data.db
+RADIO_AUTOSEARCH=0                     # Put to 1 if TRANSITION objects are to be made automatically based on the available data.
+
+DATA_MOL=1
+PATH_GAS_DATA=/home/robinl/Data/Molecular/
 
 #-- Continuum division for select features in the SED is possible, for comparison between data and model
 CONTDIV_FEATURES= #H2O3.1&MGS       # For now only the 3.1 water ice feature (H2O3.1) and the 30 micron MgS feature (MGS) are available
@@ -297,7 +304,14 @@ N_QUAD=100                          # Number of impact par. in quadrature int(In
                                     # n_quad is otherwise included in TRANSITION input lines or in the input files if LINE_LISTS=2 
 USE_MASER_IN_SPHINX=0               # Use correct masering opacities in Sphinx
 
-
+###################
+# LOOKING FOR GAS DATA ---- auto search always happens, but if no data are desired, change the data path to something 
+#                       arbitrary explicitly. Anything added below here with according keywords will always be ADDED
+#                       to the collection of data found by the auto search
+# Syntax: TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
+###################
+#TRANSITION=12C16O 0 2 0 0 0 1 0 0 JCMT 0.0 100
+#TRANSITION=12C16O 0 1 0 0 0 0 0 0 JCMT 0.0 100
 
 ##################
 # Plotting line lists    Note that the searchstring for searching pacs data is given by PACS_SEARCHSTRING
@@ -310,20 +324,6 @@ LL_MIN_STRENGTH=0                   # Minimum integrated line intensity for incl
 LL_MAX_EXC=0                        #Max excitation energy
 LL_MOLECULES=16O1H&1H12C14N     #List the molecules for line listing
 
-###################
-# LOOKING FOR GAS DATA ---- auto search always happens, but if no data are desired, change the data path to something 
-#                       arbitrary explicitly. Anything added below here with according keywords will always be ADDED
-#                       to the collection of data found by the auto search
-# Syntax: TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
-###################
-#TRANSITION=12C16O 0 2 0 0 0 1 0 0 JCMT 0.0 100
-#TRANSITION=12C16O 0 1 0 0 0 0 0 0 JCMT 0.0 100
-
-####################################################################################################################
-###DATA PARAMETERS
-####################################################################################################################
-DATA_MOL=0                                          # Put to 0 if no data are to be plotted in GASTRoNOoM and no auto-search is done
-PATH_GAS_DATA=/home/robinl/Data/Molecular/     # Path for gas data, leave empty if not relevant/no gas data are used other than pacs, default is /home/elvired/allspectra/
 
 ####################################
 #-- The following plot input is not required to run. Only include those that you need, if you want to plot something.

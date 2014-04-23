@@ -79,9 +79,11 @@ class ComboCode(object):
         self.setPacs()
         self.setSpire()
         self.setSed()
+        #self.setRadio()
         self.setPlotManager()
         self.setVarPars()
         self.createStarGrid()
+        #self.addRadioData()
         #- Only the extra transition pars will differ across the grid, so grab
         #- the transition list from one of the Star() objects
         if self.update_spec: 
@@ -160,24 +162,24 @@ class ComboCode(object):
     def setPacs(self):
         
         '''
-        Collect the PACS relevant parameters from the inputfile and set the PACS
-        object.
+        Collect the PACS relevant parameters from the inputfile and set the
+        PACS object.
         
         '''
         
-        path_pacs = self.processed_input.pop('PATH_PACS','')
+        pacs_path = self.processed_input.pop('PACS_PATH','')
         redo_convolution = self.processed_input.pop('PACS_REDO_CONVOLUTION',0)
         searchstring = self.processed_input.pop('PACS_SEARCHSTRING','')
         oversampling = self.processed_input.pop('PACS_OVERSAMPLING','')
         intrinsic = self.processed_input.pop('PACS_INTRINSIC',1)
         linefit = self.processed_input.pop('PACS_LINEFIT','')
-        if path_pacs:
+        if pacs_path:
             self.pacs = Pacs.Pacs(star_name=self.star_name,\
                                   path_combocode=self.path_combocode,\
                                   path=self.path_gastronoom,\
                                   redo_convolution=redo_convolution,\
                                   oversampling=oversampling,\
-                                  path_pacs=path_pacs,\
+                                  path_pacs=pacs_path,\
                                   intrinsic=intrinsic,\
                                   path_linefit=linefit)
             self.pacs.setData(searchstring=searchstring)
@@ -194,17 +196,17 @@ class ComboCode(object):
         
         '''
         
-        path_spire = self.processed_input.pop('PATH_SPIRE','')
+        spire_path = self.processed_input.pop('SPIRE_PATH','')
         searchstring = self.processed_input.pop('SPIRE_SEARCHSTRING','')
         resolution = self.processed_input.pop('SPIRE_RESOLUTION',0)
         intrinsic = self.processed_input.pop('SPIRE_INTRINSIC',1)
         oversampling = self.processed_input.pop('SPIRE_OVERSAMPLING',0)
-        if path_spire:
+        if spire_path:
             self.spire = Spire.Spire(star_name=self.star_name,\
                                      path_combocode=self.path_combocode,\
                                      path=self.path_gastronoom,\
                                      resolution=resolution,\
-                                     path_spire=path_spire,\
+                                     path_spire=spire_path,\
                                      intrinsic=intrinsic,\
                                      oversampling=oversampling)
             self.spire.setData(searchstring=searchstring)
@@ -220,15 +222,71 @@ class ComboCode(object):
         
         '''
         
-        path_sed = self.processed_input.pop('PATH_SED',None)
-        if path_sed:
+        sed_path = self.processed_input.pop('SED_PATH','')
+        if sed_path:
             self.sed = Sed.Sed(star_name=self.star_name,\
                                path_combocode=self.path_combocode,\
-                               path=path_sed)
+                               path=sed_path)
         else: 
             self.sed = None
         
+        
+    
+    def setRadio(self):
+        
+        '''
+        Collect the relevant radio data for the requested star. Only done if 
+        the pathname to the data is given and if a database is present. 
+        
+        The data are associated with requested transitions later. Only if also 
+        RADIO_AUTOSEARCH is on, these transitions will be automatically added
+        to the requested transitions list. 
 
+        '''
+        
+        self.radio = None
+        self.radio_path = self.processed_input.pop('RADIO_PATH','')
+        self.radio_autosearch = self.processed_input.pop('RADIO_AUTOSEARCH',0)
+        fn = os.path.join(radio_path,'radio_data.db')
+        if radio_path and os.path.isfile(fn):
+            radio_db = Database.Database(fn)
+            if radio_db.has_key(self.star_name):
+                self.radio = radio_db[self.star_name]            
+            
+            
+        
+    def addRadioData(self):
+        
+        '''
+        Add radio data to Transition() objects in all Star() objects.
+        
+        Only done if RADIO_PATH is given and if a file named radio_data.db is 
+        present in the given folder.
+        
+        If the radio_autosearch flag is on, transitions are automatically 
+        generated based on the available data.
+        
+        '''
+        
+        if self.radio:
+            #-- Get the transition definitions (are in the correct format 
+            #   automatically, due to the methods in Radio.py) and make sure 
+            #   they are all unique.
+            radio_trans = sorted(['%s 100'%tr for tr in self.radio.keys()])
+            radio_trans = DataIO.checkEntryInfo(radio_trans,12,'TRANSITION')
+            for star in self.star_grid:
+                if self.radio_autosearch:
+                    n_quad = star['N_QUAD']
+                    add_trans = [tr[:-1] + [n_quad] for tr in radio_trans]
+                    star['TRANSITION'].extend(add_trans)
+                for trans in star['GAS_LINES']:
+                    if trans:
+                        trstr = trans.getInputString(include_nquad=0)
+                        if trstr in self.radio.keys():
+                            trans.addDataFile(self.radio[trstr],\
+                                              path=self.radio_path)
+
+        
 
     def setVarPars(self):
         

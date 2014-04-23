@@ -516,7 +516,7 @@ def makeTransitionsFromRadiat(molec,telescope,ll_min,ll_max,ll_unit='GHz',\
     @type offset: float
     @keyword use_maser_in_spinx: using maser calc in sphinx code
                                      
-                                     (default: 0)
+                                 (default: 0)
     @type use_maser_in_spinx: bool
     @keyword path_gastronoom: model output folder in the GASTRoNOoM home
         
@@ -882,24 +882,35 @@ class Transition():
 
 
 
-    def getInputString(self):
+    def getInputString(self,include_nquad=1):
          
-         '''
-         Return a string giving the CC input line for this transition.
-         
-         This includes N_QUAD and has the shorthand naming convention of the 
-         molecule as opposed to the str() method.
-         
-         @return: the input line for this transition
-         @rtype: string
-         
-         '''
-         
-         return 'TRANSITION=%s %i %i %i %i %i %i %i %i %s %.2f %i' \
-                %(self.molecule.molecule,self.vup,self.jup,self.kaup,\
-                  self.kcup,self.vlow,self.jlow,self.kalow,self.kclow,\
-                  self.telescope,self.offset,self.n_quad)
-          
+        '''
+        Return a string giving the CC input line for this transition.
+        
+        This includes N_QUAD by default, but can be excluded if needed. The 
+        shorthand naming convention of the molecule is used, as opposed to the
+        str() method.
+        
+        @keyword include_nquad: Include the nquad number at the end of the str
+                                
+                                (default: 1)
+        @type include_nquad: bool
+        
+        @return: the input line for this transition
+        @rtype: string
+        
+        '''
+        
+        if include_nquad:         
+            return 'TRANSITION=%s %i %i %i %i %i %i %i %i %s %.2f %i' \
+                   %(self.molecule.molecule,self.vup,self.jup,self.kaup,\
+                     self.kcup,self.vlow,self.jlow,self.kalow,self.kclow,\
+                     self.telescope,self.offset,self.n_quad)
+        else:
+            return 'TRANSITION=%s %i %i %i %i %i %i %i %i %s %.2f' \
+                   %(self.molecule.molecule,self.vup,self.jup,self.kaup,\
+                     self.kcup,self.vlow,self.jlow,self.kalow,self.kclow,\
+                     self.telescope,self.offset)
 
     
     def getLineSpec(self):
@@ -1372,7 +1383,7 @@ class Transition():
      
      
      
-    def addDatafile(self,datafile):
+    def addDatafile(self,datafile,path=None):
         
         '''
         Add a datafile name/multiple filenames for this transition. 
@@ -1383,19 +1394,44 @@ class Transition():
         @param datafile: the full filename, or multiple filenames
         @type datafile: string/list
         
+        @keyword path: The path to the data file. Only used if the path is 
+                       undefined in the filename. Typically this is the case, 
+                       but this keyword allows more elegant handling of the 
+                       radio data database.
+                       
+                       (default: None)
+        @type path: str
+        
         '''
         
+        #-- If datafile is None or '', no data available, so leave things as is 
+        if not datafile:
+            return
+        
+        #-- In case a single filename is passed, put it in a list. 
         if type(datafile) is types.StringType:
-            if self.datafiles is None:
-                self.datafiles = [datafile]
-            else: 
-                self.datafiles.append(datafile)
-        else:
-            if self.datafiles is None:
-                self.datafiles = datafile
-            else: 
-                self.datafiles.extend(datafile)
-        if datafile: self.lpdata = None
+            datafile = [datafile]
+            
+        #-- Check if the file path is defined in all cases. If not, add path 
+        #   keyword to it. If path keyword is not available, cancel adding 
+        #   data files: a path is required!
+        for idf,df in enumerate(datafile): 
+            if path and not os.path.split(df)[0]:
+                datafile[idf] = os.path.join(path,df)
+            elif not os.path.split(df)[0]:
+                print('WARNING! No file path given for datafiles when adding'+\
+                      ' data to a Transition() object. Returning.')
+                return
+        
+        #-- Add the datafiles to the Transition() object.
+        if self.datafiles is None:
+            self.datafiles = datafile
+        else: 
+            self.datafiles.extend(datafile)
+        
+        #-- Datafiles have been updated, so reset the lpdata object property.
+        #   Data will be read anew when next they are requested.
+        self.lpdata = None
             
 
     def readData(self):

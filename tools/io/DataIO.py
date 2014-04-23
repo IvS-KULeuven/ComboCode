@@ -935,7 +935,7 @@ def checkEntryInfo(input_list,number_of_keys,info_type):
                       'es will not be removed even if N_QUAD is the same too!'
                 for i in indices:
                     print 'At index %i:  %s' %(i,entries[i])
-                raw_input('Abort if identical transitions are not expected.')
+                raw_input('Abort if identical transitions are not expected. Press enter otherwise.')
             if info_type == 'R_POINTS_MASS_LOSS':
                 #- This will be a list of R_POINTS_MASS_LOSS sets, where each 
                 #- set is defined as a list of radial grid point parameters

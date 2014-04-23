@@ -10,9 +10,8 @@ Author: R. Lombaert
 import os
 import subprocess
 from glob import glob
-from numpy import savetxt
 
-from cc.tools.io import DataIO, Database, Atmosphere
+from cc.tools.io import DataIO, Database
 from cc.modeling.ModelingSession import ModelingSession
 
 
