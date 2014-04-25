@@ -75,11 +75,6 @@ class PlotGas(PlottingSession):
                                       path=path_gastronoom,\
                                       code='GASTRoNOoM',\
                                       inputfilename=inputfilename)
-        self.star_name_gastronoom = \
-                DataIO.getInputData(path=os.path.join(self.path_combocode,\
-                                                    'Data'),\
-                                  keyword='STAR_NAME_GASTRONOOM')\
-                                 [self.star_index]
         self.pacs = pacs
         if self.pacs:
             DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
@@ -91,93 +86,6 @@ class PlotGas(PlottingSession):
 
         
         
-    def makeExec(self,star,i,sphinx_id):
-        
-        """
-        Making an execGASTRoNOoM file for model calculation.
-        
-        @param star: The parameter set
-        @type star: Star()
-        @param i: Index of Star() in the star_grid passed to the Plot## method.
-                  Is added to the filename of the plot.
-        @type i: int
-        @param sphinx_id: The sphinx model id used for this exec file
-        @type sphinx_id: string
-        
-        """
-        
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                self.code,self.path,'stars',self.star_name_gastronoom))
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                self.code,self.path,'stars',self.star_name_gastronoom,\
-                'figures'))
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                self.code,self.path,'stars',self.star_name_gastronoom,\
-                'statistics'))
-        exec_file = DataIO.readFile(os.path.join(os.path.expanduser('~'),\
-                                    'GASTRoNOoM','execGASTRoNOoM_example'))
-        new_exec_file = []
-        for index,line in enumerate(exec_file):
-            if line.find('DATADIR=') == 0:
-                new_exec_file.append('%s=%s' %(line.split('=')[0],\
-                                               star['PATH_GAS_DATA']))
-            elif line.find('WORKDIR=') == 0:
-                new_exec_file.append('%s=%s' %(line.split('=')[0],\
-                                               os.path.join(\
-                                                    os.path.expanduser('~'),\
-                                                    'GASTRoNOoM',\
-                                                    self.path + '/')))
-            elif line.find('STAR=') == 0:
-                new_exec_file.append('%s=%s' %(line.split('=')[0],\
-                                               self.star_name_gastronoom))
-            elif line.find('MODEL=') == 0:
-                new_exec_file.append('%s=%s' %(line.split('=')[0],sphinx_id))
-            elif line.find('INDEX=') == 0:
-                new_exec_file.append('%s=%s' %(line.split('=')[0],str(i)))
-            elif line.find('NY_UP=') == 0 \
-                    and star.getMolecule('12C16O') <> None:
-                new_exec_file.append('%s=%s' %(line.split('=')[0],\
-                                            star.getMolecule('12C16O').ny_up))
-            elif line.find('NY_LOW=') == 0 \
-                    and star.getMolecule('12C16O') <> None:
-                new_exec_file.append('%s=%s' %(line.split('=')[0],\
-                                            star.getMolecule('12C16O').ny_low))
-            elif line.find('NLINE=') == 0 \
-                    and star.getMolecule('12C16O') <> None:
-                new_exec_file.append('%s=%s' %(line.split('=')[0],\
-                                            star.getMolecule('12C16O').nline))
-            elif line.find('N_IMPACT_12CO=') == 0 \
-                    and star.getMolecule('12C16O') <> None:
-                new_exec_file.append('%s=%s' %(line.split('=')[0],\
-                                          star.getMolecule('12C16O').n_impact))
-            elif line.find('N_IMPACT_13CO=') == 0 \
-                    and star.getMolecule('13C16O') <> None:
-                new_exec_file.append('%s=%s' %(line.split('=')[0],\
-                                          star.getMolecule('13C16O').n_impact))
-            elif line.find('RUNDIR=') == 0:
-                new_exec_file.append('%s=%s' %(line.split('=')[0],\
-                                               os.path.join(\
-                                                    os.path.expanduser('~'),\
-                                                    'GASTRoNOoM','src/')))
-            elif line.find('SCRIPTDIR=') == 0:
-                new_exec_file.append('%s=%s' %(line.split('=')[0],\
-                                               os.path.join(\
-                                                    os.path.expanduser('~'),\
-                                                    'GASTRoNOoM','scripts/')))
-            elif (line and line.find('$RUNDIR/exec/') == 0) \
-                    or (exec_file[index-1] \
-                        and exec_file[index-1].find('$RUNDIR/exec/') == 0) \
-                    or (exec_file[index-2] \
-                        and exec_file[index-2].find('$RUNDIR/exec/') == 0):
-                new_exec_file.append('#' + line)
-            else:
-                new_exec_file.append(line)    
-            DataIO.writeFile(os.path.join(os.path.expanduser('~'),\
-                                          'GASTRoNOoM','execGASTRoNOoM'),\
-                             new_exec_file)    
-
-
-
     def makeStars(self,models):
         
         '''
@@ -191,7 +99,7 @@ class PlotGas(PlottingSession):
         
         '''
         
-        star_grid = Star.makeStars(models=models,star_name=self.star_name,\
+        star_grid = Star.makeStars(models=models,\
                                    id_type='pacs' in models[0].lower() \
                                                 and 'PACS' \
                                                 or 'GASTRoNOoM',\
@@ -385,78 +293,6 @@ class PlotGas(PlottingSession):
                 print '** No GASTRoNOoM models were calculated successfully.'+\
                       'No temperature profiles can be plotted.'
                 print '***********************************'
-
-
-
-    def plotTransitionsOld(self,star_grid,iterative=0,cfg=''):
-        
-        """ 
-        Creating the classical .ps output file of GASTRoNOoM; model and data!
-                
-        @keyword star_grid: List of Star() instances. If default, model ids 
-                            have to be given.
-                                  
-                            (default: [])
-        @type star_grid: list[Star()]
-        @keyword iterative: When the iterative mode is on in the CC session
-        
-                            (default: 0)
-        @type iterative: bool
-        
-        @keyword cfg: path to the Plotting2.plotCols config file. If default,
-                      the hard-coded default plotting options are used.
-                          
-                      (default: '')
-        @type cfg: string
-        
-        """
-        
-        print '***********************************'
-        print '** Creating Transition plots.'
-        if iterative: pass
-        else:
-            filenames = []
-            for i,star in enumerate(star_grid):
-                print '***********************************'
-                print '** Plotting model #%i out of %i requested models.'\
-                      %(i+1,len(star_grid))
-                if not star['LAST_GASTRONOOM_MODEL']: 
-                    print '** No cooling model available. No plot is made.'
-                elif not [trans 
-                          for trans in star['GAS_LINES'] 
-                          if trans.getModelId()]:
-                    print '** No sphinx lines have been calculated. ' + \
-                          'No plot is made.'
-                else:
-                    these_sphinx_ids = set([trans.getModelId() 
-                                            for trans in star['GAS_LINES'] 
-                                            if trans.getModelId()])
-                    for sphinx_id in these_sphinx_ids:    
-                        self.makeExec(star,i=i,sphinx_id=sphinx_id)
-                        os.system(os.path.join(os.path.expanduser('~'),\
-                                               'GASTRoNOoM',\
-                                               './execGASTRoNOoM'))
-                        filename = os.path.join(os.path.expanduser('~'),\
-                                                'GASTRoNOoM',self.path,\
-                                                'stars',\
-                                                self.star_name_gastronoom,\
-                                                'figures',\
-                                                '%s_%i.ps'%(sphinx_id,i))
-                        try:
-                            plot_ex = open(filename)
-                            plot_ex.close()
-                            filenames.append(filename)
-                            os.system('gv ' + filename + ' &')
-                            print '** Transition plots can be found at:'
-                            print filename
-                        except IOError:
-                            print 'Plotting failed for sphinx id %s. '\
-                                  %sphinx_id + \
-                                  'Double check output from GASTRoNOoM.'
-            print '** All transition plots can be found at:'
-            print '\n'.join(filenames)
-            print '** DONE!'
-            print '***********************************'
 
 
 
@@ -2002,4 +1838,166 @@ class PlotGas(PlottingSession):
         print '** Your plots can be found at:'
         print '\n'.join(plot_filenames)
         print '***********************************'
+
+
+
+'''
+    def makeExec(self,star,i,sphinx_id):
+        
+        """
+        Making an execGASTRoNOoM file for model calculation.
+        
+        @param star: The parameter set
+        @type star: Star()
+        @param i: Index of Star() in the star_grid passed to the Plot## method.
+                  Is added to the filename of the plot.
+        @type i: int
+        @param sphinx_id: The sphinx model id used for this exec file
+        @type sphinx_id: string
+        
+        """
+        
+        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
+                self.code,self.path,'stars',self.star_name_gastronoom))
+        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
+                self.code,self.path,'stars',self.star_name_gastronoom,\
+                'figures'))
+        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
+                self.code,self.path,'stars',self.star_name_gastronoom,\
+                'statistics'))
+        exec_file = DataIO.readFile(os.path.join(os.path.expanduser('~'),\
+                                    'GASTRoNOoM','execGASTRoNOoM_example'))
+        new_exec_file = []
+        for index,line in enumerate(exec_file):
+            if line.find('DATADIR=') == 0:
+                new_exec_file.append('%s=%s' %(line.split('=')[0],\
+                                               star['PATH_GAS_DATA']))
+            elif line.find('WORKDIR=') == 0:
+                new_exec_file.append('%s=%s' %(line.split('=')[0],\
+                                               os.path.join(\
+                                                    os.path.expanduser('~'),\
+                                                    'GASTRoNOoM',\
+                                                    self.path + '/')))
+            elif line.find('STAR=') == 0:
+                new_exec_file.append('%s=%s' %(line.split('=')[0],\
+                                               self.star_name_gastronoom))
+            elif line.find('MODEL=') == 0:
+                new_exec_file.append('%s=%s' %(line.split('=')[0],sphinx_id))
+            elif line.find('INDEX=') == 0:
+                new_exec_file.append('%s=%s' %(line.split('=')[0],str(i)))
+            elif line.find('NY_UP=') == 0 \
+                    and star.getMolecule('12C16O') <> None:
+                new_exec_file.append('%s=%s' %(line.split('=')[0],\
+                                            star.getMolecule('12C16O').ny_up))
+            elif line.find('NY_LOW=') == 0 \
+                    and star.getMolecule('12C16O') <> None:
+                new_exec_file.append('%s=%s' %(line.split('=')[0],\
+                                            star.getMolecule('12C16O').ny_low))
+            elif line.find('NLINE=') == 0 \
+                    and star.getMolecule('12C16O') <> None:
+                new_exec_file.append('%s=%s' %(line.split('=')[0],\
+                                            star.getMolecule('12C16O').nline))
+            elif line.find('N_IMPACT_12CO=') == 0 \
+                    and star.getMolecule('12C16O') <> None:
+                new_exec_file.append('%s=%s' %(line.split('=')[0],\
+                                          star.getMolecule('12C16O').n_impact))
+            elif line.find('N_IMPACT_13CO=') == 0 \
+                    and star.getMolecule('13C16O') <> None:
+                new_exec_file.append('%s=%s' %(line.split('=')[0],\
+                                          star.getMolecule('13C16O').n_impact))
+            elif line.find('RUNDIR=') == 0:
+                new_exec_file.append('%s=%s' %(line.split('=')[0],\
+                                               os.path.join(\
+                                                    os.path.expanduser('~'),\
+                                                    'GASTRoNOoM','src/')))
+            elif line.find('SCRIPTDIR=') == 0:
+                new_exec_file.append('%s=%s' %(line.split('=')[0],\
+                                               os.path.join(\
+                                                    os.path.expanduser('~'),\
+                                                    'GASTRoNOoM','scripts/')))
+            elif (line and line.find('$RUNDIR/exec/') == 0) \
+                    or (exec_file[index-1] \
+                        and exec_file[index-1].find('$RUNDIR/exec/') == 0) \
+                    or (exec_file[index-2] \
+                        and exec_file[index-2].find('$RUNDIR/exec/') == 0):
+                new_exec_file.append('#' + line)
+            else:
+                new_exec_file.append(line)    
+            DataIO.writeFile(os.path.join(os.path.expanduser('~'),\
+                                          'GASTRoNOoM','execGASTRoNOoM'),\
+                             new_exec_file)    
+
+
+    def plotTransitionsOld(self,star_grid,iterative=0,cfg=''):
+        
+        """ 
+        Creating the classical .ps output file of GASTRoNOoM; model and data!
+                
+        @keyword star_grid: List of Star() instances. If default, model ids 
+                            have to be given.
+                                  
+                            (default: [])
+        @type star_grid: list[Star()]
+        @keyword iterative: When the iterative mode is on in the CC session
+        
+                            (default: 0)
+        @type iterative: bool
+        
+        @keyword cfg: path to the Plotting2.plotCols config file. If default,
+                      the hard-coded default plotting options are used.
+                          
+                      (default: '')
+        @type cfg: string
+        
+        """
+        
+        print '***********************************'
+        print '** Creating Transition plots.'
+        if iterative: pass
+        else:
+            filenames = []
+            for i,star in enumerate(star_grid):
+                print '***********************************'
+                print '** Plotting model #%i out of %i requested models.'\
+                      %(i+1,len(star_grid))
+                if not star['LAST_GASTRONOOM_MODEL']: 
+                    print '** No cooling model available. No plot is made.'
+                elif not [trans 
+                          for trans in star['GAS_LINES'] 
+                          if trans.getModelId()]:
+                    print '** No sphinx lines have been calculated. ' + \
+                          'No plot is made.'
+                else:
+                    these_sphinx_ids = set([trans.getModelId() 
+                                            for trans in star['GAS_LINES'] 
+                                            if trans.getModelId()])
+                    for sphinx_id in these_sphinx_ids:    
+                        self.makeExec(star,i=i,sphinx_id=sphinx_id)
+                        os.system(os.path.join(os.path.expanduser('~'),\
+                                               'GASTRoNOoM',\
+                                               './execGASTRoNOoM'))
+                        filename = os.path.join(os.path.expanduser('~'),\
+                                                'GASTRoNOoM',self.path,\
+                                                'stars',\
+                                                self.star_name_gastronoom,\
+                                                'figures',\
+                                                '%s_%i.ps'%(sphinx_id,i))
+                        try:
+                            plot_ex = open(filename)
+                            plot_ex.close()
+                            filenames.append(filename)
+                            os.system('gv ' + filename + ' &')
+                            print '** Transition plots can be found at:'
+                            print filename
+                        except IOError:
+                            print 'Plotting failed for sphinx id %s. '\
+                                  %sphinx_id + \
+                                  'Double check output from GASTRoNOoM.'
+            print '** All transition plots can be found at:'
+            print '\n'.join(filenames)
+            print '** DONE!'
+            print '***********************************'
+
+
+'''
 

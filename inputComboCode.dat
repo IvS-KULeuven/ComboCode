@@ -47,9 +47,6 @@ SED_PATH=#/home/robinl/Data/SED/    #Path to the Data folder where the text file
 RADIO_PATH=#/home/robinl/Data/Molecular/  # Path for gas radio data, leave empty if not relevant/no gas data are used other than pacs. Any requested transition that matches data in this folder will have the data plotted alongside the model! Folder requires database for data named radio_data.db
 RADIO_AUTOSEARCH=0                     # Put to 1 if TRANSITION objects are to be made automatically based on the available data.
 
-DATA_MOL=1
-PATH_GAS_DATA=/home/robinl/Data/Molecular/
-
 #-- Continuum division for select features in the SED is possible, for comparison between data and model
 CONTDIV_FEATURES= #H2O3.1&MGS       # For now only the 3.1 water ice feature (H2O3.1) and the 30 micron MgS feature (MGS) are available
 CFG_CONTDIV=                        # Settings for the final plot for the continuum division can be given here. This plot shows a limited wavelength range for the dust feature in both continuum divided data and models. If no cfg file given, the plot is shown during the CC run, but not saved.

@@ -31,7 +31,7 @@ class Gastronoom(ModelingSession):
                                                   'ComboCode'),\
                  path_gastronoom='runTest',vic=None,sphinx=0,\
                  replace_db_entry=0,cool_db=None,ml_db=None,sph_db=None,\
-                 pacs_db=None,skip_cooling=0,recover_sphinxfiles=0,\
+                 skip_cooling=0,recover_sphinxfiles=0,\
                  new_entries=[]):
     
         """ 
@@ -94,10 +94,6 @@ class Gastronoom(ModelingSession):
         
                          (default: None)
         @type sph_db: Database()
-        @keyword pacs_db: the pacs database
-        
-                          (default: None)
-        @type pacs_db: Database()
         
         """
         
@@ -147,7 +143,7 @@ class Gastronoom(ModelingSession):
         self.cool_db = cool_db
         self.ml_db = ml_db
         self.sph_db = sph_db
-        self.pacs_db = pacs_db
+        #self.pacs_db = pacs_db
         
 
 
@@ -261,10 +257,10 @@ class Gastronoom(ModelingSession):
             del self.sph_db[model_id]
         except KeyError:
             pass
-        if self.pacs <> None:
-            for pacs_id in [k for k,v in self.pacs_db.items() 
-                              if v['cooling_id'] == model_id]:
-                del self.pacs_db[pacs_id]  
+        #if self.pacs <> None:
+            #for pacs_id in [k for k,v in self.pacs_db.items() 
+                              #if v['cooling_id'] == model_id]:
+                #del self.pacs_db[pacs_id]  
 
 
 

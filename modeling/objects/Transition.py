@@ -776,7 +776,7 @@ class Transition():
         if nup is None or nlow is None:
             self.nup = self.kaup            
             self.nlow = self.kalow
-            #- In case of SO, the quantum number is treated as Kaup/low but is
+            #- In case of SO/PO/OH, the quantum number is treated as Kaup/low but is
             #- in fact Nup/low
         self.exc_energy = exc_energy
         self.int_intensity_log = int_intensity_log
@@ -902,12 +902,12 @@ class Transition():
         '''
         
         if include_nquad:         
-            return 'TRANSITION=%s %i %i %i %i %i %i %i %i %s %.2f %i' \
+            return 'TRANSITION=%s %i %i %i %i %i %i %i %i %s %.1f %i' \
                    %(self.molecule.molecule,self.vup,self.jup,self.kaup,\
                      self.kcup,self.vlow,self.jlow,self.kalow,self.kclow,\
                      self.telescope,self.offset,self.n_quad)
         else:
-            return 'TRANSITION=%s %i %i %i %i %i %i %i %i %s %.2f' \
+            return 'TRANSITION=%s %i %i %i %i %i %i %i %i %s %.1f' \
                    %(self.molecule.molecule,self.vup,self.jup,self.kaup,\
                      self.kcup,self.vlow,self.jlow,self.kalow,self.kclow,\
                      self.telescope,self.offset)
@@ -1173,7 +1173,8 @@ class Transition():
                                                               up_i=self.up_i)
         if self.radiat_trans is False:
             raw_input('Something fishy is going on in Transition.py... '+\
-                    'non-unique transition indices! Abort')
+                      'non-unique transition indices for %s! Abort!'\
+                      %self.getInputString(include_nquad=0))
         self.frequency = float(self.radiat_trans['frequency'])
 
 

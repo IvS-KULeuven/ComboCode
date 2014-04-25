@@ -25,7 +25,7 @@ from cc.statistics import ResoStats
 from cc.statistics import Statistics
 from cc.data.instruments import Pacs
 from cc.data.instruments import Spire
-from cc.data import Sed
+from cc.data import Sed, Radio
 from cc.modeling.tools import ColumnDensity, ContinuumDivision
 
 
@@ -79,11 +79,11 @@ class ComboCode(object):
         self.setPacs()
         self.setSpire()
         self.setSed()
-        #self.setRadio()
+        self.setRadio()
         self.setPlotManager()
         self.setVarPars()
         self.createStarGrid()
-        #self.addRadioData()
+        self.addRadioData()
         #- Only the extra transition pars will differ across the grid, so grab
         #- the transition list from one of the Star() objects
         if self.update_spec: 
@@ -146,11 +146,11 @@ class ComboCode(object):
                           ('contdiv_features',[]),('cfg_contdiv',''),\
                           ('show_contdiv',0),('skip_cooling',0),\
                           ('recover_sphinxfiles',0),('stat_print',0),\
-                          ('stat_lll_p',None),('stat_pacsmethod','clipping')]
+                          ('stat_lll_p',None),('stat_pacsmethod','clipping'),\
+                          ('star_name','model')]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
         self.__dict__.update(global_pars)
-        self.star_name = self.processed_input['STAR_NAME']
         if not self.gastronoom or not self.mcmax: self.iterations = 1 
         if (not self.path_mcmax and self.mcmax):
             raise IOError('Please define PATH_MCMAX in your inputfile.')
@@ -247,9 +247,10 @@ class ComboCode(object):
         self.radio = None
         self.radio_path = self.processed_input.pop('RADIO_PATH','')
         self.radio_autosearch = self.processed_input.pop('RADIO_AUTOSEARCH',0)
-        fn = os.path.join(radio_path,'radio_data.db')
-        if radio_path and os.path.isfile(fn):
-            radio_db = Database.Database(fn)
+        fn = os.path.join(self.radio_path,'radio_data.db')
+        if self.radio_path and os.path.isfile(fn):
+            cc_path = os.path.join(self.path_combocode,'Data')
+            radio_db = Radio.Radio(path=self.radio_path,cc_path=cc_path)
             if radio_db.has_key(self.star_name):
                 self.radio = radio_db[self.star_name]            
             
@@ -264,7 +265,8 @@ class ComboCode(object):
         present in the given folder.
         
         If the radio_autosearch flag is on, transitions are automatically 
-        generated based on the available data.
+        generated based on the available data. Note that in this case, N_QUAD
+        from Star() is taken. 
         
         '''
         
@@ -272,18 +274,26 @@ class ComboCode(object):
             #-- Get the transition definitions (are in the correct format 
             #   automatically, due to the methods in Radio.py) and make sure 
             #   they are all unique.
-            radio_trans = sorted(['%s 100'%tr for tr in self.radio.keys()])
+            radio_trans = sorted(['%s 100'%tr.replace('TRANSITION=','',1) 
+                                  for tr in self.radio.keys()])
             radio_trans = DataIO.checkEntryInfo(radio_trans,12,'TRANSITION')
             for star in self.star_grid:
+                molecules = [m.molecule for m in star['GAS_LIST']]
                 if self.radio_autosearch:
                     n_quad = star['N_QUAD']
-                    add_trans = [tr[:-1] + [n_quad] for tr in radio_trans]
-                    star['TRANSITION'].extend(add_trans)
+                    add_trans = [tr[:-1] + [n_quad] 
+                                 for tr in radio_trans
+                                 if tr[0] in molecules]
+                    if star.has_key('TRANSITION'):
+                        star['TRANSITION'] = list(star['TRANSITION'])
+                        star['TRANSITION'].extend(add_trans)
+                    else:
+                        star['TRANSITION'] = add_trans
                 for trans in star['GAS_LINES']:
                     if trans:
                         trstr = trans.getInputString(include_nquad=0)
                         if trstr in self.radio.keys():
-                            trans.addDataFile(self.radio[trstr],\
+                            trans.addDatafile(self.radio[trstr],\
                                               path=self.radio_path)
 
         
@@ -530,7 +540,6 @@ class ComboCode(object):
         '''    
         
         self.model_manager = ModelingManager.ModelingManager(\
-                                       star_name=self.star_name,\
                                        iterations=self.iterations,\
                                        processed_input=self.processed_input,\
                                        var_pars=self.var_pars,\

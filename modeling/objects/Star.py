@@ -95,17 +95,15 @@ def powerRfromT(T,T_STAR,R_STAR=1.0,power=0.5):
 
 
 
-def makeStars(models,star_name,id_type,path,code,\
+def makeStars(models,id_type,path,code,\
               path_combocode=os.path.join(os.path.expanduser('~'),\
                                           'ComboCode')):
     
     '''
     Make a list of dummy Star() objects.
 
-    @param models: model_ids for the new stars
+    @param models: model_ids for the new models
     @type models: list[string]
-    @param star_name: The star name from Star.dat
-    @type star_name: string
     @param id_type: The type of id (PACS, GASTRONOOM, MCMAX)
     @type id_type: string
     @param path: Output folder in the code's home folder
@@ -124,8 +122,7 @@ def makeStars(models,star_name,id_type,path,code,\
     '''
     
     extra_pars = dict([('path_'+code.lower(),path)])
-    star_grid = [Star(example_star={'STAR_NAME':star_name,\
-                                    'LAST_%s_MODEL'%id_type.upper():model},\
+    star_grid = [Star(example_star={'LAST_%s_MODEL'%id_type.upper():model},\
                       path_combocode=path_combocode,**extra_pars) 
                  for model in models]
     return star_grid
@@ -934,29 +931,6 @@ class Star(dict):
 
 
 
-    def getClassAttr(self,missing_key):
-        
-        """
-        Fill in Class attributes specific for a star. All these parameters are
-        taken from Star.dat.
-    
-        @param missing_key: The missing key, taken from Star.dat
-        @type missing_key: string
-        
-        
-        """
-        
-        if not self.has_key(missing_key):
-            self[missing_key] \
-                = DataIO.getInputData(path=os.path.join(self.path_combocode,\
-                                                        'Data'),\
-                                      keyword=missing_key)\
-                                     [self['STAR_INDEX']]
-        else:
-            pass
- 
-
-
     def calcLL_GAS_LIST(self):
         
         '''
@@ -1351,73 +1325,6 @@ class Star(dict):
         else:
             pass 
 
-
-
-    def calcSTAR_NAME(self):
-        
-        """
-        Checking if STAR_NAME is present. 
-        
-        If not, the star_name is arbitrary and equal to 'model'.
-    
-        """
-        if not self.has_key('STAR_NAME'):
-            self['STAR_NAME'] = 'model'
-        else:
-            pass
-
-
-
-    def calcSTAR_INDEX(self):
-        
-        """
-        Finding the star's database index from STAR_NAME if keyword is present.
-        
-        This index is the position of the star in Star.dat.
-        
-        """
-        
-        try:
-            self['STAR_INDEX'] = DataIO.getInputData(path=os.path.join(\
-                                                        self.path_combocode,\
-                                                        'Data'))\
-                                             .index(self['STAR_NAME'])
-        except KeyError,ValueError: 
-            self['STAR_INDEX'] = -1
-            self['DATA_MOL'] = 0
-            print 'No (correct) star name has been supplied. ' +\
-                  'Calculation continues without data.'
-
-    
-
-    def calcDATA_MOL(self):
-        
-        '''
-        Set default value of DATA MOL to 0.
-        
-        '''
-        
-        if not self.has_key('DATA_MOL'):
-            self['DATA_MOL'] = 0
-        else:
-            pass
-        
-
-
-    def calcPATH_GAS_DATA(self):
-        
-        """
-        If not present, the path is taken to be a default.
-        
-        Currently data can be read from /home/elvired/allspectra/
-    
-        """
-        
-        if not self.has_key('PATH_GAS_DATA'):
-            self['PATH_GAS_DATA'] = '/home/elvired/allspectra/'
-        else:
-            pass
-        
 
 
     def calcSPEC_DENS_DUST(self):
@@ -2602,7 +2509,7 @@ class Star(dict):
             pass                        
                               
   
-    def calcGAS_LINES2(self):
+    def calcGAS_LINES(self):
         
         """
         Making transition line input for gas data (auto search) 
@@ -2613,8 +2520,8 @@ class Star(dict):
     
         """
         
-        if not self.has_key('GAS_LINES2'):
-            self['GAS_LINES2'] = list()
+        if not self.has_key('GAS_LINES'):
+            self['GAS_LINES'] = list()
             #-- To make sure the GAS_LIST is done, and the conversion of 
             #   TRANSITION to the right molecule names is done 
             #   (in case of PlottingSession.setPacsFromDb is used)
@@ -2632,7 +2539,7 @@ class Star(dict):
                 new_lines = [Transition.makeTransition(star=self,trans=trans) 
                              for trans in self['TRANSITION']]
                 new_lines = [trans for trans in new_lines if trans]
-                self['GAS_LINES2'].extend(new_lines)
+                self['GAS_LINES'].extend(new_lines)
                 
             #- Check if molecular line catalogues have to be browsed to create 
             #- line lists in addition to the data
@@ -2650,135 +2557,15 @@ class Star(dict):
                     nt = Transition.makeTransitionsFromTransList(filename=llf,\
                                                                  star=self) 
                     nt = [trans for trans in nt if trans]
-                    self['GAS_LINES2'].extend(nt)
+                    self['GAS_LINES'].extend(nt)
             
             #-- Sort the transitions.
-            self['GAS_LINES2'] = sorted(list(self['GAS_LINES2']),\
-                                       key=lambda x: str(x))
-            #-- Check uniqueness.
-            self['GAS_LINES2'] = Transition.checkUniqueness(self['GAS_LINES2'])
-            
-            #-- Is this still needed? 
-            requested_transitions = set([str(trans) 
-                                         for trans in self['GAS_LINES2']]) 
-            if not len(self['GAS_LINES2']) == len(requested_transitions):
-                print 'Length of the requested transition list: %i'\
-                      %len(self['GAS_LINES2'])
-                print 'Length of the requested transition list with only ' + \
-                      'the "transition string" parameters: %i'\
-                      %len(requested_transitions)
-                print 'Guilty transitions:'
-                trans_strings = [str(trans) for trans in self['GAS_LINES2']]
-                print '\n'.join([str(trans) 
-                                 for trans in self['GAS_LINES2'] 
-                                 if trans_strings.count(str(trans))>1])
-                raise IOError('Multiple parameter sets for a single ' + \
-                              'transition requested. This is impossible! '+ \
-                              'Check code/contact Robin.')
-        else:
-            pass
-    
-    
-    
-    def calcGAS_LINES(self):
-        
-        """
-        Making transition line input for gas data (auto search) 
-        and additional no-data lines.
-        
-        The Transition() objects are created then for these lines and added
-        to the GAS_LINES list.
-    
-        """
-
-        if not self.has_key('GAS_LINES'):
-            self['GAS_LINES'] = list()
-            #- To make sure the GAS_LIST is done, and the conversion of 
-            #- TRANSITION to the right molecule names is done 
-            #- (in case of PlottingSession.setPacsFromDb is used)
-            self.calcGAS_LIST()     
-            #-- If a path to the gas data is known, do an autosearch for data
-            #   so that data are known and available. Only if DATA_MOL is also
-            #   True will these transitions be added to the model grid.
-            if self['PATH_GAS_DATA']:
-                searchpath = os.path.join(self['PATH_GAS_DATA'],
-                                         self['STAR_NAME_GASTRONOOM'] + '_*.*')
-                raw_data_list = [f 
-                                 for f in glob(searchpath)
-                                 if os.path.splitext(f)[1][-1] != '~']
-                raw_data_list = sorted(raw_data_list,key=\
-                    lambda x: os.path.splitext(x.replace\
-                                (self['STAR_NAME_GASTRONOOM']+'_','',1))[0]\
-                                .split('_')[0] \
-                            + os.path.splitext(x.replace \
-                                (self['STAR_NAME_GASTRONOOM'] + '_','',1))[0]\
-                                .split('_')[-1])
-                data_list = [os.path.splitext(os.path.split(f)[1])[0].replace \
-                                (self['STAR_NAME_GASTRONOOM'] + '_','',1)\
-                                .split('_')
-                             for f in raw_data_list] 
-                data_list = sorted([data_molec + [molec] + [raw]
-                                    for raw,data_molec in zip(raw_data_list,\
-                                                              data_list)
-                                    for molec in self['GAS_LIST'] 
-                                    if data_molec[0]\
-                                            [0:len(molec.molecule_short)] \
-                                        == molec.molecule_short],\
-                                   key=operator.itemgetter(0))
-                trans_list = [Transition.Transition(\
-                                datafiles=molec[-1],\
-                                molecule=molec[-2],\
-                                telescope=molec[-3],\
-                                jup=int(molec[0][-2]),\
-                                jlow=int(molec[0][-1]),\
-                                n_quad=self['N_QUAD'],\
-                                use_maser_in_sphinx=self\
-                                                      ['USE_MASER_IN_SPHINX'],\
-                                path_combocode=self.path_combocode,\
-                                path_gastronoom=self.path_gastronoom)
-                              for molec in data_list]
-                #-- Only if autosearch is requested, add the transitions to the
-                #   list
-                if self['DATA_MOL']:
-                    self['GAS_LINES'] = Transition.checkUniqueness(trans_list)
-                    #self.updateSelectTargetData(raw_data_list)
-            else:
-                raw_data_list = []
-            #- Check if specific transition were requested in addition to data
-            if self.has_key('TRANSITION'):
-                self['TRANSITION'] = [trans 
-                                      for trans in self['TRANSITION'] 
-                                      if trans[0] in [molec[0] 
-                                                      for molec in self\
-                                                                 ['MOLECULE']]]
-                new_lines = [Transition.makeTransition(star=self,trans=trans) 
-                             for trans in self['TRANSITION']]
-                for trans in new_lines: 
-                    if trans and str(trans) not in [str(t) for t in self['GAS_LINES']]:
-                        #-- Check if there's data available for this transition
-                        if raw_data_list and trans in trans_list: 
-                            dtrans = [t for t in trans_list if t == trans][0]
-                            self['GAS_LINES'].append(dtrans)
-                        #-- If not, add without data.
-                        else:
-                            self['GAS_LINES'].append(trans)
-            #- Check if molecular line catalogues have to be browsed to create 
-            #- line lists in addition to the data
-            if self['LINE_LISTS']:
-                if self['LINE_LISTS'] == 1: self.__addLineList()
-                elif self['LINE_LISTS'] == 2: 
-                    llfn = os.path.split(self['LL_FILE'].strip())[0] \
-                            and self['LL_FILE'].strip() \
-                            or os.path.join(os.path.expanduser('~'),\
-                                            'GASTRoNOoM','LineLists',\
-                                            os.path.split(self['LL_FILE']\
-                                                                .strip())[1])
-                    nls = Transition.makeTransitionsFromTransList(filename=llfn,star=self) 
-                    for trans in nls: 
-                        if trans and str(trans) not in [str(t) for t in self['GAS_LINES']]:
-                            self['GAS_LINES'].append(trans)
             self['GAS_LINES'] = sorted(list(self['GAS_LINES']),\
                                        key=lambda x: str(x))
+            #-- Check uniqueness.
+            self['GAS_LINES'] = Transition.checkUniqueness(self['GAS_LINES'])
+            
+            #-- Is this still needed? 
             requested_transitions = set([str(trans) 
                                          for trans in self['GAS_LINES']]) 
             if not len(self['GAS_LINES']) == len(requested_transitions):
@@ -2797,7 +2584,7 @@ class Star(dict):
                               'Check code/contact Robin.')
         else:
             pass
-
+    
 
 
     def calcSTARTYPE(self):
@@ -2861,85 +2648,6 @@ class Star(dict):
                 print self['STARFILE']
         else:
             pass
-
-
-
-    #def updateSelectTargetData(self,raw_data_list):
-        
-        #''' 
-        #Updating select_target_data.pro if necessary.
-        
-        #@param raw_data_list: sorted filenames of the data in PATH_GAS_DATA
-        #@type raw_data_list: list[string]
-                
-        #'''
-        
-        #filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                #'scripts','select_target_data.pro')
-        #select_target_data = DataIO.readFile(filename=filename)
-        #i = 0
-        #while True:
-            #if select_target_data[i].find('stars=[') != -1: break
-            #i += 1
-        #stars_list = [starname.strip("'") 
-                      #for starname in select_target_data[i].rstrip(']')\
-                                          #.replace('stars=[','',1).split(',')
-                      #if starname]
-        #try:
-            ##- Is the star present? Then no error, and star_presence will be 
-            ##- put to True
-            #star_presence = False
-            #which_star = stars_list.index(self['STAR_NAME_GASTRONOOM'])
-            #star_presence = True
-            #j = 0
-            #while True:
-                #j += 1
-                #if select_target_data[i+j]\
-                        #.find('files_' + self['STAR_NAME_GASTRONOOM']) != -1: 
-                    #break
-            #starnames = select_target_data[i+j].rstrip(']').replace('files_'+\
-                           #self['STAR_NAME_GASTRONOOM'] + '=[','',1).split(',')
-            #files_list = [starname.strip("'") for starname in starnames]
-            #if len(files_list) != len(raw_data_list) \
-                    #or float(select_target_data[i+j+1].split('=')[1]) \
-                                #!= self['V_LSR'] \
-                    #or float(select_target_data[i+j+2].split('=')[1]) \
-                                #!= self['VEL_INFINITY_GAS']:
-                #raise ValueError
-        #except ValueError:
-            ##- add star to the list and find star_information entry point
-            #if not star_presence:
-                #stars_list.append(self['STAR_NAME_GASTRONOOM'])
-                #select_target_data[i:i] = ['stars=[' \
-                                           #+ ','.join(["'" + starname + "'" 
-                                                  #for starname in stars_list])\
-                                           #+ ']']
-                #del select_target_data[i+1]
-                #j = 0
-                #while True:
-                    #if select_target_data[i+j+1]\
-                            #.find('remarks,extra=extra,remarks=remarks') != -1:
-                        #break
-                    #j += 1
-            #select_target_data[i+j:i+j] \
-                    #= ['files_' + self['STAR_NAME_GASTRONOOM'] + \
-                       #'=[' + ','.join(["'" + os.path.split(f)[1] + "'" 
-                                        #for f in raw_data_list]) + \
-                       #']']
-            #select_target_data[i+j+1:i+j+1] \
-                    #= ['vlsr_' + self['STAR_NAME_GASTRONOOM'] + \
-                       #'=' + str(float(self['V_LSR']))]
-            #select_target_data[i+j+2:i+j+2] \
-                    #= ['vinfty_' + self['STAR_NAME_GASTRONOOM'] + \
-                       #'=' + str(float(self['VEL_INFINITY_GAS']))]
-            #select_target_data[i+j+3:i+j+3] = [' ']
-            #if star_presence:
-                #for k in range(4):
-                    #del select_target_data[i+j+4]
-            #DataIO.writeFile(os.path.join(os.path.expanduser('~'),\
-                                          #'GASTRoNOoM','scripts',\
-                                          #'select_target_data.pro'),\
-                             #select_target_data)
 
 
 
@@ -3291,8 +2999,6 @@ class Star(dict):
         
         if missing_key in ('T_STAR','L_STAR','R_STAR'):
             self.calcTLR()
-        elif missing_key in ('STAR_NAME_GASTRONOOM'):
-            self.getClassAttr(missing_key)
         elif missing_key in ['R_MAX_' + species 
                              for species in self.species_list]:
             self.calcR_MAX(missing_key)
@@ -3311,3 +3017,291 @@ class Star(dict):
             getattr(self,'calc' + missing_key)()
         else:
             pass
+
+
+    
+    
+    #def calcGAS_LINES2(self):
+        
+        #"""
+        #Making transition line input for gas data (auto search) 
+        #and additional no-data lines.
+        
+        #The Transition() objects are created then for these lines and added
+        #to the GAS_LINES2 list.
+    
+        #"""
+
+        #if not self.has_key('GAS_LINES2'):
+            #self['GAS_LINES2'] = list()
+            ##- To make sure the GAS_LIST is done, and the conversion of 
+            ##- TRANSITION to the right molecule names is done 
+            ##- (in case of PlottingSession.setPacsFromDb is used)
+            #self.calcGAS_LIST()     
+            ##-- If a path to the gas data is known, do an autosearch for data
+            ##   so that data are known and available. Only if DATA_MOL is also
+            ##   True will these transitions be added to the model grid.
+            #if self['PATH_GAS_DATA']:
+                #searchpath = os.path.join(self['PATH_GAS_DATA'],
+                                         #self['STAR_NAME_GASTRONOOM'] + '_*.*')
+                #raw_data_list = [f 
+                                 #for f in glob(searchpath)
+                                 #if os.path.splitext(f)[1][-1] != '~']
+                #raw_data_list = sorted(raw_data_list,key=\
+                    #lambda x: os.path.splitext(x.replace\
+                                #(self['STAR_NAME_GASTRONOOM']+'_','',1))[0]\
+                                #.split('_')[0] \
+                            #+ os.path.splitext(x.replace \
+                                #(self['STAR_NAME_GASTRONOOM'] + '_','',1))[0]\
+                                #.split('_')[-1])
+                #data_list = [os.path.splitext(os.path.split(f)[1])[0].replace \
+                                #(self['STAR_NAME_GASTRONOOM'] + '_','',1)\
+                                #.split('_')
+                             #for f in raw_data_list] 
+                #data_list = sorted([data_molec + [molec] + [raw]
+                                    #for raw,data_molec in zip(raw_data_list,\
+                                                              #data_list)
+                                    #for molec in self['GAS_LIST'] 
+                                    #if data_molec[0]\
+                                            #[0:len(molec.molecule_short)] \
+                                        #== molec.molecule_short],\
+                                   #key=operator.itemgetter(0))
+                #trans_list = [Transition.Transition(\
+                                #datafiles=molec[-1],\
+                                #molecule=molec[-2],\
+                                #telescope=molec[-3],\
+                                #jup=int(molec[0][-2]),\
+                                #jlow=int(molec[0][-1]),\
+                                #n_quad=self['N_QUAD'],\
+                                #use_maser_in_sphinx=self\
+                                                      #['USE_MASER_IN_SPHINX'],\
+                                #path_combocode=self.path_combocode,\
+                                #path_gastronoom=self.path_gastronoom)
+                              #for molec in data_list]
+                ##-- Only if autosearch is requested, add the transitions to the
+                ##   list
+                #if self['DATA_MOL']:
+                    #self['GAS_LINES2'] = Transition.checkUniqueness(trans_list)
+                    ##self.updateSelectTargetData(raw_data_list)
+            #else:
+                #raw_data_list = []
+            ##- Check if specific transition were requested in addition to data
+            #if self.has_key('TRANSITION'):
+                #self['TRANSITION'] = [trans 
+                                      #for trans in self['TRANSITION'] 
+                                      #if trans[0] in [molec[0] 
+                                                      #for molec in self\
+                                                                 #['MOLECULE']]]
+                #new_lines = [Transition.makeTransition(star=self,trans=trans) 
+                             #for trans in self['TRANSITION']]
+                #for trans in new_lines: 
+                    #if trans and str(trans) not in [str(t) for t in self['GAS_LINES2']]:
+                        ##-- Check if there's data available for this transition
+                        #if raw_data_list and trans in trans_list: 
+                            #dtrans = [t for t in trans_list if t == trans][0]
+                            #self['GAS_LINES2'].append(dtrans)
+                        ##-- If not, add without data.
+                        #else:
+                            #self['GAS_LINES2'].append(trans)
+            ##- Check if molecular line catalogues have to be browsed to create 
+            ##- line lists in addition to the data
+            #if self['LINE_LISTS']:
+                #if self['LINE_LISTS'] == 1: self.__addLineList()
+                #elif self['LINE_LISTS'] == 2: 
+                    #llfn = os.path.split(self['LL_FILE'].strip())[0] \
+                            #and self['LL_FILE'].strip() \
+                            #or os.path.join(os.path.expanduser('~'),\
+                                            #'GASTRoNOoM','LineLists',\
+                                            #os.path.split(self['LL_FILE']\
+                                                                #.strip())[1])
+                    #nls = Transition.makeTransitionsFromTransList(filename=llfn,star=self) 
+                    #for trans in nls: 
+                        #if trans and str(trans) not in [str(t) for t in self['GAS_LINES2']]:
+                            #self['GAS_LINES2'].append(trans)
+            #self['GAS_LINES2'] = sorted(list(self['GAS_LINES2']),\
+                                       #key=lambda x: str(x))
+            #requested_transitions = set([str(trans) 
+                                         #for trans in self['GAS_LINES2']]) 
+            #if not len(self['GAS_LINES2']) == len(requested_transitions):
+                #print 'Length of the requested transition list: %i'\
+                      #%len(self['GAS_LINES2'])
+                #print 'Length of the requested transition list with only ' + \
+                      #'the "transition string" parameters: %i'\
+                      #%len(requested_transitions)
+                #print 'Guilty transitions:'
+                #trans_strings = [str(trans) for trans in self['GAS_LINES2']]
+                #print '\n'.join([str(trans) 
+                                 #for trans in self['GAS_LINES2'] 
+                                 #if trans_strings.count(str(trans))>1])
+                #raise IOError('Multiple parameter sets for a single ' + \
+                              #'transition requested. This is impossible! '+ \
+                              #'Check code/contact Robin.')
+        #else:
+            #pass
+
+    #def updateSelectTargetData(self,raw_data_list):
+        
+        #''' 
+        #Updating select_target_data.pro if necessary.
+        
+        #@param raw_data_list: sorted filenames of the data in PATH_GAS_DATA
+        #@type raw_data_list: list[string]
+                
+        #'''
+        
+        #filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                #'scripts','select_target_data.pro')
+        #select_target_data = DataIO.readFile(filename=filename)
+        #i = 0
+        #while True:
+            #if select_target_data[i].find('stars=[') != -1: break
+            #i += 1
+        #stars_list = [starname.strip("'") 
+                      #for starname in select_target_data[i].rstrip(']')\
+                                          #.replace('stars=[','',1).split(',')
+                      #if starname]
+        #try:
+            ##- Is the star present? Then no error, and star_presence will be 
+            ##- put to True
+            #star_presence = False
+            #which_star = stars_list.index(self['STAR_NAME_GASTRONOOM'])
+            #star_presence = True
+            #j = 0
+            #while True:
+                #j += 1
+                #if select_target_data[i+j]\
+                        #.find('files_' + self['STAR_NAME_GASTRONOOM']) != -1: 
+                    #break
+            #starnames = select_target_data[i+j].rstrip(']').replace('files_'+\
+                           #self['STAR_NAME_GASTRONOOM'] + '=[','',1).split(',')
+            #files_list = [starname.strip("'") for starname in starnames]
+            #if len(files_list) != len(raw_data_list) \
+                    #or float(select_target_data[i+j+1].split('=')[1]) \
+                                #!= self['V_LSR'] \
+                    #or float(select_target_data[i+j+2].split('=')[1]) \
+                                #!= self['VEL_INFINITY_GAS']:
+                #raise ValueError
+        #except ValueError:
+            ##- add star to the list and find star_information entry point
+            #if not star_presence:
+                #stars_list.append(self['STAR_NAME_GASTRONOOM'])
+                #select_target_data[i:i] = ['stars=[' \
+                                           #+ ','.join(["'" + starname + "'" 
+                                                  #for starname in stars_list])\
+                                           #+ ']']
+                #del select_target_data[i+1]
+                #j = 0
+                #while True:
+                    #if select_target_data[i+j+1]\
+                            #.find('remarks,extra=extra,remarks=remarks') != -1:
+                        #break
+                    #j += 1
+            #select_target_data[i+j:i+j] \
+                    #= ['files_' + self['STAR_NAME_GASTRONOOM'] + \
+                       #'=[' + ','.join(["'" + os.path.split(f)[1] + "'" 
+                                        #for f in raw_data_list]) + \
+                       #']']
+            #select_target_data[i+j+1:i+j+1] \
+                    #= ['vlsr_' + self['STAR_NAME_GASTRONOOM'] + \
+                       #'=' + str(float(self['V_LSR']))]
+            #select_target_data[i+j+2:i+j+2] \
+                    #= ['vinfty_' + self['STAR_NAME_GASTRONOOM'] + \
+                       #'=' + str(float(self['VEL_INFINITY_GAS']))]
+            #select_target_data[i+j+3:i+j+3] = [' ']
+            #if star_presence:
+                #for k in range(4):
+                    #del select_target_data[i+j+4]
+            #DataIO.writeFile(os.path.join(os.path.expanduser('~'),\
+                                          #'GASTRoNOoM','scripts',\
+                                          #'select_target_data.pro'),\
+                             #select_target_data)
+
+    #def calcSTAR_NAME(self):
+        
+        #"""
+        #Checking if STAR_NAME is present. 
+        
+        #If not, the star_name is arbitrary and equal to 'model'.
+    
+        #"""
+        #if not self.has_key('STAR_NAME'):
+            #self['STAR_NAME'] = 'model'
+        #else:
+            #pass
+
+
+
+    #def calcSTAR_INDEX(self):
+        
+        #"""
+        #Finding the star's database index from STAR_NAME if keyword is present.
+        
+        #This index is the position of the star in Star.dat.
+        
+        #"""
+        
+        #try:
+            #self['STAR_INDEX'] = DataIO.getInputData(path=os.path.join(\
+                                                        #self.path_combocode,\
+                                                        #'Data'))\
+                                             #.index(self['STAR_NAME'])
+        #except KeyError,ValueError: 
+            #self['STAR_INDEX'] = -1
+            #self['DATA_MOL'] = 0
+            #print 'No (correct) star name has been supplied. ' +\
+                  #'Calculation continues without data.'
+
+    
+
+    #def calcDATA_MOL(self):
+        
+        #'''
+        #Set default value of DATA MOL to 0.
+        
+        #'''
+        
+        #if not self.has_key('DATA_MOL'):
+            #self['DATA_MOL'] = 0
+        #else:
+            #pass
+        
+
+
+    #def calcPATH_GAS_DATA(self):
+        
+        #"""
+        #If not present, the path is taken to be a default.
+        
+        #Currently data can be read from /home/elvired/allspectra/
+    
+        #"""
+        
+        #if not self.has_key('PATH_GAS_DATA'):
+            #self['PATH_GAS_DATA'] = '/home/elvired/allspectra/'
+        #else:
+            #pass
+        
+        
+    
+    #def getClassAttr(self,missing_key):  
+    
+        
+        #"""
+        #Fill in Class attributes specific for a star. All these parameters are
+        #taken from Star.dat.
+    
+        #@param missing_key: The missing key, taken from Star.dat
+        #@type missing_key: string
+        
+        
+        #"""
+        
+        #if not self.has_key(missing_key):
+            #self[missing_key] \
+                #= DataIO.getInputData(path=os.path.join(self.path_combocode,\
+                                                        #'Data'),\
+                                      #keyword=missing_key)\
+                                     #[self['STAR_INDEX']]
+        #else:
+            #pass
+ 

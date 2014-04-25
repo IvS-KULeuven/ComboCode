@@ -564,7 +564,7 @@ def removeComments(lines,delimiter=' '):
     
     '''
     
-    comment_chars = ['#','!']
+    comment_chars = ['#','!',';']
     lines = [line 
              for line in lines 
              if delimiter.join(line)[0] not in comment_chars]

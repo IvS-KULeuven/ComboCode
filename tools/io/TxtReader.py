@@ -60,8 +60,7 @@ class TxtReader(LPDataReader):
                 
         '''
         
-        start_i = self.filename[-6:] == '.table' and 1 or 0
-        data = DataIO.readCols(filename=self.filename,start_row=start_i,nans=1)
+        data = DataIO.readCols(filename=self.filename,start_row=0,nans=1)
         if self.filename[-6:] == '.ISPEC':
             del data[0]
             data[0] = data[0]/1000.

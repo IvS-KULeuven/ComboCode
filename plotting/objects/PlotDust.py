@@ -630,7 +630,7 @@ class PlotDust(PlottingSession):
         
         '''
         
-        star_grid = Star.makeStars(models=models,star_name=self.star_name,\
+        star_grid = Star.makeStars(models=models,\
                                    code='MCMax',id_type='MCMax',path=self.path)
         for star,model in zip(star_grid,models):    
             filepath = os.path.join(os.path.expanduser('~'),'MCMax',\

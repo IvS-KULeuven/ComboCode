@@ -170,6 +170,7 @@ class LPDataReader(Reader):
         if self.getVlsr() is None: 
             self.contents['vlsr'] = vlsr
         elif vlsr == 0.0:
+            print('WARNING! V_lsr in Star.dat is set to 0. Double check!')
             if not abs(self.getVlsr()) < 0.25:
                 self.contents['vlsr'] = vlsr
         elif abs(self.getVlsr()/vlsr) > 1.3 or abs(self.getVlsr()/vlsr) < 0.75:

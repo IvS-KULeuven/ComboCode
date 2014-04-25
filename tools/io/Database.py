@@ -313,7 +313,8 @@ class Database(dict):
         '''
         
         super(Database, self).__init__()
-        self.db_path = db_path
+        self.path = db_path
+        self.folder = os.path.split(self.path)[0]
         self.read()
         self.__changed = []
         self.__deleted = []
@@ -486,7 +487,7 @@ class Database(dict):
         
         try:
             while True:
-                dbfile = open(self.db_path,'r')
+                dbfile = open(self.path,'r')
                 try:
                     try:
                         db = cPickle.load(dbfile)
@@ -506,7 +507,7 @@ class Database(dict):
             self.clear()
             super(Database,self).update(db)
         except IOError:
-            print 'No database present at %s. Creating a new one.'%self.db_path
+            print 'No database present at %s. Creating a new one.'%self.path
             self.__save()
                 
                 
@@ -560,15 +561,15 @@ class Database(dict):
         '''
         
         backup_file = ''
-        if os.path.isfile(self.db_path):
+        if os.path.isfile(self.path):
             i = 0
-            backup_file =  '%s_backup%i'%(self.db_path,i)
+            backup_file =  '%s_backup%i'%(self.path,i)
             while os.path.isfile(backup_file):
                 i += 1
-                backup_file = '%s_backup%i'%(self.db_path,i)
-            subprocess.call(['cp %s %s'%(self.db_path,backup_file)],\
+                backup_file = '%s_backup%i'%(self.path,i)
+            subprocess.call(['cp %s %s'%(self.path,backup_file)],\
                             shell=True)
-        dbfile = open(self.db_path,'w')
+        dbfile = open(self.path,'w')
         cPickle.dump(self,dbfile)
         dbfile.close()
         if backup_file and os.path.isfile(backup_file):

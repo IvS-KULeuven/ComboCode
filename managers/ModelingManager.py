@@ -22,7 +22,7 @@ class ModelingManager():
     
     """
     
-    def __init__(self,star_name,var_pars,processed_input,iterations=1,\
+    def __init__(self,var_pars,processed_input,iterations=1,\
                  mcmax=0,gastronoom=0,sphinx=0,iterative=0,\
                  num_model_sessions=1,vic_manager=None,replace_db_entry=0,\
                  path_gastronoom='runTest',path_mcmax='runTest',\
@@ -36,10 +36,6 @@ class ModelingManager():
         From this class, the MCMax and GASTRoNOoM codes are ran for each 
         iteration, as well as the database retrieval of older models. 
         
-        @param star_name: Name of the requested star. Only relevant for
-                          deleting models from the pacs db if 
-                          replace_db_entry==1.
-        @type star_name: string
         @param var_pars: gridded parameters in the CC session
         @type var_pars: list[string]
         @param processed_input: The processed paramaters from the CC inputfile
@@ -124,7 +120,6 @@ class ModelingManager():
         self.mcmax_done_list = []
         self.path_mcmax = path_mcmax
         self.path_gastronoom = path_gastronoom
-        self.star_name = star_name
         self.recover_sphinxfiles = recover_sphinxfiles
         self.setDatabases()
         self.mcmax_done = False
@@ -155,17 +150,17 @@ class ModelingManager():
             mcmax_db_path = os.path.join(os.path.expanduser('~'),'MCMax',\
                                          self.path_mcmax,'MCMax_models.db')
             self.mcmax_db = Database.Database(db_path=mcmax_db_path)
-        if self.replace_db_entry:
-            pacs_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                        self.path_gastronoom,'stars',\
-                                        self.star_name,\
-                                        'GASTRoNOoM_pacs_models.db')
-            if os.path.isfile(pacs_db_path):
-                self.pacs_db = Database.Database(db_path=pacs_db_path)        
-            else:
-                self.pacs_db = None
-        else:
-            self.pacs_db = None
+        #if self.replace_db_entry:
+            #pacs_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                        #self.path_gastronoom,'stars',\
+                                        #self.star_name,\
+                                        #'GASTRoNOoM_pacs_models.db')
+            #if os.path.isfile(pacs_db_path):
+                #self.pacs_db = Database.Database(db_path=pacs_db_path)        
+            #else:
+                #self.pacs_db = None
+        #else:
+            #self.pacs_db = None
         if self.vic <> None:
             self.vic.setSphinxDb(self.sph_db)
         
@@ -240,7 +235,6 @@ class ModelingManager():
                                         cool_db=self.cool_db,\
                                         ml_db=self.ml_db,\
                                         sph_db=self.sph_db,\
-                                        pacs_db=self.pacs_db,\
                                         sphinx=self.sphinx,\
                                         skip_cooling=self.skip_cooling,\
                                         replace_db_entry=self.replace_db_entry,\
