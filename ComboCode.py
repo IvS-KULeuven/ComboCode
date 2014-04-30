@@ -236,7 +236,12 @@ class ComboCode(object):
         
         '''
         Collect the relevant radio data for the requested star. Only done if 
-        the pathname to the data is given and if a database is present. 
+        the pathname to the data is given.
+        
+        If a database is not present, it is created. 
+        
+        If the auto_parse is requested, the data folder will be parsed for new 
+        data. 
         
         The data are associated with requested transitions later. Only if also 
         RADIO_AUTOSEARCH is on, these transitions will be automatically added
@@ -249,7 +254,7 @@ class ComboCode(object):
         self.radio_autosearch = self.processed_input.pop('RADIO_AUTOSEARCH',0)
         radio_autoparse = self.processed_input.pop('RADIO_AUTOPARSE',0)
         fn = os.path.join(self.radio_path,'radio_data.db')
-        if self.radio_path and os.path.isfile(fn):
+        if self.radio_path:
             cc_path = os.path.join(self.path_combocode,'Data')
             radio_db = Radio.Radio(path=self.radio_path,cc_path=cc_path,\
                                    auto_parse=radio_autoparse)
