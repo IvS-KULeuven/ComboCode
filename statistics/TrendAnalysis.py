@@ -388,6 +388,9 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
     @keyword **kwargs: extra keywords needed for the linear fit, if requested.
     @type **kwargs: dict
     
+    @return: The filename of the produced plot is returned. 
+    @rtype: str
+    
     '''
     
     x_titles = dict([('MDOT_GAS',r'$\log$ $\left[\dot{M}_\mathrm{g}\ (\mathrm{M}_\odot/\mathrm{yr})\right]$'),\
@@ -1003,11 +1006,12 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                                         %(mode,pfn_ytag,pfn_yrat,pfn_xtag,\
                                           pfn_xrat,pfn_ecl))
             extra_pars['filename'] = pfn
-            print Plotting2.plotCols(x=xb and x[xk]+xb or x[xk],\
-                                     y=yb and y[yk]+yb or y[yk],\
-                                     yerr=yb and yerr[yk]+[None]*len(yb) or yerr[yk],\
-                                     xerr=xb and xerr[xk]+[None]*len(xb) or xerr[xk],\
-                                     **extra_pars)
+            ff = Plotting2.plotCols(x=xb and x[xk]+xb or x[xk],\
+                                    y=yb and y[yk]+yb or y[yk],\
+                                    yerr=yb and yerr[yk]+[None]*len(yb) or yerr[yk],\
+                                    xerr=xb and xerr[xk]+[None]*len(xb) or xerr[xk],\
+                                    **extra_pars)
+            print ff
             
             if n_data > 0:                    
                 print 'Stars plotted (in order of x):'
@@ -1024,6 +1028,8 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                                       keyunits[con])
                                    for con,v in zip(extra_dcon,ec[1])])
                     print k, ': %s'%', '.join([s['STAR_NAME'] for s in sgsort])
+            
+            return ff
             
 
 def guessRatio(line1,line1_err,line2,line2_err,line1_log=0,line2_log=0,\

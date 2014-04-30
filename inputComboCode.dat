@@ -46,6 +46,7 @@ SED_PATH=#/home/robinl/Data/SED/    #Path to the Data folder where the text file
 #-- RADIO data selection (including autosearch) and plotting (typically resolved lines in K vs km/s)
 RADIO_PATH=#/home/robinl/Data/Molecular/  # Path for gas radio data, leave empty if not relevant/no gas data are used other than pacs. Any requested transition that matches data in this folder will have the data plotted alongside the model! Folder requires database for data named radio_data.db
 RADIO_AUTOSEARCH=0                     # Put to 1 if TRANSITION objects are to be made automatically based on the available data.
+RADIO_AUTOPARSE=0                       # Put to 1 to automatically parse the target radio data folder for data before selecting candidate transitions. 
 
 #-- Continuum division for select features in the SED is possible, for comparison between data and model
 CONTDIV_FEATURES= #H2O3.1&MGS       # For now only the 3.1 water ice feature (H2O3.1) and the 30 micron MgS feature (MGS) are available
@@ -264,6 +265,8 @@ NZLAM=300                                   # Step size subgrid (must be < than 
 ##########################################################################
 #MOLECULE=12C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=13C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=12C17O 41 0 40 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+#MOLECULE=12C18O 41 0 40 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=1H1H16O  90  39  1157  50  0  1.0e-20  1.0e-20  1.0e-20  50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=p1H1H16O  90  32  1029 50  0  1.0e-20  1.0e-20  1.0e-20  50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=1H1H18O      45  45  541 50  0  1.0e-20  1.0e-20  1.0e-20  50. 200  0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0

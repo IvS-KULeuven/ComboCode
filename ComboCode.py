@@ -247,10 +247,12 @@ class ComboCode(object):
         self.radio = None
         self.radio_path = self.processed_input.pop('RADIO_PATH','')
         self.radio_autosearch = self.processed_input.pop('RADIO_AUTOSEARCH',0)
+        radio_autoparse = self.processed_input.pop('RADIO_AUTOPARSE',0)
         fn = os.path.join(self.radio_path,'radio_data.db')
         if self.radio_path and os.path.isfile(fn):
             cc_path = os.path.join(self.path_combocode,'Data')
-            radio_db = Radio.Radio(path=self.radio_path,cc_path=cc_path)
+            radio_db = Radio.Radio(path=self.radio_path,cc_path=cc_path,\
+                                   auto_parse=radio_autoparse)
             if radio_db.has_key(self.star_name):
                 self.radio = radio_db[self.star_name]            
             

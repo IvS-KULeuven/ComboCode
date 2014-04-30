@@ -51,6 +51,63 @@ class Radio(Database):
         Once a db is created, you can perform several methods on the database 
         specific to radio data management.
         
+        Examples:
+        For data located in /home/robinl/Data/Molecular/
+        >>> from cc.data import Radio
+        >>> db = Radio.Radio('/home/robinl/Data/Molecular/',auto_parse=1)
+        >>> db.sync()
+
+        This will create a database, automatically search your data folder for 
+        data files that the script can recognize, and save them in the 
+        database. The final command ( .sync() ) will then save the database to
+        your hard disk in the same folder, under 'radio_data.db'. Later when 
+        you run Radio.Radio('/home/robinl/Data/Molecular/') again, it will load
+        that same database that still contains all those datafiles and 
+        TRANSITION references.
+
+        The database is structured per star_name and per transition definition.
+        So for instance, you will find the file whya_co32_APEX.fits in a list 
+        under
+        db['whya']['TRANSITION=12C16O 0 3 0 0 0 2 0 0 APEX 0.0']
+        where you will find
+        ['whya_co32_APEX.fits']
+
+        If multiple data files are available for the same star, the same 
+        transition and the same telescope, the multiple data files will also be
+        contained in this list. Note that the transition definition is quite 
+        specific: 1 space between entries, and 11 entries total. It is 
+        identical to the input in your combocode inputfile (excluding the final
+        number n_quad, which is model input and has nothing to do with your 
+        data).
+
+        Lastly, you can do multiple things with this database.
+        >>> db.addData(star_name='whya',trans='TRANSITION=12C16O 0 3 0 0 0 2 0 0 JCMT 0.0',\
+                       filename='whya_co32_Maercker_new_JCMT.fits')
+        will add a new entry to the database if it is not there. This is useful
+        for those molecules/filenames which have not been automatically found 
+        by the auto_parse (for instance SO2 data files do not stick to the file
+        naming convention in my folder (do ls *so2* in my data folder), because
+        with this method you can still add them whichever way you want.
+
+        >>> db.removeData(star_name='whya',trans='TRANSITION=12C16O 0 3 0 0 0 2 0 0 JCMT 0.0')
+        removes a whole transition from the database. Alternatively
+
+        >>> db.removeData(star_name='whya',filename='whya_co32_Maercker_new_JCMT.fits')
+        removes a single filename from the database. (does not delete the file)
+
+        And if you want to know which datafiles in your data folder are not yet
+        in the database (so you know which you have to add manually):
+        >>> db.checkFolder()
+        prints them out for you.
+
+        Remember, every time you add or remove data or do a parseFolder(), you 
+        have to save the contents of your database in python to the hard disk 
+        by doing:
+        >>> db.sync()
+
+        As long as you don't do this, the hard disk version of the datafile 
+        will remain unchanged. 
+        
         @param path: Path to the database excluding db name. This is the folder
                      where the radio data are located.
         @type path: string
