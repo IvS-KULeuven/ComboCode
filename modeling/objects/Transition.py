@@ -1462,7 +1462,7 @@ class Transition():
         
         """
         Set data equal to the data in a different Transition object, but for 
-        the same transition. Does no erase data if they have already been set 
+        the same transition. Does not erase data if they have already been set 
         in this object. 
         
         A check is ran to see if the transition in both objects really is the 

@@ -300,7 +300,7 @@ class PlotGas(PlottingSession):
                         telescope_label=1,sort_freq=0,sort_molec=0,\
                         no_models=0,limited_axis_labels=0,date_tag=1,\
                         n_max_models=10,fn_suffix='',mfiltered=0,\
-                        plot_intrinsic=0):
+                        plot_intrinsic=0,plot_pacs=0):
         
         """ 
         Plotting beam convolved line profiles in Tmb for both model and data if 
@@ -361,14 +361,20 @@ class PlotGas(PlottingSession):
                             
                             (default: 0)
         @type mfiltered: bool
-        @keyword plot_intrinsic: Plot intrinsic line profiles as well, for PACS
-                                 data. PACS data are not added to these plots.
-                                 By default, this is off as the line profiles
-                                 do not give you that much information before
-                                 convolution with the wavelength resolution.
+        @keyword plot_intrinsic: Plot the intrinsic profiles instead of the 
+                                 beam-convolved profiles (for instance when
+                                 comparing GASTRoNOoM models to LIME models)
                                  
                                  (default: 0)
         @type plot_intrinsic: bool
+        @keyword plot_pacs: Plot intrinsic line profiles as well, for PACS
+                            data. PACS data are not added to these plots.
+                            By default, this is off as the line profiles
+                            do not give you that much information before
+                            convolution with the wavelength resolution.
+        
+                            (default: 0)
+        @type plot_pacs: bool
         
         """
         
@@ -401,6 +407,8 @@ class PlotGas(PlottingSession):
             n_max_models = int(cfg_dict['n_max_models'])
         if cfg_dict.has_key('plot_intrinsic'):
             plot_intrinsic = int(cfg_dict['plot_intrinsic'])
+        if cfg_dict.has_key('plot_pacs'):
+            plot_intrinsic = int(cfg_dict['plot_pacs'])
         if cfg_dict.has_key('mfiltered'):
             mfiltered = int(cfg_dict['mfiltered'])
         if fn_suffix: 
@@ -421,10 +429,20 @@ class PlotGas(PlottingSession):
             pacs_keytags = list(keytags)
             if not no_data : keytags.append('Data')
              
-        #- Check how many non-PACS transitions there are
+        #-- Check how many non-PACS transitions there are (whether they have 
+        #   data or not.
         trans_list = Transition.extractTransFromStars(star_grid,sort_freq,\
-                                                      sort_molec,pacs=0)
-        if plot_intrinsic:
+                                                      sort_molec,pacs=2)
+        
+        #-- Add PACS transitions for which PACS data have explicitly been added
+        trans_list = [t 
+                      for t in Transition.extractTransFromStars(star_grid,\
+                                                                sort_freq,\
+                                                                sort_molec,\
+                                                                pacs=1)
+                      if t.lpdata]
+        #-- If plot_pacs is requested, plot all modeled PACS lines (intrinsic)
+        if plot_pacs:
             pacs_list  = Transition.extractTransFromStars(star_grid,sort_freq,\
                                                           sort_molec,pacs=1)
         else:
@@ -508,7 +526,7 @@ class PlotGas(PlottingSession):
                     if None in current_sub: 
                          missing_trans += 1
                     #-- Just fit the line profile. The data will be read as well
-                    if not intrinsic:
+                    if not no_data and current_trans.lpdata:
                         current_trans.fitLP()
                         vlsr = current_trans.getVlsr()
                         noise = current_trans.getNoise()
@@ -582,7 +600,7 @@ class PlotGas(PlottingSession):
                                 %current_trans.telescope.replace('-H2O','')\
                                                         .replace('-CORRB','')
                         ddict['labels'].append((telescope_string,0.73,0.85))
-                    if not intrinsic and date_tag:
+                    if not no_data and date_tag:
                         ddict['labels'].append(\
                             ('; '.join([lp.getDateObs() \
                                         for lp in current_trans.lpdata]),\
@@ -675,7 +693,7 @@ class PlotGas(PlottingSession):
                                 vg_factor=vg_factor,\
                                 no_data=no_data,cfg=cfg_dict,star_grid=subgrid,\
                                 x_dim=x_dim,y_dim=y_dim,keytags=subkeys,\
-                                intrinsic=0,no_models=no_models,\
+                                intrinsic=plot_intrinsic,no_models=no_models,\
                                 telescope_label=telescope_label,\
                                 limited_axis_labels=limited_axis_labels,\
                                 date_tag=date_tag,indexi=j,indexf=j+i-1,\
