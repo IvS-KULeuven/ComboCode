@@ -408,7 +408,7 @@ class PlotGas(PlottingSession):
         if cfg_dict.has_key('plot_intrinsic'):
             plot_intrinsic = int(cfg_dict['plot_intrinsic'])
         if cfg_dict.has_key('plot_pacs'):
-            plot_intrinsic = int(cfg_dict['plot_pacs'])
+            plot_pacs = int(cfg_dict['plot_pacs'])
         if cfg_dict.has_key('mfiltered'):
             mfiltered = int(cfg_dict['mfiltered'])
         if fn_suffix: 
@@ -432,15 +432,16 @@ class PlotGas(PlottingSession):
         #-- Check how many non-PACS transitions there are (whether they have 
         #   data or not.
         trans_list = Transition.extractTransFromStars(star_grid,sort_freq,\
-                                                      sort_molec,pacs=2)
+                                                      sort_molec,pacs=0)
         
         #-- Add PACS transitions for which PACS data have explicitly been added
-        trans_list = [t 
-                      for t in Transition.extractTransFromStars(star_grid,\
+        trans_list += [t 
+                       for t in Transition.extractTransFromStars(star_grid,\
                                                                 sort_freq,\
                                                                 sort_molec,\
                                                                 pacs=1)
-                      if t.lpdata]
+                       if t.lpdata]
+                      
         #-- If plot_pacs is requested, plot all modeled PACS lines (intrinsic)
         if plot_pacs:
             pacs_list  = Transition.extractTransFromStars(star_grid,sort_freq,\
@@ -526,7 +527,7 @@ class PlotGas(PlottingSession):
                     if None in current_sub: 
                          missing_trans += 1
                     #-- Just fit the line profile. The data will be read as well
-                    if not no_data and current_trans.lpdata:
+                    if not no_data:
                         current_trans.fitLP()
                         vlsr = current_trans.getVlsr()
                         noise = current_trans.getNoise()
@@ -577,7 +578,7 @@ class PlotGas(PlottingSession):
                     #- will be Tmb, in K. In case of intrinsic==1, you dont 
                     #- even want to check this.
                     
-                    if current_trans.lpdata and no_data == 0:
+                    if current_trans.lpdata and not no_data:
                         ddict['histoplot'] = []
                         n_models = len(ddict['x'])
                         for ilp,lp in enumerate(current_trans.lpdata):
@@ -641,8 +642,9 @@ class PlotGas(PlottingSession):
                 filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                         self.path,'stars',self.star_name,\
                                         self.plot_id,\
-                                        '%sline_profiles_%i_models_%ito%i'\
+                                        '%sline_profiles_%i_%smodels_%ito%i'\
                                         %(intrinsic and 'intrinsic_' or '',i,\
+                                          no_data and 'nodata_' or '',\
                                           indexi,indexf))
                 plot_filenames.append(Plotting2.plotTiles(extension=extension,\
                      data=data,filename=filename,keytags=keytags,\
@@ -662,17 +664,20 @@ class PlotGas(PlottingSession):
                                             'GASTRoNOoM',\
                                             self.path,'stars',self.star_name,\
                                             self.plot_id,\
-                                            '%sline_profiles_models_%ito%i.pdf'\
+                                            '%sline_profiles_%smodels_%ito%i.pdf'\
                                             %(intrinsic and 'intrinsic_' or '',\
+                                              no_data and 'nodata_' or '',\
                                               indexi,indexf))
                 DataIO.joinPdf(old=plot_filenames,new=new_filename)
-                print '** %sine profile plots can be found at:'\
-                        %(intrinsic and 'Intrinsic l' or 'L')
+                print '** %sine profile plots %scan be found at:'\
+                        %(intrinsic and 'Intrinsic l' or 'L',\
+                          no_data and 'without data ' or '')
                 print new_filename
                 print '***********************************' 
             else:
-                print '** %sine profile plots can be found at:'\
-                        %(intrinsic and 'Intrinsic l' or 'L')
+                print '** %sine profile plots %scan be found at:'\
+                        %(intrinsic and 'Intrinsic l' or 'L',\
+                          no_data and 'without data ' or '')
                 print '\n'.join(plot_filenames)
                 print '***********************************' 
     
