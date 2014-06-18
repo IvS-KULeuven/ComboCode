@@ -60,7 +60,7 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                  xmin, xmax, ymin and ymax: floats, default None
                  
                  line_labels: (string,x-pos,same type-integer (eg molecule fi),
-                               vibrational?)
+                 vibrational?)
                  for label indicating emission lines, default []
                  
                  xaxis: name of x axis (TeX enabled), if keyword not included 
@@ -694,7 +694,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                                (default: [])
     @type localized_labels: list[(string,float,float,string)]   
     @keyword line_labels: (string,x-pos and same type-integer (eg molecule fi),
-                           vibrational?)
+                          vibrational?)
                           for the label,specifically to indicate emission lines
                           
                           (default: [])

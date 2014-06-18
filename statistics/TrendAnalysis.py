@@ -560,9 +560,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                             'DiagnosticPlots')
     sg_dists = array([s['DISTANCE'] for s in sg])
     sg_mdot = array([s['MDOT_GAS'] for s in sg])
-    #-- Convert to W/m2/Hz for unit consistency later on (LS/fcont63 is in Hz)
-    sg_fcont63 = array([s['F_CONT_63']*1e-26 for s in sg])
-    
+        
     #-- Collect x and y information to simplify coding later on, as all data
     #   collection and error handling is the same for x and y.
     pars = [xpar,ypar]
@@ -653,6 +651,9 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
         #-- mdot must be done separately, due to the cumbersome error estimate
         if i == 'xmdot' or i == 'ymdot': continue
         elif i == 'fcont63':
+            #-- Convert to W/m2/Hz for unit consistency later on 
+            #   (LS/fcont63 is in Hz)
+            sg_fcont63 = array([s['F_CONT_63']*1e-26 for s in sg])
             ls_ratios[i] = sg_fcont63
             els_ratios[i] = efcont63
         else:

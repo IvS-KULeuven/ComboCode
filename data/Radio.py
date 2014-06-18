@@ -145,25 +145,26 @@ class Radio(Database):
         Parse the db folder and add filenames to recognized transitions. 
         
         Includes:
-        - CO and its isotopologues
-        - SiO and its isotopologues
-        - SiS and its isotopologues
-        - H2O and pH2O
-        - CS
-        - PO and PN
+            - CO and its isotopologues
+            - SiO and its isotopologues
+            - SiS and its isotopologues
+            - H2O and pH2O
+            - CS
+            - PO and PN
         
         Particularly excludes: (because no naming convention/too complex)
-        - SO and SO2
-        - H2O and pH2O isotopologues
-        - H2CO
-        - CN
-        - HCN and its isotopologues
-        - HCO+
+            - SO and SO2
+            - H2O and pH2O isotopologues
+            - H2CO
+            - CN
+            - HCN and its isotopologues
+            - HCO+
         
         '''
         
         ggf = sorted(glob(self.folder+'/*.dat') + glob(self.folder+'/*.fits'))
         ggf = [os.path.split(ff)[1] for ff in ggf]
+        ggf = [ff for ff in ggf if '_' in ff]
         ggf = [ff for ff in ggf if ff[0] != '_']
         stars = [ff.split('_')[0] for ff in ggf]
         molec_trans = [ff.split('_')[1] for ff in ggf]

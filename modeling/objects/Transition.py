@@ -33,16 +33,16 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0):
     models defined by the mode.
     
     Modes:
-    - dint: Integrated line strength of an observed line in spectral mode
-    - mint: Intrinsic integrated line strength of a modeled line
-    - dtmb: Integrated line strength in main-beam temperature (Kelvin*km/s) of 
-            a heterodyne instrument
-    - mtmb: Modeled line strength after convolution with beam profile and 
-            conversion to main-beam temperature.
-    - cint: A combination of dint and mint. Data objects are assumed to be 
-            listed first.
-    - ctmb: A combination of dtmb and mtmb. Data objects are assumed to be 
-            listed first.
+        - dint: Integrated line strength of an observed line in spectral mode
+        - mint: Intrinsic integrated line strength of a modeled line
+        - dtmb: Integrated line strength in main-beam temperature (Kelvin*km/s) 
+                of a heterodyne instrument
+        - mtmb: Modeled line strength after convolution with beam profile and 
+                conversion to main-beam temperature.
+        - cint: A combination of dint and mint. Data objects are assumed to be 
+                listed first.
+        - ctmb: A combination of dtmb and mtmb. Data objects are assumed to be 
+                listed first.
     For data: Blended lines are returned as negative. If a line is in a blend,
     but not attributed a line strength, the line strength of the 'main 
     component' is returned, also as a negative value.
