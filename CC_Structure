@@ -1,6 +1,6 @@
-Folders marked with [*] are hard-coded in ComboCode for now. Copy this from my home (/home/robinl/ComboCode) to yours.
+Folders marked with [*] are hard-coded in ComboCode for now. Copy these from my home (/home/robinl/) to yours.
 
-Any folder that has [PATH_SOMETHING] next to it, can be defined explicitly in the inputfile by the give name fully in capitals. 
+Any folder that has [PATH_SOMETHING] next to it, can be defined explicitly in the inputfile by giving the name fully in capitals. 
 The path structure given here is the default, ie is the path used if you do not specify it in the inputfile. 
 
 Inputfiles for ComboCode can be put anywhere you like. If they are in ~/ComboCode/. then you don't 
@@ -8,52 +8,47 @@ have to specify the path when you call ComboCode.py. Otherwise, always include t
 (i.e. python ComboCode.py /home/YOUR_HOME/SOMEWHERE/SOMEWHERE_MORE_SPECIFIC/inputComboCode.dat       in the shell
 or    from cc import ComboCode
       session = ComboCode.ComboCode(/home/YOUR_HOME/SOMEWHERE/SOMEWHERE_MORE_SPECIFIC/inputComboCode.dat)      in ipython) 
-
+I put mine in ~/ComboCode/input/ as a standard.
+      
 The folder marked by [***] is the one you get by using SVN (see the svn_usage_cc.pdf file), so do not copy that over.
 
 
 /home/YOUR_HOME/
    
-   ComboCode/        [*]              		    inputfiles (arbitrary names, give as input when running ComboCode, including path if it is not ~/ComboCode/)
+   ComboCode/        [*]              	     __init__.py is located here. Copy this.
                      	                      
-      	Data/        [*]    	                Dust.dat, Molecule.dat, Star.dat, Pacs_Resolution* files
+      	Data/        [*]    	             Dust.dat, Molecule.dat, Star.dat, Indices.dat, Sed.Dat, Data.dat, Pacs_Resolution* files. Copy these.
                                               
-         cc/          [***]                     Input_Keywords_cooling.dat, Input_Keywords_mline.dat, Input_Keywords_sphinx.dat
-                                              Mutable_Parameters_GASTRoNOoM.dat, Mutable_Parameters_MCMax.dat
-                                              All .py files and modules, this file (CC_Structure)
-                                              inputComboCode.dat (sample inputfile, copy this elsewhere and modify for your own purposes)
+         cc/         [***]                   Input_Keywords_cooling.dat, Input_Keywords_mline.dat, Input_Keywords_sphinx.dat
+                                             Mutable_Parameters_GASTRoNOoM.dat, Mutable_Parameters_MCMax.dat
+                                             All .py files and modules, this file (CC_Structure)
+                                             inputComboCode.dat (sample inputfile, copy this elsewhere and modify for your own purposes)
    
    
-   GASTRoNOoM/        [*]                     inputGASTRoNOoM.dat
-                     	                      vic_run_jobs_example.sh
-                                              vic_job_example.sh
-                                              execGASTRoNOoM_example                                              
-                                                  ==> Don't change these four files either
-                     	
-      	scripts/     [*]                     IDL stuff, you don't need this, but they allow you to plot/see extra information concerning the models and comparison to ground based data
+   GASTRoNOoM/        [*]                    inputGASTRoNOoM.dat
+                     	                     vic_run_jobs_example.sh
+                                             vic_job_example.sh
+                                             ==> Copy over, never change these
 
       	src/         [*]
-         		data/  [*]                     molecule data files (*_indices.dat, *_radiat.dat, *_collis.dat, sphinx_indices_filename_*.dat)
-                                              *.spec files (generated automatically with [UPDATE_SPEC=1])
-                                              Willacy abundance profiles
-                                              The indices_backup, radiat_backup and collis_backup folders
+         		data/  [*]           molecule data files (*_indices.dat, *_radiat.dat, *_collis.dat, sphinx_indices_filename_*.dat)
+                                             *.spec files (generated automatically with [UPDATE_SPEC=1])
+                                             Willacy abundance profiles
+                                             The indices_backup, radiat_backup and collis_backup folders
                      	
-         		exec/  [*]                     cooling, mline and sphinx executables
+         		exec/  [*]           cooling, mline and sphinx executables. Note that this has two folders. 
    
-      	rundir/      [PATH_GASTRONOOM] 	    This is where all the output is saved, is generated automatically, just has to be included in the inputfile
+      	rundir/      [PATH_GASTRONOOM] 	     This is where all the output is saved, is generated automatically, just has to be included in the inputfile for ComboCode. 
          		
    
    
-   MCMax/             [*] 		               
+   MCMax/             [*] 		     inputMCMax.dat : Copy over to the same location. Important for ComboCode to make proper MCMax input files!
    
-      	src/         [*]		              MCMax executable (also put this thing in your /home/robinl/bin folder (or Bin?))
-                     	                      Spec.out, visibilities_baseline.out
-                                              inputMCMax.dat (don't change this thing unless you ask RL first)
-                                              *.particle, *.opacity
-                     	
-      	Data/       [PATH_SED]		    SED data, but it probably makes more sense to put these in your Data/PACS folder, completely arbitrary
-         		
-         		Extinction_Curves/   [*]	    Contains extinction curves for extinction correction. This folder IS fixed! (is why it's a bit confusing to put the SED data here)  	
+      	src_nov2013/    [*]	             MCMax executable (also put this thing in your /home/robinl/bin folder (or Bin?))
+                     	                     Spec.out, visibilities_baseline.out     
+                                             *.particle, *.opacity
+  		
+  	Extinction_Curves/   [*]	     Contains extinction curves for extinction correction. This folder IS fixed! 
       	
       	rundir/     [PATH_MCMAX]             This is where all the output is saved, is generated automatically, just has to be included in the inputfile
       	
@@ -62,12 +57,10 @@ The folder marked by [***] is the one you get by using SVN (see the svn_usage_cc
                                               and your data should always be stored in [PATH_PACS]/[STAR_NAME]/cont_subtracted/
    
    
-   LineLists/        [LL_PATH]   	          The JPL/CDMS/... linelists are stored here if you want to plot linelists on top of PACS data for instance (see CC input file)
+   LineLists/        [LL_PATH]               The JPL/CDMS/... linelists are stored here if you want to plot linelists on top of PACS data for instance (see CC input file)
 
-/home/elvired/allspectra     [PATH_GAS_DATA]	 Arbitrary, is in the input file, but not really relevant for you yet until you know what's to be done with the ground-based data 
-                     	                      (can use path given here from Leuven: Elvire will keep the data in this folder up-to-date on the fly)
-
-
+/home/robinl/Data/Molecular/  [PATH_GAS_DATA]	 Arbitrary, is in the input file, but not really relevant for you yet until you know what's to be done with the ground-based data 
+                     	                       
 
 For Vic usage:  (fill in vsc##### for YOUR_ACCOUNT, YOUR_DISK is equal to the first three digits in vsc#####)
 1) login through ssh at Vic
@@ -80,5 +73,3 @@ scp -r ~/GASTRoNOoM/src/exec YOUR_ACCOUNT@login.vic3.cc.kuleuven.be:COCode/
 6) Whenever you change the GASTRoNOoM executables (sphinx only for now), remember to copy the new version of the executables to VIC as well.
 
 Happy modelling!
-
-*Disclaimer: I'm not responsible for the sometimes completely illogical way of naming things! (Ok, maybe I am, but it makes sense to me.. in a way!)
