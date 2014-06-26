@@ -524,7 +524,7 @@ class Star(dict):
         
         """
         
-        gas_list = list(self['GAS_LINES'])
+        gas_list = []
         if type(self['LL_TELESCOPE']) is not types.ListType:
             self['LL_TELESCOPE'] = [self['LL_TELESCOPE']]
         if type(self['LL_NO_VIB']) is not types.ListType:
@@ -539,7 +539,7 @@ class Star(dict):
                             path_gastronoom=self.path_gastronoom,\
                             no_vib=molec.molecule in self['LL_NO_VIB'])
             gas_list.extend(nl)
-        self['GAS_LINES'] = tuple(set(gas_list))
+        self['GAS_LINES'].extend(gas_list)
 
 
     
@@ -2545,8 +2545,7 @@ class Star(dict):
             #- line lists in addition to the data
             if self['LINE_LISTS']:
                 if self['LINE_LISTS'] == 1: 
-                    pass
-                    #self.__addLineList()
+                    self.__addLineList()
                 elif self['LINE_LISTS'] == 2: 
                     ll_path = os.path.split(self['LL_FILE'].strip())[0]
                     if not ll_path:

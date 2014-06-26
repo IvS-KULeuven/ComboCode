@@ -15,49 +15,50 @@ The folder marked by [***] is the one you get by using SVN (see the svn_usage_cc
 
 /home/YOUR_HOME/
    
-   ComboCode/        [*]              	     __init__.py is located here. Copy this.
+   ComboCode/        [*]              	    __init__.py is located here. Copy this.
                      	                      
-      	Data/        [*]    	             Dust.dat, Molecule.dat, Star.dat, Indices.dat, Sed.Dat, Data.dat, Pacs_Resolution* files. Copy these.
+      	Data/        [*]    	            Dust.dat, Molecule.dat, Star.dat, Indices.dat, Sed.Dat, Data.dat, Pacs_Resolution* files. Copy these.
                                               
-         cc/         [***]                   Input_Keywords_cooling.dat, Input_Keywords_mline.dat, Input_Keywords_sphinx.dat
-                                             Mutable_Parameters_GASTRoNOoM.dat, Mutable_Parameters_MCMax.dat
-                                             All .py files and modules, this file (CC_Structure)
-                                             inputComboCode.dat (sample inputfile, copy this elsewhere and modify for your own purposes)
+         cc/         [***]                  Input_Keywords_cooling.dat, Input_Keywords_mline.dat, Input_Keywords_sphinx.dat
+                                            Mutable_Parameters_GASTRoNOoM.dat, Mutable_Parameters_MCMax.dat
+                                            All .py files and modules, this file (CC_Structure)
+                                            inputComboCode.dat (sample inputfile, copy this elsewhere and modify for your own purposes)
    
    
-   GASTRoNOoM/        [*]                    inputGASTRoNOoM.dat
-                     	                     vic_run_jobs_example.sh
-                                             vic_job_example.sh
-                                             ==> Copy over, never change these
+   GASTRoNOoM/        [*]                   inputGASTRoNOoM.dat
+                     	                    vic_run_jobs_example.sh
+                                            vic_job_example.sh
+                                            ==> Copy over, never change these
 
       	src/         [*]
-         		data/  [*]           molecule data files (*_indices.dat, *_radiat.dat, *_collis.dat, sphinx_indices_filename_*.dat)
-                                             *.spec files (generated automatically with [UPDATE_SPEC=1])
-                                             Willacy abundance profiles
-                                             The indices_backup, radiat_backup and collis_backup folders
+         		data/  [*]                  molecule data files (*_indices.dat, *_radiat.dat, *_collis.dat, sphinx_indices_filename_*.dat)
+                                            *.spec files (generated automatically with [UPDATE_SPEC=1])
+                                            Willacy abundance profiles
+                                            The indices_backup, radiat_backup and collis_backup folders
                      	
-         		exec/  [*]           cooling, mline and sphinx executables. Note that this has two folders. 
+         		exec/  [*]                  cooling, mline and sphinx executables. Note that this has two folders. 
    
-      	rundir/      [PATH_GASTRONOOM] 	     This is where all the output is saved, is generated automatically, just has to be included in the inputfile for ComboCode. 
+      	rundir/      [PATH_GASTRONOOM] 	    This is where all the output is saved, is generated automatically, just has to be included in the inputfile for ComboCode. 
          		
    
    
-   MCMax/             [*] 		     inputMCMax.dat : Copy over to the same location. Important for ComboCode to make proper MCMax input files!
+   MCMax/             [*] 		            inputMCMax.dat : Copy over to the same location. Important for ComboCode to make proper MCMax input files!
    
-      	src_nov2013/    [*]	             MCMax executable (also put this thing in your /home/robinl/bin folder (or Bin?))
-                     	                     Spec.out, visibilities_baseline.out     
-                                             *.particle, *.opacity
+        Observation_Files  [*]              Files for generating MCMax output such as ray-traced spectra and images. 
+                                            Spec.out, visibilities_baseline.out, Image.out 
+        
+      	src_nov2013/    [*]	                MCMax executable (also put this thing in your /home/robinl/bin folder (or Bin?))
+                                            *.particle, *.opacity
   		
-  	Extinction_Curves/   [*]	     Contains extinction curves for extinction correction. This folder IS fixed! 
+  	Extinction_Curves/   [*]	            Contains extinction curves for extinction correction. This folder IS fixed! 
       	
-      	rundir/     [PATH_MCMAX]             This is where all the output is saved, is generated automatically, just has to be included in the inputfile
+      	rundir/     [PATH_MCMAX]            This is where all the output is saved, is generated automatically, just has to be included in the inputfile
       	
       	
-   Data/PACS/        [PATH_PACS]              where the PACS data are taken from, default is ~/Data/PACS/,
-                                              and your data should always be stored in [PATH_PACS]/[STAR_NAME]/cont_subtracted/
+   Data/PACS/        [PATH_PACS]            where the PACS data are taken from, default is ~/Data/PACS/,
+                                            and your data should always be stored in [PATH_PACS]/[STAR_NAME]/cont_subtracted/
    
-   
-   LineLists/        [LL_PATH]               The JPL/CDMS/... linelists are stored here if you want to plot linelists on top of PACS data for instance (see CC input file)
+   LineLists/        [LL_PATH]              The JPL/CDMS/... linelists are stored here if you want to plot linelists on top of PACS data for instance (see CC input file)
 
 /home/robinl/Data/Molecular/  [PATH_GAS_DATA]	 Arbitrary, is in the input file, but not really relevant for you yet until you know what's to be done with the ground-based data 
                      	                       
