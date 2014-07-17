@@ -179,20 +179,21 @@ class PlotDust(PlottingSession):
              line_types.append(data_labels[dt][1])
         
         #- Collect model data as well as keytags and set line types
-        model_ids = [s['LAST_MCMAX_MODEL'] 
-                     for s in star_grid
-                     if s['LAST_MCMAX_MODEL']]
+        model_ids_mcm = [s['LAST_MCMAX_MODEL'] 
+                         for s in star_grid
+                         if s['LAST_MCMAX_MODEL']]
         #- Only if the model_ids list is not empty, MCMax models are available
         #- Otherwise the ray tracing keyword is unnecessary.
         if no_models:
-            model_ids = []
-        if model_ids: 
+            model_ids_mcm = []
+        if model_ids_mcm: 
             rt_sed = star_grid[0]['RT_SED']
-        for model_id in model_ids:
+        for model_id in model_ids_mcm:
             w,f = MCMax.readModelSpectrum(self.path,model_id,rt_sed)
             data_x.append(w)
             data_y.append(f)
             keytags.append(model_id.replace('_','\_'))
+
         line_types += [0]*len(star_grid)
         keytags = [tag.replace('#','') for tag in keytags]
         extra_pars = dict()

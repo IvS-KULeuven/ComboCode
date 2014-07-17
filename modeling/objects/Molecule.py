@@ -11,22 +11,26 @@ import os
 import re
 
 from cc.tools.io import DataIO
-from cc.tools.io import Database
+from cc.tools.io.Database import Database
 from cc.tools.io import Radiat
 
 
 
 def makeMoleculeFromDb(molec_id,molecule,path_gastronoom='codeSep2010',\
                        path_combocode=os.path.join(os.path.expanduser('~'),\
-                                                   'ComboCode')):
+                                                   'ComboCode'),\
+                       mline_db=None):
     
     '''
     Make a Molecule() from a database, based on model_id and molec_id.
+    
+    Returns None if the molecule is not available in the database.
     
     @param molec_id: the model_id of the molecule
     @type molec_id: string
     @param molecule: the short hand name of the molecule        
     @type molecule: string
+    
     @keyword path_gastronoom: the output path in the ~/GASTRoNOoM/. directory
     
                               (default: codeSep2010)
@@ -35,7 +39,13 @@ def makeMoleculeFromDb(molec_id,molecule,path_gastronoom='codeSep2010',\
     
                              (default: ~/ComboCode/)
     @type path_combocode: 
-    @return: the molecule with all its information inbedded
+    @keyword mline_db: The mline database, which can be passed in case one 
+                       wants to reduce overhead. Not required though.
+                       
+                       (default: None)
+    @type mline_db: Database()
+    
+    @return: the molecule with all its information embedded
     @rtype: Molecule()
     
     '''
@@ -49,8 +59,17 @@ def makeMoleculeFromDb(molec_id,molecule,path_gastronoom='codeSep2010',\
     #- ie mline id is the same as model id, the first calced for this id
     else: 
         model_id = molec_id
-    molec_db = Database.Database(os.path.join(filepath,\
-                                              'GASTRoNOoM_mline_models.db'))
+        
+    if mline_db is None:
+        molec_db = Database(os.path.join(filepath,\
+                                         'GASTRoNOoM_mline_models.db'))
+    else:
+        molec_db = mline_db
+    
+    if not molec_db.has_key(model_id) \
+            or not molec_db[model_id].has_key(molec_id) \
+            or not molec_db[model_id][molec_id].has_key(molecule):
+        return None
     molec_dict = molec_db[model_id][molec_id][molecule].copy()
     extra_pars = molec_dict['MOLECULE'].split()[1:]
     for k,v in zip(['ny_low','ny_up','nline','n_impact','n_impact_extra'],\
@@ -58,7 +77,7 @@ def makeMoleculeFromDb(molec_id,molecule,path_gastronoom='codeSep2010',\
         molec_dict[k] = int(v)
     for key in ['MOLECULE','CHANGE_DUST_TO_GAS_FOR_ML_SP',\
                 'NUMBER_INPUT_ABUNDANCE_VALUES','KEYWORD_TABLE',\
-                'MOLECULE_TABLE']:
+                'MOLECULE_TABLE','ISOTOPE_TABLE']:
         if molec_dict.has_key(key):
             del molec_dict[key]
     molec_dict = dict([(k.lower(),v) for k,v in molec_dict.items()])
@@ -390,9 +409,10 @@ class Molecule():
         Return a dict with molecule string, and other relevant parameters.
         
         @keyword path: If a different path is needed, it can be passed here, 
-                            for files
+                       for files. For instance, when making dictionaries for 
+                       Molecule() objects in the case of supercomputer copies.
                       
-                            (default: None)
+                       (default: None)
         @type path: string
         
         '''

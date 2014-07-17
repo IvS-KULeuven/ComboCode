@@ -10,6 +10,8 @@ Author: R. Lombaert
 import os 
 import re
 import scipy
+import subprocess
+from glob import glob
 from scipy import pi, exp, linspace, argmin, array, diff, mean
 from scipy.interpolate import interp1d
 from scipy.integrate import trapz
@@ -406,15 +408,64 @@ def makeTransitionsFromTransList(filename,star=None,\
              for t in trl_sorted]
     return trans
 
-    
 
-def makeTransitionFromSphinx(filename,path_combocode=os.path.join(os.path\
-                                            .expanduser('~'),'ComboCode')):
+def getModelIds(filepath):
     
+    '''
+    Return the modelids for a given model folder, as well as path_gastronoom
+    and the left-over part of the file path.
+    
+    @param filepath: The path to the model folder.
+    @type filepath: str
+    
+    @return: the 3 ids, the path_gastronoom and the left over filepath are 
+             returned
+    @rtype: (model_id,molec_id,trans_id,path_gastronoom,filepath)
+    
+    '''
+    
+    #-- clip model_id and save it into trans_id
+    filepath,trans_id = os.path.split(filepath)
+    #-- clip 'models'
+    filepath = os.path.split(filepath)[0]
+    #-- clip path_gastronoom and save it
+    filepath,path_gastronoom = os.path.split(filepath)
+    
+    if os.path.isfile(os.path.join(filepath,path_gastronoom,'models',trans_id,\
+                                   'cooling_id.log')):
+        model_id = DataIO.readFile(os.path.join(filepath,path_gastronoom,\
+                                                'models',trans_id,\
+                                                'cooling_id.log'))[0]
+        #-- If an mline_id.log exists, a cooling_id.log will always exist also
+        if os.path.isfile(os.path.join(filepath,path_gastronoom,'models',\
+                                       trans_id,'mline_id.log')):
+            molec_id = DataIO.readFile(os.path.join(filepath,path_gastronoom,\
+                                                    'models',trans_id,\
+                                                    'mline_id.log'))[0]
+        #-- ie trans id is the same as molec id, first trans calced for id
+        else: 
+            molec_id = trans_id
+    #-- ie mline and trans id are same as model id, first calced for id
+    else: 
+        model_id = trans_id
+        molec_id = trans_id
+    
+    return (model_id,molec_id,trans_id,path_gastronoom,filepath)
+
+
+
+def makeTransitionFromSphinx(filename,\
+                             path_combocode=os.path.join(os.path\
+                                                .expanduser('~'),'ComboCode'),\
+                             use_maser_in_sphinx=0,pull_keys_from_sphdb=1,\
+                             mline_db=None):
     '''
     Make a Transition() based on the filename of a Sphinx file.
     
-    For this information is taken from the Molecule() model database.
+    For this, information is taken from the Molecule() model database and the
+    sphinx file has to be associated with a molecule available there. 
+    
+    Information is also be pulled from the sph database, but can be turned off.
     
     @param filename: The sphinx file name, including path
     @type filename: string
@@ -423,65 +474,169 @@ def makeTransitionFromSphinx(filename,path_combocode=os.path.join(os.path\
     
                              (default: ~/ComboCode/)
     @type path_combocode: string
+    @keyword pull_keys_from_sphdb: Pull keywords from the sphinx database
+    
+                                   (default: 1)
+    @type pull_keys_from_sphdb: bool
+    @keyword use_maser_in_sphinx: The value that is given to the keyword 
+                                  USE_MASER_IN_SPHINX for the the Transiton()
+                                  object. If different values are needed, you 
+                                  will have to change them manually. Only 
+                                  required if no information is taken from the 
+                                  sph db
+                                  
+                                  (default: 0)
+    @type use_maser_in_sphinx: bool
+    @keyword mline_db: The mline database, which can be passed in case one 
+                       wants to reduce overhead. Not required though.
+                       
+                       (default: None)
+    @type mline_db: Database()
     
     @return: The transition
     @rtype: Transition()
     
     '''
     
-    filepath,filename = os.path.split(filename)
+    if pull_keys_from_sphdb and save_in_sphdb:
+        raise IOError('Cannot pull keys from database as well as save to ' + \
+                       'the same database. Adapt input.')
+    
+    filepath,fn = os.path.split(filename)
     if not filepath:
         raise IOError('Please include the full filepath of the Sphinx ' + \
-                      'filename, needed to determine the name of the database.')
+                      'filename, needed to determine the name of the ' + \
+                      'database.')
     
-    #- clip model_id and save it into trans_id
-    filepath,trans_id = os.path.split(filepath)
-    #- clip 'models'
-    filepath = os.path.split(filepath)[0]
-    #- clip path_gastronoom and save it in path_gastronoom
-    filepath,path_gastronoom = os.path.split(filepath)
+    model_id,molec_id,trans_id,path_gastronoom,filepath = getModelIds(filepath)
     
-    if os.path.isfile(os.path.join(filepath,path_gastronoom,'models',trans_id,\
-                                   'cooling_id.log')):
-        model_id = DataIO.readFile(os.path.join(filepath,path_gastronoom,\
-                                                'models',trans_id,\
-                                                'cooling_id.log'))[0]
-        #- If an mline_id.log exists, a cooling_id.log will always exist also
-        if os.path.isfile(os.path.join(filepath,path_gastronoom,'models',\
-                                       trans_id,'mline_id.log')):
-            molec_id = DataIO.readFile(os.path.join(filepath,path_gastronoom,\
-                                                    'models',trans_id,\
-                                                    'mline_id.log'))[0]
-        else: #- ie trans id is the same as molec id, first trans calced for id
-            molec_id = trans_id
-    #- ie mline and trans id are same as model id, first calced for id
-    else: 
-        model_id = trans_id
-        molec_id = trans_id
-        
-    filename = filename.rstrip('.dat').split('_')[2:]
-    molec_name = filename.pop(0)
+    #-- Split the filename in bits that can be used as input for Transition()
+    file_components = fn.rstrip('.dat').split('_')[2:]
+    molec_name = file_components.pop(0)
+    
+    #-- Make the molecule
     molec = Molecule.makeMoleculeFromDb(molecule=molec_name,molec_id=molec_id,\
                                         path_gastronoom=path_gastronoom,\
-                                        path_combocode = path_combocode)
-    telescope = filename.pop(-2)
+                                        path_combocode=path_combocode,\
+                                        mline_db=mline_db)
+    
+    #-- If no entry available in the mline database, return None
+    if molec is None:
+        return None
+    
+    telescope = file_components.pop(-2)
+    
+    #-- Create a string pattern for the quantum numbers
     pattern = re.compile(r'^(\D+)(\d*.?\d*)$')
-    numbers = [pattern.search(string).groups() for string in filename]
+    numbers = [pattern.search(string).groups() for string in file_components]
     numbers = dict([(s.lower(),n) for s,n in numbers])
+
+    #-- If no sphinx database is available, get info from files where possible
+    #   or from input to this method
+    if not pull_keys_from_sphdb:
+        #-- Extract n_quad from sph2 file
+        sph2file = DataIO.readFile(filename=filename,delimiter=None)
+        i1 = sph2file[3].find('frequency points and ')
+        i2 = sph2file[3].find(' impact parameters')
+        numbers['n_quad'] = int(sph2file[3][i1+len('frequency points and '):i2])
+        numbers['use_maser_in_sphinx'] = use_maser_in_sphinx
+        
+    #-- Make the transition object
     trans = Transition(molecule=molec,telescope=telescope,\
                        path_combocode=path_combocode,\
                        path_gastronoom=path_gastronoom,**numbers)
+    
+    #-- Set the model id and return
     trans.setModelId(trans_id)
-    trans_db = Database.Database(os.path.join(filepath,path_gastronoom,\
+    
+    #-- If keys are required to be pulled from sph database, do that now
+    if pull_keys_from_sphdb:
+        trans_db = Database.Database(os.path.join(filepath,path_gastronoom,\
                                               'GASTRoNOoM_sphinx_models.db'))
-    trans_dict = trans_db[model_id][molec_id][trans_id][str(trans)].copy()
-    [setattr(trans,k.lower(),v)
-            for k,v in trans_dict.items()
-            if k != 'TRANSITION']
+        trans_dict = trans_db[model_id][molec_id][trans_id][str(trans)].copy()
+        [setattr(trans,k.lower(),v) for k,v in trans_dict.items()
+                                    if k != 'TRANSITION']
+    
     return trans
 
+    
+    
+def sphinxDbRecovery(path_gastronoom,use_maser_in_sphinx=0):
 
+    '''    
+    Reconstruct a sphinx database based on existing model_ids, presence of sph2
+    files and inclusion in the mline database. 
+    
+    Not based at first on the cooling database because it is possible different
+    mline or sphinx models with different ids exist for the same cooling id.
+    
+    @param path_gastronoom: The path_gastronoom to the output folder
+    @type path_gastronoom: string
+    
+    @keyword use_maser_in_sphinx: The value that is given to the keyword 
+                                  USE_MASER_IN_SPHINX for the database entry. 
+                                  If different values are needed, you will have
+                                  to change them manually.
+                                  
+                                  (default: 0)
+    @type use_maser_in_sphinx: bool
+    
+    '''
 
+    path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',path_gastronoom)
+    umis = int(use_maser_in_sphinx)
+    
+    #-- Make a backup of the existing sphinx db if it exists.
+    sph_db_path = os.path.join(path,'GASTRoNOoM_sphinx_models.db')
+    if os.path.isfile(sph_db_path):
+        i = 0
+        backup_file =  '%s_backupSphDbRetrieval_%i'%(sph_db_path,i)
+        while os.path.isfile(backup_file):
+            i += 1
+            backup_file = '%s_backupSphDbRetrieval_%i'%(sph_db_path,i)
+        subprocess.call(['mv %s %s'%(sph_db_path,backup_file)],shell=True)
+    
+    #-- Make a list of all sph2 files that are present in path_gastronoom
+    all_sph2 = glob(os.path.join(path,'models','*','sph2*'))
+    
+    #-- Read the mline_db to decrease overhead
+    mline_db = Database.Database(os.path.join(path,'GASTRoNOoM_mline_models.db'))
+    trans_db = Database.Database(os.path.join(path,'GASTRoNOoM_sphinx_models.db'))
+    #-- for all sph2 files, extract all id's, make a transition and add to db
+    for i,sph2 in enumerate(all_sph2):
+        if i%1000 == 0:
+            print('Saving sphinx result %i, with filename %s.'%(i,sph2))
+        fp,filename = os.path.split(sph2)
+        model_id,molec_id,trans_id,pg,fp = getModelIds(fp)
+        trans = makeTransitionFromSphinx(filename=sph2,\
+                                         use_maser_in_sphinx=umis,\
+                                         pull_keys_from_sphdb=0,\
+                                         mline_db=mline_db)
+        #-- if transition is returned as None, the associated mline model was 
+        #   not found in the mline database. ie don't add this to sphinx db 
+        if trans is None:
+            continue
+        if not trans_db.has_key(model_id):
+            trans_db[model_id] = dict()
+        if not trans_db[model_id].has_key(molec_id):
+            trans_db[model_id][molec_id] = dict()
+        if not trans_db[model_id][molec_id].has_key(trans_id):
+            trans_db[model_id][molec_id][trans_id] = dict()
+        if not trans_db[model_id][molec_id][trans_id].has_key(str(trans)):
+            trans_db[model_id][molec_id][trans_id][str(trans)] \
+                = trans.makeDict()
+        else: 
+            print "There's already an entry in the sphinx db for"
+            print "model_id: %s"%model_id
+            print "mline_id: %s"%molec_id
+            print "sphinx_id: %s"%trans_id
+            print "transition: %s"%str(trans)
+            print "Check what is going on!"
+    
+    trans_db.sync()
+    
+    
+    
 def makeTransitionsFromRadiat(molec,telescope,ll_min,ll_max,ll_unit='GHz',\
                               n_quad=100,offset=0.0,use_maser_in_sphinx=0,\
                               path_gastronoom=None,no_vib=0):
@@ -799,6 +954,7 @@ class Transition():
         self.best_vlsr = None
         self.fittedlprof = None
         self.best_mfilter = None
+        self.fcont = None
         self.intintpacs = dict()
         self.intinterrpacs = dict()
         self.intintpacs_blends = dict()
@@ -945,9 +1101,11 @@ class Transition():
         if 'PACS' in self.telescope.upper():
             data = DataIO.readCols(os.path.join(self.path_combocode,'Data',\
                                                 'Pacs_beamsize_v4.dat'))
-                                                
+            wav = data[0]/10000.
+            beam = data[1]
+            
             #-- Go from micron to cm. self.wavelength is in cm!
-            interp = interp1d(data[0]/10000.,data[1])
+            interp = interp1d(wav,beam)
             try:
                 return interp(self.wavelength)
             except ValueError:
@@ -1683,8 +1841,44 @@ class Transition():
               #%(vlsr,str(self),self.getModelId())
         return self.best_vlsr
         
+    
+    
+    def getContSphinx(self,units='jy'):
         
-   
+        '''
+        Extract and return the continuum flux of the Sphinx intrinsic profile.
+        
+        Returns None if no sphinx profile is available yet!
+        
+        Choice of SI or cgs units.
+        
+        @keyword units: The unit system in which the integrated intensity is 
+                        returned. Can be 'jy', 'si' or 'cgs'.
+                        
+                        (default: 'jy ')
+        @type units: string
+        
+        @return: The continuum flux in the intrinsic sphinx line profile in
+                 SI or cgs units. (W/m2/Hz or erg/s/cm2/Hz or Jy)
+        @rtype: float
+        
+        '''
+    
+        if self.fcont is None:
+            iiis = self.getIntIntIntSphinx(self)
+        
+        if self.fcont is None:
+            return None
+        
+        if units == 'si':
+            return self.fcont*10**-3
+        elif units == 'cgs':
+            return self.fcont
+        else:
+            return self.fcont*10**23
+    
+    
+    
     def getIntIntIntSphinx(self,units='si'):
         
         """
@@ -1698,7 +1892,7 @@ class Transition():
                         returned. Can be 'si' or 'cgs'.
                         
                         (default: 'si')
-        @param units: string
+        @type units: string
         
         @return: The integrated intrinsic intensity of the line profile in 
                  SI or cgs units. (W/m2 or erg/s/cm2)
@@ -1715,8 +1909,10 @@ class Transition():
         mvel = self.sphinx.getVelocityIntrinsic()*10**5
         #-- Get the intrinsic intensity of the line in erg/s/cm2/Hz
         mint = self.sphinx.getLPIntrinsic()
-        #-- Subtract the stellar continuum, which is not part of the line.
-        mint = mint - mint[0]
+        #-- Get the continuum flux of the line
+        self.fcont = mint[0]
+        #-- Subtract the continuum, which is not part of the intrinsic line.
+        mint = mint - self.fcont
         
         #-- Convert velocity grid to frequency grid, with self.frequency as 
         #   zero point (the rest frequency of the line, without vlsr) in Hz

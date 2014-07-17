@@ -91,7 +91,7 @@ ABUN_O=4.0e-4                       # Oxygen abundance                          
 RATIO_12C_TO_13C=8               # 12C/13C ratio                                                  GASTRoNOoM  
 RATIO_16O_TO_17O=600            #16O/17O ratio
 RATIO_16O_TO_18O=200            #16O/18O ratio
-F_H2O=3.5e-4                     #n(H2O)/n(H2) at Rstar
+F_H2O=3.5e-4                     #n(H2O)/n(H2) at Rstar. If abundance_file is given for oH2O, this parameter is ignored (either through water specific molecule info, below; or through the MOLECULE definition of 1H1H16O). 
 OPR=3                              #ortho-2-para water ratio
 
 #R_INNER_GAS                           # The gas inner radius can be defined separately from the dust inner radius if needed, removing CC's consistent aspect of this

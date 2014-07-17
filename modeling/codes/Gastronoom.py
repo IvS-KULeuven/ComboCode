@@ -506,32 +506,36 @@ class Gastronoom(ModelingSession):
         
         """
         
+        #-- Collect H2O and CO molecule definitions for inclusion in the 
+        #   cooling inputfile. Also includes abundance_filename info for H2O if
+        #   requested
         if star.getMolecule('1H1H16O') <> None:
             h2o_dict = star.getMolecule('1H1H16O').makeDict()
         else:            
             h2o_dict = Molecule('1H1H16O',45,45,648,50,\
-                    path_combocode=self.path_combocode).makeDict()
+                                path_combocode=self.path_combocode).makeDict()
         if star.getMolecule('12C16O') <> None:
             co_dict = star.getMolecule('12C16O').makeDict()
         else:
             co_dict = Molecule('12C16O',61,61,240,50,\
-                    path_combocode=self.path_combocode).makeDict()
+                               path_combocode=self.path_combocode).makeDict()
         
-        #- The check for abundance profiles for both h2o & co (it is impossible 
-        #- for cooling to have both at the same time) is done in ComboCode.py
+        #-- no abundance profiles should be possible for CO. 
+        if co_dict.has_key('MOLECULE_TABLE'):
+            raise IOError('CO cannot be attributed a custom abundance ' + \
+                          'profile at this time.')
+        
+        #-- F_H2O is irrelevant if an abundance file is passed for oH2O
+        if h2o_dict.has_key('MOLECULE_TABLE'):
+            del self.command_list['F_H2O']
+            
+        #-- Collect all H2O molecular information important for cooling
         molec_dict = dict([(k,h2o_dict[k]) 
-                                    for k in self.cooling_molec_keys 
-                                    if h2o_dict.has_key(k)] \
-                            + [(k,co_dict[k]) 
-                                    for k in self.cooling_molec_keys 
-                                    if co_dict.has_key(k)])
-        if h2o_dict.has_key('MOLECULE_TABLE') \
-                and co_dict.has_key('MOLECULE_TABLE'):
-            raise IOError('WARNING! CO/H2O both have customized abundances. '+\
-                          'Only the CO customized abundance will be used ' + \
-                          'for cooling.')
-        
-        #- Check database
+                            for k in self.cooling_molec_keys 
+                            if h2o_dict.has_key(k)])
+
+        #-- Check database: only include H2O extra keywords if 
+        #   abundance_filename is present. CO can't have this anyway.
         model_bool = self.checkCoolingDatabase(molec_dict=molec_dict)    
         
         #- Run cooling if above is False
@@ -541,13 +545,11 @@ class Gastronoom(ModelingSession):
                                        self.model_id))
             commandfile = ['%s=%s'%(k,v) 
                            for k,v in sorted(self.command_list.items())
-                           if k != 'R_POINTS_MASS_LOSS'] +\
+                           if k != 'R_POINTS_MASS_LOSS'] + \
                           ['####'] + \
-                          ['%s=%s'%(k,co_dict[k]) 
-                           for k in self.cooling_molec_keys + ['MOLECULE'] 
-                           if co_dict.has_key(k)] + \
+                          ['%s=%s'%(k,co_dict['MOLECULE'])] + \
                           ['%s=%s'%(k,h2o_dict[k]) 
-                           for k in self.cooling_molec_keys + ['MOLECULE'] 
+                           for k in self.cooling_molec_keys + ['MOLECULE']
                            if h2o_dict.has_key(k)] + ['####']
             if self.command_list.has_key('R_POINTS_MASS_LOSS'):
                 commandfile.extend(['%s=%s'%('R_POINTS_MASS_LOSS',v) 
@@ -557,7 +559,7 @@ class Gastronoom(ModelingSession):
             filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                     self.path,\
                                     'gastronoom_' + self.model_id + '.inp')
-            DataIO.writeFile(filename,commandfile)                
+            DataIO.writeFile(filename,commandfile)
             if not self.skip_cooling:
                 self.execGastronoom(subcode='cooling',filename=filename)
                 self.cool_done = True
@@ -565,14 +567,16 @@ class Gastronoom(ModelingSession):
                                            'GASTRoNOoM',self.path,'models',\
                                            self.model_id,'coolfgr_all%s.dat'\
                                            %self.model_id)):
-                molec_dict.update(self.command_list)                  
+                #-- Add the other input keywords for cooling to the H2O info. 
+                #   This is saved to the db
+                molec_dict.update(self.command_list)
                 self.cool_db[self.model_id] = molec_dict
                 self.cool_db.sync()
             else:
                 print 'Cooling model calculation failed. No entry is added '+ \
                       'to the database.'
                 self.model_id = ''
-                
+                    
 
 
     def doMline(self,star):

@@ -16,7 +16,6 @@ from glob import glob
 from cc.tools.io import DataIO
 
 
-
 def convertMCMaxDatabase(path_mcmax,\
                          path_combocode=os.path.join(os.path.expanduser('~'),\
                                                      'ComboCode')):
@@ -175,6 +174,7 @@ def coolingDbRetrieval(path_gastronoom,r_outer=None):
         if r_outer <> None:
             cool_db[ml_id]['R_OUTER'] = r_outer
     cool_db.sync()
+    
     
 
 def addDefaultKeywordToDatabase(keyword,value,db_fn):
@@ -535,15 +535,35 @@ class Database(dict):
             current_db = dict([(k,v) 
                                for k,v in self.items() 
                                if k in set(self.__changed)])
-            self.read()
-            self.__deleted = list(set(self.__deleted))
-            while self.__deleted:
+            while True:    
+                self.read()
+                self.__deleted = list(set(self.__deleted))
+                for key in self.__deleted:
+                    try:
+                        super(Database,self).__delitem__(key)
+                    except KeyError:
+                        pass
+                super(Database,self).update(current_db)
+                backup_file = self.__save()
                 try:
-                    super(Database,self).__delitem__(self.__deleted.pop())
-                except KeyError:
-                    pass
-            super(Database,self).update(current_db)
-            self.__save()
+                    #-- Read the object, if TypeError, catch and repeat (which  
+                    #   can happen if db written into by two instances of 
+                    #   Database at the same time)
+                    testread = Database(self.path)
+                    #-- If the read object is not the same as the one in memory, 
+                    #   repeat writing as well. 
+                    if testread != self:
+                        raise TypeError
+                    #-- Remove backup if all is fine. If not, it won't be 
+                    #   removed: tracer for issues if they occur.
+                    if backup_file and os.path.isfile(backup_file):
+                        subprocess.call(['rm %s'%(backup_file)],shell=True)
+                    break
+                except TypeError: 
+                    #-- Just wait a few seconds to allow other instances to 
+                    #   finish writing
+                    time.sleep(2)
+            self.__deleted = []
             self.__changed = []
     
     
@@ -558,6 +578,9 @@ class Database(dict):
         
         Reading and saving of the database is done by cPickle-ing the dict(). 
         
+        @return: the filename of the backup database is returned
+        @rtype: string
+        
         '''
         
         backup_file = ''
@@ -567,13 +590,14 @@ class Database(dict):
             while os.path.isfile(backup_file):
                 i += 1
                 backup_file = '%s_backup%i'%(self.path,i)
-            subprocess.call(['cp %s %s'%(self.path,backup_file)],\
+            subprocess.call(['mv %s %s'%(self.path,backup_file)],\
                             shell=True)
+        #-- Write the file, dump the object
         dbfile = open(self.path,'w')
         cPickle.dump(self,dbfile)
         dbfile.close()
-        if backup_file and os.path.isfile(backup_file):
-            subprocess.call(['rm %s'%(backup_file)],shell=True)
+        return backup_file
+            
     
     
     def addChangedKey(self,key):
