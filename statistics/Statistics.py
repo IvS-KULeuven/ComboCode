@@ -240,7 +240,7 @@ class Statistics(object):
                 these_stats = dict()
                 bi = self.data_info[instrument]['bands'].index(band)
                 these_stats['sigma'] = self.data_info[instrument]['sigmas'][bi]
-                filename = os.path.split(filename)[1]
+                #filename = os.path.split(filename)[1]
                 if method == 'preset':
                     w_std_min = self.data_info[instrument]['w_std_min'][bi]
                     w_std_max = self.data_info[instrument]['w_std_max'][bi]

@@ -202,11 +202,12 @@ class PeakStats(Statistics):
             all_dstd = []
             for fn,dflux in zip(inst.data_filenames,inst.data_flux_list):
                 dstd = self.data_stats[self.instrument][fn]['std']
+                fn_np = os.path.split(fn)[1]
                 sphinx_file = os.path.join(os.path.expanduser('~'),\
                                            'GASTRoNOoM',self.path_code,\
                                            'stars',self.star_name,\
                                            '%s_results'%self.instrument,\
-                                           this_id,'%s_%s'%('sphinx',fn))
+                                           this_id,'%s_%s'%('sphinx',fn_np))
                 mflux = DataIO.readCols(sphinx_file)[1]
                 all_dflux.extend(dflux[mflux>0])
                 all_mflux.extend(mflux[mflux>0])
@@ -339,11 +340,12 @@ class PeakStats(Statistics):
         for star in self.star_grid:
             #-- Read the convolved sphinx model
             this_id = star['LAST_%s_MODEL'%self.instrument]
+            fn_np = os.path.split(fn)[1]
             sphinx_file = os.path.join(os.path.expanduser('~'),\
                                        'GASTRoNOoM',self.path_code,\
                                        'stars',self.star_name,\
                                        '%s_results'%self.instrument,this_id,\
-                                       '%s_%s'%('sphinx',fn))
+                                       '%s_%s'%('sphinx',fn_np))
             mwav, mflux = DataIO.readCols(sphinx_file)
             if list(mflux[mflux < 0]) != []: 
                 print 'There are negative sphinx flux values! They will '+\
