@@ -1166,12 +1166,30 @@ class Star(dict):
         
         """
         Set default value of sphinx/mline specific d2g ratio to the 
-        semi-empirical d2g ratio. In order to turn this off, set this
-        parameter to 0 in the input file.
+        semi-empirical d2g ratio, ie based on MDOT_DUST and MDOT_GAS. 
+        
+        In order to turn this off, set this parameter to 0 in the input file, 
+        in which case the iterated acceleration d2g ratio is used.
+        
+        Both MDOT_GAS and MDOT_DUST have to be defined explicitly if this 
+        parameter is not. 
+        
+        This parameter has to be defined explicitly if one of MDOT_GAS and 
+        MDOT_DUST is not defined explicitly. 
+        
+        Note that the DUST_TO_GAS keyword is the internal representation of the
+        dust_to_gas ratio and should never be explicitly defined. For all 
+        practical purposes, use DUST_TO_GAS_CHANGE_ML_SP.
         
         """
         
         if not self.has_key('DUST_TO_GAS_CHANGE_ML_SP'):
+            if not self.has_key('MDOT_DUST'):
+                raise IOError('Both MDOT_DUST and DUST_TO_GAS_CHANGE_ML_SP '+\
+                              'are undefined.')
+            if not self.has_key('MDOT_GAS'):
+                raise IOError('Both MDOT_GAS and DUST_TO_GAS_CHANGE_ML_SP '+\
+                              'are undefined.')
             self['DUST_TO_GAS_CHANGE_ML_SP'] = self['DUST_TO_GAS']
         else:
             pass
@@ -1458,7 +1476,81 @@ class Star(dict):
             pass
         
 
+    
+    def calcMDOT_DUST(self): 
+        
+        '''
+        Calculate the value of MDOT_DUST from the DUST_TO_GAS_RATIO_ML_SP. 
+        
+        Requires MDOT_GAS and VEL_INFINITY_GAS to be defined. 
+        
+        This parameter is recalculated after every iteration and updates
+        V_EXP_DUST in the equation.
+        
+        MDOT_DUST can be given explicitly in the inputfile in which case it 
+        remains unchanged.
+        
+        MDOT_DUST is used to calculate the real DUST_TO_GAS ratio parameter. So
+        through explicit definition of 2 parameters out of MDOT_GAS, MDOT_DUST  
+        and DUST_TO_GAS_CHANGE_ML_SP you can control what the internal 
+        dust-to-gas ratio should be.
+        
+        If DUST_TO_GAS_CHANGE_ML_SP is not given, MDOT_DUST and MDOT_GAS have 
+        to be defined explicitly.
+        
+        '''
+        
+        if not self.has_key('MDOT_DUST'):
+            if not self.has_key('DUST_TO_GAS_CHANGE_ML_SP'):
+                raise IOError('Both MDOT_DUST and DUST_TO_GAS_CHANGE_ML_SP '+\
+                              'are undefined.')
+            if not self.has_key('MDOT_GAS'):
+                raise IOError('Both MDOT_DUST and MDOT_GAS are undefined.')
+            self['MDOT_DUST'] = float(self['DUST_TO_GAS_CHANGE_ML_SP'])\
+                                /float(self['VEL_INFINITY_GAS'])\
+                                *float(self['V_EXP_DUST'])\
+                                *float(self['MDOT_GAS'])
+        else:
+            pass
 
+
+    def calcMDOT_GAS(self): 
+        
+        '''
+        Calculate the value of MDOT_GAS from the DUST_TO_GAS_RATIO_ML_SP.
+        
+        Requires MDOT_DUST and VEL_INFINITY_GAS to be defined. 
+        
+        This parameter is recalculated after every iteration and updates
+        V_EXP_DUST in the equation.
+        
+        MDOT_GAS can be given explicitly in the inputfile in which case it 
+        remains unchanged.
+        
+        MDOT_GAS is used to calculate the real DUST_TO_GAS ratio parameter. So
+        through explicit definition of 2 parameters out of MDOT_GAS, MDOT_DUST  
+        and DUST_TO_GAS_CHANGE_ML_SP you can control what the internal 
+        dust-to-gas ratio should be.
+        
+        If DUST_TO_GAS_CHANGE_ML_SP is not given, MDOT_GAS has to be defined 
+        explicitly.
+        
+        '''
+        
+        if not self.has_key('MDOT_GAS'):
+            if not self.has_key('DUST_TO_GAS_CHANGE_ML_SP'):
+                raise IOError('Both MDOT_GAS and DUST_TO_GAS_CHANGE_ML_SP '+\
+                              'are undefined.')
+            if not self.has_key('MDOT_DUST'):
+                raise IOError('Both MDOT_DUST and MDOT_GAS are undefined.')
+            self['MDOT_GAS'] = float(self['VEL_INFINITY_GAS'])\
+                               /float(self['V_EXP_DUST'])\
+                               *float(self['MDOT_DUST'])\
+                               /float(self['DUST_TO_GAS_CHANGE_ML_SP'])
+        else:
+            pass
+
+        
     def calcMDOT_MODE(self):
         
         '''

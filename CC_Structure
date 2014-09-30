@@ -8,7 +8,7 @@ have to specify the path when you call ComboCode.py. Otherwise, always include t
 (i.e. python ComboCode.py /home/YOUR_HOME/SOMEWHERE/SOMEWHERE_MORE_SPECIFIC/inputComboCode.dat       in the shell
 or    from cc import ComboCode
       session = ComboCode.ComboCode(/home/YOUR_HOME/SOMEWHERE/SOMEWHERE_MORE_SPECIFIC/inputComboCode.dat)      in ipython) 
-I put mine in ~/ComboCode/input/ as a standard.
+I put mine in ~/ComboCode/input/
       
 The folder marked by [***] is the one you get by using SVN (see the svn_usage_cc.pdf file), so do not copy that over.
 
@@ -36,7 +36,7 @@ The folder marked by [***] is the one you get by using SVN (see the svn_usage_cc
                                             Willacy abundance profiles
                                             The indices_backup, radiat_backup and collis_backup folders
                      	
-         		exec/  [*]                  cooling, mline and sphinx executables. Note that this has two folders. 
+         		exec/  [*]                  cooling, mline and sphinx executables. Instead of copying, you can also link to these instead to ensure you always have up-to-date versions.
    
       	rundir/      [PATH_GASTRONOOM] 	    This is where all the output is saved, is generated automatically, just has to be included in the inputfile for ComboCode. 
          		
@@ -47,7 +47,7 @@ The folder marked by [***] is the one you get by using SVN (see the svn_usage_cc
         Observation_Files  [*]              Files for generating MCMax output such as ray-traced spectra and images. 
                                             Spec.out, visibilities_baseline.out, Image.out 
         
-      	src_nov2013/    [*]	                MCMax executable (also put this thing in your /home/robinl/bin folder (or Bin?))
+      	src_nov2013/    [*]	                MCMax executable (also put this thing in your /home/YOUR_HOME/bin folder (or Bin?))
                                             *.particle, *.opacity
   		
   	Extinction_Curves/   [*]	            Contains extinction curves for extinction correction. This folder IS fixed! 
@@ -63,6 +63,9 @@ The folder marked by [***] is the one you get by using SVN (see the svn_usage_cc
 /home/robinl/Data/Molecular/  [PATH_GAS_DATA]	 Arbitrary, is in the input file, but not really relevant for you yet until you know what's to be done with the ground-based data 
                      	                       
 
+
+#### THIS IS NOW OBSOLETE. VIC HAS BEEN DECOMMISSIONED. WILL BE UPDATED FOR NEW SUPERCOMPUTER ######
+###################################################################################################
 For Vic usage:  (fill in vsc##### for YOUR_ACCOUNT, YOUR_DISK is equal to the first three digits in vsc#####)
 1) login through ssh at Vic
 2) mkdir COCode

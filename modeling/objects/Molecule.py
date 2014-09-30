@@ -435,7 +435,7 @@ class Molecule():
                 new_dict[par] = getattr(self,par.lower())
         if self.dust_to_gas_change_ml_sp:
             new_dict['CHANGE_DUST_TO_GAS_FOR_ML_SP'] \
-                    = self.dust_to_gas_change_ml_sp and 1 or 0
+                    = 1
             new_dict['DUST_TO_GAS_CHANGE_ML_SP'] \
                     = self.dust_to_gas_change_ml_sp
         if self.enhance_abundance_factor:

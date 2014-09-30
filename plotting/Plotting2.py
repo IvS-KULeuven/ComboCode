@@ -249,12 +249,13 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                             - -.: stripe-point line
                             - x: crosses
                             - +: pluses
-                            - h: pentagrams
+                            - p: pentagons
                             - d: filled circle + vertical line
                             - |: vertical line
-                            - p: "houses"
-                            - 2,3,4: "triple crosses" in different angular 
-                                     orientations
+                            - h,H: different hexagons
+                            - *: stars
+                            - 2,3,4: "triple crosses" in different orientations
+                            - v,>,<,^: Triangles in different orientations
     @type line_types: list[string]
     @keyword wspace: Adjust the width between subplots horizontally
     
