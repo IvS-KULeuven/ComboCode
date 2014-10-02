@@ -239,6 +239,9 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                             - g: green
                             - k: black
                             - m: magenta
+                            - [0 and 1]: grayscale 
+                              (always as a 3-digit float, e.g. 0.75!!)
+
                             
                          Styles:
                             - -: line
@@ -418,11 +421,12 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
              for xi,yi,lp in zip(ddict['x'],ddict['y'],line_types)
              if list(yi) and yi <> None]
         for index,(xi,yi,lp) in enumerate(these_data):
+            ls,col = splitLineTypes(lp)
             if index in ddict['histoplot']:
-                leg = sub.step(xi,yi,lp,where='mid',\
+                leg = sub.step(xi,yi,ls,where='mid',color=col,\
                         linewidth=(thick_lw_data and linewidth*2 or linewidth))
             else:
-                leg = sub.plot(xi,yi,lp,linewidth= linewidth)
+                leg = sub.plot(xi,yi,ls,linewidth= linewidth,color=col)
             if '--' in lp:
                 leg[0].set_dashes([15,5])
             if '.-' in lp or '-.' in lp:
@@ -839,6 +843,8 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                             - g: green
                             - k: black
                             - m: magenta
+                            - [0 and 1]: grayscale 
+                              (always as a 3-digit float, e.g. 0.75!!)
                             
                          Styles:
                             - -: line
@@ -849,12 +855,13 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                             - -.: stripe-point line
                             - x: crosses
                             - +: pluses
-                            - h: pentagrams
+                            - p: pentagons
                             - d: filled circle + vertical line
                             - |: vertical line
-                            - p: "houses"
-                            - 2,3,4: "triple crosses" in different angular 
-                                     orientations
+                            - h,H: different hexagons
+                            - *: stars
+                            - 2,3,4: "triple crosses" in different orientations
+                            - v,>,<,^: Triangles in different orientations
     @type line_types: list[string]
     @keyword markersize: Give different markersize for each x-plot here. If a 
                          single number, the markersize is used for all datasets
@@ -1162,15 +1169,15 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
         for index,(xi,yi,lp,ms,zo,alph,xerri,yerri) in enumerate(these_data):
             ls,col = splitLineStyle(lp)
             if index in histoplot:
-                leg, = sub.step(xi,yi,lp,where='mid',ms=ms,\
+                leg, = sub.step(xi,yi,ls,where='mid',ms=ms,\
                                linewidth=(thick_lw_data and linewidth*2. \
                                                         or linewidth),\
                                markeredgewidth=markeredgewidth,zorder=zo,\
-                               alpha=alph)
+                               alpha=alph,color=col)
             else:
-                leg, = sub.plot(xi,yi,lp,linewidth=linewidth,ms=ms,\
+                leg, = sub.plot(xi,yi,ls,linewidth=linewidth,ms=ms,\
                                markeredgewidth=markeredgewidth,zorder=zo,\
-                               alpha=alph)
+                               alpha=alph,color=col)
             if '--' in lp:
                 leg.set_dashes([6,3])
             if '.-' in lp or '-.' in lp:
@@ -1542,6 +1549,9 @@ def splitLineStyle(lp):
     '''
     Split a line style string in its color and line type components.
     
+    Note that grayscale values should always be given as a four-character 
+    string that represents a float between 0 and 1.
+    
     @param lp: the line type string, eg '.-k'
     @type lp: string
     @return: two string, the first giving the line type, the second the color
@@ -1552,10 +1562,13 @@ def splitLineStyle(lp):
     linetype = ''
     color = ''
     for char in lp:
-        if char in ['r','b','k','g','m','y','c','w']:
-            color += char
-        else:
-            linetype += char
+        if char in ['r','b','k','g','m','y','c','w','0']:
+            if char == '0':
+                color += lp[lp.index(char):lp.index(char)+4]
+            else:
+                color += char
+            break
+    linetype = lp.replace(color,'',1)
     return linetype,color
     
     
