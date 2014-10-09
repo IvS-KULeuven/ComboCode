@@ -699,7 +699,7 @@ class Gastronoom(ModelingSession):
                                             %trans.getModelId())
                     DataIO.writeFile(filename,commandfile)                
                     print 'Starting calculation for transition %i out of %i.'\
-                          %(i,len(self.trans_bools))
+                          %(i+1,len(self.trans_bools))
                     self.execGastronoom(subcode='sphinx',filename=filename)
                     self.checkSphinxOutput(trans)
                     self.sph_db.sync()

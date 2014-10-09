@@ -441,7 +441,9 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                       ('F_CONT_63','fcont63'),\
                       ('FD2_CONT_63','fd2cont63'),\
                       ('F_CONT_63_TYPE','fcont63type'),\
-                      ('FD2M_CONT_63','fd2mcont63')])
+                      ('FD2M_CONT_63','fd2mcont63'),\
+                      ('ENHANCE_ABUNDANCE_FACTOR_H2O','h2oabunfac'),\
+                      ('ABUNDANCE_FILENAME_H2O','h2oabunfile')])
     keynames = dict([('MDOT_GAS','$\dot{M}_\mathrm{g}$'),\
                      ('MDOT_DUST',r'$\dot{M}_\mathrm{d}$'),\
                      ('A_SICB','A(SICB)'),\
@@ -474,8 +476,9 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('F_CONT_63',r'$F_\mathrm{6.3\ \mu m}$'),\
                      ('FD2_CONT_63',r'$F_\mathrm{6.3\ \mu m}\times D^2$'),\
                      ('F_CONT_63_TYPE','$Type F_\mathrm{6.3\ \mu m}$'),\
-                     ('FD2M_CONT_63',r'$F_\mathrm{6.3\ \mu m}\times D^2 / \dot{M}_\mathrm{g}$')])
-                 
+                     ('FD2M_CONT_63',r'$F_\mathrm{6.3\ \mu m}\times D^2 / \dot{M}_\mathrm{g}$'),\
+                     ('ENHANCE_ABUNDANCE_FACTOR_H2O','h2oAbunFac'),\
+                     ('ABUNDANCE_FILENAME_H2O','h2oAbunFile')])
     keyunits = dict([('MDOT_GAS','M$_\odot$/yr'),\
                      ('MDOT_DUST','M$_\odot$/yr'),\
                      ('DUST_LIST',''),\
@@ -508,8 +511,9 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('F_CONT_63','Jy'),\
                      ('FD2_CONT_63','Jy pc$^2$'),\
                      ('F_CONT_63_TYPE',''),\
-                     ('FD2M_CONT_63',r'Jy pc$^2$ yr/M$_\odot$')])
-    
+                     ('FD2M_CONT_63',r'Jy pc$^2$ yr/M$_\odot$'),\
+                     ('ENHANCE_ABUNDANCE_FACTOR_H2O',''),\
+                     ('ABUNDANCE_FILENAME_H2O','')])
     makeints = dict([('MDOT_GAS',0),\
                      ('MDOT_DUST',0),\
                      ('DUST_LIST',0),\
@@ -542,7 +546,9 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('F_CONT_63',0),\
                      ('FD2_CONT_63',0),\
                      ('F_CONT_63_TYPE',0),\
-                     ('FD2M_CONT_63',0)])
+                     ('FD2M_CONT_63',0),\
+                     ('ENHANCE_ABUNDANCE_FACTOR_H2O',0),\
+                     ('ABUNDANCE_FILENAME_H2O',0)])
     
     edists,emdot,efcont63 = array(edists), array(emdot), array(efcont63)    
     n_data = int(n_data)

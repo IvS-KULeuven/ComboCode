@@ -1138,7 +1138,7 @@ class Transition():
         
         Telescope specific!
         
-        This beam efficiency is included in the .spec files for GASTRoNOoM.
+        The beam efficiency is included in the .spec files for GASTRoNOoM.
         
         This number however is not used in any calculations of the line profile 
         and is included here for reference only. 
@@ -1926,7 +1926,9 @@ class Transition():
         intint_cgs = -1*trapz(x=freqgrid,y=mint)
         intint_si = intint_cgs*10**-3
         if intint_cgs < 0:
-            raise IOError('Negative integrated flux found! Double check what is happening!')
+            print 'WARNING! Negative integrated flux found for %s with id %s!'\
+                  %(str(self),self.getModelId())
+            #raise IOError('Negative integrated flux found! Double check what is happening!')
         if units == 'si':
             return intint_si
         else:
