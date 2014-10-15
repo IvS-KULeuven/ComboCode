@@ -421,7 +421,7 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
              for xi,yi,lp in zip(ddict['x'],ddict['y'],line_types)
              if list(yi) and yi <> None]
         for index,(xi,yi,lp) in enumerate(these_data):
-            ls,col = splitLineTypes(lp)
+            ls,col = splitLineStyle(lp)
             if index in ddict['histoplot']:
                 leg = sub.step(xi,yi,ls,where='mid',color=col,\
                         linewidth=(thick_lw_data and linewidth*2 or linewidth))
@@ -1070,6 +1070,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     keytags = list(keytags)
     #if len(keytags) != len(x) and keytags: keytags = []
     keytags = [k.replace(';',',') for k in keytags]
+    labels = [(l1.replace(';',','),l2,l3) for l1,l2,l3 in labels]
     if len(xerr) != len(x) and xerr: xerr = []
     if len(yerr) != len(y) and yerr: yerr = []
     if len(xerr) > len(yerr): yerr = [None]*len(xerr)

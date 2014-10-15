@@ -151,6 +151,7 @@ class ComboCode(object):
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
         self.__dict__.update(global_pars)
+        self.vic = 0
         if not self.gastronoom or not self.mcmax: self.iterations = 1 
         if (not self.path_mcmax and self.mcmax):
             raise IOError('Please define PATH_MCMAX in your inputfile.')
