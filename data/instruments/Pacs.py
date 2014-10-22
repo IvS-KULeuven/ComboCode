@@ -190,7 +190,7 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
     if not no_vib:
         line_els.append('state')
     line_els.extend(['transition',r'$\mu$m',\
-                     r'\multicolumn{%i}{c}{(W/m$^2$)} \\\hline'%len(pstars)])
+                     r'\multicolumn{%i}{c}{(W m$^-2$))} \\\hline'%len(pstars)])
     inlines.append('&'.join(line_els))
     bands = ['R1B','R1A','B2B','B2A','B3A']
     if not sort_freq: bands.reverse()

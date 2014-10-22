@@ -12,7 +12,7 @@ import re
 import scipy
 import subprocess
 from glob import glob
-from scipy import pi, exp, linspace, argmin, array, diff, mean
+from scipy import pi, exp, linspace, argmin, array, diff, mean, isfinite
 from scipy.interpolate import interp1d
 from scipy.integrate import trapz
 import types
@@ -954,7 +954,6 @@ class Transition():
         self.best_vlsr = None
         self.fittedlprof = None
         self.best_mfilter = None
-        self.fcont = None
         self.intintpacs = dict()
         self.intinterrpacs = dict()
         self.intintpacs_blends = dict()
@@ -1840,43 +1839,6 @@ class Transition():
               #"original V_lsr: %f km/s for transition %s, %s."\
               #%(vlsr,str(self),self.getModelId())
         return self.best_vlsr
-        
-    
-    
-    def getContSphinx(self,units='jy'):
-        
-        '''
-        Extract and return the continuum flux of the Sphinx intrinsic profile.
-        
-        Returns None if no sphinx profile is available yet!
-        
-        Choice of SI or cgs units.
-        
-        @keyword units: The unit system in which the integrated intensity is 
-                        returned. Can be 'jy', 'si' or 'cgs'.
-                        
-                        (default: 'jy ')
-        @type units: string
-        
-        @return: The continuum flux in the intrinsic sphinx line profile in
-                 SI or cgs units. (W/m2/Hz or erg/s/cm2/Hz or Jy)
-        @rtype: float
-        
-        '''
-    
-        if self.fcont is None:
-            iiis = self.getIntIntIntSphinx(self)
-        
-        if self.fcont is None:
-            return None
-        
-        if units == 'si':
-            return self.fcont*10**-3
-        elif units == 'cgs':
-            return self.fcont
-        else:
-            return self.fcont*10**23
-    
     
     
     def getIntIntIntSphinx(self,units='si'):
@@ -1907,12 +1869,8 @@ class Transition():
             return
         #-- Get the velocity grid of the line (without vlsr), convert to cm/s 
         mvel = self.sphinx.getVelocityIntrinsic()*10**5
-        #-- Get the intrinsic intensity of the line in erg/s/cm2/Hz
-        mint = self.sphinx.getLPIntrinsic()
-        #-- Get the continuum flux of the line
-        self.fcont = mint[0]
-        #-- Subtract the continuum, which is not part of the intrinsic line.
-        mint = mint - self.fcont
+        #-- Get the cont_subtracted intrinsic intensity in erg/s/cm2/Hz
+        mint = self.sphinx.getLPIntrinsic(cont_subtract=1)
         
         #-- Convert velocity grid to frequency grid, with self.frequency as 
         #   zero point (the rest frequency of the line, without vlsr) in Hz
@@ -1923,7 +1881,8 @@ class Transition():
         #-- Integrate Fnu over frequency to get integrated intensity and 
         #   multiply by -1 due to a descending frequency grid rather than 
         #   ascending (causing the integrated value to be negative).
-        intint_cgs = -1*trapz(x=freqgrid,y=mint)
+        intint_cgs = -1*trapz(x=freqgrid[isfinite(mint)],\
+                              y=mint[isfinite(mint)])
         intint_si = intint_cgs*10**-3
         if intint_cgs < 0:
             print 'WARNING! Negative integrated flux found for %s with id %s!'\
@@ -1955,9 +1914,7 @@ class Transition():
         if self.sphinx is None:
             return
         mvel = self.sphinx.getVelocity()
-        mcon = self.sphinx.getLPConvolved()
-        #-- Subtract the stellar continuum, which is not part of the line.
-        mcon = mcon - mcon[0]
+        mcon = self.sphinx.getLPConvolved(cont_subtract=1)
         
         return trapz(x=mvel,y=mcon)
     
@@ -1980,9 +1937,7 @@ class Transition():
         if self.sphinx is None:
             return
         mvel = self.sphinx.getVelocity()
-        mtmb = self.sphinx.getLPTmb()
-        #-- Subtract the stellar continuum, which is not part of the line.
-        mtmb = mtmb -mtmb[0]
+        mtmb = self.sphinx.getLPTmb(cont_subtract=1)
         
         return trapz(x=mvel,y=mtmb)
     
@@ -2006,9 +1961,7 @@ class Transition():
             self.readSphinx()
         if self.sphinx is None:
             return
-        mtmb = self.sphinx.getLPTmb()
-        #-- Subtract the stellar continuum, which is not part of the line.
-        mtmb = mtmb -mtmb[0]
+        mtmb = self.sphinx.getLPTmb(cont_subtract=1)
         imid = len(mtmb)/2
         return mean(mtmb[imid-2:imid+3])
          

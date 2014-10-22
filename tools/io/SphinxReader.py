@@ -10,6 +10,7 @@ Author: R. Lombaert
 import os
 from scipy import array 
 from scipy import isnan
+from scipy import isfinite
 
 from cc.tools.io.Reader import Reader
 from cc.tools.io import DataIO
@@ -79,6 +80,8 @@ class SphinxReader(Reader):
         self.contents['sph2'] = self.sph2
         self.sph2['nobeam'] = dict()
         self.sph2['beam'] = dict()
+        self.sph2['nobeam_cont'] = dict()
+        self.sph2['beam_cont'] = dict()
         data = self.getFile(self.filename.replace('*','2'))
         data_col_1 = [d[0] for d in data]
         data_i = 6
@@ -101,6 +104,10 @@ class SphinxReader(Reader):
                                               for line in data[data_k:data_l]])
         self.sph2['beam']['tmb'] =       array([float(line[2]) 
                                               for line in data[data_k:data_l]])
+        
+        self.setContinuum('nobeam','flux')
+        for lp in ['flux','norm_flux','tmb']:
+            self.setContinuum('beam',lp)
         if self.sph2['beam']['velocity'][0] > self.sph2['beam']['velocity'][-1]:
             self.sph2['beam']['velocity'] = self.sph2['beam']['velocity'][::-1]
             self.sph2['beam']['flux'] = self.sph2['beam']['flux'][::-1]
@@ -117,17 +124,45 @@ class SphinxReader(Reader):
             print os.path.split(self.filename.replace('sph*','sph2'))[1]
     
     
-    def getLPIntrinsic(self):
+    def setContinuum(self,beam,lp):
+        
+        '''
+        Set the continuum value for this line profile. 
+        
+        @param beam: Either 'beam' or 'nobeam'.
+        @type beam: str
+        @param lp: The type of line profile
+        @type lp: str
+        
+        '''
+        
+        flux = self.sph2[beam][lp] 
+        flux = flux[isfinite(flux)]
+        continuum = (flux[0] + flux[-1])/2.
+        self.sph2[beam+'_cont'][lp] = continuum
+                
+        
+    def getLPIntrinsic(self,cont_subtract=1):
         
         '''
         Return the intrinsic flux line profile.
+        
+        Continuum subtraction can be requested. 
+        
+        @keyword cont_subtract: Subtract the continuum value outside the line
+                                from the whole line profile. 
+        @type cont_subtract: bool
         
         @return: The intrinsic flux
         @rtype: list
         
         '''
         
-        return self.sph2['nobeam']['flux']
+        flux = self.sph2['nobeam']['flux']
+        if cont_subtract:
+            flux = flux - self.sph2['nobeam_cont']['flux']
+        
+        return flux
         
     
     def getVelocityIntrinsic(self):
@@ -156,12 +191,16 @@ class SphinxReader(Reader):
         return self.sph2['beam']['velocity']
         
         
-    def getLPTmb(self):
+    def getLPTmb(self,cont_subtract=1):
         
         '''
         Return the main beam temperature line profile.
         
-        If the continuum is non-zero, it is subtracted from the line profile. 
+        Continuum subtraction can be requested. 
+        
+        @keyword cont_subtract: Subtract the continuum value outside the line
+                                from the whole line profile. 
+        @type cont_subtract: bool
         
         @return: The main beam temperature
         @rtype: list
@@ -169,37 +208,59 @@ class SphinxReader(Reader):
         '''
         
         tmb = self.sph2['beam']['tmb']
-        continuum = (tmb[0] + tmb[-1])/2.
-        return tmb - continuum
+        if cont_subtract:
+            tmb = tmb - self.sph2['beam_cont']['tmb']
+
+        return tmb
         
         
         
-    def getLPConvolved(self):
+    def getLPConvolved(self,cont_subtract=1):
         
         '''
         Return the line profile after convolution with the beam profile. 
+        
+        Continuum subtraction can be requested. 
+        
+        @keyword cont_subtract: Subtract the continuum value outside the line
+                                from the whole line profile. 
+        @type cont_subtract: bool
         
         @return: The convolved flux
         @rtype: list
         
         '''
         
-        return self.sph2['beam']['flux']
+        flux = self.sph2['beam']['flux']
+        if cont_subtract:
+            flux = flux - self.sph2['beam_cont']['flux']
+        
+        return flux
         
         
         
-    def getLPNormalized(self):
+    def getLPNormalized(self,cont_subtract=1):
         
         '''
-        Return the normalized line profile after convolution with the beam profile.
+        Return the normalized line profile after convolution with the beam 
+        profile.
+        
+        Continuum subtraction can be requested. 
+        
+        @keyword cont_subtract: Subtract the continuum value outside the line
+                                from the whole line profile. 
+        @type cont_subtract: bool
         
         @return: The normalized + convolved flux
         @rtype: list
         
         '''
         
-        return self.sph2['beam']['norm_flux']
+        flux = self.sph2['beam']['norm_flux']
+        if cont_subtract:
+            flux = flux - self.sph2['beam_cont']['norm_flux']
         
+        return flux        
         
     
     def getWeightedIntensity(self):

@@ -300,7 +300,7 @@ class PlotGas(PlottingSession):
                         telescope_label=1,sort_freq=0,sort_molec=0,\
                         no_models=0,limited_axis_labels=0,date_tag=1,\
                         n_max_models=10,fn_suffix='',mfiltered=0,\
-                        plot_intrinsic=0,plot_pacs=0):
+                        plot_intrinsic=0,plot_pacs=0,cont_subtract=1):
         
         """ 
         Plotting beam convolved line profiles in Tmb for both model and data if 
@@ -376,6 +376,12 @@ class PlotGas(PlottingSession):
                             (default: 0)
         @type plot_pacs: bool
         
+        @keyword cont_subtract: Subtract the continuum from the sphinx line 
+                                profile        
+        
+                                (default: 1)
+        @type cont_subtract: bool
+        
         """
         
         print '***********************************'
@@ -411,6 +417,8 @@ class PlotGas(PlottingSession):
             plot_pacs = int(cfg_dict['plot_pacs'])
         if cfg_dict.has_key('mfiltered'):
             mfiltered = int(cfg_dict['mfiltered'])
+        if cfg_dict.has_key('cont_subtract'):
+            cont_subtract = int(cfg_dict['cont_subtract'])
         if fn_suffix: 
             filename = cfg_dict.get('filename',None)
             if filename <> None: filename = filename + '_%s'%fn_suffix
@@ -428,7 +436,6 @@ class PlotGas(PlottingSession):
                        for star in star_grid]
             pacs_keytags = list(keytags)
             if not no_data : keytags.append('Data')
-             
         #-- Check how many non-PACS transitions there are (whether they have 
         #   data or not.
         trans_list = Transition.extractTransFromStars(star_grid,sort_freq,\
@@ -452,7 +459,7 @@ class PlotGas(PlottingSession):
         def createTilePlots(trans_list,x_dim,y_dim,no_data,intrinsic,\
                             vg_factor,keytags,telescope_label,no_models,cfg,\
                             star_grid,limited_axis_labels,date_tag,indexi,\
-                            indexf,mfiltered):
+                            indexf,mfiltered,cont_subtract):
             
             '''
             Create a tiled plot for a transition list.
@@ -506,6 +513,9 @@ class PlotGas(PlottingSession):
             @param mfiltered: Show the models after filtering and scaled with
                               the best_vlsr value, instead of the sphinx output
             @type mfiltered: bool
+            @param cont_subtract: Subtract the continuum value outside the line
+                                  from the whole line profile. 
+            @type cont_subtract: bool
             
             @return: The data list with dictionaries for every tile is returned
             @rtype: list[dict]
@@ -552,7 +562,7 @@ class PlotGas(PlottingSession):
                                  for trans in current_sub]
                             ddict['y'] = \
                                 [(trans <> None and trans.sphinx <> None) \
-                                     and list(trans.sphinx.getLPIntrinsic()*10**(23))\
+                                     and list(trans.sphinx.getLPIntrinsic(cont_subtract=cont_subtract)*10**(23))\
                                      or []
                                  for trans in current_sub]
                         else:
@@ -568,7 +578,7 @@ class PlotGas(PlottingSession):
                                 elif trans <> None and trans.sphinx <> None:
                                     ddict['x'].append(trans.sphinx\
                                                         .getVelocity() + bvlsr)
-                                    ddict['y'].append(trans.sphinx.getLPTmb())
+                                    ddict['y'].append(trans.sphinx.getLPTmb(cont_subtract=cont_subtract))
                                 else:
                                     ddict['x'].append([])
                                     ddict['y'].append([])
@@ -646,6 +656,7 @@ class PlotGas(PlottingSession):
                                         %(intrinsic and 'intrinsic_' or '',i,\
                                           no_data and 'nodata_' or '',\
                                           indexi,indexf))
+
                 plot_filenames.append(Plotting2.plotTiles(extension=extension,\
                      data=data,filename=filename,keytags=keytags,\
                      xaxis=r'$v$ (km s$^{-1}$)',fontsize_axis=16,cfg=cfg,\
@@ -691,7 +702,7 @@ class PlotGas(PlottingSession):
                     subgrid.append(star_grid[i+j])
                     if keytags: subkeys.append(keytags[i+j])
                     i += 1
-                if keytags: subkeys.append(keytags[-1])
+                if keytags and not no_data: subkeys.append(keytags[-1])
                 #- Copying the list so that the destructive loop does not mess
                 #- up multiple tile plot runs if n_models > n_max_models
                 createTilePlots(trans_list=list(trans_list),\
@@ -702,7 +713,8 @@ class PlotGas(PlottingSession):
                                 telescope_label=telescope_label,\
                                 limited_axis_labels=limited_axis_labels,\
                                 date_tag=date_tag,indexi=j,indexf=j+i-1,\
-                                mfiltered=mfiltered)
+                                mfiltered=mfiltered,\
+                                cont_subtract=cont_subtract)
                 j += i
         if pacs_list:  
             j = 0
@@ -721,7 +733,8 @@ class PlotGas(PlottingSession):
                                 x_dim=x_dim,y_dim=y_dim,date_tag=date_tag,\
                                 telescope_label=telescope_label,no_models=0,\
                                 limited_axis_labels=limited_axis_labels,\
-                                indexi=j,indexf=j+i-1,mfiltered=mfiltered)
+                                indexi=j,indexf=j+i-1,mfiltered=mfiltered,\
+                                cont_subtract=cont_subtract)
                 j += i            
                 
 
@@ -892,7 +905,8 @@ class PlotGas(PlottingSession):
 
                                                 
    
-    def plotAbundanceProfiles(self,star_grid=[],models=[],cfg=''):  
+    def plotAbundanceProfiles(self,star_grid=[],models=[],cfg='',\
+                              per_molecule=0):  
         
         '''
         Plot abundance profiles for all molecules in every model.
@@ -911,6 +925,10 @@ class PlotGas(PlottingSession):
                           
                       (default: '')
         @type cfg: string
+        @keyword per_molecule: Plot one molecule for all models in one figure.
+        
+                               (default: 0)
+        @type per_molecule: bool
         
         '''
         
@@ -921,59 +939,76 @@ class PlotGas(PlottingSession):
         elif (not models and not star_grid) or (models and star_grid):
             print '** Input is undefined or doubly defined. Aborting.'
             return
-        plot_filenames = []
-        for star in star_grid:
-            if star['LAST_GASTRONOOM_MODEL']:    
-                radii = [DataIO.getGastronoomOutput(\
-                                filename=os.path.join(os.path.expanduser('~'),\
-                                      'GASTRoNOoM',self.path,'models',\
-                                      molec.getModelId(),'cool1%s_%s.dat'\
-                                      %(molec.getModelId(),molec.molecule)),\
-                                return_array=1)
-                         for molec in star['GAS_LIST'] 
-                         if molec.getModelId()]
-                h2_ab = [array(DataIO.getGastronoomOutput(\
-                                filename=os.path.join(os.path.expanduser('~'),\
-                                        'GASTRoNOoM',self.path,'models',\
-                                        molec.getModelId(),'cool1%s_%s.dat'\
-                                        %(molec.getModelId(),molec.molecule)),\
-                                keyword='N(H2)'))
-                         for molec in star['GAS_LIST'] 
-                         if molec.getModelId()]
-                molec_ab = [array(DataIO.getGastronoomOutput(\
-                                filename=os.path.join(os.path.expanduser('~'),\
-                                        'GASTRoNOoM',self.path,'models',\
-                                        molec.getModelId(),'cool1%s_%s.dat'\
-                                        %(molec.getModelId(),molec.molecule)),\
-                                keyword='N(MOLEC)',key_index=8))
-                            for molec in star['GAS_LIST'] 
-                            if molec.getModelId()]
-                abuns = []
-                for rad,molec,amol,ah in zip(radii,star['GAS_LIST'],\
-                                             molec_ab,h2_ab):
-                     if molec.set_keyword_change_abundance:
-                          rfrac,frac = tuple(DataIO.readCols(\
-                                            molec.change_fraction_filename))
-                          rfrac = rfrac/star.r_solar/star['R_STAR']
-                          frac_interpol = interp1d(rfrac,frac)(rad)
-                          #- if error happens, catch and print out warning, plus run
-                          #- interpolation again with bounds_error=False, fill_value=frac[-1]
-                          #- if bounds_error=False and a warning is printed by scipy, 
-                          #- then no need to catch error first
-                          #- frac_interpol = array(Interpol.doInterpol(x_in=rfrac,\
-                          #-            y_in=frac,gridsx=[rad])[0][0])
-                     else:
-                          frac_interpol = 1
-                     abuns.append(amol/ah/molec.abun_factor*frac_interpol) 
-                keytags = ['%s'%(molec.molecule_plot) 
-                           for molec in star['GAS_LIST'] 
-                           if molec.getModelId()]
-                linestyles = ['-','-','-','-','-','-',\
-                              '--','--','--','--','--','--',\
-                              '.-','.-','.-','.-','.-','.-']
-                colors = ['r','b','g','m','y','c']
-                lt = [ls + col for ls,col in zip(linestyles,3*colors)]
-                lt = lt[:len(radii)]
+        pfns = []
+        cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('per_molecule'):
+            per_molecule = cfg_dict['per_molecule']
+        
+        #-- Dict to keep track of all data
+        ddata = dict()
+        for istar,star in enumerate(star_grid):
+            if not star['LAST_GASTRONOOM_MODEL']: continue
+            ddata[istar] = dict()
+            for molec in star['GAS_LIST']: 
+                if not molec.getModelId(): continue
+                ddata[istar][molec.molecule] = dict()
+                rad = DataIO.getGastronoomOutput(\
+                        filename=os.path.join(os.path.expanduser('~'),\
+                                              'GASTRoNOoM',self.path,'models',\
+                                              molec.getModelId(),\
+                                              'cool1%s_%s.dat'\
+                                               %(molec.getModelId(),\
+                                                 molec.molecule)),\
+                        return_array=1)
+                rad = rad*star['R_STAR']*star.r_solar
+                ddata[istar][molec.molecule]['rad'] = rad
+                ah2 = DataIO.getGastronoomOutput(\
+                        filename=os.path.join(os.path.expanduser('~'),\
+                                              'GASTRoNOoM',self.path,'models',\
+                                              molec.getModelId(),\
+                                              'cool1%s_%s.dat'\
+                                               %(molec.getModelId(),\
+                                                 molec.molecule)),\
+                        keyword='N(H2)',return_array=1)
+                ddata[istar][molec.molecule]['ah2'] = ah2
+                amol = DataIO.getGastronoomOutput(\
+                        filename=os.path.join(os.path.expanduser('~'),\
+                                              'GASTRoNOoM',self.path,'models',\
+                                              molec.getModelId(),\
+                                              'cool1%s_%s.dat'\
+                                               %(molec.getModelId(),\
+                                                 molec.molecule)),\
+                                keyword='N(MOLEC)',key_index=8,return_array=1)
+                ddata[istar][molec.molecule]['amol'] = amol
+                if molec.set_keyword_change_abundance:
+                    cff = DataIO.readCols(molec.change_fraction_filename)
+                    rfrac,frac = cff[0],cff[1]
+                    rfrac = rfrac
+                    frac_interpol = interp1d(rfrac,frac)(rad)
+                    #- if error happens, catch and print out warning, plus run
+                    #- interpolation again with bounds_error=False, fill_value=frac[-1]
+                    #- if bounds_error=False and a warning is printed by scipy, 
+                    #- then no need to catch error first
+                    #- frac_interpol = array(Interpol.doInterpol(x_in=rfrac,\
+                    #-            y_in=frac,gridsx=[rad])[0][0])
+                else:
+                    frac_interpol = 1
+                abun = amol/ah2/molec.abun_factor*frac_interpol
+                ddata[istar][molec.molecule]['amol'] = abun
+                ri = star['R_INNER_GAS']*star['R_STAR']*star.r_solar
+                ddata[istar][molec.molecule]['ri'] = ri
+                ddata[istar][molec.molecule]['key'] = molec.molecule_plot
+                ddata[istar][molec.molecule]['id'] = molec.getModelId()
+                
+            if not per_molecule:
+                #-- Collect all data
+                radii = [dmol['rad'] for molec,dmol in ddata[istar].items()]
+                abuns = [dmol['abun'] for molec,dmol in ddata[istar].items()]
+                keytags = [dmol['key'] for molec,dmol in ddata[istar].items()]
+                ids = [dmol['id'] for molec,dmol in ddata[istar].items()]
+                ri = min([dmol['ri'] for molec,dmol in ddata[istar].items()])
+                
+                #-- Add additional information if requested
                 if star.has_key('R_DES_H2O'):
                     radii.extend([array([star['R_DES_H2O'],star['R_DES_H2O']])])
                     abuns.extend([[1e-2,1e-9]])
@@ -984,41 +1019,76 @@ class PlotGas(PlottingSession):
                     abuns.extend([[1e-2,1e-9]])
                     keytags.append('Location OH maser')
                     lt.append('-k')
-                extension = '.eps'
-                plot_filename = os.path.join(os.path.expanduser('~'),\
-                                    'GASTRoNOoM',self.path,'stars',\
-                                    self.star_name,self.plot_id,\
-                                    'abundance_profiles_%s'\
-                                    %'_'.join(list(set([molec.getModelId() 
-                                            for molec in star['GAS_LIST']]))))
-                radii = [r*star['R_STAR']*star.r_solar for r in radii]
-                plot_filenames.append(\
-                     Plotting2.plotCols(x=radii,y=abuns,xaxis='$r$ (cm)',\
-                          filename=plot_filename,keytags=keytags,\
-                          figsize=(12.5,8.5),cfg=cfg,\
-                          yaxis='$n_\mathrm{molec}/n_{\mathrm{H}_2}$',\
-                          line_types=lt,transparent=0,\
-                          extension=extension,fontsize_axis=28,linewidth=4,\
-                          ylogscale=1,key_location=(.05,.1),\
-                          fontsize_ticklabels=26,\
-                          xlogscale=1,ymin=10**(-9),ymax=10**(-3),\
-                          fontsize_key=18,xmax=1e18,\
-                          xmin=star['R_INNER_GAS']*star['R_STAR']*star.r_solar))
-        if plot_filenames and plot_filenames[0][-4:] == '.pdf':    
-            new_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                        self.path,'stars',self.star_name,\
-                                        self.plot_id,'abundance_profiles.pdf')
-            DataIO.joinPdf(old=plot_filenames,new=new_filename)
+                
+                yaxis = '$n_\mathrm{molec}/n_{\mathrm{H}_2}$'
+                #-- Make filename
+                pfn = os.path.join(os.path.expanduser('~'),\
+                                             'GASTRoNOoM',self.path,'stars',\
+                                             self.star_name,self.plot_id,\
+                                             'abundance_profiles_%s'\
+                                              %'_'.join(list(set(ids))))
+                pfns.append(Plotting2.plotCols(x=radii,y=abuns,\
+                                               xaxis='$r$ (cm)',transparent=0,\
+                                               filename=pfn,keytags=keytags,\
+                                               figsize=(12.5,8.5),yaxis=yaxis,\
+                                               fontsize_axis=28,linewidth=4,\
+                                               ylogscale=1,xlogscale=1,\
+                                               key_location=(.05,.1),xmin=ri\
+                                               fontsize_ticklabels=26,cfg=cfg,\
+                                               ymin=10**(-9),ymax=10**(-3),\
+                                               fontsize_key=18,xmax=1e18))
+        
+        if per_molecule:
+            #-- Collect all data
+            molecs = list(set([molec for istar in ddata.keys()
+                                     for molec in ddata[istar].keys()]))
+            for molec in molecs: 
+                #-- Collect data
+                radii = [dmol['rad']
+                         for istar in ddata.keys()
+                         for imolec,dmol in ddata[istar].items()
+                         if molec == imolec]
+                abuns = [dmol['abun']
+                         for istar in ddata.keys()
+                         for molec,dmol in ddata[istar].items()
+                         if molec == imolec]
+                keytags = [dmol['id'] 
+                           for istar in ddata.keys()
+                           for molec,dmol in ddata[istar].items()
+                           if molec == imolec]
+                ri = min([dmol['ri'] 
+                          for istar in ddata.keys()
+                          for molec,dmol in ddata[istar].items()
+                          if molec == imolec])
+                
+                strmolec = ddata[0][molec]['key']
+                yaxis = '$n_\mathrm{%s}/n_{\mathrm{H}_2}$'%strmolec
+                #-- Make filename
+                pfn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',
+                                   self.path,'stars',self.star_name,\
+                                   self.plot_id,'abundance_profiles_%s'%molec)
+                pfns.append(Plotting2.plotCols(x=radii,y=abuns,\
+                                               xaxis='$r$ (cm)',yaxis=yaxis,\
+                                               filename=pfn,keytags=keytags,\
+                                               figsize=(12.5,8.5),cfg=cfg,\
+                                               fontsize_axis=28,linewidth=4,\
+                                               ylogscale=1,xlogscale=1,\
+                                               key_location=(.05,.1),xmin=ri\
+                                               fontsize_ticklabels=26,\
+                                               ymin=10**(-9),ymax=10**(-3),\
+                                               fontsize_key=18,xmax=1e18))        
+        
+        if not per_molecule and pfns and pfns[0][-4:] == '.pdf':    
+            newfn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                 self.path,'stars',self.star_name,\
+                                 self.plot_id,'abundance_profiles.pdf')
+            DataIO.joinPdf(old=pfns,new=newfn)
             print '** Plots can be found at:'
-            print new_filename
-            print '***********************************'
-        elif plot_filenames:
-            print '** Plots can be found at:'
-            print '\n'.join(plot_filenames)
+            print newfn
             print '***********************************'
         else:
-            print '** No GASTRoNOoM models were calculated successfully. ' + \
-                    'No temperature profiles can be plotted.'
+            print '** Plots can be found at:'
+            print '\n'.join(pfns)
             print '***********************************'
             
             

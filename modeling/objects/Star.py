@@ -1591,13 +1591,13 @@ class Star(dict):
         
         if not self.has_key('MDOT_CLASS'):
             if self['MDOT_GAS'] < 1e-6: 
-                self['MDOT_CLASS'] = (0,r'$\dot{M}_\mathrm{g} < 1 \times 10^{-6}$ M$_\odot$/yr')
+                self['MDOT_CLASS'] = (0,r'$\dot{M}_\mathrm{g} < 1 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$')
             elif self['MDOT_GAS'] >= 1e-5: 
-                self['MDOT_CLASS'] = (3,r'$\dot{M}_\mathrm{g} \geq 1 \times 10^{-5}$ M$_\odot$/yr')
+                self['MDOT_CLASS'] = (3,r'$\dot{M}_\mathrm{g} \geq 1 \times 10^{-5}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$')
             elif self['MDOT_GAS'] >= 1e-6 and self['MDOT_GAS'] < 3e-6: 
-                self['MDOT_CLASS'] = (1,r'$1 \times 10^{-6}$ M$_\odot$/yr $\leq \dot{M}_\mathrm{g} < 3 \times 10^{-6}$ M$_\odot$/yr') 
+                self['MDOT_CLASS'] = (1,r'$1 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$ $\leq \dot{M}_\mathrm{g} < 3 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$') 
             else: 
-                self['MDOT_CLASS'] = (2,r'$3 \times 10^{-6}$ M$_\odot$/yr $\leq \dot{M}_\mathrm{g} < 1 \times 10^{-5}$ M$_\odot$/yr') 
+                self['MDOT_CLASS'] = (2,r'$3 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$ $\leq \dot{M}_\mathrm{g} < 1 \times 10^{-5}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$') 
         else:
             pass
         
@@ -1629,13 +1629,13 @@ class Star(dict):
         
         if not self.has_key('SCD_CLASS'):
             if self['SHELLCOLDENS'] < 0.07: 
-                self['SCD_CLASS'] = (0,r'$\bar{m} < 0.07$ g/cm$^2$')
+                self['SCD_CLASS'] = (0,r'$\bar{m} < 0.07\ \mathrm{g\;cm}^{-2}$')
             elif self['SHELLCOLDENS'] >= 0.07 and self['SHELLCOLDENS'] < 0.15: 
-                self['SCD_CLASS'] = (1,r'$0.07$ g/cm$^2$ $\leq \bar{m} < 0.15$ g/cm$^2$')
+                self['SCD_CLASS'] = (1,r'$0.07\ \mathrm{g\;cm}^{-2}$ $\leq \bar{m} < 0.15\ \mathrm{g\;cm}^{-2}$')
             elif self['SHELLCOLDENS'] >=0.4: 
-                self['SCD_CLASS'] = (3,r'$\bar{m} \geq 0.4$ g/cm$^2$')
+                self['SCD_CLASS'] = (3,r'$\bar{m} \geq 0.4\ \mathrm{g\;cm}^{-2}$')
             else: 
-                self['SCD_CLASS'] = (2,r'$0.15$ g/cm$^2$ $\leq \bar{m} < 0.4$ g/cm$^2$')
+                self['SCD_CLASS'] = (2,r'$0.15\ \mathrm{g\;cm}^{-2}$ $\leq \bar{m} < 0.4\ \mathrm{g\;cm}^{-2}$')
         else:
             pass
             
@@ -1654,13 +1654,13 @@ class Star(dict):
         
         if not self.has_key('L_CLASS'):
             if self['L_STAR'] < 6000: 
-                self['L_CLASS'] = (0,r'$L_\star < 6000$ L$_\odot$')
+                self['L_CLASS'] = (0,r'$L_\star < 6000$ $\mathrm{L}_\odot$')
             elif self['L_STAR'] >= 10000: 
-                self['L_CLASS'] = (3,r'$L_\star \geq 10000$ L$_\odot$')
+                self['L_CLASS'] = (3,r'$L_\star \geq 10000$ $\mathrm{L}_\odot$')
             elif self['L_STAR'] >= 8000 and self['L_STAR'] < 10000: 
-                self['L_CLASS'] = (2,r'$8000$ L$_\odot$ $\leq L_\star < 10000$ L$_\odot$')
+                self['L_CLASS'] = (2,r'$8000$ $\mathrm{L}_\odot$ $\leq L_\star < 10000$ $\mathrm{L}_\odot$')
             else: 
-                self['L_CLASS'] = (1,r'$6000$ L$_\odot$ $\leq L_\star < 8000$ L$_\odot$')
+                self['L_CLASS'] = (1,r'$6000$ $\mathrm{L}_\odot$ $\leq L_\star < 8000$ $\mathrm{L}_\odot$')
         else:
             pass
         
@@ -1680,13 +1680,13 @@ class Star(dict):
         
         if not self.has_key('T_CLASS'):
             if self['T_STAR'] < 2000: 
-                self['T_CLASS'] = (0,r'$T_\star < 2000$ K')
+                self['T_CLASS'] = (0,r'$T_\star < 2000\ \mathrm{K}$')
             elif self['T_STAR'] >= 2500: 
-                self['T_CLASS'] = (3,r'$T_\star \geq 2500$ K')
+                self['T_CLASS'] = (3,r'$T_\star \geq 2500\ \mathrm{K}$')
             elif self['T_STAR'] >= 2250 and self['T_STAR'] < 2500: 
-                self['T_CLASS'] = (2,r'$2250$ K $\leq T_\star < 2500$ K') 
+                self['T_CLASS'] = (2,r'$2250\ \mathrm{K}$ $\leq T_\star < 2500\ \mathrm{K}$') 
             else: 
-                self['T_CLASS'] = (1,r'$2000$ K $\leq T_\star < 2250$ K')
+                self['T_CLASS'] = (1,r'$2000\ \mathrm{K}$ $\leq T_\star < 2250\ \mathrm{K}$')
         else:
             pass
     
@@ -1705,13 +1705,13 @@ class Star(dict):
         
         if not self.has_key('VG_CLASS'):
             if self['VEL_INFINITY_GAS'] < 10.: 
-                self['VG_CLASS'] = (0,r'$v_{\infty\mathrm{,g}} < 10$ km/s')
+                self['VG_CLASS'] = (0,r'$v_{\infty\mathrm{,g}} < 10\ \mathrm{km\;s}^{-1}$')
             elif self['VEL_INFINITY_GAS'] >= 20.: 
-                self['VG_CLASS'] = (3,r'$v_{\infty\mathrm{,g}} \geq 20$ km/s')
+                self['VG_CLASS'] = (3,r'$v_{\infty\mathrm{,g}} \geq 20\ \mathrm{km\;s}^{-1}$')
             elif self['VEL_INFINITY_GAS'] >= 15. and self['VEL_INFINITY_GAS'] < 20.: 
-                self['VG_CLASS'] = (2,r'$15$ km/s $\leq v_{\infty\mathrm{,g}} < 20$ km/s') 
+                self['VG_CLASS'] = (2,r'$15\ \mathrm{km\;s}^{-1}$ $\leq v_{\infty\mathrm{,g}} < 20\ \mathrm{km\;s}^{-1}$') 
             else: 
-                self['VG_CLASS'] = (1,r'$10$ km/s $\leq v_{\infty\mathrm{,g}} < 15$ km/s') 
+                self['VG_CLASS'] = (1,r'$10\ \mathrm{km\;s}^{-1}$ $\leq v_{\infty\mathrm{,g}} < 15\ \mathrm{km\;s}^{-1}$') 
         else:
             pass
         

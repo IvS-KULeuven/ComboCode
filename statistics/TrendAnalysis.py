@@ -406,7 +406,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('R_INNER_GAS','$R_\mathrm{i,g}$ (R$_\star$)'),\
                      ('F_H2O',r'$\log$ $\left[A_{\mathrm{H}_2\mathrm{O}}/A_{\mathrm{H}_2}\right]$'),\
                      ('F_CONT_63',r'$\log$ $\left[F_\mathrm{6.3\ \mu m}\ (\mathrm{Jy})\right]$'),\
-                     ('FD2_CONT_63',r'$\log$ $\left[F_\mathrm{6.3\ \mu m}\times D^2\ (\mathrm{Jy}\ \mathrm{pc}^2\right]$)'),\
+                     ('FD2_CONT_63',r'$\log$ $\left[F_\mathrm{6.3\ \mu m}\times D^2\ (\mathrm{Jy}\ \mathrm{pc}^2)\right]$'),\
                      ('FD2M_CONT_63',r'$\log$ $\left[F_\mathrm{6.3\ \mu m}\times D^2 / \dot{M}_\mathrm{g}\ (\mathrm{Jy}\ \mathrm{pc}^2\ yr/\mathrm{M}_\odot \right]$)'),\
                      ])
     pfn_parts = dict([('MDOT_GAS','mg'),\
@@ -479,39 +479,39 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('FD2M_CONT_63',r'$F_\mathrm{6.3\ \mu m}\times D^2 / \dot{M}_\mathrm{g}$'),\
                      ('ENHANCE_ABUNDANCE_FACTOR_H2O','h2oAbunFac'),\
                      ('ABUNDANCE_FILENAME_H2O','h2oAbunFile')])
-    keyunits = dict([('MDOT_GAS','M$_\odot$/yr'),\
-                     ('MDOT_DUST','M$_\odot$/yr'),\
+    keyunits = dict([('MDOT_GAS','$\mathrm{M}_\odot\ \mathrm{yr}^{-1}$'),\
+                     ('MDOT_DUST','$\mathrm{M}_\odot\ \mathrm{yr}^{-1}$'),\
                      ('DUST_LIST',''),\
                      ('STARTYPE',''),\
                      ('A_SICB',''),\
                      ('A_AMCSPH',''),\
-                     ('VEL_INFINITY_GAS','km/s'),\
-                     ('SHELLDENS','g/cm$^3$'),\
-                     ('SHELLCOLDENS','g/cm$^{2}$'),\
-                     ('SHELLDENS2','g/cm$^{5/2}$'),\
-                     ('L_STAR','L$_\odot$'),\
-                     ('P_STAR','days'),\
-                     ('Q_STAR','days'),\
-                     ('T_STAR','K'),\
+                     ('VEL_INFINITY_GAS','$\mathrm{km\;s}^{-1}$'),\
+                     ('SHELLDENS','$\mathrm{g\;cm}^{-3}$'),\
+                     ('SHELLCOLDENS','$\mathrm{g\;cm}^{-2}$'),\
+                     ('SHELLDENS2','$\mathrm{g\;cm}^{5/2}$'),\
+                     ('L_STAR','$\mathrm{L}_\odot$'),\
+                     ('P_STAR','$\mathrm{days}$'),\
+                     ('Q_STAR','$\mathrm{days}$'),\
+                     ('T_STAR','$\mathrm{K}$'),\
                      ('P_TYPE',''),\
                      ('F_H2O',''),\
                      ('DUST_TO_GAS_CHANGE_ML_SP',''),\
                      ('TEMPERATURE_EPSILON_GAS',''),\
                      ('TEMPERATURE_EPSILON2_GAS',''),\
                      ('TEMPERATURE_EPSILON3_GAS',''),\
-                     ('RADIUS_EPSILON2_GAS','R$_\star$'),\
-                     ('RADIUS_EPSILON3_GAS','R$_\star$'),\
-                     ('R_INNER_GAS','R$_\star$'),\
+                     ('RADIUS_EPSILON2_GAS','$\mathrm{R}_\star$'),\
+                     ('RADIUS_EPSILON3_GAS','$\mathrm{R}_\star$'),\
+                     ('R_INNER_GAS','$\mathrm{R}_\star$'),\
                      ('MDOT_CLASS',''),\
                      ('SCD_CLASS',''),\
                      ('ABUN_O',''),\
                      ('T_CLASS',''),\
                      ('VG_CLASS',''),\
                      ('L_CLASS',''),\
-                     ('F_CONT_63','Jy'),\
-                     ('FD2_CONT_63','Jy pc$^2$'),\
+                     ('F_CONT_63','$\mathrm{Jy}$'),\
+                     ('FD2_CONT_63','$\mathrm{Jy}$ $\mathrm{pc}^2$'),\
                      ('F_CONT_63_TYPE',''),\
-                     ('FD2M_CONT_63',r'Jy pc$^2$ yr/M$_\odot$'),\
+                     ('FD2M_CONT_63',r'$\mathrm{Jy}$ $\mathrm{pc}^2$ $\mathrm{yr}\ \mathrm{M}_{\odot}^{-1}$'),\
                      ('ENHANCE_ABUNDANCE_FACTOR_H2O',''),\
                      ('ABUNDANCE_FILENAME_H2O','')])
     makeints = dict([('MDOT_GAS',0),\
@@ -815,7 +815,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                 if 'CLASS' in con:
                     kstr = v[1]
                 elif con == 'P_TYPE':
-                    kstr = v 
+                    kstr = '$\mathrm{%s}$'%v 
                 elif con == 'SHELLCOLDENS':
                     kstr = '%s = $%.2f$ %s'%(keynames[con],v,keyunits[con])
                 else:
@@ -834,7 +834,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
     dlinestyles = ['o','o','o','o','o','o','o',\
                    'x','x','x','x','x','x','x',\
                    's','s','s','s','s','s','s']
-    colors = ['r','b','k','g','m','y','c']
+    colors = ['r','b','g','k','m','y','c']
     dline_types = [ls + col for ls,col in zip(dlinestyles,3*colors)]
     colors.reverse()
     mline_types = [ls + col for ls,col in zip(mlinestyles,5*colors)]
@@ -983,7 +983,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                 yb[-1].extend(yi[blended])
             
             if xb[-1]: 
-                extra_pars['keytags'] = keytags + ['Blended']
+                extra_pars['keytags'] = keytags + ['$\mathrm{Blended}$']
                 extra_pars['line_types'] = line_types + ['xk']
                 extra_pars['markersize'] = markersize + [14]
                 extra_pars['zorder'] = zorder + [max(zorder)+1]
