@@ -557,7 +557,7 @@ class Gastronoom(ModelingSession):
                                                     ['R_POINTS_MASS_LOSS']] + \
                                    ['####'])
             filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                    self.path,\
+                                    self.path,'models',\
                                     'gastronoom_' + self.model_id + '.inp')
             DataIO.writeFile(filename,commandfile)
             if not self.skip_cooling:
@@ -602,8 +602,7 @@ class Gastronoom(ModelingSession):
                                if k != 'R_POINTS_MASS_LOSS'] +\
                               ['####'] + \
                               ['%s=%s'%(k,v) 
-                               for k,v in sorted(molec.makeDict().items())
-                               if k != 'STARFILE'] +\
+                               for k,v in sorted(molec.makeDict().items())] +\
                               ['####']
                 if self.command_list.has_key('R_POINTS_MASS_LOSS'):
                     commandfile.extend(['%s=%s'%('R_POINTS_MASS_LOSS',v) 
@@ -681,8 +680,7 @@ class Gastronoom(ModelingSession):
                                    if k != 'R_POINTS_MASS_LOSS'] + ['####'] + \
                                   ['%s=%s'%(k,v) 
                                    for k,v in sorted(trans.molecule.makeDict()\
-                                                                .items())
-                                   if k != 'STARFILE'] + \
+                                                                .items())] + \
                                   ['####'] + \
                                   ['%s=%s'%(k,v) 
                                    for k,v in sorted(trans.makeDict()\

@@ -208,6 +208,27 @@ def addDefaultKeywordToDatabase(keyword,value,db_fn):
 
 
 
+def addUseStarfileToMline(db_fn):
+        
+    '''
+    Add a USE_STARFILE to mline database.
+    
+    @param db_fn: The filename and path of the database.
+    @type db_fn: string
+    
+    '''
+    
+    db = Database(db_fn)
+    for k in db.keys():
+        for l in db[k].keys():
+            for mol in db[k][l].keys():
+                if 'STARFILE' in db[k][l][mol].keys():
+                    db[k][l][mol]['STARFILE'] = '"%s"'%db[k][l][mol]['STARFILE']
+                    db.addChangedKey(k)
+    return db
+    
+    
+
 class Database(dict):
     
     '''

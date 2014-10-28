@@ -421,14 +421,14 @@ class MCMax(ModelingSession):
         self.model_id = ''
         self.command_list = dict()
         self.command_list['photon_count'] = star['PHOTON_COUNT']
-        if star['STARTYPE'] == 'BB':
-            self.command_list['Tstar'] = float(star['T_STAR'])
-            self.command_list['Rstar'] = float(star['R_STAR'])
-        elif star['STARTYPE'] == 'ATMOSPHERE' or star['STARTYPE'] == 'FILE':
+        if star['STARFILE']:
             self.command_list['startype'] = "'FILE'"
             self.command_list['Lstar'] = star['L_STAR']
             self.command_list['Rstar'] = star['R_STAR']
             self.command_list['starfile'] = "'%s'"%star['STARFILE']
+        else:
+            self.command_list['Tstar'] = float(star['T_STAR'])
+            self.command_list['Rstar'] = float(star['R_STAR'])            
         self.command_list['tcontact'] = star['T_CONTACT'] \
                                             and '.true.' \
                                             or '.false.'

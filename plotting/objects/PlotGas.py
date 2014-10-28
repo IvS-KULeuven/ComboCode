@@ -993,7 +993,7 @@ class PlotGas(PlottingSession):
                     #-            y_in=frac,gridsx=[rad])[0][0])
                 else:
                     frac_interpol = 1
-                abun = amol/ah2/molec.abun_factor*frac_interpol
+                abun = amol/ah2*molec.abun_factor*frac_interpol
                 ddata[istar][molec.molecule]['amol'] = abun
                 ri = star['R_INNER_GAS']*star['R_STAR']*star.r_solar
                 ddata[istar][molec.molecule]['ri'] = ri
@@ -1033,7 +1033,7 @@ class PlotGas(PlottingSession):
                                                figsize=(12.5,8.5),yaxis=yaxis,\
                                                fontsize_axis=28,linewidth=4,\
                                                ylogscale=1,xlogscale=1,\
-                                               key_location=(.05,.1),xmin=ri\
+                                               key_location=(.05,.1),xmin=ri,\
                                                fontsize_ticklabels=26,cfg=cfg,\
                                                ymin=10**(-9),ymax=10**(-3),\
                                                fontsize_key=18,xmax=1e18))
@@ -1073,7 +1073,7 @@ class PlotGas(PlottingSession):
                                                figsize=(12.5,8.5),cfg=cfg,\
                                                fontsize_axis=28,linewidth=4,\
                                                ylogscale=1,xlogscale=1,\
-                                               key_location=(.05,.1),xmin=ri\
+                                               key_location=(.05,.1),xmin=ri,\
                                                fontsize_ticklabels=26,\
                                                ymin=10**(-9),ymax=10**(-3),\
                                                fontsize_key=18,xmax=1e18))        

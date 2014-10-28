@@ -266,11 +266,6 @@ class Molecule():
         @type linelist: bool
         @keyword starfile: input filename for a stellar input spectrum (either
                            user defined or from a model atmosphere spectrum)
-                           Note that the file must be linked to
-                           ~/ComboCode/StarFiles/starfile_tablestar.dat
-                           for it to be used by GASTRoNOoM, and that the code 
-                           itself must have been compiled with the correct 
-                           b.f and table_star.f files. 
                            
                            (default: '')
         @type starfile: str
@@ -475,7 +470,12 @@ class Molecule():
                  new_dict['NEW_TEMPERATURE_FILENAME'] \
                     = '"%s"'%self.new_temperature_filename
         if self.starfile:
-            new_dict['STARFILE'] = self.starfile
+            new_dict['USE_STARFILE'] = 1
+            if path <> None:
+                starfile = os.path.join(path,os.path.split(self.starfile)[1])
+                new_dict['STARFILE'] = '"%s"'%starfile
+            else:
+                new_dict['STARFILE'] = '"%s"'%self.starfile
         return new_dict        
                          
 
