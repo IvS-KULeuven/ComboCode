@@ -844,8 +844,8 @@ class Star(dict):
         This information is taken from the denstempP## files for each species.
         
         @return: Three lists: one for all radial grids (lists in cm) of the 
-                    species, one for all temperature profiles (lists in K) and 
-                    one for all keys (strings)
+                 species, one for all temperature profiles (lists in K) and 
+                 one for all keys (strings)
         @rtype: (list(lists),list(lists),list(strings))
         
         '''
@@ -867,13 +867,7 @@ class Star(dict):
                  for r,t,sp in zip(radii,temps,self['DUST_LIST'])]
         temps = [t[t<=self['T_DES_%s'%sp]] 
                  for t,sp in zip(temps,self['DUST_LIST'])]
-        plot_names = DataIO.getInputData(path=os.path.join(self.path_combocode,\
-                                                    'Data'),\
-                                  keyword='SPECIES_PLOT_NAME',\
-                                  filename='Dust.dat')
-        keys = [plot_names[self.species_list.index(d)]  
-                for d in self['DUST_LIST']]
-        return radii,temps,keys
+        return radii,temps,self['DUST_LIST']
 
     
     

@@ -90,8 +90,7 @@ class ComboCode(object):
             Transition.updateLineSpec(self.star_grid[0]['GAS_LINES'])
         self.finished = False
         
-    
-    
+
     def startSession(self):
          
         '''
