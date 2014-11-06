@@ -44,10 +44,7 @@ class Radio(Database):
         The option to parse the content of the target folder is available: This 
         will add entries to the database for the stars in the folder and the 
         'simple' molecules and transitions. 
-        
-        The auto_parse option makes use of 'star_name_gastronoom', which is not 
-        available in Star.dat anymore and is therefore defined in the method.
-        
+                
         Once a db is created, you can perform several methods on the database 
         specific to radio data management.
         
@@ -170,19 +167,6 @@ class Radio(Database):
         molec_trans = [ff.split('_')[1] for ff in ggf]
         telescopes = [os.path.splitext(ff)[0].split('_')[-1] for ff in ggf]
         
-        defstars = {'afgl2019': 'v4201sgr','afgl5379': 'v1185sco',\
-                    'crl2199': 'nxser','g451': 'iras19110',\
-                    'iras1744': 'iras17443','iras18488': 'v1363aql',\
-                    'omicet': 'oceti','irc10216': 'cwleo',\
-                    'irc10420': 'v1302aql','irc10529': 'v1300aql',\
-                    'irc20370': 'v821her','irc50137': 'nvaur',\
-                    'oh21.5': 'v441sct','oh231.8': 'qxpup','oh26': 'v437sct',\
-                    'oh30': 'v1362aql','oh30.7': 'v1360aql',\
-                    'rafgl2343': 'V1427aql','rafgl3068': 'llpeg',\
-                    'redrectangle': 'v777mon','cit6': 'rwlmi',\
-                    'oh127': 'v669cas','iras19067': 'V1368aql',\
-                    'oh32': 'v1365aql','iras18': 'iras18059'}
-
         defmolecs = DataIO.getInputData(path=self.cc_path,\
                                         keyword='TYPE_SHORT',\
                                         filename='Molecule.dat')
@@ -193,14 +177,6 @@ class Radio(Database):
                                               keyword='SPEC_INDICES',\
                                               filename='Molecule.dat')
         for ff,s,mt,tel in zip(ggf,stars,molec_trans,telescopes):
-            #-- Check if the requested star is in defstars dict. Then s is the old
-            #   GASTRoNOoM name and has to be replaced with the current star_name
-            #   from Star.dat. If s is not in defstars, the old name is the same
-            #   as the current one.
-            if defstars.has_key(s):
-                star_name = defstars[s]
-            else: 
-                star_name = s
             this_dm,this_dms,this_dsi = None, None, None
             for dm,dms,dsi in zip(defmolecs,defmolecs_short,defspec_indices):
                 if mt[:len(dms)] == dms:
@@ -241,7 +217,7 @@ class Radio(Database):
                     continue
             else:
                 continue
-            self.addData(star_name=star_name,trans=trans,filename=ff)
+            self.addData(star_name=s,trans=trans,filename=ff)
             
 
 

@@ -43,7 +43,7 @@ class LPDataReader(Reader):
                 
         super(LPDataReader, self).__init__()
         self.filename = filename
-        self.star_name_gastronoom = os.path.split(self.filename)[1].split('_')[0]
+        self.star_name = os.path.split(self.filename)[1].split('_')[0]
         self.info_path = info_path
         self.c = 2.99792458e10          #in cm/s
         self.contents['vlsr'] = None
@@ -159,8 +159,8 @@ class LPDataReader(Reader):
         
         try:
             star_index = DataIO.getInputData(path=self.info_path,\
-                                            keyword='STAR_NAME_GASTRONOOM')\
-                                            .index(self.star_name_gastronoom)
+                                             keyword='STAR_NAME')\
+                                            .index(self.star_name)
             vlsr = DataIO.getInputData(path=self.info_path,\
                                        keyword='V_LSR')[star_index]
         except KeyError,ValueError: 
