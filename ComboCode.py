@@ -146,7 +146,7 @@ class ComboCode(object):
                           ('show_contdiv',0),('skip_cooling',0),\
                           ('recover_sphinxfiles',0),('stat_print',0),\
                           ('stat_lll_p',None),('stat_pacsmethod','clipping'),\
-                          ('star_name','model')]
+                          ('star_name','model'),('opac_path','')]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -561,7 +561,8 @@ class ComboCode(object):
                                        replace_db_entry=self.replace_db_entry,\
                                        path_mcmax=self.path_mcmax,\
                                        skip_cooling=self.skip_cooling,\
-                                       recover_sphinxfiles=self.recover_sphinxfiles)
+                                       recover_sphinxfiles=self.recover_sphinxfiles,\
+                                       opac_path=self.opac_path)
     
     
     def setPlotManager(self):    

@@ -27,6 +27,8 @@ class ModelingManager():
                  num_model_sessions=1,vic_manager=None,replace_db_entry=0,\
                  path_gastronoom='runTest',path_mcmax='runTest',\
                  skip_cooling=0,recover_sphinxfiles=0,\
+                 opac_path=os.path.join(os.path.expanduser('~'),\
+                                        'MCMax','Opacities'),\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
         
@@ -96,6 +98,10 @@ class ModelingManager():
         
                              (default: 'runTest')
         @type path_mcmax: string
+        @keyword opac_path: The path to the home folder of dust opacities
+        
+                            (default: ~/MCMax/Opacities/)
+        @type opac_path: str
         @keyword path_gastronoom: modeling folder in GASTRoNOoM home
         
                                   (default: 'runTest')
@@ -124,6 +130,7 @@ class ModelingManager():
         self.setDatabases()
         self.mcmax_done = False
         self.mline_done = False
+        self.opac_path = opac_path
         
         
     def setDatabases(self):
@@ -201,7 +208,8 @@ class ModelingManager():
                                          path_mcmax=self.path_mcmax,\
                                          db=self.mcmax_db,\
                                          new_entries=self.new_entries_mcmax,\
-                                         replace_db_entry=self.replace_db_entry)
+                                         replace_db_entry=self.replace_db_entry,\
+                                         opac_path=self.opac_path)
                 self.mcmax_done = False
                 dust_session.doMCMax(star)
                 if dust_session.mcmax_done: 

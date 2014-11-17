@@ -16,6 +16,49 @@ from glob import glob
 from cc.tools.io import DataIO
 
 
+def updateDustMCMaxDatabase(filename,\
+                            path_combocode=os.path.join(os.path.expanduser('~'),\
+                                                        'ComboCode')):
+
+    '''
+    Update dust filenames in MCMax database with the new OPAC_PATH system. 
+    
+    @param filename: The file and path to the MCMax database. 
+    @type filename: str
+    
+    @keyword path_combocode: Location of the ComboCode folder.
+    
+                             (default: ~/ComboCode/)
+    @type path_combocode: str
+    '''
+    
+    i = 0
+    new_filename = '%s_new'%(filename)
+    
+    db_old = Database(filename)
+    db_new = Database(new_filename)
+    
+    path = os.path.join(path_combocode,'Data','Dust_updatefile.dat')
+    dustfiles = DataIO.readCols(path)
+    pfn_old = list(dustfiles[0])
+    pfn_new = list(dustfiles[1])
+    
+    for k,v in db_old.items():
+        dd = v['dust_species']
+        dd_new = dict()
+        for pfn,cont in dd.items():
+            new_key = pfn_new[pfn_old.index(pfn)]
+            dd_new[new_key] = cont
+        v['dust_species'] = dd_new
+        db_new[k] = v
+    db_new.sync()
+        
+    
+    
+    
+    
+    
+
 def convertMCMaxDatabase(path_mcmax,\
                          path_combocode=os.path.join(os.path.expanduser('~'),\
                                                      'ComboCode')):

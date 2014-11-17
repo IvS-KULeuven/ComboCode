@@ -40,13 +40,16 @@ SPIRE_SEARCHSTRING=oversampling2    # searchstring used when looking for data, a
 SPIRE_RESOLUTION=0.04               # The resolution of the Spire spectrum in cm^-1
 SPIRE_OVERSAMPLING=4                # The oversampling factor of the SPIRE spectrum.
 
-#-- SED data selection and plotting
-SED_PATH=#/home/robinl/Data/SED/    #Path to the Data folder where the text files with SED data are stored. Leave open if no data are to be plotted.
-
 #-- RADIO data selection (including autosearch) and plotting (typically resolved lines in K vs km/s)
 RADIO_PATH=#/home/robinl/Data/Molecular/ # Path for gas radio data, leave empty if not relevant/no gas data are used other than pacs. Any requested transition that matches data in this folder will have the data plotted alongside the model! Folder requires database for data named radio_data.db
 RADIO_AUTOSEARCH=0                  # Put to 1 if TRANSITION objects are to be made automatically based on the available data.
 RADIO_AUTOPARSE=0                   # Put to 1 to automatically parse the target radio data folder for data before selecting candidate transitions. 
+
+#-- SED data selection and plotting
+SED_PATH=#/home/robinl/Data/SED/    #Path to the Data folder where the text files with SED data are stored. Leave open if no data are to be plotted.
+
+#-- Opacities home folder
+OPAC_PATH=/home/robinl/MCMax/Opacities/   # Home folder of the dust opacities, possibly in subfolders. The subfolder + filename's are listed in ~/ComboCode/Data/Dust.dat for each dust species. 
 
 #-- Continuum division for select features in the SED is possible, for comparison between data and model
 CONTDIV_FEATURES= #H2O3.1&MGS       # For now only the 3.1 water ice feature (H2O3.1) and the 30 micron MgS feature (MGS) are available

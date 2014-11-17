@@ -197,8 +197,8 @@ class MCMax(ModelingSession):
     
     def __init__(self,path_mcmax='runTest',replace_db_entry=0,db=None,\
                  new_entries=[],\
-                 path_kappas=os.path.join(os.path.expanduser('~'),'MCMax',\
-                                          'src'),\
+                 opac_path=os.path.join(os.path.expanduser('~'),'MCMax',\
+                                        'Opacities'),\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
         
@@ -224,11 +224,12 @@ class MCMax(ModelingSession):
         
                                  (default: /home/<user>/ComboCode/')
         @type path_combocode: string
-        @keyword path_kappas: kappas folder, only used when no path is given in
-                              the kappas file
+        @keyword opac_path: opacity home folder. Filepaths in Dust.dat are 
+                            added onto this. The home folder is not saved in 
+                            the database. The subfolder from Dust.dat is. 
         
-                              (default: /home/<user>/MCMax/src/')
-        @type path_kappas: string
+                            (default: ~/MCMax/Opacities/)
+        @type opac_path: string
         @keyword new_entries: The new model_ids when replace_db_entry is 1
                                    of other models in the grid. These are not 
                                    replaced!
@@ -245,7 +246,7 @@ class MCMax(ModelingSession):
         DataIO.testFolderExistence(os.path.join(os.path.expanduser("~"),\
                                    'MCMax',self.path,'data_for_gastronoom'))
         self.db = db
-        self.path_kappas = path_kappas
+        self.opac_path = opac_path
         self.mcmax_done = False
         
         #- Read standard input file with all parameters that should be included
@@ -504,6 +505,9 @@ class MCMax(ModelingSession):
                 species_dict['rgrain'] = star['RGRAIN_%s'%species]
             else:
                 species_dict['abun'] = star['A_%s'%species]
+            dustfile = self.dust_files[self.dust_list.index(species)]
+            if not os.path.split(dustfile)[0]:
+                print('WARNING! %s has an old opacity file. Should replace for reproducibility.'%species)
             dust_dict[self.dust_files[self.dust_list.index(species)]] \
                 = species_dict
         self.command_list['dust_species'] = dust_dict
@@ -533,13 +537,10 @@ class MCMax(ModelingSession):
                 speciesdict = self.command_list['dust_species'][speciesfile]
                 for k,v in speciesdict.items():
                     input_dict['%s%.2i'%(k,index+1)] = v
-                ftype = speciesfile.find('opacity') != -1 and 'opac' or 'part'
-                #-- Check if speciesfile contains a path. If not add, the 
-                #   default one
-                path = os.path.split(speciesfile)[0]
-                if not path: path = self.path_kappas
+                ftype = speciesfile.find('particle') != -1 and 'part' or 'opac'
+                #-- Add the opacities home folder (not saved in db)
                 input_dict['%s%.2i'%(ftype,index+1)] = "'%s'"\
-                            %(os.path.join(path,os.path.split(speciesfile)[1]))       
+                            %(os.path.join(self.opac_path,speciesfile))       
             input_filename = os.path.join(os.path.expanduser("~"),'MCMax',\
                                           self.path,'models',\
                                           'inputMCMax_%s.dat'%self.model_id)
