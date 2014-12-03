@@ -47,8 +47,11 @@ def updateDustMCMaxDatabase(filename,\
         dd = v['dust_species']
         dd_new = dict()
         for pfn,cont in dd.items():
-            new_key = pfn_new[pfn_old.index(pfn)]
-            dd_new[new_key] = cont
+            try:
+                new_key = pfn_new[pfn_old.index(pfn)]
+                dd_new[new_key] = cont
+            except ValueError:
+                dd_new[pfn] = cont
         v['dust_species'] = dd_new
         db_new[k] = v
     db_new.sync()

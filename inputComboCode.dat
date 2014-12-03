@@ -207,7 +207,7 @@ A_ENST=0                            # Crystalline Silicate  Enstatite
 A_MELI=0                            # Crystalline Silicate  Melilite                                             
 A_AMC=0.47                          # Amorphous Carbon                                                               
 A_MGS=0.18                          # Magnesium Sulfide                                                              
-A_SIC=0.3                           # Silicon Carbide                                                                
+A_SICB=0.3                           # Silicon Carbide                                                                
 A_GRAPH=0                           # Graphite                                                                           
 A_H2O=0                             # Water Ice                                                                          
 

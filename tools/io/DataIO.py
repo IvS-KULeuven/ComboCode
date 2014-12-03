@@ -9,6 +9,7 @@ Author: R. Lombaert
 
 import os
 import subprocess
+from glob import glob
 from scipy import array,zeros
 import types
 from pylab import mlab
@@ -615,7 +616,7 @@ def splitLines(lines,delimiter=None,replace_spaces=1):
     
     
     
-def writeFile(filename,input_lines,mode='w'):
+def writeFile(filename,input_lines,mode='w',delimiter='\n'):
     
     """
     Write file with a list of strings as input.
@@ -625,6 +626,13 @@ def writeFile(filename,input_lines,mode='w'):
     @param input_lines: The lines to be written
     @type input_lines: list[string]
     
+    @keyword delimiter: The line separator. Typically the new line character, 
+                        but can be changed if needed (eg empty string in case
+                        new line character is already included in the input 
+                        lines)
+                        
+                        (default: '\n')
+    @type delimiter: string
     @keyword mode: writing mode ('w' is new file, 'a' appends to existing file)
     
                    (default: 'w')
@@ -636,8 +644,34 @@ def writeFile(filename,input_lines,mode='w'):
     if mode == 'w':                                
         testFolderExistence(os.path.split(filename)[0])
     FILE = open(filename,mode)
-    FILE.write('\n'.join(input_lines))
+    FILE.write(delimiter.join(input_lines))
     FILE.close()
+    
+
+
+def replaceString(filename,old_str,new_str):
+    
+    '''
+    Replace a given string with another in requested filename.
+    
+    The filename can contain whatever works for the glob function, such as the 
+    wildcard character, to do multiple files in one go. 
+
+    @param filename: The filename, possibly with a wildcard character
+    @type filename: string
+    @param old_str: The old string to be replace in all the files
+    @type old_str: str
+    @param new_str: The new string to be inserted in all the files
+    @type new_str: str
+    
+    '''
+    
+    gg = glob(filename)
+    for gf in gg:                                                                                                                                    
+        old_lines = readFile(gf,replace_spaces=0)                                                                                                  
+        new_lines = [ll.replace(old_str,new_str) for ll in old_lines]                                                             
+        writeFile(filename=gf,input_lines=new_lines,delimiter='') 
+    
     
     
     

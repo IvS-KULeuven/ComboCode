@@ -2723,7 +2723,7 @@ class Star(dict):
                 print 'Using input model atmosphere at '
                 print starfile
                 self['STARFILE'] = starfile
-            elif star['STARTYPE'] == 'TABLE':
+            elif self['STARTYPE'] == 'TABLE':
                 if not os.path.split(self['STARTABLE'])[0]:
                     self['STARFILE'] = os.path.join(os.path.expanduser('~'),\
                                                     self.path_combocode,\

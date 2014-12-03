@@ -1,0 +1,84 @@
+*run:   ./MCMax inputMCMax.dat 10000 -o ~/MCMax/test/ -s mdot=1d-6 ~/MCMax/src/Spec.out
+*See ~/MCMax/README for more information
+**** general setup ****
+
+*startype='FILE'
+*Tstar=2000  *is ignored when reading this file, is handled correctly in MCMax.py
+*Rstar=600   *is ignored when reading this file, is handled correctly in MCMax.py
+Mstar=2.5
+Distance=150
+
+**** density setup ****
+
+*denstype='MASSLOSS'
+*Mdot=1d-4
+*vexp=10d0
+
+*Rin=1
+*Rout=5000
+
+**** grid refinement ****
+Nrad=300
+Ntheta=30
+
+Nspan=10
+Nlev=10
+Ntspan=0 									
+Ntlev=0	
+
+**** wavelength grid ****
+*lam1, lam2, nlam --- starting/ending wavelength, stepsize
+*zlam1, zlam2, nzlam --- Specifying the wavelength range/stepsize for some of the steps in nlam (for instance to put most points in NIR, but include some further away for the radiative transfer equation and checking with data etc etc)
+****
+
+lam1=0.1
+lam2=3000
+nlam=400
+
+zlam1=5
+zlam2=80
+nzlam=300
+
+**** opacities ****
+
+*part01='/home/robinl/Thesis/MCMax/src/MIRAAmorfCDE.particle'
+*part02='/home/robinl/Thesis/MCMax/src/Al2O3.particle'
+*part03='/home/robinl/Thesis/MCMax/src/FeCDE.particle'
+*part04='/home/robinl/Thesis/MCMax/src/ForsteriteCDE.particle'
+*part05='/home/robinl/Thesis/MCMax/src/EnstatiteCDE.particle'
+*part06='/home/robinl/Thesis/MCMax/src/Melilite.particle'
+*part07='/home/robinl/Thesis/MCMax/src/CarbonCDE.particle'
+*part08='/home/robinl/Thesis/MCMax/src/MgSCDE.particle'
+*part09='/home/robinl/Thesis/MCMax/src/SiCCDE.particle'
+*part10='/home/robinl/Thesis/MCMax/src/GraphiteCDE.particle'
+*part11='/home/robinl/Thesis/MCMax/src/CrystWaterIce.particle'
+*abun01=1.00
+*abun02=0.00
+*abun03=0.00
+*abun04=0.00
+*abun05=0.00
+*abun06=0.00
+*abun07=0.00
+*abun08=0.00
+*abun09=0.00
+*abun10=0.00
+*abun11=0.00
+
+tcontact=.false.
+scattype='ISOTROPIC'
+storescatt=.true.
+multiwav=.true.
+FLD=.false.
+randomwalk=.true.
+factRW=10.0
+
+*tmaxiter: max number of iterations
+*nbw: Number of initial iterations, bit technical, but 2 should be ok
+*epsiter: convergence criterium. If difference between two subsequent iterations < epsiter*sigm, then code is done
+*tdesiter: Turn on dust destruction (T dependent, requires TdesA and TdesB keywords)
+
+tmaxiter=10           
+nbw=2                 
+epsiter=2.0           
+tdesiter=.true. 
+iter=.false.

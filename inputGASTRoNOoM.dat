@@ -1,0 +1,258 @@
+# This is the new format of the gastronoom.inp the molecular line
+# radiative transfer code. The general syntax follow the
+# parameter=value scheme with one parameter per line. The parameter is
+# case-insensitive and whitespace is ignored.
+# Comments can be written on a separate line starting with a # or a *
+# or separated by whitespace after the parameter declaration
+# Parameters that are not specified are replace by default values
+
+# Filenaming and locations
+DATA_DIRECTORY="/home/robinl/GASTRoNOoM/src/data/"
+OUTPUT_DIRECTORY="/home/robinl/GASTRoNOoM/code23-01-2010/models/"
+PARAMETER_FILE="/home/robinl/GASTRoNOoM/code23-01-2010/models/"
+
+OUTPUT_SUFFIX=default
+
+# Stellar parameters
+T_STAR=0.                ! Stellar temperature [K]
+M_STAR=0.                   ! Stellar mass [Msol]
+R_STAR=0.                 ! Stellar radius [cm]
+DISTANCE=0.               ! Distance to object [pc]			
+
+USE_STARFILE=0              ! Use an inputspectrum for the star. 1 for a table (see STARFILE), 2 for high-resolution MARCS spec (hard-coded)
+STARFILE=""                 ! The full path to the input spectrum for the star, if USE_STARFILE=1
+
+#Abundances
+DUST_TO_GAS=1.9e-2            ! Dust-to-gass mass ratio
+CHANGE_DUST_TO_GAS_FOR_ML_SP=0  ! change dust_to_gas mass ratio for mline and sphinx
+DUST_TO_GAS_CHANGE_ML_SP=0.0035           !new value for the dust_to_gass mass ratio in mline and sphinx; i.e. do not use the value from cooling.
+ABUN_ATOMIC_H=0.0             ! Fraction of atomic-to-molecular hydrogen
+ABUN_HE=0.0                 ! Fraction of He (n(He)/(n(H)+2n(H2))
+ABUN_C=1.0e-4                ! Carbon abundance relative to Htot
+ABUN_O=5.e-4                ! Oxygen abundance relative to Htot
+#RATIO_12C_TO_13C=14.	     !12C/13C ratio
+#RATIO_16O_TO_17O=600.         !16O/17O ratio
+#RATIO_16O_TO_18O=200.         !16O/18O ratio
+#OPR=3                         !ortho-to-para water ratio
+F_H2O=3.5e-4                 !n(H2O)/n(H2) at Rstar
+SPEC_DENS_DUST=3.3           !specific density of dust considered. Default is 3.3 g/cm3 for silicate dust.
+
+#in case of using a gaussian abundance distribution f = abun_molec*exp(-(r/re)^2), with re specified in rmax_molec
+# in case of using the results of Willacy & Millar (1997): f = abun_molec between R* and Rinner; between Rinner and rmax_molec f increases/decreases gradually betwen abun_molec_rinner and abun_molec_re; after rmax_molec, the results of Willacy & Millar are scaled to abun_molec_re at rmax_molec
+# in case of7 using a constant value before Rinner and the results of Willacy & Millar (1997) scaled
+ABUN_MOLEC=4.4e-6	             ! ABUNDANCE OF MOLECULE tov Htot (OTHER THAN H2O or CO) FOR WHICH ONE WANTS TO COMPUTE THE LINE PROFILE. Even if you do not need it, fill in a number
+ABUN_MOLEC_RINNER=3e-6
+ABUN_MOLEC_RE=4.e-9
+RMAX_MOLEC=120.	             ! MAXIMUM RADIUS [in R*] OF MOLECULAR ABUNDANCE 
+
+# Shell parameters
+R_INNER=0.                 ! Inner radius of the dust shell [R*]
+OUTER_R_MODE=MAMON          ! Use outer radius (FIXED), else [CO] relative abund.(MAMON)
+R_OUTER=10000.                ! Outer radius of the shell [R*]
+RHALF_FAC=1.		     !Factor used to change RHALF as given by Mamon et al. (1988)
+
+#Mass-loss parameters
+MDOT_GAS=0.             ! Gas mass loss rate [Msol/yr] - used to compute v(r) in case of variable mass loss
+MDOT_GAS_START=0.	     !Gass mass loss rate [Msol/yr] used in the computation of Mdot(r)
+MDOT_MODE=CONSTANT           ! Modus of mass-loss prescription (CONSTANT/2STEP/SINUS/OTHER)
+
+#Extra in case of OTHER
+#             RADIUS(R_STAR) MDOT   EXPONENT
+#R_POINTS_MASS_LOSS=7    1.e-20   1.
+#R_POINTS_MASS_LOSS=8    3.5e-6   1.
+
+#Dust parameters
+SDUST_POWER=1.               ! Power for power law of Tdust
+KEYWORD_DUST_TEMPERATURE_TABLE=0   ! If you want to read in the dust-temperature from a file, put to 1
+NUMBER_INPUT_DUST_TEMP_VALUES=300  !number of input dust temperature values
+DUST_TEMPERATURE_FILENAME="/lhome/leen/COCode/data/temp_dust_cwleo.dat"                      ! filename of input dust temperature values [Rstar,K]
+TEMDUST_FILENAME="temdust.kappa"   ! Filename to the new opacity file (micron | q_ext/a [cm-1], only used if USE_NEW_DUST_KAPPA_FILES=1, can be temdust.kappa to use the original without qpr.dat
+USE_NEW_DUST_KAPPA_FILES=1       !use TEMDUST_FILENAME for kappas, put to 0 to use the original qpr.dat/temdust.kappa files, default is 0 in GASTRoNOoM
+
+#Chromospheric parameters
+USE_CHROMOSPHERE=0	     ! Use chromosphere, 0 or 1
+CHROMO_RADIUS=3.       	     ! start of chromosphere [R*]
+CHROMO_OUTER_TEMP=8000.      ! Temperature at CHROMO_RADIUS [K]
+
+#Velocity parameters
+VEL_INFINITY=0.              ! expected terminal velociy [km/s]
+VELOCITY_MODE=MOMENTUM            ! Use beta law for vel. in mline/sphinx (BETA/MOMENTUM)
+VELOCITY_BETA=1.            ! BETA, for velocity law
+STOCHASTIC_VEL_MODE=CONSTANT ! Can be CONSTANT, POWERLAW or FILENAME
+STOCHASTIC_VEL=0.       ! Stochastic velocity [km/s]
+
+#Gas Temperature parameters
+TEMPERATURE_MODE=cooling     ! Use temperature power law (cooling/epsilon)
+TEMPERATURE_EPSILON=0.5     ! EPSILON, for temperature power law
+#TEMPERATURE_EPSILON2=0.5    ! EPSILON, for second temperature power law
+#RADIUS_EPSILON2=10            ! in R_STAR, radius at which epsilon2 is used
+T_INPUT=40                  ! in case of TEYSSIER
+COOL_ADIABATIC=1             ! adiabatic cooling, 0 or 1
+COOL_VIBRATIONAL_H2=1        ! cooling by vibr. exc. of H2, 0 or 1
+COOL_VIBRATIONAL_H2O=1       ! cooling by vibr. exc. of H2O, 0 or 1
+COOL_ROTATIONAL_H2O=1        ! cooling by rotat. exc. of H2O, 0 or 1
+COOL_ROTATIONAL_CO=1         ! cooling by rot. exc. of CO, 0 or 1
+COOL_FINESTRUCT=0    	     ! fine structure line cooling, 0 or 1
+HEAT_GAS_GRAIN=1            ! heating due to gas-grain coll, 0 or 1
+HEAT_PHOTOELECTRIC=1         ! photoelectric heating, 0 or 1
+HEAT_EXCHANGE=1              ! heat exchange dust-gas, 0 or 1
+COSMICS=1                    ! cosmic ray heating, 0 or 1
+
+
+#Numerical parameters
+LOG_DEPTH_STEP_POWER=1.00    ! power for the log(R) steps
+N_FREQ=30                    ! Number of frequency points in line profile
+XMAX=4.70                    ! Maxmium Relative Line Width
+ITERA=200                    ! Maximum number of iterations in mline
+LTE_REQUEST=0                  !If you only want LTE in MLINE
+CHECK_TAU_STEP=0.01           ! check.par.in sphinx if step in tau not too large
+N_QUAD=100                    ! Number of impact par. in quadrature int(Inu pdp)
+STEP_RS_RIN=1e+12         ! Step in  radius in DLSODA from RSTAR to RINNER
+STEP_RIN_ROUT=1e+13        ! Step in  radius in DLSODA from RINNER to ROUT
+ITERA_COOLING=2           !set > 1 to iterate on dust-to-gas ratio to obtain requested vel_infinity
+START_APPROX=0             !set =0 when one wants to start with LTE-approx as starting n(NY,N_IMPACT); set =1 when starting from another model - with same NY, N_IMPACT, ...
+
+USE_COLLIS_RADIAT_SWITCH=0  !set to 1 if one wants to use the collision-radiative switching method of Hummer and Voels (1988)
+USE_FRACTION_LEVEL_CORR=1 !set to 1 if one wants to put a limit on the level-population correction (BES3).
+FRACTION_LEVEL_CORR=0.8 ! user-defined fraction for maximum change in level-population correction; useful in case of H2O
+NUMBER_LEVEL_MAX_CORR=1d-12 ! user-defined level population. Only the level corrections for levels with a higher level population will be used to determine convergence criterion
+USE_NO_MASER_OPTION=1   ! set to 1 if one wants to omit masers occuring when solving the radiative transfer equation
+USE_MASER_IN_SPHINX=1       ! set to 1 if one wants to use the correct (masering) kappa's in sphinx
+
+TAU_MAX=12d0    ! maximum optical depth used for the calculation of the formal integral
+TAU_MIN=-6d0    ! minimum optical depth used for the calculation of the formal integral
+
+BACKGROUND_TEMPERATURE=2.80
+ILAM=0
+CB=0.00
+ALPHA=1.00
+GAMMA=0.00
+NRB=1
+INUM=0
+
+USE_MLINE_COOLING_RATE_CO=1 ! set to 1 if one wants to use the cooling rate of 12C16O as calculated by mline
+USE_MLINE_COOLING_RATE_H2O=0 ! set to 1 if one wants to use the cooling rate of H2O as calculated by mline
+
+#write extra output of sphinx
+WRITE_INTENSITIES=0		!set=1 to write the intensities of first 50 impact-parameters (at the end of sphinx. Default is 0)
+
+#####################################################################
+# MOLECULAR PARAMETERS FOR WHICH WE WANT TO DO MLINE
+# Sequence for input is (not formatted):
+#       Molecule_name NY_LOW NY_UP NLINE N_IMPACT N_IMPACT_EXTRA
+# Molecule_name = molecule+isotope declaration
+# NY_LOW = number of levels in ground-state of molecule
+# NY_UP = number of levels in first-vibrational state of molecule
+# NLINE = number of (allowed) radiative transitions in molecule 
+# N_IMPACT = number of depth points in radius mesh
+# N_IMPACT_EXTRA = number of depth points in radius mesh (< N_IMPACT) which specifically will be used properly sample variable mass-loss. In case of constant mass loss, take 0   
+#MOLECULE=0608.012016	  	61	61	240	50	0
+#MOLECULE=0608.013016		41	41	160	50	0
+#MOLECULE=1416.028032		41	41	160	50	0
+#MOLECULE=1408.028016		41	0	40	50	0
+#MOLECULE=1408.029016		41	41	160	50	0
+#MOLECULE=1408.030016		41	41	160	50	0
+#MOLECULE=0616.012032		41	41	160	50	0
+#MOLECULE=1608.032016		70	0	156	50	0
+#MOLECULE=607.012014		193     0	466	50	0
+#MOLECULE=160808.032016016	198    	0	855	50	0
+#MOLECULE=10607.001012014 	30       0       29     50      0
+#MOLECULE=10607.001012014 	126       0     301     50      0
+MOLECULE=010108.001001016	45	45	648	50	0
+#MOLECULE=01010608.001001012016	40	0	104	50	0
+#MOLECULE=01010608.003001012016	41	0	107	50	0
+#MOLECULE=0106081.001012016	31	0	30	50	0
+
+
+#############################################################################
+#LINE TRANSITIONS FOR WHICH WE WANT TO CALCULATE THE LINE PROFILE/T_A
+#At the moment, only JCMT specifications are available
+# Sequence for input is (not formatted):
+#       Molecule_name vup jup vlow jlow Telesc.  offset(arcsec)   
+TRANSITION=0608.012016  0   6  0 0   0  5   0 0 HIFI   0.0    ! not formatted
+#TRANSITION=0608.012016  0   1  0 0   0  0   0 0 IRAM   0.0    ! not formatted
+#TRANSITION=0608.012016  0   1  0 0   0  0   0 0 OSO   0.0    ! not formatted
+#TRANSITION=0608.012016  0   2  0 0   0  1   0 0 IRAM   0.0    ! not formatted
+#TRANSITION=0608.012016  0   2  0 0   0  1   0 0 JCMT   0.0    ! not formatted
+#TRANSITION=0608.012016  0   3  0 0   0  2   0 0 JCMT   0.0    ! not formatted
+#TRANSITION=0608.012016  0   3  0 0   0  2   0 0 APEX    0.0    ! not formatted
+#TRANSITION=0608.012016  0   4  0 0   0  3   0 0 JCMT   0.0    ! not formatted
+#TRANSITION=0608.012016  0   4  0 0   0  3   0 0 APEX    0.0    ! not formatted
+#TRANSITION=0608.012016  0   7  0 0   0  6   0 0 APEX    0.0    ! not formatted
+#TRANSITION=0608.013016  0   2  0 0   0  1   0 0 JCMT    0.0    ! not formatted
+#TRANSITION=0608.013016  0   3  0 0   0  2   0 0 APEX    0.0    ! not formatted
+#TRANSITION=1416.028032  0    5  0 0   0   4   0 0 OSO    0.0    ! not formatted
+#TRANSITION=1416.028032  0    6  0 0   0   5   0 0 OSO    0.0    ! not formatte
+#TRANSITION=1416.028032  0    8  0 0   0   7   0 0 IRAM    0.0    ! not formatted
+#TRANSITION=1416.028032  0   12  0 0   0  11   0 0 IRAM    0.0    ! not formatted
+#TRANSITION=1416.028032  0   12  0 0   0  11   0 0 JCMT    0.0    ! not formatted
+#TRANSITION=1416.028032  0   19  0 0   0  18   0 0 JCMT    0.0    ! not formatted
+#TRANSITION=1416.028032  0   16  0 0   0  15   0 0 APEX    0.0    ! not formatted
+#TRANSITION=1416.028032  0   17  0 0   0  16   0 0 APEX    0.0    ! not formatted
+#TRANSITION=1416.028032  0   19  0 0   0  18   0 0 APEX    0.0    ! not formatted
+#TRANSITION=1416.028032  0   20  0 0   0  19   0 0 APEX    0.0    ! not formatted
+#TRANSITION=1408.028016  0    2  0 0   0   1   0 0 IRAM    0.0    ! not formatted
+#TRANSITION=1408.028016  0    2  0 0   0   1   0 0 OSO    0.0    ! not formatted
+#TRANSITION=1408.028016  0    5  0 0   0   4   0 0 SEST    0.0    ! not formatted
+#TRANSITION=1408.028016  0    6  0 0   0   5   0 0 SEST    0.0    ! not formatted
+#TRANSITION=1408.028016  0    7  0 0   0   6   0 0 APEX    0.0    ! not formatted
+#TRANSITION=1408.028016  0    8  0 0   0   7   0 0 APEX    0.0    ! not formatted
+#TRANSITION=1408.029016  0    7  0 0   0   6   0 0 APEX    0.0    ! not formatted
+#TRANSITION=1408.029016  0    8  0 0   0   7   0 0 APEX    0.0    ! not formatted
+#TRANSITION=1408.030016  0    7  0 0   0   6   0 0 APEX    0.0    ! not formatted
+#TRANSITION=1408.030016  0    8  0 0   0   7   0 0 APEX    0.0    ! not formatted
+#TRANSITION=0616.012032  0    6  0 0   0   5   0 0 APEX    0.0    ! not formatted
+#TRANSITION=0616.012032  0    7  0 0   0   6   0 0 APEX    0.0    ! not formatted
+
+#TRANSITION=607.012014    0  3 3 2     0   2  2  3  APEX    0.0    ! not formatted
+#TRANSITION=607.012014    0  3 3 3     0   2  2  3  APEX    0.0    ! not formatted
+#TRANSITION=607.012014    0  3 3 2     0   2  2  2  APEX    0.0    ! not formatted
+#TRANSITION=607.012014    0  3 3 4     0   2  2  3  APEX    0.0    ! not formatted
+#TRANSITION=607.012014    0  3 3 2     0   2  2  1  APEX    0.0    ! not formatted
+#TRANSITION=607.012014    0  3 3 3     0   2  2  2  APEX    0.0    ! not formatted
+
+#TRANSITION=607.012014    0  3 4 4     0   2  3  3  APEX    0.0    ! not formatted
+#TRANSITION=607.012014    0  3 4 5     0   2  3  4  APEX    0.0    ! not formatted
+#TRANSITION=607.012014    0  3 4 3     0   2  3  2  APEX    0.0    ! not formatted
+#TRANSITION=607.012014    0  3 4 3     0   2  3  3  APEX    0.0    ! not formatted
+#TRANSITION=607.012014    0  3 4 4     0   2  3  4  APEX    0.0    ! not formatted
+#TRANSITION=607.012014    0  3 4 3     0   2  3  4  APEX    0.0    ! not formatted
+
+#TRANSITION=1608.032016   0    7  7 0   0   6   6 0 APEX    0.0    ! not formatted
+#TRANSITION=1608.032016   0    8  8 0   0   7   7 0 APEX    0.0    ! not formatted
+#TRANSITION=160808.032016016   0   3  3 1    0   2 2 0     APEX    0.0    ! not formatted
+#TRANSITION=160808.032016016   0   17 1 17   0  16 0 16    APEX    0.0    ! not formatted
+#TRANSITION=160808.032016016   0   4 3 1   0  3 2 2   APEX    0.0    ! not formatted
+#TRANSITION=160808.032016016   0   13 2 12    0 12 1 11    APEX    0.0    ! not formatted
+#TRANSITION=160808.032016016   0    5 3 3  0   4 2 2  APEX    0.0    ! not formatted
+#TRANSITION=160808.032016016   0    14 4 10  0  14 3 11   APEX    0.0    ! not formatted
+#TRANSITION=160808.032016016   0    14 3 11  0  14 2 12   IRAM    0.0    ! not formatted
+#TRANSITION=160808.032016016   0    4 3 1  0  4 2 2   IRAM    0.0    ! not formatted
+#TRANSITION=160808.032016016   0    3 3 1  0  3 2 2   IRAM    0.0    ! not formatted
+#TRANSITION=160808.032016016   0    5 3 3  0  5 2 4   IRAM    0.0    ! not formatted
+#TRANSITION=160808.032016016   0   13 3 11    0 13 2 12    IRAM    0.0    ! not formatted
+#TRANSITION=10607.001012014  0  4 1 0  0  3 1 0   APEX    0.0   ! not formatted
+#TRANSITION=10607.001012014  0  3 1 0  0  2 1 0   IRAM    0.0    ! not formatted
+
+#TRANSITION=010108.001001016  0   1 1 0   0  1 0 1   HIFI_H2O   0.0    ! not formatted
+#TRANSITION=010108.001001016  0   5 3 2   0  4 4 1   HIFI_H2O   0.0    ! not formatted
+#TRANSITION=010108.001001016  0   3 2 1   0  3 1 2   HIFI_H2O   0.0    ! not formatted
+#TRANSITION=010108.001001016  0   3 1 2   0  2 2 1   HIFI_H2O   0.0    ! not formatted
+#TRANSITION=010108.001001016  0   5 3 2   0  5 2 3   HIFI_H2O   0.0    ! not formatted
+#TRANSITION=010108.001001016  0   3 0 3   0  2 1 2   HIFI_H2O   0.0    ! not formatted
+#TRANSITION=010108.001001016  0   7 3 4   0  7 2 5   HIFI_H2O   0.0    ! not formatted
+#TRANSITION=010108.001001016  1   2 1 2   1  1 0 1   HIFI_H2O   0.0    ! not formatted
+#TRANSITION=010108.001001016  0   3 1 2   0  3 0 3   HIFI_H2O   0.0    ! not formatted
+#TRANSITION=010108.001001016  1   8 2 7   1  7 3 4   HIFI_H2O   0.0    ! not formatted
+#TRANSITION=010108.001001016  1   1 1 0   1  1 0 1   HIFI_H2O   0.0    ! not formatted
+#TRANSITION=010108.001001016  0   6 3 4   0  5 4 1   HIFI_H2O   0.0    ! not formatted
+#TRANSITION=010108.001001016  0   8 5 4   0  9 2 7   HIFI_H2O   0.0    ! not formatted
+
+#TRANSITION=01010608.001001012016  0   2  1  1  0  1  1 0   IRAM   0.0    ! not formatted
+#TRANSITION=01010608.001001012016  0   3  1  2  0  2  1 1   IRAM   0.0    ! not formatted
+#TRANSITION=01010608.003001012016  0   3  0  3  0  2  0 2   IRAM   0.0    ! not formatted
+#TRANSITION=0106081.001012016  0   3  0  0  0  2  0 0   IRAM   0.0    ! not formatted
+#TRANSITION=0106081.001012016  0   1  0  0  0  0  0 0   IRAM   0.0    ! not formatted
+
+
+#############################################################################

@@ -338,10 +338,13 @@ class ComboCode(object):
         transitions = input_dict.pop('TRANSITION',[])
         r_points_mass_loss = input_dict.pop('R_POINTS_MASS_LOSS',[])      
         for k,v in input_dict.items():
+            #-- Fortran input is not case sensitive. Note: use the dict
+            #   value v, not input_dict[k] because of this transformation.
+            k = k.upper()
             #-- Determine delimiter        
-            try:
-                if v.find('&') != -1: delimiter = '&'                         
+            try: 
                 elif v.find(';') != -1: delimiter = ';'
+                if v.find('&') != -1: delimiter = '&'                        
                 elif v.find(',') != -1: delimiter = ','
                 elif v.find(':') != -1: delimiter = ':'
                 elif v.find('*') != -1: delimiter = '&'

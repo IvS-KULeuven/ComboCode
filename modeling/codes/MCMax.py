@@ -16,7 +16,7 @@ from cc.modeling.ModelingSession import ModelingSession
 
 
 
-def readModelSpectrum(path_mcmax,model_id,rt_sed=1):
+def readModelSpectrum(dpath,rt_sed=1,fn_spec='spectrum45.0.dat'):
      
     '''
     Read the model output spectrum.
@@ -24,15 +24,20 @@ def readModelSpectrum(path_mcmax,model_id,rt_sed=1):
     If no ray-tracing is requested or no ray-tracing output is found, the 
     average of the MC spectra is taken.
      
-    @param path_mcmax: modeling folder in MCMax home
+    @param path_mcmax: folder that contains the MCMax outputfiles
     @type path_mcmax: string
-    @param model_id: Model id of the spectrum to be read
-    @type model_id: string
     
     @keyword rt_sed: If a ray-traced spectrum is requested
      
                      (default: 1)
     @type rt_sed: bool
+    @keyword fn_spec: The filename of the ray-traced spectrum. Typically this 
+                      is the default name, but can be different depending on 
+                      the ray-tracing angle that is used. 
+                      Not used if MCSpec are used.
+                      
+                      (default: spectrum45.0.dat)
+    @type fn_spec: str
     
     @return: The wavelength and flux grids (micron,Jy)
     @rtype: (array,array)
@@ -42,8 +47,7 @@ def readModelSpectrum(path_mcmax,model_id,rt_sed=1):
     rt_sed = int(rt_sed)
     try:    
         if rt_sed:  
-            dfile = os.path.join(os.path.expanduser('~'),'MCMax',path_mcmax,\
-                                 'models',model_id,'spectrum45.0.dat')
+            dfile = os.path.join(dpath,fn_spec)
             this_data = DataIO.readCols(dfile)
             #- if the lists are not empty
             if list(this_data[0]) and list(this_data[1]):    
@@ -54,8 +58,7 @@ def readModelSpectrum(path_mcmax,model_id,rt_sed=1):
     except IOError:
         print 'No spectrum was found or ray-tracing is off for ' + \
               '%s. Taking average of theta-grid MCSpectra.'%model_id
-        dfiles = glob(os.path.join(os.path.expanduser('~'),'MCMax',path_mcmax,\
-                      'models',model_id,'MCSpec*.dat'))
+        dfiles = glob(dpath,'MCSpec*.dat')
         w = DataIO.readCols(filename=dfiles[0])[0]
         mcy_list = [DataIO.readCols(f)[1] for f in dfiles]
         f = sum(mcy_list)/len(mcy_list)
@@ -251,8 +254,7 @@ class MCMax(ModelingSession):
         
         #- Read standard input file with all parameters that should be included
         #- as well as some dust specific information
-        inputfilename = os.path.join(os.path.expanduser("~"),'MCMax',\
-                                     'inputMCMax.dat')
+        inputfilename = os.path.join(self.path_combocode,'cc','inputMCMax.dat')
         self.standard_inputfile = DataIO.readDict(inputfilename,\
                                                   convert_floats=1,\
                                                   convert_ints=1,\

@@ -189,7 +189,9 @@ class PlotDust(PlottingSession):
         if model_ids_mcm: 
             rt_sed = star_grid[0]['RT_SED']
         for model_id in model_ids_mcm:
-            w,f = MCMax.readModelSpectrum(self.path,model_id,rt_sed)
+            dpath = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
+                                 'models',model_id)
+            w,f = MCMax.readModelSpectrum(dpath,rt_sed)
             data_x.append(w)
             data_y.append(f)
             keytags.append(model_id.replace('_','\_'))
