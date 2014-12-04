@@ -342,9 +342,9 @@ class ComboCode(object):
             #   value v, not input_dict[k] because of this transformation.
             k = k.upper()
             #-- Determine delimiter        
-            try: 
+            try:
+                if v.find('&') != -1: delimiter = '&'                         
                 elif v.find(';') != -1: delimiter = ';'
-                if v.find('&') != -1: delimiter = '&'                        
                 elif v.find(',') != -1: delimiter = ','
                 elif v.find(':') != -1: delimiter = ':'
                 elif v.find('*') != -1: delimiter = '&'
