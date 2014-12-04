@@ -58,7 +58,7 @@ def readModelSpectrum(dpath,rt_sed=1,fn_spec='spectrum45.0.dat'):
     except IOError:
         print 'No spectrum was found or ray-tracing is off for ' + \
               'this model. Taking average of theta-grid MCSpectra.'
-        dfiles = glob(dpath,'MCSpec*.dat')
+        dfiles = glob(os.path.join(dpath,'MCSpec*.dat'))
         w = DataIO.readCols(filename=dfiles[0])[0]
         mcy_list = [DataIO.readCols(f)[1] for f in dfiles]
         f = sum(mcy_list)/len(mcy_list)
