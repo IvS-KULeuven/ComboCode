@@ -1025,8 +1025,10 @@ class Star(dict):
         
         if not self.has_key('F_CONT_63'):
             if self['LAST_MCMAX_MODEL']: 
-                w,f = MCMax.readModelSpectrum(self.path_mcmax,\
-                                            self['LAST_MCMAX_MODEL'],1)
+                dpath = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                     self.path_mcmax,'models',\
+                                     self['LAST_MCMAX_MODEL'])
+                w,f = MCMax.readModelSpectrum(dpath,rt_sed=1)
                 fi = f[argmin(abs(w-6.3))]
                 self['F_CONT_63'] = fi
             else:
@@ -2008,6 +2010,22 @@ class Star(dict):
         else:
             pass
 
+
+
+    def calcSHELLMASS(self):
+        
+        """
+        Calculate the average mass per shell of the circumstellar envelope. 
+
+        Calculated by Mdot_gas/vexp.
+    
+        """
+        
+        if not self.has_key('SHELLMASS'):
+            self['SHELLMASS'] = float(self['MDOT_GAS'])*self.m_solar\
+                                  /((self['VEL_INFINITY_GAS']*10**5)*self.year)
+        else:
+            pass
 
 
     def calcSHELLDENS(self):

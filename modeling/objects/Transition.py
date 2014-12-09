@@ -949,7 +949,9 @@ class Transition():
             self.__setIndices()  
         else:
             self.frequency = frequency
-        self.c = 2.99792458e10 #in cm
+        self.c = 2.99792458e10          #in cm
+        self.h = 6.62606957e-27         #in erg*s Planck constant
+        self.k = 1.3806488e-16          #in erg/K Boltzmann constant
         self.wavelength = self.c/self.frequency #in cm
         self.best_vlsr = None
         self.fittedlprof = None
@@ -1253,10 +1255,18 @@ class Transition():
         
 
 
-    def getEnergyUpper(self):
+    def getEnergyUpper(self,unit='cm-1'):
          
         '''
         Return the energy level of the upper state of this transition.
+        
+        You can choose the unit. Options: ['cm-1','K','erg'] Default is taken
+        if the unit is not recognized.
+    
+        @keyword unit: The unit of the returned value. ['cm-1','K','erg']
+        
+                       (default: cm-1)
+        @type unit: str
 
         @return: energy level in cm^-1
         @rtype: float
@@ -1267,15 +1277,31 @@ class Transition():
             print '%s_radiat.dat not found. Cannot find energy levels.'\
                   %self.molecule.molecule
             return
+        if unit.lower() not in ['cm-1','k','erg']:
+            print('WARNING: unit not recognized. Returning cm-1.')
+        
         energy = self.molecule.radiat.getEnergyLevels()
-        return  float(energy[self.up_i-1])
+        
+        if unit.upper() == 'K':
+            return float(energy[self.up_i-1])*self.c*self.h/self.k
+        elif unit.lower() == 'erg':
+            return float(energy[self.up_i-1])*self.c*self.h
+        else:
+            return float(energy[self.up_i-1])
 
-
-
-    def getEnergyLower(self):
+    
+    
+    def getEnergyLower(self,unit='cm-1'):
 
         '''
         Return the energy level of the lower state of this transition.
+        
+        You can choose the unit. Options: ['cm-1','K','erg']
+    
+        @keyword unit: The unit of the returned value. ['cm-1','K','erg']
+        
+                       (default: cm-1)
+        @type unit: str
 
         @return: energy level in cm^-1
         @rtype: float
@@ -1286,8 +1312,17 @@ class Transition():
             print '%s_radiat.dat not found. Cannot find energy levels.'\
                   %self.molecule.molecule
             return
+        if unit.lower() not in ['cm-1','k','erg']:
+            print('WARNING: unit not recognized. Returning cm-1.')
+            
         energy = self.molecule.radiat.getEnergyLevels()
-        return  float(energy[self.low_i-1])
+        
+        if unit.upper() == 'K':
+            return  float(energy[self.low_i-1])*self.c*self.h/self.k
+        elif unit.lower() == 'erg':
+            return  float(energy[self.low_i-1])*self.c*self.h
+        else:
+            return  float(energy[self.low_i-1])
 
 
 

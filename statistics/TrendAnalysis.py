@@ -395,9 +395,10 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
     
     x_titles = dict([('MDOT_GAS',r'$\log$ $\left[\dot{M}_\mathrm{g}\ (\mathrm{M}_\odot/\mathrm{yr})\right]$'),\
                      ('MDOT_DUST',r'$\log$ $\left[\dot{M}_\mathrm{d}\ (\mathrm{M}_\odot/\mathrm{yr})\right]$'),\
-                     ('VEL_INFINITY_GAS','$v_{\infty\mathrm{,g}}$ (km/s)'),\
-                     ('SHELLDENS',r'$\bar{\rho}$ (g/cm$^{3}$)'),\
-                     ('SHELLCOLDENS',r'$\log$ $\left[\bar{m}\ (\mathrm{g}/\mathrm{cm}^{2})\right]$'),\
+                     ('VEL_INFINITY_GAS','$v_{\infty\mathrm{,g}}$ ($\mathrm{km} \mathrm{s}^{-1}$)'),\
+                     ('SHELLMASS',r'$\log$ $\left[\bar{M_\mathrm{s}}\ (\mathrm{g}\ \mathrm{cm}^{-1})\right]$'),\
+                     ('SHELLDENS',r'$\log$ $\left[\bar{\rho}\ (\mathrm{g}\ \mathrm{cm}^{-3})\right]$'),\
+                     ('SHELLCOLDENS',r'$\log$ $\left[\bar{m}\ (\mathrm{g}\ \mathrm{cm}^{-2})\right]$'),\
                      ('SHELLDENS2',r'$\sqrt{\bar{\rho}^2 R_\star}$ (g/cm$^{5/2}$)'),\
                      ('L_STAR','$L_\star$ (L$_\odot$)'),\
                      ('P_STAR',r'$\log$ $\left[P\ (\mathrm{days})\right]$'),\
@@ -416,6 +417,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                       ('A_SICB','asicb'),\
                       ('A_AMCSPH','aamcsph'),\
                       ('VEL_INFINITY_GAS','vg'),\
+                      ('SHELLMASS','shellmass'),\
                       ('SHELLDENS','dens'),\
                       ('SHELLCOLDENS','coldens'),\
                       ('SHELLDENS2','dens3-2'),\
@@ -451,6 +453,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('A_AMCSPH','A(AMCSPH)'),\
                      ('DUST_LIST','Dust Comp.'),\
                      ('VEL_INFINITY_GAS','$v_{\infty\mathrm{,g}}$'),\
+                     ('SHELLMASS','$\bar{M_\mathrm{s}}$'),\
                      ('SHELLDENS',r'$\bar{\rho}$'),\
                      ('SHELLCOLDENS',r'$\bar{m}$'),\
                      ('SHELLDENS2',r'$\sqrt{\bar{\rho}^2 R_\star}}$'),\
@@ -459,7 +462,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('Q_STAR','$Q_\star$'),\
                      ('T_STAR','$T_\star$'),\
                      ('P_TYPE','Var.~Type'),\
-                     ('F_H2O','$A_{\mathrm{H}_2\mathrm{O}}/A_{\mathrm{H}_2}$'),\
+                     ('F_H2O','$n_{\mathrm{H}_2\mathrm{O}}/n_{\mathrm{H}_2}$'),\
                      ('DUST_TO_GAS_CHANGE_ML_SP','$\psi$'),\
                      ('TEMPERATURE_EPSILON_GAS',r'$\epsilon$'),\
                      ('TEMPERATURE_EPSILON2_GAS',r'$\epsilon_2$'),\
@@ -469,7 +472,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('R_INNER_GAS','$R_\mathrm{i,g}$'),\
                      ('MDOT_CLASS',''),\
                      ('SCD_CLASS',''),\
-                     ('ABUN_O','$A_{\mathrm{O}}/A_{\mathrm{H}_\mathrm{tot}}$'),\
+                     ('ABUN_O','$n_{\mathrm{O}}/n_{\mathrm{H}_\mathrm{tot}}$'),\
                      ('L_CLASS',''),\
                      ('T_CLASS',''),\
                      ('VG_CLASS',''),\
@@ -486,6 +489,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('A_SICB',''),\
                      ('A_AMCSPH',''),\
                      ('VEL_INFINITY_GAS','$\mathrm{km\;s}^{-1}$'),\
+                     ('SHELLMASS','$\mathrm{g\;cm}^{-1}$'),\
                      ('SHELLDENS','$\mathrm{g\;cm}^{-3}$'),\
                      ('SHELLCOLDENS','$\mathrm{g\;cm}^{-2}$'),\
                      ('SHELLDENS2','$\mathrm{g\;cm}^{5/2}$'),\
@@ -521,6 +525,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('A_SICB',0),\
                      ('A_AMCSPH',0),\
                      ('VEL_INFINITY_GAS',1),\
+                     ('SHELLMASS',0),\
                      ('SHELLDENS',0),\
                      ('SHELLCOLDENS',0),\
                      ('SHELLDENS2',0),\
