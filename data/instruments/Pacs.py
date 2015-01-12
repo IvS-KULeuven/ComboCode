@@ -162,7 +162,7 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
     for star in stars:
         if not dpacs.has_key(star):
             dpacs[star] = Pacs(star,6,path_pacs,path_linefit='lineFit',\
-                               path_combocode=path_combocode,path=path)
+                               path_combocode=path_combocode)
         dpacs[star].setData(searchstring=searchstring)
         for ifn in range(len(dpacs[star].data_filenames)):
             dpacs[star].intIntMatch(trans,ifn)
