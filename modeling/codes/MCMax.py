@@ -24,8 +24,8 @@ def readModelSpectrum(dpath,rt_sed=1,fn_spec='spectrum45.0.dat'):
     If no ray-tracing is requested or no ray-tracing output is found, the 
     average of the MC spectra is taken.
      
-    @param path_mcmax: folder that contains the MCMax outputfiles
-    @type path_mcmax: string
+    @param dpath: folder that contains the MCMax outputfiles
+    @type dpath: string
     
     @keyword rt_sed: If a ray-traced spectrum is requested
      

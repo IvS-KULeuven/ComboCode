@@ -187,10 +187,11 @@ class Star(dict):
         self.year = 31557600.            #julian year in seconds
         self.au = 149598.0e8             #in cm
         self.c = 2.99792458e10          #in cm/s
-        self.h = 6.62606957e-27         #in erg*s Planck constant
-        self.k = 1.3806488e-16          #in erg/K Boltzmann constant
+        self.h = 6.62606957e-27         #in erg*s, Planck constant
+        self.k = 1.3806488e-16          #in erg/K, Boltzmann constant
         self.pc = 3.08568025e16         #in cm
-
+        self.mh = 1.672661e-24           #in g, mass hydrogen atom
+        
         self.path_combocode = path_combocode
         dust_path = os.path.join(self.path_combocode,'Data')
         self.species_list = DataIO.getInputData(path=dust_path,\

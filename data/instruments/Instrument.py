@@ -76,11 +76,12 @@ class Instrument(object):
         #-- Set relevant velocities in cm/s
         self.c = 2.99792458e10 
         self.vlsr = DataIO.getInputData(path=ccd,keyword='V_LSR')[istar]*10**5
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                                self.code,self.path,'stars'))
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                                self.code,self.path,'stars',\
-                                                self.star_name))
+        if self.path <> None:
+            DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
+                                                  self.code,self.path,'stars'))
+            DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
+                                                  self.code,self.path,'stars',\
+                                                  self.star_name))
                                             
 
 

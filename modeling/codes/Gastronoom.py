@@ -609,7 +609,7 @@ class Gastronoom(ModelingSession):
                                                     ['R_POINTS_MASS_LOSS']] +\
                                        ['####'])
                 filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                        self.path,'gastronoom_%s.inp'\
+                                        self.path,'models','gastronoom_%s.inp'\
                                         %molec.getModelId())
                 DataIO.writeFile(filename,commandfile)                
                 self.execGastronoom(subcode='mline',filename=filename)
@@ -691,7 +691,7 @@ class Gastronoom(ModelingSession):
                                                     ['R_POINTS_MASS_LOSS']] + \
                                            ['####'])
                     filename = os.path.join(os.path.expanduser('~'),\
-                                            'GASTRoNOoM',self.path,\
+                                            'GASTRoNOoM',self.path,'models',\
                                             'gastronoom_%s.inp'\
                                             %trans.getModelId())
                     DataIO.writeFile(filename,commandfile)                

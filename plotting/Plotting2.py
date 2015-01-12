@@ -1071,6 +1071,8 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     #if len(keytags) != len(x) and keytags: keytags = []
     keytags = [k.replace(';',',') for k in keytags]
     labels = [(l1.replace(';',','),l2,l3) for l1,l2,l3 in labels]
+    labels = [(l1.replace('{','('),l2,l3) for l1,l2,l3 in labels]
+    labels = [(l1.replace('}',')'),l2,l3) for l1,l2,l3 in labels]
     if len(xerr) != len(x) and xerr: xerr = []
     if len(yerr) != len(y) and yerr: yerr = []
     if len(xerr) > len(yerr): yerr = [None]*len(xerr)
@@ -1432,7 +1434,7 @@ def setLineTypes(x,line_types,extra_line_types):
         line_types = [lp for xi,lp in zip(x,extra_line_types)]
     extra_line_types = [extra  for extra in extra_line_types 
                                if extra not in line_types]
-    line_types = [lp and lp or extra_line_types.pop(0) 
+    line_types = [lp and str(lp) or extra_line_types.pop(0) 
                   for lp in line_types]
     return (line_types,extra_line_types)
     

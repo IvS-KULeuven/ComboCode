@@ -906,7 +906,7 @@ class PlotGas(PlottingSession):
                                                 
    
     def plotAbundanceProfiles(self,star_grid=[],models=[],cfg='',\
-                              per_molecule=0):  
+                              per_molecule=0,unit='cm'):  
         
         '''
         Plot abundance profiles for all molecules in every model.
@@ -929,6 +929,10 @@ class PlotGas(PlottingSession):
         
                                (default: 0)
         @type per_molecule: bool
+        @keyword unit: The radial unit. Can be 'cm' or 'rstar'
+        
+                       (default: cm)
+        @type unit: str
         
         '''
         
@@ -943,7 +947,9 @@ class PlotGas(PlottingSession):
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('per_molecule'):
             per_molecule = cfg_dict['per_molecule']
-        
+        if cfg_dict.has_key('unit'):
+            unit = cfg_dict['unit']
+        if unit.lower() not in ['cm','rstar']: unit = 'cm'
         #-- Dict to keep track of all data
         ddata = dict()
         for istar,star in enumerate(star_grid):
@@ -960,7 +966,7 @@ class PlotGas(PlottingSession):
                                                %(molec.getModelId(),\
                                                  molec.molecule)),\
                         return_array=1)
-                rad = rad*star['R_STAR']*star.r_solar
+                if unit =='cm': rad = rad*star['R_STAR']*star.r_solar
                 ddata[istar][molec.molecule]['rad'] = rad
                 ah2 = DataIO.getGastronoomOutput(\
                         filename=os.path.join(os.path.expanduser('~'),\
@@ -993,10 +999,8 @@ class PlotGas(PlottingSession):
                     #-            y_in=frac,gridsx=[rad])[0][0])
                 else:
                     frac_interpol = 1
-                abun = amol/ah2*molec.abun_factor*frac_interpol
-                ddata[istar][molec.molecule]['amol'] = abun
-                ri = star['R_INNER_GAS']*star['R_STAR']*star.r_solar
-                ddata[istar][molec.molecule]['ri'] = ri
+                abun = amol/ah2*frac_interpol   #*molec.abun_factor     GASTRoNOoM output already takes into account this factor.
+                ddata[istar][molec.molecule]['abun'] = abun
                 ddata[istar][molec.molecule]['key'] = molec.molecule_plot
                 ddata[istar][molec.molecule]['id'] = molec.getModelId()
                 
@@ -1006,7 +1010,6 @@ class PlotGas(PlottingSession):
                 abuns = [dmol['abun'] for molec,dmol in ddata[istar].items()]
                 keytags = [dmol['key'] for molec,dmol in ddata[istar].items()]
                 ids = [dmol['id'] for molec,dmol in ddata[istar].items()]
-                ri = min([dmol['ri'] for molec,dmol in ddata[istar].items()])
                 
                 #-- Add additional information if requested
                 if star.has_key('R_DES_H2O'):
@@ -1021,22 +1024,21 @@ class PlotGas(PlottingSession):
                     lt.append('-k')
                 
                 yaxis = '$n_\mathrm{molec}/n_{\mathrm{H}_2}$'
+                if unit == 'cm': xaxis = '$r$ (cm)'
+                else: xaxis = '$r$ (R$_\star$)'
                 #-- Make filename
                 pfn = os.path.join(os.path.expanduser('~'),\
                                              'GASTRoNOoM',self.path,'stars',\
                                              self.star_name,self.plot_id,\
                                              'abundance_profiles_%s'\
                                               %'_'.join(list(set(ids))))
-                pfns.append(Plotting2.plotCols(x=radii,y=abuns,\
-                                               xaxis='$r$ (cm)',transparent=0,\
+                
+                pfns.append(Plotting2.plotCols(x=radii,y=abuns,cfg=cfg,\
+                                               xaxis=xaxis,transparent=0,\
                                                filename=pfn,keytags=keytags,\
                                                figsize=(12.5,8.5),yaxis=yaxis,\
-                                               fontsize_axis=28,linewidth=4,\
                                                ylogscale=1,xlogscale=1,\
-                                               key_location=(.05,.1),xmin=ri,\
-                                               fontsize_ticklabels=26,cfg=cfg,\
-                                               ymin=10**(-9),ymax=10**(-3),\
-                                               fontsize_key=18,xmax=1e18))
+                                               ymin=10**(-9),ymax=10**(-3)))
         
         if per_molecule:
             #-- Collect all data
@@ -1050,34 +1052,26 @@ class PlotGas(PlottingSession):
                          if molec == imolec]
                 abuns = [dmol['abun']
                          for istar in ddata.keys()
-                         for molec,dmol in ddata[istar].items()
+                         for imolec,dmol in ddata[istar].items()
                          if molec == imolec]
-                keytags = [dmol['id'] 
+                keytags = [dmol['id'].replace('_','\_') 
                            for istar in ddata.keys()
-                           for molec,dmol in ddata[istar].items()
+                           for imolec,dmol in ddata[istar].items()
                            if molec == imolec]
-                ri = min([dmol['ri'] 
-                          for istar in ddata.keys()
-                          for molec,dmol in ddata[istar].items()
-                          if molec == imolec])
-                
                 strmolec = ddata[0][molec]['key']
                 yaxis = '$n_\mathrm{%s}/n_{\mathrm{H}_2}$'%strmolec
+                if unit == 'cm': xaxis = '$r$ (cm)'
+                else: xaxis = '$r$ (R$_\star$)'
                 #-- Make filename
                 pfn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',
                                    self.path,'stars',self.star_name,\
                                    self.plot_id,'abundance_profiles_%s'%molec)
                 pfns.append(Plotting2.plotCols(x=radii,y=abuns,\
-                                               xaxis='$r$ (cm)',yaxis=yaxis,\
+                                               xaxis=xaxis,yaxis=yaxis,\
                                                filename=pfn,keytags=keytags,\
                                                figsize=(12.5,8.5),cfg=cfg,\
-                                               fontsize_axis=28,linewidth=4,\
                                                ylogscale=1,xlogscale=1,\
-                                               key_location=(.05,.1),xmin=ri,\
-                                               fontsize_ticklabels=26,\
-                                               ymin=10**(-9),ymax=10**(-3),\
-                                               fontsize_key=18,xmax=1e18))        
-        
+                                               ymin=10**(-9),ymax=10**(-3)))        
         if not per_molecule and pfns and pfns[0][-4:] == '.pdf':    
             newfn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                  self.path,'stars',self.star_name,\

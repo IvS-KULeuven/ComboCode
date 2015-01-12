@@ -354,7 +354,10 @@ class ComboCode(object):
                 #-- no need to check the rest, continue on with the next k/v pair
                 self.processed_input[k] = v
                 continue
-            #-- Expanding '*' entries
+            #-- Expanding '*' entries: Assumes the value is first, the count 
+            #   second. Can't be made flexible, because in some cases the value
+            #   cannot be discerned from the count (because both are low-value
+            #   integers)
             newv = delimiter.join(\
                         [len(value.split('*')) > 1 
                                   and delimiter.join([value.split('*')[0]]*\

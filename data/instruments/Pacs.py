@@ -137,6 +137,9 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
     
     '''
     
+    if type(stars) is types.StringType:
+        stars = [stars]
+    
     #-- Note that keeping track of transitions per star is not necessary. Here,
     #   we look at data, and these are kept track of by the filename which 
     #   includes the star name. There is no confusion possible.
@@ -159,7 +162,7 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
     for star in stars:
         if not dpacs.has_key(star):
             dpacs[star] = Pacs(star,6,path_pacs,path_linefit='lineFit',\
-                               path_combocode=path_combocode)
+                               path_combocode=path_combocode,path=path)
         dpacs[star].setData(searchstring=searchstring)
         for ifn in range(len(dpacs[star].data_filenames)):
             dpacs[star].intIntMatch(trans,ifn)
@@ -280,7 +283,7 @@ class Pacs(Instrument):
     
     """
     
-    def __init__(self,star_name,oversampling,path_pacs,path='codeSep2010',
+    def __init__(self,star_name,oversampling,path_pacs,path=None,
                  redo_convolution=0,intrinsic=1,path_linefit='',\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
@@ -296,9 +299,11 @@ class Pacs(Instrument):
         @param path_pacs: full path to PACS data folder, excluding star_name
         @type path_pacs: string
         
-        @keyword path: Output folder in the code's home folder
+        @keyword path: Output folder in the code's home folder. Used to locate 
+                       the PACS database. If None, it is not used (eg for line
+                       measurement matching/identification)
                        
-                       (default: 'codeSep2010')
+                       (default: None)
         @type path: string
         @keyword path_combocode: CC home folder
         
@@ -339,13 +344,18 @@ class Pacs(Instrument):
         self.data_orders = []
         self.data_delta_list = []
         self.redo_convolution = redo_convolution
-        self.db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                    self.path,'stars',self.star_name,\
-                                    'GASTRoNOoM_pacs_models.db')
-        self.db = Database.Database(self.db_path)
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                   'GASTRoNOoM',self.path,'stars',\
-                                   self.star_name,'PACS_results'))
+        #-- Check the path for the PACS database if a model folder is known.
+        if self.path <> None: 
+            self.db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                        self.path,'stars',self.star_name,\
+                                        'GASTRoNOoM_pacs_models.db')
+            self.db = Database.Database(self.db_path)
+            DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
+                                       'GASTRoNOoM',self.path,'stars',\
+                                       self.star_name,'PACS_results'))
+        else:
+            self.db = None
+        
         self.sphinx_prep_done = 0
         self.oversampling = oversampling
         self.path_linefit = path_linefit

@@ -631,7 +631,7 @@ def writeFile(filename,input_lines,mode='w',delimiter='\n'):
                         new line character is already included in the input 
                         lines)
                         
-                        (default: '\n')
+                        (default: '\\n')
     @type delimiter: string
     @keyword mode: writing mode ('w' is new file, 'a' appends to existing file)
     

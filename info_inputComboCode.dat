@@ -18,10 +18,10 @@
 ###                                            belongs to the second model, and so on.
 ###                                            All such declared parameters must have the same amount of values.
 ### 2 or more values separated by AMPERSANDS	: multiple values relevant for 1 model/star (such as multiple molecules)
-### 2 or more (even) values (value*integer&value*integer&...) :  multiple values relevant, with certain multiplicity,
-###																				  can be used with & and with ; but never mix the two! 
-###																				  if used, always include the delimiter chosen, if it is 
-###																				  normally not present, end the line with it
+### 2 or more (even) values (value*integer&value*integer&...) : multiple values relevant, with certain multiplicity (name value first, THEN the count),
+### 2 or more (even) values (value*integer;value*integer;...)   can be used with &, with : and with ; but never mix the two! 
+### 2 or more (even) values (value*integer:value*integer:...)   if used, always include the delimiter chosen, if it is 
+###																normally not present, end the line with it
 ###
 #######################################################################################################################
 

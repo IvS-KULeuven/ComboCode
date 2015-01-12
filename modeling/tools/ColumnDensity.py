@@ -204,8 +204,8 @@ class ColumnDensity(object):
             print 'No molar weight given for dust species %s in Dust.dat.'\
                   %species
             return 0
-        nsp = self.fullcoldens[species]*self.avogadro/self.dustmolar[ispecies]
-        return nsp
+        cndsp = self.fullcoldens[species]*self.avogadro/self.dustmolar[ispecies]
+        return cndsp
         
         
         
@@ -242,39 +242,54 @@ class ColumnDensity(object):
         if self.r_min_cd[species] == 0:
             print 'No significant amount of dust species %s found.'%species
             return 0
-        nspecies = self.coldens[species]*self.avogadro/self.dustmolar[ispecies]
-        nh2 = self.hydrogenColDens(species)
-        return nspecies/nh2
+        cndspecies = self.coldens[species]*self.avogadro/self.dustmolar[ispecies]
+        cndh2 = self.hydrogenColDens(species)
+        return cndspecies/cndh2
         
         
     
     def hydrogenColDens(self,species):
         
         """
-        Calculate the column density of molecular hydrogen between two radial
-        distances. 
+        Calculate the column number density of molecular hydrogen between two 
+        radial distances. 
         
-        The value is derived from the total mass-loss rate, assuming everything
-        is H2.
+        If a GASTRoNOoM model is calculated, the h2 density profile is taken 
+        from there. Otherwise, the value is derived from the total mass-loss 
+        rate, assuming everything is H2.
+        
+        The use of a proper velocity profile can make a big difference for low
+        mass-loss rate sources!
         
         @param species: the dust species for which the H2 col dens is 
                         calculated. Required for the radial information. 
         @type species: string
         
-        @return: The molecular hydrogen column density between the given radii
-                 (cm-2)
+        @return: The molecular hydrogen column number density between the given
+                 radii (cm-2)
         @rtype: float
         
         """
-
-        mdot_gas = float(self.star['MDOT_GAS'])*self.m_solar/self.year
-        vexp_gas = float(self.star['VEL_INFINITY_GAS']) * 100000
+        
+        modelid = self.star['LAST_GASTRONOOM_MODEL']
         rin = self.r_min_cd[species]
         rout = self.r_max_cd[species]
-        mh2 = 2.
-        sigma = (1./rin-1./rout)*mdot_gas/vexp_gas/4./math.pi
-        nh2 = sigma * self.avogadro / mh2
-        return nh2    
+        if modelid:
+            fn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                              self.star.path_gastronoom,'models',\
+                              modelid,'coolfgr%s.dat'%modelid)
+            rad = DataIO.getGastronoomOutput(fn,keyword='RADIUS',return_array=1)
+            rad = rad*self.star.r_solar*self.star['R_STAR']
+            nh2 = DataIO.getGastronoomOutput(fn,keyword='N(H2)',return_array=1)
+            cndh2 = trapz(x=rad[(rad<rout)*(rad>rin)],\
+                          y=nh2[(rad<rout)*(rad>rin)])
+        else: 
+            mdot_gas = float(self.star['MDOT_GAS'])*self.m_solar/self.year
+            vexp_gas = float(self.star['VEL_INFINITY_GAS']) * 100000
+            h2_molar = 2.
+            sigma = (1./rin-1./rout)*mdot_gas/vexp_gas/4./math.pi
+            cndh2 = sigma * self.avogadro / h2_molar
+        return cndh2    
     
     
         
