@@ -347,6 +347,9 @@ class ComboCode(object):
                 elif v.find(';') != -1: delimiter = ';'
                 elif v.find(',') != -1: delimiter = ','
                 elif v.find(':') != -1: delimiter = ':'
+                #-- * while no ; or , or : means multiple values for ONE model
+                #   Only * star for multiplicative grid makes no sense (just 
+                #   give the value without delimiter)
                 elif v.find('*') != -1: delimiter = '&'
                 else: delimiter = ' '                                                        
             except AttributeError: 

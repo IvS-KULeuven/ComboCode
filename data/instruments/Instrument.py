@@ -25,7 +25,7 @@ class Instrument(object):
     """
         
     def __init__(self,star_name,path_instrument,instrument_name,\
-                 code='GASTRoNOoM',path='codeSep2010',intrinsic=1,\
+                 code='GASTRoNOoM',path=None,intrinsic=1,\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):        
         
@@ -46,10 +46,12 @@ class Instrument(object):
         
                        (default: 'GASTRoNOoM')
         @type code: string
-        @keyword path: Output folder in the code's home folder
-        
-                       (default: 'codeSep2010')
-        @type path: string                                
+        @keyword path: Output folder in the code's home folder. Used to locate 
+                       eg PACS database. If None, no model info required (eg 
+                       for line measurement matching/identification)
+                       
+                       (default: None)
+        @type path: string                        
         @keyword intrinsic: Use the intrinsic Sphinx line profiles for 
                             convolving with the spectral resolution? Otherwise
                             the beam convolved line profiles are used.

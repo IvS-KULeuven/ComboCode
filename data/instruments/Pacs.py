@@ -74,7 +74,7 @@ def compareInts(pp1,pp2):
 
 def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                      mark_trans=[],extra_marker=r'\tablefootmark{f}',\
-                     blend_mark=r'\tablefootmark{$\star$}',\
+                     blend_mark=r'\tablefootmark{$\star$}',print_summary=0,\
                      path_pacs=os.path.join(os.path.expanduser('~'),\
                                             'Data','PACS'),sort_freq=1,\
                      path_combocode=os.path.join(os.path.expanduser('~'),\
@@ -134,6 +134,10 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
     
                         (default: 1)
     @type sort_freq: bool
+    @keyword print_summary: Print a summary at the end. 
+    
+                            (default: 0)
+    @type print_summary: bool
     
     '''
     
@@ -197,6 +201,9 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
     inlines.append('&'.join(line_els))
     bands = ['R1B','R1A','B2B','B2A','B3A']
     if not sort_freq: bands.reverse()
+    line_counter = dict()
+    for s in stars:
+        line_counter[s] = 0
     for band in bands:
         #inlines.append(r'\multicolumn{4}{c}{PACS Band: %s} & \multicolumn{%i}{c}{} \\\hline'\
                        #%(band,len(pstars)))
@@ -264,6 +271,7 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                 if fint == 'inblend':
                     parts.append('Blended')
                 else:
+                    line_counter[s] += 1
                     parts.append('%s%s%.2e (%.1f%s)'\
                                  %(t in mark_trans and extra_marker or r'',\
                                    fint<0 and blend_mark or r'',abs(fint),\
@@ -273,6 +281,11 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
         if not new_band and band != bands[-1]: 
             inlines[-1] = inlines[-1] + r'\hline'
     DataIO.writeFile(filename,input_lines=inlines)
+    if print_summary:
+        print('Summary')
+        for s in stars:
+            print('%s: %i lines measured'%(s,len(dpacs[s].linefit.wave_fit))+\
+                  ', of which %i lines have been identified.'%line_counter[s])
 
 
 
