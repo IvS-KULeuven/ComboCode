@@ -244,24 +244,48 @@ def updateLineSpec(trans_list):
         line_spec_list = [line 
                           for line in old_spec 
                           if line.find('LINE_SPEC') >-1 and line[0] != '#']
-        these_trans = [trans 
-                       for trans in trans_list 
-                       if trans.telescope == telescope]
-        these_trans = [trans.getLineSpec() 
-                       for trans in these_trans 
-                       if trans.getLineSpec() not in line_spec_list]
-        line_spec_list = sorted(line_spec_list + these_trans,\
-                              key=lambda x: [x.split()[0],float(x.split()[9])])
-        line_spec_list = [line.replace(' ','\t') for line in line_spec_list]
+        line_spec_quant = [line.split()[0:9]
+                           for line in line_spec_list]
+        
+        #-- Check for doubles (left over issue from when the check was done 
+        #   based on the full line spec including the beamwidth, which has 
+        #   changed slightly since then. The entry with the real efficiency 
+        #   (not 1) is chosen over the other one for reference. The beamwidths
+        #   are relatively close.
+        new_lsl = []
+        new_lsq = []
+        for lsq,lsl in zip(line_spec_quant,line_spec_list):
+            if line_spec_quant.count(lsq) == 1: 
+                new_lsq.append(lsq)
+                new_lsl.append(lsl)
+            else:
+                if lsq not in new_lsq:
+                    if lsl.split()[10] != 1:
+                        new_lsq.append(lsq)
+                        new_lsl.append(lsl)
+                        
+        these_trans = [tr 
+                       for tr in trans_list 
+                       if tr.telescope == telescope]
+        these_trans = [tr.getLineSpec()
+                       for tr in these_trans
+                       if tr.getLineSpec().split()[0:9] not in new_lsq]
+        
+        new_lsl = sorted(new_lsl + these_trans,\
+                         key=lambda x: [x.split()[0],float(x.split()[9])])
+        new_lsl = [line.replace(' ','\t') for line in new_lsl]
         try:
             line_spec_index = [line[0:9] 
                                for line in old_spec].index('LINE_SPEC')
-            new_spec = old_spec[0:line_spec_index] + line_spec_list
+            new_spec = old_spec[0:line_spec_index] + new_lsl
         except ValueError:
-            new_spec = old_spec + line_spec_list
+            new_spec = old_spec + new_lsl
+
         DataIO.writeFile(os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                       'src','data',telescope+'.spec'),\
                          new_spec+['\n######################################'])
+
+
 
  
 

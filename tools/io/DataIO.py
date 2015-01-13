@@ -512,18 +512,12 @@ def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
                                  (default: '')
     @type start_from_keyword: string
     
-    @return: The columns are returned, and if requested, the commentlines
-    @rtype: (list or array) or (list or array,list(string))
+    @return: The columns are returned
+    @rtype: (list or array)
     
     '''
     
     lines = readFile(filename,delimiter=delimiter)
-    #-- OBSOLETE
-    #   if not remove_comments: 
-    #       comment_chars = ['#','!']
-    #       commentlines = [line 
-    #                       for line in lines 
-    #                       if delimiter.join(line)[0] in comment_chars]
     if str(start_from_keyword):
         i = 0
         while lines[i][0].upper().find(start_from_keyword.upper()) == -1:
@@ -541,10 +535,6 @@ def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
         return [array([line[i] for line in lines]) 
                 for i in xrange(len(lines[0]))]
     else:
-        #for line in lines: 
-            #print line
-            #print len(line), len(lines[0])
-            #if len(line) != len(lines[0]): raw_input()
         return [[line[i] for line in lines] for i in xrange(len(lines[0]))]
       
       

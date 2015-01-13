@@ -528,7 +528,9 @@ class Star(dict):
         gas_list = []
         if type(self['LL_TELESCOPE']) is types.StringType:
             self['LL_TELESCOPE'] = [self['LL_TELESCOPE']]
-        if type(self['LL_NO_VIB']) is types.StringType:
+        if not self['LL_NO_VIB']:
+            self['LL_NO_VIB'] = []
+        elif type(self['LL_NO_VIB']) is types.StringType:
             self['LL_NO_VIB'] = [self['LL_NO_VIB']]
         for molec in self['GAS_LIST']:
             for telescope in self['LL_TELESCOPE']:
@@ -553,7 +555,7 @@ class Star(dict):
         """
         
         if not self.has_key('LL_NO_VIB'):
-            self['LL_NO_VIB'] = 0
+            self['LL_NO_VIB'] = []
         else:
             pass
     

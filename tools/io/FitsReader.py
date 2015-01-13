@@ -78,6 +78,8 @@ class FitsReader(LPDataReader):
             #return
         if len(lp.shape) == 4 and lp.shape[0] == lp.shape[1] == lp.shape[2] == 1:
             self.contents['flux'] = lp[0][0][0]
+        elif len(lp.shape) == 3 and lp.shape[0] == lp.shape[1] == 1:
+            self.contents['flux'] = lp[0][0]
         elif lp.shape[0] != 1:
             self.contents['flux'] = lp
         else:
