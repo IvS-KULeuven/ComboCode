@@ -15,6 +15,42 @@ from cc.tools.io.LPDataReader import LPDataReader
 from cc.tools.io import DataIO
 
 
+def changeFitsHeader(fn_old,fn_new,key,value,comment=None,**kwargs):
+
+    '''
+    Change a key in the header of a fits file and save to a new file. 
+    
+    Additional keywords for the writeto pyfits function can be passed along 
+    with kwargs. eg output_verify='ignore'.
+
+    @param fn_old: The old filename of the fits file
+    @type fn_old: str
+    @param fn_new: The new filename of the fits file
+    @type fn_new: str
+    @param key: The header key to be changed. Has to be present already 
+                (for now)
+    @type key: str
+    @param value: The new value
+    @type value: str, int, float
+    
+    @keyword comment: If desired, the comment for the keyword can be changed 
+                      here. By default, no change is made.
+                      
+                      (default: None)
+    @type comment: str                  
+    
+    '''
+    
+    hdulist = pyfits.open(fn_old)
+    hdr = hdulist[0].header
+    if comment <> None:
+        hdr[key] = (value,comment)
+    else:
+        hdr[key] = value
+    hdulist.writeto(fn_new,**kwargs)
+    hdulist.close()
+    
+
 
 class FitsReader(LPDataReader):
     
@@ -83,7 +119,8 @@ class FitsReader(LPDataReader):
         elif lp.shape[0] != 1:
             self.contents['flux'] = lp
         else:
-            raise IOError('Unknown fits file formate for the FitsReader. Check dimensions fits data. (Then contact Robin)')
+            raise IOError('Unknown fits file formate for the FitsReader.'+\
+                          'Check dimensions fits data. (Then contact Robin)')
 
         #- Check vlsr
         vlsr_keys = ['VELO-LSR','VCORR','VLSR']

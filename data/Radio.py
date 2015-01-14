@@ -7,12 +7,11 @@ Author: R. Lombaert
 
 """
 
-import os
+import os, pyfits
 from glob import glob
 
 from cc.tools.io import DataIO
 from cc.tools.io.Database import Database
-
 
 
 class Radio(Database):
