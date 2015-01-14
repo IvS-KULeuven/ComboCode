@@ -260,7 +260,7 @@ def updateLineSpec(trans_list):
                 new_lsl.append(lsl)
             else:
                 if lsq not in new_lsq:
-                    if lsl.split()[10] != 1:
+                    if float(lsl.split()[10]) != 1.:
                         new_lsq.append(lsq)
                         new_lsl.append(lsl)
                         

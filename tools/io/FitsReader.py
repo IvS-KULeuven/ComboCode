@@ -83,7 +83,7 @@ class FitsReader(LPDataReader):
         elif lp.shape[0] != 1:
             self.contents['flux'] = lp
         else:
-            raise IOError('Unknown fits file formate for the FitsReader. Contact Robin.')
+            raise IOError('Unknown fits file formate for the FitsReader. Check dimensions fits data. (Then contact Robin)')
 
         #- Check vlsr
         vlsr_keys = ['VELO-LSR','VCORR','VLSR']
