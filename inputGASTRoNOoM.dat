@@ -20,7 +20,7 @@ R_STAR=0.                 ! Stellar radius [cm]
 DISTANCE=0.               ! Distance to object [pc]			
 
 USE_STARFILE=0              ! Use an inputspectrum for the star. 1 for a table (see STARFILE), 2 for high-resolution MARCS spec (hard-coded)
-STARFILE=""                 ! The full path to the input spectrum for the star, if USE_STARFILE=1
+STARFILE=""                 ! The full path to the input spectrum for the star, if USE_STARFILE=1. Two columns: one with wavelength in micron, one with flux in Jy. The spectrum is assumed to be taken at the stellar surface, and is converted to intensity.
 
 #Abundances
 DUST_TO_GAS=1.9e-2            ! Dust-to-gass mass ratio

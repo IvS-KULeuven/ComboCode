@@ -231,8 +231,6 @@ def convolveArray(xx, yy=None, sigma=3):
 
     # Middle
     for jj in arange(1,nn-1):
-        if jj%1000 == 0: 
-            print xx[jj]
         C   = yy[jj]
         xb  = 0.5*(xx[jj]+xx[jj-1])
         xe  = 0.5*(xx[jj]+xx[jj+1])

@@ -740,7 +740,7 @@ class PlotGas(PlottingSession):
 
 
     def createLineLabelsFromLineLists(self,star,xmin,xmax,xunit='micron',\
-                                      fn_trans_marker=''):
+                                      fn_trans_marker='',instrument='pacs'):
         
         '''
         Create a list of line labels for all molecules and transitions 
@@ -772,6 +772,12 @@ class PlotGas(PlottingSession):
                                   
                                   (default: '')
         @type fn_trans_marker: string
+        @keyword instrument: The instrument object for which the line labels 
+                             are created. Used to retrieve the v_lsr. Either
+                             'pacs' or 'spire'
+                             
+                             (default: 'spire')
+        @type instrument: str
         
         @return: The labels with x location and a molecule index.
         @rtype: list[string, float, index]
@@ -796,7 +802,8 @@ class PlotGas(PlottingSession):
                                        max_exc=max_exc,include_extra=1)
                 linelists.append(ll)
         lls = self.createLineLabels(linelists=linelists,\
-                                    fn_trans_marker=fn_trans_marker)
+                                    fn_trans_marker=fn_trans_marker,
+                                    instrument=instrument)
         return lls     
     
     
@@ -854,7 +861,8 @@ class PlotGas(PlottingSession):
                                                  xmin=min(xmins),\
                                                  xmax=max(xmaxs),\
                                                  fn_trans_marker=\
-                                                     fn_trans_marker)
+                                                     fn_trans_marker,\
+                                                 instrument='pacs')
         plot_filenames = []
         DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
                                                 'GASTRoNOoM',self.path,\
@@ -1227,66 +1235,77 @@ class PlotGas(PlottingSession):
 
 
     def createLineLabels(self,star_grid=[],linelists=[],fn_trans_marker='',\
-                         unit='micron',mark_undetected=0):
-         
+                         unit='micron',mark_undetected=0,instrument='pacs'):
+
         '''
-        Create line labels for all transitions in Star() objects or in 
+        Create line labels for all transitions in Star() objects or in
         LineList() objects or in a TRANSITION definition file. Priority:
         star_grid > linelists. fn_trans_marker is always added in addition.
 
-        @keyword star_grid: The Star() models. 
-                            
+        @keyword star_grid: The Star() models.
+
                             (default: [])
         @type star_grid: list[Star()]
-        @keyword linelists: The LineList() objects. 
-        
+        @keyword linelists: The LineList() objects.
+
                             (default: [])
         @type linelists: list[LineList()]
         @keyword fn_trans_marker: A file that includes TRANSITION definitions.
-                                  These transitions will be marked up in the 
-                                  plot. For instance, when indicating a subset 
+                                  These transitions will be marked up in the
+                                  plot. For instance, when indicating a subset
                                   of transitions for one reason or another.
-                                  The line type can be set for this specific 
-                                  subset, differently from other lines and 
+                                  The line type can be set for this specific
+                                  subset, differently from other lines and
                                   regardless of the molecule. In combination
-                                  with a doubly defined line label (through 
+                                  with a doubly defined line label (through
                                   star_grid/linelists), lines can be marked
                                   up.
-                                                                    
+
                                   (default: '')
         @type fn_trans_marker: string
         @keyword mark_undetected: Mark the undetected transitions in the same
                                   way extra marked transitions would be marked
-                                  by fn_trans_marker. 
-                                  
+                                  by fn_trans_marker.
+
                                   (default: 0)
         @type mark_undetected: bool
-        @keyword unit: The unit of the location number. Can be 'micron' or 
+        @keyword unit: The unit of the location number. Can be 'micron' or
                        'cm-1'.
-                    
+
                        (default: 'micron')
         @type unit: string
-        
+        @keyword instrument: The instrument object for which the line labels 
+                             are created. Used to retrieve the v_lsr. Either
+                             'pacs' or 'spire'
+                             
+                             (default: 'spire')
+        @type instrument: str
+
         @return: a sorted list(set) of line labels
         @rtype: list[string]
 
         '''
-        
+
         if star_grid:
-            alltrans = [t   for star in star_grid 
+            alltrans = [t   for star in star_grid
                             for t in star['GAS_LINES']]
         elif linelists:
             alltrans = [t   for ll in linelists
                             for t in ll.makeTransitions()]
         else:
             alltrans = []
-            
+
+        if instrument == 'pacs':
+          vlsr = self.pacs.vlsr
+        elif instrument == 'spire':
+          vlsr = self.spire.vlsr
+
         lls = [('%s %s'%(t.molecule.molecule,t.makeLabel()),\
-                t.wavelength*10**4*1./(1-self.pacs.vlsr/t.c),\
+                t.wavelength*10**4*1./(1-vlsr/t.c),\
                 t.molecule.molecule_index,\
                 t.vup>0)
                for t in alltrans]
-        
+
         used_indices = list(set([ll[-2] for ll in lls]))
         if fn_trans_marker:
             extra_trans = Transition.makeTransitionsFromTransList(\
@@ -1296,26 +1315,26 @@ class PlotGas(PlottingSession):
             this_index = max(used_indices)+1
             used_indices = used_indices + [this_index]
             ells = [('%s %s'%(t.molecule.molecule,t.makeLabel()),\
-                    t.wavelength*10**4*1./(1-self.pacs.vlsr/t.c),\
+                    t.wavelength*10**4*1./(1-vlsr/t.c),\
                     this_index,\
                     t.vup>0)
                    for t in extra_trans]
             lls = lls + ells
-            
+
         if mark_undetected:
             this_index = max(used_indices)+1
             extra_trans = [t for t in alltrans if t.getIntIntPacs()[0] is None]
             ells = [('%s %s'%(t.molecule.molecule,t.makeLabel()),\
-                     t.wavelength*10**4*1./(1-self.pacs.vlsr/t.c),\
+                     t.wavelength*10**4*1./(1-vlsr/t.c),\
                      this_index,\
                      t.vup>0)
                     for t in extra_trans]
             lls = lls + ells
-            
+
         if unit == 'cm-1':
             lls = [(l,1./w*10**4,i,vib) for l,w,i,vib in lls]
         lls = sorted(lls,key=operator.itemgetter(1))
-        return lls
+        return lls 
     
         
         
@@ -1434,7 +1453,8 @@ class PlotGas(PlottingSession):
 
         lls = self.createLineLabels(star_grid=star_grid,\
                                     fn_trans_marker=fn_trans_marker,\
-                                    mark_undetected=mark_undetected)
+                                    mark_undetected=mark_undetected,\
+                                    instrument='pacs')
         tiles = []            
         print '** Plotting now...'
         for idd,(wave,flux,flux_ori,sphinx_flux,filename,ordername) in \
@@ -1594,7 +1614,8 @@ class PlotGas(PlottingSession):
         
         lls = self.createLineLabels(star_grid=star_grid,\
                                     fn_trans_marker=fn_trans_marker,\
-                                    mark_undetected=mark_undetected)
+                                    mark_undetected=mark_undetected,\
+                                    instrument='pacs')
         
         plot_filenames = []
         for wave,flux,sphinx_flux,filename,ordername in \
@@ -1756,10 +1777,12 @@ class PlotGas(PlottingSession):
                                                      xmin=min(xmins),\
                                                      xmax=max(xmaxs),\
                                                      fn_trans_marker=\
-                                                            fn_trans_marker)
+                                                            fn_trans_marker,\
+                                                     instrument='pacs')
         elif mode == 'sphinx':
             lls = self.createLineLabels(star_grid=star_grid,\
-                                        fn_trans_marker=fn_trans_marker)
+                                        fn_trans_marker=fn_trans_marker,
+                                        instrument='pacs')
         else:
             print 'Mode for plotting PACS segments not recognized. Aborting...'
             return
@@ -1880,13 +1903,14 @@ class PlotGas(PlottingSession):
             fn_trans_marker = cfg_dict['fn_trans_marker']
  
         self.spire.prepareSphinx(star_grid)
-        lls = self.createLineLabels(star_grid,unit='cm-1')
+        lls = self.createLineLabels(star_grid,unit='cm-1',instrument='spire')
 
         if fn_trans_marker:
             used_indices = list(set([ll[-2] for ll in lls]))
             this_index = [ii for ii in range(100) if ii not in used_indices][0]
             ells = self.createLineLabels(fn_trans_marker=fn_trans_marker,\
-                                         ilabel=this_index,unit='cm-1')
+                                         ilabel=this_index,unit='cm-1',\
+                                         instrument='spire')
             lls = lls + ells
         plot_filenames = []
         for wave,flux,filename in zip(self.spire.data_wave_list,\

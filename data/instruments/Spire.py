@@ -133,7 +133,7 @@ class Spire(Instrument):
         sphinx_flux = array(sphinx_flux)
         sphinx_wav = sphinx_wav[::-1]
         sphinx_flux = sphinx_flux[::-1]
-        
+        DataIO.writeCols('/home/mariev/test1.dat',[sphinx_wav,sphinx_flux])
         #-- eliminate some of the zeroes in the grid to reduce calculation time
         #   (can reduce the array by a factor up to 100!!)
         s = self.sigma
@@ -147,8 +147,10 @@ class Spire(Instrument):
                 new_flux.append(f)
         
         new_wav, new_flux = array(new_wav), array(new_flux)
+        DataIO.writeCols('/home/mariev/test2.dat',[new_wav,new_flux])
         #-- convolve the model fluxes with a gaussian and constant sigma(spire)
         convolution = Data.convolveArray(new_wav,new_flux,s)
+        DataIO.writeCols('/home/mariev/test3.dat',[new_wav,convolution])
         
         for data_wav,fn in zip(self.data_wave_list,self.data_filenames):
             print '* Convolving Sphinx model between %.2f and %.2f cm^-1.'\
@@ -161,5 +163,5 @@ class Spire(Instrument):
              for wavi in data_wav]
             self.sphinx_convolution[(star['LAST_GASTRONOOM_MODEL'],istar)][fn]\
                         = rebinned
-
+            DataIO.writeCols('/home/mariev/test4_%s.dat'%(fn),[data_wav,rebinned])
     

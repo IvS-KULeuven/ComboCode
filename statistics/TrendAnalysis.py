@@ -1242,7 +1242,9 @@ def fitCorrPolyLog(par1,par1_err,par2,par2_err,line1,line1_err,line2,line2_err,\
                            (default: 0)
     @type y_for_xratio: bool
     
-    @return: The fit results are returned for all fitted functions.
+    @return: The fit results are returned for all n_fit fitted functions. The 
+             parameters are the output of np.polyfit and the amount depends on 
+             the polynomial degree.
     @rtype: array
     
     '''

@@ -27,10 +27,10 @@ class KappaReader(object):
         """
         Initiating an instance of the KappaReader.
         
-        @keyword path_opacity: The path to the opacity home folder
+        @keyword path_opac: The path to the opacity home folder
         
                                (default: ~/MCMax/Opacities/)
-        @type path_opacity: str
+        @type path_opac: str
         
         @keyword path_cc: Location of the ComboCode folder.
     
@@ -97,7 +97,7 @@ class KappaReader(object):
         
     
     
-    def getKappas(self,species,index=1):
+    def getKappas(self,species,index=0):
         
         """
         Return the kappas for given species.
@@ -105,9 +105,9 @@ class KappaReader(object):
         The index determines if you want extinction, scattering or absorption.
         
         @keyword index: The index of the kappas in the .opacity/.particle file. 
-                        1: extinction, 2: scattering, 3: absorption
+                        0: extinction, 1: scattering, 2: absorption
                         
-                        (default: 1)
+                        (default: 0)
         @type index: int
         
         @return: (wavelength, kappas) [micron,cm2/g]
@@ -123,7 +123,7 @@ class KappaReader(object):
         
     
     
-    def getExtEff(self,species,index=1):
+    def getExtEff(self,species,index=0):
         
         """
         Return the extinction efficiencies per grain size for given species.
@@ -131,9 +131,9 @@ class KappaReader(object):
         The index determines if you want extinction, scattering or absorption.
         
         @keyword index: The index of the kappas in the .opacity/.particle file. 
-                        1: extinction, 2: scattering, 3: absorption
+                        0: extinction, 1: scattering, 2: absorption
                         
-                        (default: 1)
+                        (default: 0)
         @type index: int
         
         @return: (wavelength, q_ext/a) [micron,cm-1]
