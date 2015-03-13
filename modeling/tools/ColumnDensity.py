@@ -54,8 +54,8 @@ class ColumnDensity(object):
         self.dustmolar = DataIO.getInputData(path=dust_path,\
                                             keyword='MOLAR_WEIGHT',\
                                             filename='Dust.dat',make_float=1)
-        self.r_solar = star.r_solar      #in cm
-        self.m_solar = star.m_solar      #in g
+        self.Rsun = star.Rsun      #in cm
+        self.Msun = star.Msun      #in g
         self.year = star.year            #in s 
         self.avogadro = 6.022e23         
         self.au = star.au
@@ -279,12 +279,12 @@ class ColumnDensity(object):
                               self.star.path_gastronoom,'models',\
                               modelid,'coolfgr%s.dat'%modelid)
             rad = DataIO.getGastronoomOutput(fn,keyword='RADIUS',return_array=1)
-            rad = rad*self.star.r_solar*self.star['R_STAR']
+            rad = rad*self.star.Rsun*self.star['R_STAR']
             nh2 = DataIO.getGastronoomOutput(fn,keyword='N(H2)',return_array=1)
             cndh2 = trapz(x=rad[(rad<rout)*(rad>rin)],\
                           y=nh2[(rad<rout)*(rad>rin)])
         else: 
-            mdot_gas = float(self.star['MDOT_GAS'])*self.m_solar/self.year
+            mdot_gas = float(self.star['MDOT_GAS'])*self.Msun/self.year
             vexp_gas = float(self.star['VEL_INFINITY_GAS']) * 100000
             h2_molar = 2.
             sigma = (1./rin-1./rout)*mdot_gas/vexp_gas/4./math.pi

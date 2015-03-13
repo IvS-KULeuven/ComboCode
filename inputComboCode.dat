@@ -35,11 +35,11 @@ PACS_OVERSAMPLING=2                 # The oversampling factor of the PACS data, 
 PACS_LINEFIT=                       # folder name in $PACS_PATH$/$STAR_NAME$/ of line fit results, done by Pierre (assumes his structure and syntax, as well as the presence of a file called 'lineFitResults')
 
 #-- SPIRE convolution and plotting
-SPIRE_PATH=#/home/robinl/Data/SPIRE/ #Path to Spire data, leave empty if not relevant/no dust data are used. Data will be taken from path_spire/star_name/cont_subtracted/.  The star_name does not have to be specified. Syntax is assumed to be two columns, wave number (cm-1) vs flux (Jy).
+SPIRE_PATH=#/home/robinl/Data/SPIRE/ #Path to Spire data, leave empty if not relevant/no dust data are used. Data will be taken from path_spire/star_name/cont_subtracted/.  The star_name does not have to be specified. Syntax is assumed to be two columns, wavelength (micron) and flux (Jy).
 SPIRE_SEARCHSTRING=oversampling2    # searchstring used when looking for data, all data that include this string will be taken so make it unique
 SPIRE_RESOLUTION=0.04               # The resolution of the apodized Spire spectrum in cm^-1. This is typically 1.5*0.04 cm-1, with 0.04 cm-1 the intrinsic SPIRE resolution
 SPIRE_OVERSAMPLING=4                # The oversampling factor of the apodized SPIRE spectrum. This is typically 6.
-SPIRE_LINEFIT=                      # folder name in $SPIRE_PATH$/$STAR_NAME$/ of line fit results, done in Hipe on the UNAPODIZED spectra (using sinc functions) as well as the presence of a file called 'lineFitResults'
+SPIRE_LINEFIT=                      # folder name in $SPIRE_PATH$/$STAR_NAME$/ of line fit results, done in Hipe on the intrinsic UNAPODIZED spectra (using sinc functions) and with SPIRE resolution of 0.04 cm-1 and oversampling 5, as well as the presence of a file called 'lineFitResults'
 
 #-- RADIO data selection (including autosearch) and plotting (typically resolved lines in K vs km/s)
 RADIO_PATH=#/home/robinl/Data/Molecular/ # Path for gas radio data, leave empty if not relevant/no gas data are used other than pacs. Any requested transition that matches data in this folder will have the data plotted alongside the model! Folder requires database for data named radio_data.db
@@ -57,12 +57,12 @@ CONTDIV_FEATURES= #H2O3.1&MGS       # For now only the 3.1 water ice feature (H2
 CFG_CONTDIV=                        # Settings for the final plot for the continuum division can be given here. This plot shows a limited wavelength range for the dust feature in both continuum divided data and models. If no cfg file given, the plot is shown during the CC run, but not saved.
 SHOW_CONTDIV=0                      # Show plots of the intermediary steps of the continuum division.
 
-#-- Statistics module [PACS and RESO(lved lines) STATS only]
-STATISTICS=0                        # Calculate basic statistics, for now only for PACS and spectrally resolved lines.
+#-- Statistics module
+STATISTICS=0                        # Calculate basic statistics
 STAT_PRINT=0                        # RESO_STATS: print statistics for individual lines and models of spectrally resolved lines, use cc_session.resostats for more interactive options
 STAT_LLL_P=                         # RESO_STATS: The number of variable parameters is given here, for the automatic determination of the loglikelihood threshold determination (95% confidence interval). The loglikelihood can be used to determine best-fit models based on the shape of the line profile. 
-STAT_PACSMETHOD=clipping            # PEAK_STATS: (clipping or preset) The method used to determine the noise in the PACS spectrum. Clipping determines the std/rms/... on the full continuum-subtracted spectrum, then determines std/rms/... after 1-sigma clipping based on the first estimate. 'preset' takes a wavelength range from Data.dat and determines the std/rms/... for a full band, without clipping. Line scans should best be treated with 'clipping'.
-STAT_CHI2_PACS=normal               # PEAK_STATS: type of chi2 calculation for integrated fluxes of PACS. [normal or log]. log just takes the log of all int fluxes and the uncertainty.
+STAT_METHOD=clipping                # UNRESO_STATS: (clipping or preset) The method used to determine the noise in an unresolved spectrum. Clipping determines the std/rms/... on the full continuum-subtracted spectrum, then determines std/rms/... after 1-sigma clipping based on the first estimate. 'preset' takes a wavelength range from Data.dat and determines the std/rms/... for a full band, without clipping. Line scans should best be treated with 'clipping'.
+STAT_CHI2=normal                    # UNRESO_STATS: type of chi2 calculation for integrated fluxes of unresolved lines. [normal or log]. log just takes the log of all int fluxes and the uncertainty.
 
 #-- Various settings for this CC session
 REPLACE_DB_ENTRY=0                  # Be very careful with putting this keyword to 1! If a model in a database is found (usually cooling or mcmax), it is replaced by a newly calculated model (also with a new model_id). Any mline, sphinx or pacs models stemming from the same cooling id will also be deleted!!!! Now works with grids as well: Any new calculated model in the grid will NOT be deleted. (hence, if an MCMax model is the same for all models in the grid, it will not be calculated anew every single time)
@@ -161,6 +161,7 @@ TEMPERATURE_EPSILON_GAS=0.5         # EPSILON, for GAS temperature power law, wh
 #DUST_TEMPERATURE_FILENAME=%        # If commented, T-distribution from MCMax is used, if left open a power law is used, if a filename that file is used for the temperature distribution
 
 #-- Dust opacities. Normally set automatically by ComboCode. 
+INCLUDE_SCAT_GAS=0                  # Include the scattering coefficients into the GASTRoNOoM modelling as an additional contribution to the absorption. This is technically not correct, but can give an idea of the wind acceleration influence of the scattering. Leave this off if you're not sure!
 #TEMDUST_FILENAME=                  # Only relevant if USE_NEW_DUST_KAPPA_FILES=1, temdust.kappa for original (or leave open), other filename (micron | q_ext/a) for own kappa's. File has to be in the DATA_DIRECTORY (~/GASTRoNOoM/src/data/) Is handled automatically if left out
 #USE_NEW_DUST_KAPPA_FILES=          # Uncomment and put equal to 0 for original qpr.dat/temdust.kappa usage, otherwise leave out or put equal to 1
 

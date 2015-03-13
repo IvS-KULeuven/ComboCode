@@ -20,7 +20,7 @@ from cc.managers import PlottingManager
 from cc.managers import Vic
 from cc.modeling.objects import Star
 from cc.modeling.objects import Transition
-from cc.statistics import PeakStats
+from cc.statistics import UnresoStats
 from cc.statistics import ResoStats
 from cc.statistics import Statistics
 from cc.data.instruments import Pacs
@@ -141,11 +141,11 @@ class ComboCode(object):
                           ('replace_db_entry',0),('update_spec',0),\
                           ('ln_path_gastronoom',''),('ln_path_mcmax',''),\
                           ('path_gastronoom',''),('path_mcmax',''),\
-                          ('print_model_info',1),('stat_chi2_pacs','normal'),\
+                          ('print_model_info',1),('stat_chi2','normal'),\
                           ('contdiv_features',[]),('cfg_contdiv',''),\
                           ('show_contdiv',0),('skip_cooling',0),\
                           ('recover_sphinxfiles',0),('stat_print',0),\
-                          ('stat_lll_p',None),('stat_pacsmethod','clipping'),\
+                          ('stat_lll_p',None),('stat_method','clipping'),\
                           ('star_name','model'),('opac_path','')]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
@@ -201,6 +201,7 @@ class ComboCode(object):
         resolution = self.processed_input.pop('SPIRE_RESOLUTION',0)
         intrinsic = self.processed_input.pop('SPIRE_INTRINSIC',1)
         oversampling = self.processed_input.pop('SPIRE_OVERSAMPLING',0)
+        linefit = self.processed_input.pop('SPIRE_LINEFIT','')
         if spire_path:
             self.spire = Spire.Spire(star_name=self.star_name,\
                                      path_combocode=self.path_combocode,\
@@ -208,7 +209,8 @@ class ComboCode(object):
                                      resolution=resolution,\
                                      path_spire=spire_path,\
                                      intrinsic=intrinsic,\
-                                     oversampling=oversampling)
+                                     oversampling=oversampling,
+                                     path_linefit=linefit)
             self.spire.setData(searchstring=searchstring)
         else:
             self.spire = None
@@ -787,22 +789,37 @@ class ComboCode(object):
         '''
         
         self.pacsstats = None
+        self.spirestats = None
         self.resostats = None
         if self.statistics and self.pacs <> None:
             print '************************************************'
             print '**** Doing PACS statistics for %s.'%self.star_name
             print '************************************************'
-            self.pacsstats = PeakStats.PeakStats(star_name=self.star_name,\
-                                            instrument='PACS',\
+            self.pacsstats = UnresoStats.UnresoStats(star_name=self.star_name,\
                                             path_code=self.path_gastronoom,\
                                             path_combocode=self.path_combocode)
-            self.pacsstats.setInstrument(instrument_instance=self.pacs,\
-                                         stat_method=self.stat_pacsmethod)
+            self.pacsstats.setInstrument(instrument_name='PACS',\
+                                         instrument_instance=self.pacs,\
+                                         stat_method=self.stat_method)
             self.pacsstats.setModels(star_grid=self.star_grid)
-            self.pacsstats.setRatios(chi2_type=self.stat_chi2_pacs)
+            self.pacsstats.setRatios(chi2_type=self.stat_chi2)
             self.pacsstats.plotRatioWav(inputfilename=self.inputfilename)
+        if self.statistics and self.spire <> None:
+            print '************************************************'
+            print '**** Doing SPIRE statistics for %s.'%self.star_name
+            print '************************************************'
+            self.spirestats = UnresoStats.UnresoStats(star_name=self.star_name,\
+                                            path_code=self.path_gastronoom,\
+                                            path_combocode=self.path_combocode)
+            self.spirestats.setInstrument(instrument_name='SPIRE',\
+                                          instrument_instance=self.spire,\
+                                          stat_method=self.stat_method)
+            self.spirestats.setModels(star_grid=self.star_grid)
+            self.spirestats.setRatios(chi2_type=self.stat_chi2)
+            self.spirestats.plotRatioWav(inputfilename=self.inputfilename)
         if self.statistics:
-            trans_sel = Transition.extractTransFromStars(self.star_grid,pacs=0)
+            trans_sel = Transition.extractTransFromStars(self.star_grid,\
+                                                         dtype='resolved')
             if not trans_sel:
                 return
             print '************************************************'
@@ -909,7 +926,7 @@ class ComboCode(object):
                                          if star.has_key(ts)])
                         print ', '.join(['%s = %.2f R_STAR = %.2e cm'\
                                          %(rs,star[rs],\
-                                           star[rs]*star['R_STAR']*star.r_solar)
+                                           star[rs]*star['R_STAR']*star.Rsun)
                                          for rs in ['R_DES_H2O','R_DES_AH2O',\
                                                     'R_DES_CH2O']
                                          if star.has_key(rs)])
@@ -929,7 +946,7 @@ class ComboCode(object):
                 if star['LAST_GASTRONOOM_MODEL']:
                     print 'Requested GASTRoNOoM parameters for %s:'%star['LAST_GASTRONOOM_MODEL']
                     print '%s = %s'%('DENSFILE',star['DENSFILE'])
-                    print '%s = %f R_solar = %f AU'%('R_STAR',star['R_STAR'],star['R_STAR']*star.r_solar/star.au)
+                    print '%s = %f Rsun = %f AU'%('R_STAR',star['R_STAR'],star['R_STAR']*star.Rsun/star.au)
                     print '%s = %f R_STAR'%('R_OUTER_GAS',star['R_OUTER_EFFECTIVE'])
                     print '%s = %f R_STAR'%('R_INNER_GAS',star['R_INNER_GAS'])
                     print '%s = %f'%('DUST_TO_GAS_INITIAL',star['DUST_TO_GAS_INITIAL'])
@@ -938,9 +955,9 @@ class ComboCode(object):
                     if star['DUST_TO_GAS_CHANGE_ML_SP']: 
                         print '%s = %s'%('DUST_TO_GAS_CHANGE_ML_SP',star['DUST_TO_GAS_CHANGE_ML_SP'])
                     print '%s = %f'%('[N_H2O/N_H2]',star['F_H2O'])
-                    print '%s = %.2f R_STAR = %.2e cm'%('R_OH1612_NETZER',star['R_OH1612_NETZER'],star['R_OH1612_NETZER']*star.r_solar*star['R_STAR'])
+                    print '%s = %.2f R_STAR = %.2e cm'%('R_OH1612_NETZER',star['R_OH1612_NETZER'],star['R_OH1612_NETZER']*star.Rsun*star['R_STAR'])
                     if star['R_OH1612_AS']: 
-                        print '%s = %.2f R_STAR = %.2e cm'%('R_OH1612_OBS',star['R_OH1612'],star['R_OH1612']*star.r_solar*star['R_STAR'])
+                        print '%s = %.2f R_STAR = %.2e cm'%('R_OH1612_OBS',star['R_OH1612'],star['R_OH1612']*star.Rsun*star['R_STAR'])
                     print '-----------------------------------'
                     #if star.has_key('R_DES_H2O') or star.has_key('R_DES_CH2O') or star.has_key('R_DES_AH2O'):
                         #(nh2o,nh2o_ice,nh2,nh2o_full,nh2_full) = wa.getWaterInfo(star)

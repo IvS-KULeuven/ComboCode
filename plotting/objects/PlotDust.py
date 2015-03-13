@@ -359,14 +359,14 @@ class PlotDust(PlottingSession):
                       'same temperature profile. Vertical lines indicate ' + \
                       'inner radii of dust species.'
                 radii, temps, keytags = [], [], []
-                vert_lines = [star['R_DES_%s'%d]*star.r_solar*star['R_STAR'] 
+                vert_lines = [star['R_DES_%s'%d]*star.Rsun*star['R_STAR'] 
                               for d in star['DUST_LIST']]
             if include_total:
                 rad, temp, key = star.getDustTemperature()
                 radii.append(rad[rad>star['R_INNER_GAS']\
-                                *star.r_solar*star['R_STAR']])
+                                *star.Rsun*star['R_STAR']])
                 temps.append(temp[rad>star['R_INNER_GAS']\
-                                *star.r_solar*star['R_STAR']])
+                                *star.Rsun*star['R_STAR']])
                 keytags.append(key)
             if powerlaw:
                 for power in powerlaw:
@@ -383,15 +383,15 @@ class PlotDust(PlottingSession):
                         filename=filename,xaxis='$r$ (cm)',\
                         yaxis='$T_\mathrm{d}$ (K)',keytags=keytags,\
                         key_location=(.65,.45),ymin=20,ymax=3000,\
-                        xmax=star['R_OUTER_DUST']*star.r_solar*star['R_STAR'],\
-                        xmin=star['R_STAR']*star.r_solar,\
+                        xmax=star['R_OUTER_DUST']*star.Rsun*star['R_STAR'],\
+                        xmin=star['R_STAR']*star.Rsun,\
                         xlogscale=1,ylogscale=1,fontsize_key=18,\
                         figsize=(12.5,8),transparent=0,linewidth=4,\
                         plot_title='',fontsize_title=22,\
                         extension=extension,fontsize_axis=26,\
                         fontsize_ticklabels=26,\
                         vert_lines=[star['R_INNER_DUST']\
-                                        *star.r_solar*star['R_STAR']]))
+                                        *star.Rsun*star['R_STAR']]))
         if len(plot_filenames) != len(star_grid):
             print 'At least one of the models does not yet have a MCMax model.'        
         if plot_filenames[0][-4:] == '.pdf':

@@ -24,8 +24,9 @@ class Instrument(object):
     
     """
         
-    def __init__(self,star_name,path_instrument,instrument_name,\
-                 code='GASTRoNOoM',path=None,intrinsic=1,\
+    def __init__(self,star_name,path_instrument,instrument_name,oversampling,\
+                 abs_flux_err=0.2,\
+                 code='GASTRoNOoM',path=None,intrinsic=1,path_linefit='',\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):        
         
@@ -41,7 +42,10 @@ class Instrument(object):
         @type path_instrument: string                          
         @param instrument_name: The name of the instrument (SPIRE or PACS)
         @type instrument_name: string
-                                  
+        @param oversampling: The instrumental oversampling, for correct
+                             convolution of the Sphinx output.
+        @type oversampling: int                         
+        
         @keyword code: The radiative transfer code used to model the data
         
                        (default: 'GASTRoNOoM')
@@ -62,6 +66,19 @@ class Instrument(object):
         
                                  (default: '/home/robinl/ComboCode/')
         @type path_combocode: string        
+        @keyword path_linefit: The folder name for linefit results from Hipe
+                               (created by Pierre, assuming his syntax). The 
+                               folder is located in $path_pacs$/$star_name$/.
+                               If no folder is given, no linefits are 
+                               processed.
+                               
+                               (default: '')
+        @type path_linefit: string
+        @keyword abs_flux_err: The absolute flux calibration uncertainty of the
+                               instrument. 
+                               
+                               (default: 0.2)
+        @type abs_flux_err: float
         
         """
         
@@ -70,8 +87,11 @@ class Instrument(object):
         self.code = code
         self.star_name = star_name
         self.path_instrument = path_instrument
-        self.instrument = instrument_name.upper()
+        self.path_linefit = path_linefit
+        self.instrument = instrument_name.lower()
         self.intrinsic = intrinsic
+        self.abs_flux_err = abs_flux_err
+        self.oversampling = int(oversampling)
         self.data_filenames = []
         ccd = os.path.join(self.path_combocode,'Data')
         istar = DataIO.getInputData(path=ccd,keyword='STAR_NAME').index(star_name)
@@ -84,7 +104,7 @@ class Instrument(object):
             DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
                                                   self.code,self.path,'stars',\
                                                   self.star_name))
-                                            
+        
 
 
     def makeModelList(self,star_grid,id_type):
@@ -155,12 +175,25 @@ class Instrument(object):
                       'Cannot retrieve data. No data will be set.'
                 return
             self.data_filenames = data_filenames
-            print '** Reading %s data.'%self.instrument
-            self.readData(data_filenames)
-            
+            print '** Reading %s data.'%self.instrument.upper()
+            self.readData()
+            if self.instrument == 'pacs':
+                bands = ['B2A','B3A','B2B','R1A','R1B']
+            elif self.instrument == 'spire':
+                bands = ['SSW','SLW']
+            self.data_ordernames = [[word 
+                                     for word in os.path.split(f)[1].split('_') 
+                                     if word.upper() in bands][0] 
+                                    for f in self.data_filenames]
+            if len(self.data_ordernames) != len(self.data_filenames): 
+                raise IOError('Could not match number of ordernames to ' + \
+                              'number of filenames when selecting PACS ' + \
+                              'datafiles. Check filenames for missing or ' + \
+                              'extra order indications between "_".')
+
             
 
-    def readData(self,data_filenames):
+    def readData(self):
         
         '''
         Read in data, taking special care of NaNs. 
@@ -170,8 +203,7 @@ class Instrument(object):
         Two columns still works, but may result in errors in other places in 
         the code. 
         
-        @param data_filenames: list of filenames to read
-        @type data_filenames: list[string]
+        Data are always read in Jy versus micron, for both SPIRE and PACS.
         
         '''
         
@@ -179,7 +211,7 @@ class Instrument(object):
         self.data_flux_list = []
         self.data_original_list = [] 
         self.data_continuum_list = [] 
-        for filename in data_filenames:
+        for filename in self.data_filenames:
             data = DataIO.readCols(filename=filename,nans=1)
             self.data_wave_list.append(data[0])
             self.data_flux_list.append(data[1])
@@ -187,8 +219,144 @@ class Instrument(object):
                 continue
             self.data_original_list.append(data[2])
             self.data_continuum_list.append(data[3])
-            
-            
+
+
+
+    def readLineFit(self,**kwargs):
+        
+        '''
+        Read the data from the line fit procedure.
+        
+        @keyword kwargs: Extra keywords for the readCols method.
+                        
+                         (default: dict())
+        @type kwargs: dict
+        
+        @return: The line fit columns are returned.
+        @rtype: list[array]
+        
+        '''
+        
+        fn = os.path.join(self.path_instrument,self.star_name,\
+                          self.path_linefit,'lineFitResults')
+        if not self.path_linefit or not os.path.isfile(fn):
+            self.linefit = None
+            return
+        dd = DataIO.readCols(fn,make_array=0,**kwargs)
+        return dd
+        
+    
+    
+    def intIntMatch(self,trans_list,ifn):
+        
+        '''
+        Match the wavelengths of integrated intensities with transitions.
+        
+        Checks if a blend might be present based on the data, as well as the 
+        available transitions. 
+        
+        Note that if a line is observed multiple times in the same band (eg in
+        a line scan), it cannot at this moment be discerned. In other words,
+        there is no point including a line fitted twice in two line scans, as 
+        it will not be taken into account for the int matching algorithm.
+        
+        @param trans_list: The list of transitions for which the check is done.
+        @type trans_list: list[Transition()]
+        @param ifn: The index of the filename in self.data_filenames. This is 
+                    done per file! 
+        @type ifn: int
+                
+        '''
+        
+        if self.linefit is None:
+            return
+        instrument = instrument.lower()
+        dwav = self.data_wave_list[ifn]
+        ordername = self.data_ordernames[ifn]
+        fn = self.data_filenames[ifn]
+        #   1) Prep: Create a list of sample transitions and get central
+        #            wavs corrected for vlsr, in micron. Select fit results
+        #            for this particular band.
+        lf = self.linefit[self.linefit['band'] == ordername]
+        #      No info available for band, so don't set anything.
+        if not list(lf.wave_fit):
+            return
+        
+        #   2) Collect all transitions with doppler shifted central wavelength
+        #      within the wavelength region of the datafile selected here.
+        strans = [(t,t.wavelength*10**4*1./(1-self.vlsr/t.c))
+                  for t in trans_list 
+                  if t.wavelength*10**4*1./(1-self.vlsr/t.c) >= dwav[0]\
+                    and t.wavelength*10**4*1./(1-self.vlsr/t.c) <= dwav[-2]]
+                
+        #   3) Check if the wav of a trans matches a wav in the fitted
+        #      intensities list, within the fitted_fwhm of the line with 
+        #      respect to the fitted central wavelength, on BOTH sides.
+        #      Note that there cannot be 2 fitted lines with central wav
+        #      closer than fwhm/2. Those lines would be inseparable!
+        #      With the exception of lines superimposed, which should typically
+        #      be avoided. Line matching will not be very accurate in this 
+        #      case.
+        imatches = [argmin(abs(lf.wave_fit-mwav))
+                    for (st,mwav) in strans]
+        matches = [(mwav <= lf.wave_fit[ii] + lf.fwhm_fit[ii] \
+                        and mwav >= lf.wave_fit[ii] - lf.fwhm_fit[ii]) \
+                    and (lf.wave_fit[ii],ii) or (None,None)
+                   for (st,mwav),ii in zip(strans,imatches)]
+        #   4) If match found, check if multiple mtrans fall within   
+        #      fitted_FWHM/2 from the fitted central wavelength of the
+        #      line. These are blended IN MODEL and/or IN DATA.
+        #      Check for model blend is done by looking for ALL transitions 
+        #      that have been matched with a single fitted wavelength.
+        matches_wv = array([mm[0] for mm in matches])
+        wf_blends = [list(array([st for st,mwav in strans])[matches_wv==wv]) 
+                     for wv in lf.wave_fit]
+        #      Use the wave_fit array indices from matches[:][1] to check  
+        #      if indeed multiple transitions were found for the same wav.
+        #      If positive, include True if the particular transition is  
+        #      the first among the blended ones, else include False. The 
+        #      False ones are not taken into account as blended because: 
+        #      1) no match was found at all, 
+        #      2) only one match was found, 
+        #      3) if multiple matches have been found it was not the first. 
+        #      
+        blended = [ii <> None and len(wf_blends[ii]) > 1. \
+                                and wf_blends[ii].index(st) != 0
+                   for (st,mwav),(match,ii) in zip(strans,matches)]
+        for (st,mwav),blend,(match,ii) in zip(strans,blended,matches):
+            #   5) No match found in linefit for this band: no 
+            #      integrated intensity is set for this filename in this  
+            #      transition. Simply move on to the next transtion. (not 
+            #      setting gives None when asking Trans for integrated line 
+            #      of unresolved lines)
+            if match is None:
+                continue
+            #   6) Line is blended with other line that is already added. Just
+            #      for bookkeeping purposes, all blended lines involved are 
+            #      added here as well.
+            elif blend:
+                st.setIntIntUnresolved(fn,'inblend',None,self.vlsr,wf_blends[ii])
+            #   7) Match found with a wave_fit value once. Check for line 
+            #      blend IN DATA: Check the ratio fitted FWHM/PACS FWHM. If
+            #      larger by 30% or more, put the int int negative. 
+            elif len(wf_blends[ii]) == 1:
+                err = sqrt((lf.line_flux_rel[ii]/100)**2+self.abs_flux_err**2)
+                factor = lf.fwhm_rel[ii] >= 1.2 and -1 or 1
+                st.setIntIntUnresolved(fn,factor*lf.line_flux[ii],err,self.vlsr)
+            #   8) If multiple matches, give a selection of strans included
+            #      in the blend (so they can be used to select model 
+            #      specific transitions later for addition of the 
+            #      integrated intensities of the mtrans). Make the integrated 
+            #      line strength negative to indicate a line blend. 
+            #      The *OTHER* transitions found this way are not compared 
+            #      with any data and get None. (see point 4) )
+            else: 
+                err = sqrt((lf.line_flux_rel[ii]/100)**2+self.abs_flux_err**2)
+                st.setIntIntUnresolved(fn,-1.*lf.line_flux[ii],err,self.vlsr,
+                                       wf_blends[ii])
+                
+                
+                
     def mergeSphinx(self,star):
         
         '''
@@ -203,10 +371,11 @@ class Instrument(object):
         
         '''
                 
-        #read all sphinx output data
+        #read all sphinx output data for the relevant instrument
         sphinx_transitions = [trans 
                               for trans in star['GAS_LINES'] 
-                              if trans.getModelId()]
+                              if trans.getModelId() \
+                                and self.instrument.upper() in trans.telescope]
         #- If no sphinx output found, this list will be empty and no convolution
         #- should be done. 
         if not sphinx_transitions: 
@@ -250,9 +419,9 @@ class Instrument(object):
         
         #- Add zeroes on a grid before the first line to make sure the 
         #- convolution goes right
-        sphinx_final = [(sphinx_input[0][0][0] - 0.1 + d/1000.,0.0) 
-                        for d in xrange(1,100)]  
-        
+        sphinx_final = [(sphinx_input[0][0][0] - 1 + d/1000.,0.0) 
+                        for d in xrange(1,1000)]  
+
         #- For now stitch up the segments with zeroes. Later on: 
         #- Make grid with zeroes, then add segments if no overlap, 
         #- if overlap, make sure the addition works well
@@ -326,12 +495,15 @@ class Instrument(object):
                 sphinx_final.append((2*sphinx_input[i+j][0][0]-\
                                         sphinx_input[i+j][0][1],\
                                      0.0))
-        sphinx_final.extend([(sphinx_input[-1][0][-1] + d/1000.,0.0) 
-                             for d in xrange(1,100)])
-        if not overlap_bools[-1]:
+        #-- Remember overlap_bools contains FALSE if there IS an overlap. 
+        #   Counterintuitive, I know. 
+        if overlap_bools[-1]:
             sphinx_final.extend([(w,f) 
                                  for w,f in zip(sphinx_input[-1][0],\
                                                 sphinx_input[-1][1])])
+        sphinx_final.extend([(sphinx_input[-1][0][-1] + d/100.,0.0) 
+                             for d in xrange(1,1000)])
+
         #- No final sort for now, it should be aranged already, even if line 
         #- blends are present
         return [s[0] 

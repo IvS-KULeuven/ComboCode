@@ -182,13 +182,16 @@ class Star(dict):
             
         super(Star, self).__init__(example_star)
         if extra_input <> None: self.update(extra_input)
-        self.r_solar = 6.955e10         #in cm
-        self.m_solar = 1.98892e33      #in g
+        self.Rsun = 6.95508e10         #in cm  Harmanec & Prsa 2011
+        self.Msun = 1.98547e33      #in g   Harmanec & Prsa 2011
+        self.Tsun = 5779.5747            #in K   Harmanec & Psra 2011
+        self.Lsun = 3.846e33           #in erg/s
         self.year = 31557600.            #julian year in seconds
         self.au = 149598.0e8             #in cm
         self.c = 2.99792458e10          #in cm/s
         self.h = 6.62606957e-27         #in erg*s, Planck constant
         self.k = 1.3806488e-16          #in erg/K, Boltzmann constant
+        self.sigma = 5.67040040e-5         #in erg/cm^2/s/K^4   Harmanec & Psra 2011
         self.pc = 3.08568025e16         #in cm
         self.mh = 1.672661e-24           #in g, mass hydrogen atom
         
@@ -298,7 +301,7 @@ class Star(dict):
         cooling_keys = ['T_STAR','R_STAR','TEMDUST_FILENAME','MDOT_GAS']
         for k in cooling_dict.keys():
             if k not in cooling_keys: del cooling_dict[k]            
-        cooling_dict['R_STAR'] = float(cooling_dict['R_STAR'])/self.r_solar
+        cooling_dict['R_STAR'] = float(cooling_dict['R_STAR'])/self.Rsun
         self.update(cooling_dict)
 
 
@@ -321,7 +324,7 @@ class Star(dict):
                                         keyword='DENSITY')
             rad = array(DataIO.getMCMaxOutput(incr=int(self['NRAD']),\
                                               filename=filename))\
-                        /self.r_solar/self['R_STAR']
+                        /self.Rsun/self['R_STAR']
             dens = Data.reduceArray(dens,self['NTHETA'])
             DataIO.writeCols(os.path.join(os.path.expanduser('~'),'MCMax',\
                                         self.path_mcmax,'models',\
@@ -336,7 +339,7 @@ class Star(dict):
                                     %self['LAST_GASTRONOOM_MODEL'])
             dens = DataIO.getGastronoomOutput(filename,keyword='N(H2)')  
             rad = array(DataIO.getGastronoomOutput(filename,keyword='Radius'))\
-                        /self.r_solar/self['R_STAR']
+                        /self.Rsun/self['R_STAR']
             DataIO.writeCols(os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                         self.path_gastronoom,'models',\
                                         self['LAST_GASTRONOOM_MODEL'],\
@@ -370,10 +373,10 @@ class Star(dict):
         if self['R_SHELL_UNIT'] != 'R_STAR':
             shell_units = ['CM','M','KM','AU']
             unit_index = shell_units.index(self['R_SHELL_UNIT'].upper())
-            unit_conversion = [1./(self.r_solar*self['R_STAR']),\
-                               10.**2/(self.r_solar*self['R_STAR']),\
-                               10.**5/(self.r_solar*self['R_STAR']),\
-                               self.au/(self.r_solar*self['R_STAR'])]
+            unit_conversion = [1./(self.Rsun*self['R_STAR']),\
+                               10.**2/(self.Rsun*self['R_STAR']),\
+                               10.**5/(self.Rsun*self['R_STAR']),\
+                               self.au/(self.Rsun*self['R_STAR'])]
             for par in ['R_INNER_GAS','R_INNER_DUST','R_OUTER_GAS',\
                         'R_OUTER_DUST'] \
                     + ['R_MAX_' + species for species in self.species_list] \
@@ -611,7 +614,7 @@ class Star(dict):
         for index,species in enumerate(self['DUST_LIST']):
             self['T_DES_%s'%species] = coldens.t_des[species]
             self['R_DES_%s'%species] = coldens.r_des[species]\
-                                        /self.r_solar/self['R_STAR']
+                                        /self.Rsun/self['R_STAR']
             print 'The EFFECTIVE maximum temperature for species %s '%species+\
                   'is %.2f K, at radius %.2f R_STAR.'\
                   %(self['T_DES_%s'%species],self['R_DES_%s'%species])
@@ -624,7 +627,7 @@ class Star(dict):
             print 'The EFFECTIVE minimum temperature for species'+\
                   ' %s is %.2f K at maximum radius %.2f R_STAR.'\
                   %(species,coldens.t_min[species],\
-                    coldens.r_max[species]/self.r_solar/self['R_STAR'])
+                    coldens.r_max[species]/self.Rsun/self['R_STAR'])
             if self.has_key('T_MIN_%s'%species):
                 print 'The REQUESTED minimum temperature for species '+\
                       '%s is %.2f K.'%(species,self['T_MIN_%s'%species])
@@ -632,7 +635,7 @@ class Star(dict):
                 print 'The REQUESTED maximum radius for species'+\
                       '%s is %.2f R_STAR.'%(species,self['R_MAX_%s'%species])
             print 'The EFFECTIVE outer radius of the shell is %.2f R_STAR.'\
-                  %(coldens.r_outer/self.r_solar/self['R_STAR'])
+                  %(coldens.r_outer/self.Rsun/self['R_STAR'])
             print 'Note that if R_MAX is ~ the effective outer radius, the ' +\
                   'requested minimum temperature may not be reached.'
         return
@@ -789,7 +792,7 @@ class Star(dict):
         
         try:
             data = DataIO.readCols(self['DUST_TEMPERATURE_FILENAME'])
-            rad = data[0]*self.r_solar*self['R_STAR']
+            rad = data[0]*self.Rsun*self['R_STAR']
             temp = data[1]
         except IOError:
             rad = []
@@ -824,7 +827,7 @@ class Star(dict):
         try:
             rad = array(DataIO.getMCMaxOutput(filename=filename,\
                                               incr=int(self['NRAD'])))
-            temp = self['T_STAR']*(2*rad/self.r_solar/self['R_STAR'])**(-power)
+            temp = self['T_STAR']*(2*rad/self.Rsun/self['R_STAR'])**(-power)
         except IOError:
             rad = []
             temp = []
@@ -911,18 +914,15 @@ class Star(dict):
         
         """
         
-        Tsun = 5778.0
-        Lsun = 3.839e33
-        Rsun = 6.96e10
         if not self.has_key('T_STAR'):
             self['T_STAR']=(float(self['L_STAR'])/float(self['R_STAR'])**2.)\
-                                **(1/4.)*Tsun
+                                **(1/4.)*self.Tsun
         elif not self.has_key('L_STAR'):
             self['L_STAR']=(float(self['R_STAR']))**2.*\
-                                (float(self['T_STAR'])/Tsun)**4.
+                                (float(self['T_STAR'])/self.Tsun)**4.
         elif not self.has_key('R_STAR'):
             self['R_STAR']=(float(self['L_STAR'])*\
-                                (Tsun/float(self['T_STAR']))**4)**(1/2.)
+                                (self.Tsun/float(self['T_STAR']))**4)**(1/2.)
         else:
             pass 
 
@@ -1077,7 +1077,7 @@ class Star(dict):
                                                  keyword='TEMPERATURE',\
                                                  filename=filename)
                 temp = Data.reduceArray(temp_ori,self['NTHETA'])
-                rin = self['R_INNER_DUST']*self['R_STAR']*self.r_solar
+                rin = self['R_INNER_DUST']*self['R_STAR']*self.Rsun
                 self['T_INNER_DUST'] = temp[argmin(abs(rad-rin))]
             except IOError:
                 self['T_INNER_DUST'] = 0
@@ -1233,7 +1233,7 @@ class Star(dict):
         if not self.has_key('R_OUTER_DUST'):
             if self.has_key('R_OUTER_DUST_AU'):
                 self['R_OUTER_DUST'] = self['R_OUTER_DUST_AU']*self.au\
-                                            /self['R_STAR']/self.r_solar
+                                            /self['R_STAR']/self.Rsun
             elif self.has_key('R_OUTER_MULTIPLY'):
                 self['R_OUTER_DUST'] = self['R_INNER_DUST']\
                                             *self['R_OUTER_MULTIPLY']
@@ -1269,7 +1269,7 @@ class Star(dict):
         if not self.has_key('R_INNER_DUST'):
             if self.has_key('R_INNER_DUST_AU'):
                 self['R_INNER_DUST'] = self['R_INNER_DUST_AU']*self.au\
-                                                /self['R_STAR']/self.r_solar
+                                                /self['R_STAR']/self.Rsun
             else:
                 try:
                     filename = os.path.join(os.path.expanduser('~'),'MCMax',\
@@ -1290,7 +1290,7 @@ class Star(dict):
                         ri_cm = rad[dens>10**(-30)][0]
                     else:
                         ri_cm = rad[dens>0.01*max(dens)][0]
-                    self['R_INNER_DUST'] = ri_cm/self.r_solar\
+                    self['R_INNER_DUST'] = ri_cm/self.Rsun\
                                                 /float(self['R_STAR'])
                 except IOError:
                     self['R_INNER_DUST'] = 1.0
@@ -1332,7 +1332,7 @@ class Star(dict):
             - 'R_INNER_GAS' is used for taking the dust temperature from the 
               inner gas radius onward. 
         
-            - 'BUGGED_CASE' is the old version where r [R*] > R_STAR [R_SOLAR]. 
+            - 'BUGGED_CASE' is the old version where r [R*] > R_STAR [Rsun]. 
         
         """
         
@@ -1396,12 +1396,29 @@ class Star(dict):
     def calcLAST_PACS_MODEL(self):
         
         """
-        Creates empty string if not present yet.
+        Sets to None if not present yet.
     
         """
         
         if not self.has_key('LAST_PACS_MODEL'):
-            self['LAST_PACS_MODEL'] = ''
+            self['LAST_PACS_MODEL'] = None
+        else:
+            pass
+        
+
+
+    def calcLAST_SPIRE_MODEL(self):
+        
+        """
+        Sets to None if not present yet.
+        
+        Note that this is an index if it IS present, and can be zero. Always 
+        check with None instead of boolean. 
+    
+        """
+        
+        if not self.has_key('LAST_SPIRE_MODEL'):
+            self['LAST_SPIRE_MODEL'] = None
         else:
             pass
         
@@ -1458,14 +1475,14 @@ class Star(dict):
                 if self['DENSPOW'] == 2:
                     self['M_DUST']  \
                         = 2*pi*self['DENSSIGMA_0']\
-                        *(self['R_INNER_DUST']*self['R_STAR']*self.r_solar)**2\
+                        *(self['R_INNER_DUST']*self['R_STAR']*self.Rsun)**2\
                         *log(self['R_OUTER_DUST']/float(self['R_INNER_DUST']))\
-                        /self.m_solar
+                        /self.Msun
                 else:
                     self['M_DUST'] \
                         = 2*pi*self['DENSSIGMA_0']\
-                        *(self['R_INNER_DUST']*self['R_STAR']*self.r_solar)**2\
-                        /(2.-self['DENSPOW'])/self.m_solar\
+                        *(self['R_INNER_DUST']*self['R_STAR']*self.Rsun)**2\
+                        /(2.-self['DENSPOW'])/self.Msun\
                         *((self['R_OUTER_DUST']/float(self['R_INNER_DUST']))\
                         **(2.-self['DENSPOW'])-1.)
             else:
@@ -1840,7 +1857,7 @@ class Star(dict):
                                                    [rad_list[i],\
                                                     rad_list[i+1]],\
                                                    temp)\
-                                                 /(self.r_solar*self['R_STAR'])
+                                                 /(self.Rsun*self['R_STAR'])
                     except IndexError:
 
                         #- if T_MIN (for R_MAX) > temp_list[0] then no dust can
@@ -1997,7 +2014,7 @@ class Star(dict):
                                                              keyword='VEL')
                     avgdrift = self.getAverageDrift()             
                     self['DENSTYPE'] = "SHELLFILE"
-                    density = float(self['MDOT_DUST'])*self.m_solar\
+                    density = float(self['MDOT_DUST'])*self.Msun\
                                     /((array(gas_vel)+array(avgdrift)) \
                                     *4.*pi*(array(radius)**2.*self.year))
                     self['DENSFILE'] = filename
@@ -2024,7 +2041,7 @@ class Star(dict):
         """
         
         if not self.has_key('SHELLMASS'):
-            self['SHELLMASS'] = float(self['MDOT_GAS'])*self.m_solar\
+            self['SHELLMASS'] = float(self['MDOT_GAS'])*self.Msun\
                                   /((self['VEL_INFINITY_GAS']*10**5)*self.year)
         else:
             pass
@@ -2038,9 +2055,9 @@ class Star(dict):
         """
         
         if not self.has_key('SHELLDENS'):
-            self['SHELLDENS'] = float(self['MDOT_GAS'])*self.m_solar\
+            self['SHELLDENS'] = float(self['MDOT_GAS'])*self.Msun\
                                   /((self['VEL_INFINITY_GAS']*10**5)*self.year\
-                                    *(self['R_STAR']*self.r_solar)**2*4.*pi)
+                                    *(self['R_STAR']*self.Rsun)**2*4.*pi)
         else:
             pass
         
@@ -2067,7 +2084,7 @@ class Star(dict):
         
         if not self.has_key('SHELLCOLDENS'):
             self['SHELLCOLDENS'] = self['SHELLDENS']\
-                                    *self['R_STAR']*self.r_solar
+                                    *self['R_STAR']*self.Rsun
         else:
             pass
         
@@ -2094,7 +2111,7 @@ class Star(dict):
         
         if not self.has_key('SHELLDENS2'):
             self['SHELLDENS2'] = sqrt(self['SHELLDENS']**2\
-                                         *self['R_STAR']*self.r_solar)
+                                         *self['R_STAR']*self.Rsun)
         else:
             pass
 
@@ -2583,7 +2600,7 @@ class Star(dict):
                     rad_list = array(DataIO.getMCMaxOutput(\
                                                 incr=int(self['NRAD']),\
                                                 filename=iofile))\
-                                     /self.r_solar/float(self['R_STAR'])
+                                     /self.Rsun/float(self['R_STAR'])
                     incr = int(self['NRAD'])*int(self['NTHETA'])
                     temp_list = DataIO.getMCMaxOutput(incr=incr,\
                                                       keyword='TEMPERATURE',\
@@ -2866,6 +2883,22 @@ class Star(dict):
             return (wave_list,array([integrate.trapz(y=dens*kappas[i],x=radius)
                                      for i in xrange(len(wave_list))]))
         
+    
+    def calcINCLUDE_SCAT_GAS(self):
+        
+        '''
+        Set the keyword INCLUDE_SCAT_GAS to 0.
+        
+        The keyword decides whether to take into account the scattering 
+        coefficients in GASTRoNOoM as if they contributed to the absorption
+        coefficients. 
+        
+        '''
+        
+        if not self.has_key('INCLUDE_SCAT_GAS'):  
+            self['INCLUDE_SCAT_GAS'] = 0
+        else:
+            pass
         
     
     def readWeightedKappas(self):
@@ -2874,15 +2907,30 @@ class Star(dict):
         Return the wavelength and kappas weighted with their respective dust 
         mass fractions.
         
+        Typically you only want the absorption coefficients because GASTRoNOoM
+        does not take into account scattering. You could try approximating 
+        the effect of scattering on the acceleration, but at this point this is 
+        not taken into account accurately.
+        
         @return: The wavelength and weighted kappas grid
         @rtype: (array,array)
         
         '''
         
         wave_list,kappas = self.readKappas()
-        wkappas = [sum([float(self['A_%s'%(species)])*float(kappas[i][j])
-                      for i,species in enumerate(self['DUST_LIST']*2)])
-                   for j in xrange(len(kappas[0]))]
+        if self['INCLUDE_SCAT_GAS']:
+            #-- First the absorption coefficients of all dust species are given 
+            #   Then the scattering coefficients. So iterate twice over the 
+            #   dust list.
+            wkappas = [sum([float(self['A_%s'%(species)])*float(kappas[i][j])
+                            for i,species in enumerate(self['DUST_LIST']*2)])
+                       for j in xrange(len(kappas[0]))]
+        else: 
+            #-- Only iterate once over the dust list to just take the 
+            #   absorption coefficients.
+            wkappas = [sum([float(self['A_%s'%(species)])*float(kappas[i][j])
+                            for i,species in enumerate(self['DUST_LIST'])])
+                       for j in xrange(len(kappas[0]))]
         return array(wave_list),array(wkappas)
         
         
@@ -3025,7 +3073,7 @@ class Star(dict):
         if not self.has_key('R_OH1612'):  
             self['R_OH1612'] = Data.convertAngular(self['R_OH1612_AS'],\
                                                    self['DISTANCE'])\
-                                    /self['R_STAR']/self.r_solar
+                                    /self['R_STAR']/self.Rsun
         else:
             pass         
 
@@ -3048,7 +3096,7 @@ class Star(dict):
             vg = self['VEL_INFINITY_GAS']
             self['R_OH1612_NETZER'] = ((5.4*mg**0.7/vg**0.4)**-4.8\
                                         + (74.*mg/vg)**-4.8)**(-1/4.8)*1e16\
-                                        /self['R_STAR']/self.r_solar
+                                        /self['R_STAR']/self.Rsun
         else:
             pass         
     
@@ -3087,7 +3135,7 @@ class Star(dict):
         '''
         
         w,bb = self.getBlackBody()
-        return w,bb*(self['R_STAR']*self.r_solar)**2\
+        return w,bb*(self['R_STAR']*self.Rsun)**2\
                    /(self['DISTANCE']*self.pc)**2
         
 

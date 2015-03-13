@@ -20,7 +20,7 @@ from cc.plotting import Plotting2
 
 
 
-class PeakStats(Statistics):
+class UnresoStats(Statistics):
     
     """
     Environment with several tools to perform statistics on peak-to-peak ratios
@@ -28,18 +28,15 @@ class PeakStats(Statistics):
     
     """
         
-    def __init__(self,star_name,instrument,path_code='codeSep2010',\
+    def __init__(self,star_name,path_code='codeSep2010',\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):        
         
         """ 
-        Initializing an instance of PeakStats.
+        Initializing an instance of UnresoStats.
         
         @param star_name: Star name from Star.dat
         @type star_name: string
-        @param instrument: The instrument with which the data were taken 
-                           (PACS or SPIRE)
-        @type instrument: string
         
         @keyword path_code: Output folder in the code's home folder
                        
@@ -52,14 +49,9 @@ class PeakStats(Statistics):
         
         """
         
-        super(PeakStats,self).__init__(star_name=star_name,\
+        super(UnresoStats,self).__init__(star_name=star_name,\
                                        path_combocode=path_combocode,\
                                        code='GASTRoNOoM',path_code=path_code)
-        
-        #-- Set the type of instrument used in this instance
-        self.instrument = instrument.upper()
-        if self.instrument == 'FREQ_RESO':
-            raise IOError('Peak2Peak ratios cannot yet be calculated for FREQ_RESO.')
         
         #-- Remember sample transitions per band and their central wavelengths. 
         #   key: filename, value: list[Transition()]
@@ -82,37 +74,22 @@ class PeakStats(Statistics):
         self.chi2_inttot = dict()
         self.chi2_con = dict()
         
-        #-- Set the upper and lower data noise limits
-        upper_limits = dict()
-        upper_limits['PACS'] = 1.3
-        lower_limits = dict()
-        lower_limits['PACS'] = 0.7
-        self.upper_limit = upper_limits[self.instrument]
-        self.lower_limit = lower_limits[self.instrument]
-        
         
     
-    def setInstrument(self,*args,**kwargs):
+    def setInstrument(self,instrument_name,*args,**kwargs):
         
         '''
         Set an instrument, see Statistics.py.
         
-        '''
-        
-        super(PeakStats,self).setInstrument(instrument=self.instrument,*args,\
-                                            **kwargs)
-        
-        
-        
-    def setModels(self,*args,**kwargs):
-        
-        '''
-        Set the model grid, see Statistics.py.
+        @param instrument_name: The instrument (such as 'PACS', 'SPIRE')
+        @type instrument_name: string
         
         '''
         
-        super(PeakStats,self).setModels(instrument=self.instrument,*args,\
-                                        **kwargs)
+        if instrument_name == 'FREQ_RESO':
+            raise IOError('Unresolved data stats cannot be calculated for FREQ_RESO.')
+        super(UnresoStats,self).setInstrument(instrument_name=instrument_name,\
+                                              *args,**kwargs)
         
         
 
@@ -133,13 +110,14 @@ class PeakStats(Statistics):
         
         '''
         
+        inst = self.instrument
         print '***********************************'
         print '** Calculating integrated/peak intensity ratios for %s.'\
-              %self.instrument
+              %inst.instrument
         
         #-- Make a sample selection of Transition()s.
-        sample_trans = Transition.extractTransFromStars(self.star_grid,pacs=1)
-        inst = self.instruments[self.instrument]
+        sample_trans = Transition.extractTransFromStars(self.star_grid,\
+                                                        dtype=inst.instrument)
         
         #-- Set the tolerance: a factor that is multiplied with half the 
         #   wavelength resolution of data when looking for the peak value 
@@ -153,14 +131,14 @@ class PeakStats(Statistics):
             self.sample_trans[fn] = [trans
                                      for trans in sample_trans
                                      if trans.wavelength*10**4 >= dwav[0]\
-                                    and trans.wavelength*10**4 <= dwav[-2]]
+                                        and trans.wavelength*10**4 <= dwav[-2]]
             #-- Get the central wavelength of the lines, corrected for 
             #   Doppler shift due to vlsr of the central source. In micron.
             self.central_mwav[fn] = [t.wavelength*10**4*1./(1-inst.vlsr/t.c)
                                      for t in self.sample_trans[fn]]
             
             self.__setPeakRatios(ifn,fn)
-            if self.instrument == 'PACS' and inst.linefit <> None:
+            if inst.linefit <> None:
                 self.__setIntRatios(ifn,fn,chi2_type=chi2_type)
         
         self.calcChiSquared()
@@ -181,11 +159,11 @@ class PeakStats(Statistics):
         
         '''
         
-        inst = self.instruments[self.instrument]
-        for star in self.star_grid:
-            this_id = star['LAST_%s_MODEL'%self.instrument]
+        inst = self.instrument
+        for istar,star in enumerate(self.star_grid):
+            this_id = star['LAST_%s_MODEL'%inst.instrument]
         
-            #-- Get all integrate flux chi2s, add them up for a single model
+            #-- Get all integrated flux chi2s, add them up for a single model
             #   and divide by the amount of comparisons. Line blends not incl. 
             #   If no integrated flux available, set chi2_inttot[this_id] to 0
             all_chi2s = []
@@ -201,14 +179,10 @@ class PeakStats(Statistics):
             all_mflux = []
             all_dstd = []
             for fn,dflux in zip(inst.data_filenames,inst.data_flux_list):
-                dstd = self.data_stats[self.instrument][fn]['std']
-                fn_np = os.path.split(fn)[1]
-                sphinx_file = os.path.join(os.path.expanduser('~'),\
-                                           'GASTRoNOoM',self.path_code,\
-                                           'stars',self.star_name,\
-                                           '%s_results'%self.instrument,\
-                                           this_id,'%s_%s'%('sphinx',fn_np))
-                mflux = DataIO.readCols(sphinx_file)[1]
+                dstd = self.data_stats[fn]['std']
+                #-- Cannot return empty list as the selection of existing 
+                #   convolutions is done in Statistics.setModels()
+                mflux = inst.getSphinxConvolution(star,fn)[1]
                 all_dflux.extend(dflux[mflux>0])
                 all_mflux.extend(mflux[mflux>0])
                 all_dstd.extend([dstd]*len(mflux[mflux>0]))
@@ -225,8 +199,7 @@ class PeakStats(Statistics):
         object. Only done for those line present in this file, based on 
         Doppler shifted wavelength.
         
-        @param ifn: Index of the data band in self.instruments[self.instrument]
-                    lists.
+        @param ifn: Index of the data band in self.instrument lists.
         @type ifn: int
         @param fn: The filename of the data set. Needed for book keeping.
         @type fn: string
@@ -242,7 +215,7 @@ class PeakStats(Statistics):
         '''
         
         #-- Get some data properties, and extract data wavelength and flux
-        inst = self.instruments[self.instrument]
+        inst = self.instrument
         self.int_ratios[fn] = dict()
         self.int_ratios_err[fn] = dict() 
         self.chi2_intsi[fn] = dict()
@@ -253,7 +226,7 @@ class PeakStats(Statistics):
         
         for star in self.star_grid:
             #--  From here on, we start extracting the model specific int ints.
-            this_id = star['LAST_%s_MODEL'%self.instrument]
+            this_id = star['LAST_%s_MODEL'%inst.instrument]
             mtrans = array([star.getTransition(t) 
                             for t in self.sample_trans[fn]])
             these_ratios = []
@@ -262,8 +235,8 @@ class PeakStats(Statistics):
             for mt,st in zip(mtrans,self.sample_trans[fn]):
                 #   4) No trans == sample_trans found for this model, or sample
                 #      trans does not contain a PACS integrated intensity.
-                if mt is None or st.getIntIntPacs(fn)[0] is None or \
-                        st.getIntIntPacs(fn)[0] == 'inblend':
+                if mt is None or st.getIntIntUnresolved(fn)[0] is None or \
+                        st.getIntIntUnresolved(fn)[0] == 'inblend':
                     these_ratios.append(None)
                     these_errs.append(None)
                
@@ -273,7 +246,7 @@ class PeakStats(Statistics):
                 #      been found in the wavelength resolution bin of the 
                 #      fitted line and also indicates a blend.
                 else:
-                    dintint, dintinterr, blends = st.getIntIntPacs(fn)
+                    dintint, dintinterr, blends = st.getIntIntUnresolved(fn)
                     if blends is None:
                         mintint = mt.getIntIntIntSphinx() 
                     else:
@@ -315,8 +288,7 @@ class PeakStats(Statistics):
         
         Done per filename. 
         
-        @param ifn: Index of the data band in self.instruments[self.instrument]
-                    lists.
+        @param ifn: Index of the data band in self.instrument lists.
         @type ifn: int
         @param fn: The filename of the data set. Needed for book keeping.
         @type fn: string
@@ -324,29 +296,22 @@ class PeakStats(Statistics):
         '''
         
         #-- Get some data properties, and extract data wavelength and flux
-        inst = self.instruments[self.instrument]
+        inst = self.instrument
         dwav = inst.data_wave_list[ifn]
         dflux = inst.data_flux_list[ifn]
         
         #-- Get some data statistics
-        d_mean = self.data_stats[self.instrument][fn]['mean']
-        d_std = self.data_stats[self.instrument][fn]['std']
+        d_mean = self.data_stats[fn]['mean']
+        d_std = self.data_stats[fn]['std']
         #-- this sigma is used for determining whether a peak flux is
         #   significant compared to the std value of the band.
-        d_sigma = self.data_stats[self.instrument][fn]['sigma']
+        d_sigma = self.data_stats[fn]['sigma']
         
         self.peak_ratios[fn] = dict()
     
         for star in self.star_grid:
             #-- Read the convolved sphinx model
-            this_id = star['LAST_%s_MODEL'%self.instrument]
-            fn_np = os.path.split(fn)[1]
-            sphinx_file = os.path.join(os.path.expanduser('~'),\
-                                       'GASTRoNOoM',self.path_code,\
-                                       'stars',self.star_name,\
-                                       '%s_results'%self.instrument,this_id,\
-                                       '%s_%s'%('sphinx',fn_np))
-            mwav, mflux = DataIO.readCols(sphinx_file)
+            mwav, mflux = inst.getSphinxConvolution(star,fn)
             if list(mflux[mflux < 0]) != []: 
                 print 'There are negative sphinx flux values! They will '+\
                       'not be taken into account.'
@@ -380,6 +345,7 @@ class PeakStats(Statistics):
             #   5) Calculate the ratios, only if the model flux is not None 
             #      (was a negative model flux value: We don't want that)
             #      Negative ratios are possible, in case of ratio lower limits 
+            this_id = star['LAST_%s_MODEL'%inst.instrument]
             self.peak_ratios[fn][this_id] = [m <> None and m/d or None
                                              for m,d in zip(central_mflux,\
                                                             central_dflux)]
@@ -422,7 +388,7 @@ class PeakStats(Statistics):
         
         '''
 
-        inst = self.instruments[self.instrument]
+        inst = self.instrument
         filenames = filename is None and inst.data_filenames or [filename]
         if data_type == 'central_wav':
             return array([v2     
@@ -461,9 +427,9 @@ class PeakStats(Statistics):
 
         this_grid = self.sortStarGrid()
         plot_filenames = []
-        inst = self.instruments[self.instrument]
+        inst = self.instrument
         for star in this_grid:
-            this_id = star['LAST_%s_MODEL'%self.instrument]
+            this_id = star['LAST_%s_MODEL'%inst.instrument]
             lp = [] 
             waves = []
             ratios = []
@@ -472,7 +438,7 @@ class PeakStats(Statistics):
             #-- the ratios included in the statistics
             if not no_peak:
                 this_wav_inc = self.getRatios(data_type='central_wav',\
-                                            this_id=this_id)
+                                              this_id=this_id)
                 this_ratio_inc = self.getRatios(this_id=this_id)
                 if list(this_wav_inc):    
                     waves.append(this_wav_inc)
@@ -483,7 +449,8 @@ class PeakStats(Statistics):
                 #-- ratios replaced by lower limits if data point is in the noise
                 #   ie data point can only be smaller than or equal to used value
                 this_wav_lower = self.getRatios(data_type='central_wav',\
-                                                this_id=this_id,return_negative=1)
+                                                this_id=this_id,\
+                                                return_negative=1)
                 this_ratio_lower = self.getRatios(return_negative=1,\
                                                 this_id=this_id)
                 this_ratio_lower = [abs(r) for r in this_ratio_lower]
@@ -493,7 +460,7 @@ class PeakStats(Statistics):
                     ratios_err.append(None)
                     lp.append('dg')
             
-            if self.instrument == 'PACS' and inst.linefit <> None:
+            if inst.linefit <> None:
                 #-- If integrated intensities are available for the instrument, get
                 #   the integrated intensity ratios
                 this_wav_int = self.getRatios(sel_type='int_ratios',\
@@ -537,17 +504,17 @@ class PeakStats(Statistics):
             xmax = max([max(x) for x in waves])
             waves.extend([[0.5*xmin,1.5*xmax]]*3)
             ratios.extend([[1,1],\
-                           [self.lower_limit,\
-                            self.lower_limit],\
-                           [self.upper_limit,\
-                            self.upper_limit]])
+                           [1-inst.abs_freq_err,\
+                            1-inst.abs_freq_err],\
+                           [1+inst.abs_freq_err,\
+                            1+inst.abs_freq_err]])
             ratios_err.extend([None,None,None])
             lp.extend(['-k','--k','--k'])
             plot_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                          self.path_code,'stars',\
                                          self.star_name,\
-                                         '%s_results'%self.instrument,this_id,\
-                                         'ratio_wav_%s'%this_id)
+                                         '%s_results_'%inst.instrument+\
+                                         'ratio_wav_%s'%str(this_id))
             labels = [('Mdot = %.2e Msolar/yr'%star['MDOT_GAS'],0.05,0.05),\
                       ('Teff = %.1f K'%star['T_STAR'],0.05,0.1),\
                       ('$\psi$ = %0.2e'%star['DUST_TO_GAS_CHANGE_ML_SP'],0.05,\
@@ -576,7 +543,7 @@ class PeakStats(Statistics):
         inputf_short = os.path.splitext(os.path.split(inputfilename)[1])[0]
         new_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                     self.path_code,'stars',self.star_name,\
-                                    '%s_results'%self.instrument,\
+                                    '%s_results_'%inst.instrument+\
                                     'ratio_wav_%s.pdf'%inputf_short)
         DataIO.joinPdf(old=plot_filenames,new=new_filename)
         print '** Stat plots can be found at:'
@@ -602,5 +569,5 @@ class PeakStats(Statistics):
             styp = 'chi2_inttot'
         else: 
             styp = 'chi2_con'
-        ikey = 'LAST_%s_MODEL'%self.instrument
+        ikey = 'LAST_%s_MODEL'%self.instrument.instrument
         return sorted(self.star_grid,key=lambda x: getattr(self,styp)[x[ikey]])

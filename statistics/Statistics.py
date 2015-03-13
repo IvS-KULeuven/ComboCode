@@ -14,6 +14,7 @@ import scipy.stats
 from cc.tools.io import DataIO
 from cc.data.instruments import Pacs
 from cc.data import Data
+from cc.modeling.objects import Star
 
 
 
@@ -50,8 +51,8 @@ class Statistics(object):
 
         self.star_name = star_name
         self.path_combocode = path_combocode
-        self.instruments = dict()
         self.star_grid = []
+        self.instrument = None
         self.path_code = path_code
         self.code = code
         self.data_stats = dict()
@@ -59,16 +60,18 @@ class Statistics(object):
 
 
 
-    def setInstrument(self,instrument,data_path='',searchstring='',\
+    def setInstrument(self,instrument_name,data_path='',searchstring='',\
                       data_filenames=[],instrument_instance=None,\
                       pacs_oversampling=None,sample_transitions=[],\
-                      redo_convolution=0,stat_method='clipping'):
+                      redo_convolution=0,resolution=None,\
+                      stat_method='clipping'):
        
         '''
         Set an instrument as a source of data.
         
-        @param instrument: The instrument (such as 'PACS')
-        @type instrument: string
+        @param instrument_name: The instrument (such as 'PACS', 'SPIRE', 
+                                or 'FREQ_RESO')
+        @type instrument_name: string
         
         @keyword data_path: full path to the data folder, excluding star_name. 
                             Not required if instrument_instance is given.
@@ -90,78 +93,85 @@ class Statistics(object):
                                       
                                       (default: None)
         @type instrument_instance: Instrument()
-        @keyword pacs_oversampling: The PACS instrumental oversampling, for 
-                                    correct convolution of the Sphinx output.
-                                    Not required if instrument_instance is 
-                                    given
-                                    
-                                    (default: None)
-        @type pacs_oversampling: int
-        @keyword sample_transitions: Sample transitions used as reference for 
-                                     the data files. Only relevant if 
-                                     instrument=='FREQ_RESO'.
-                                     
-                                     (default: [])
-        @type sample_transitions: list
+        @keyword oversampling: The instrumental oversampling, for 
+                               correct convolution of the Sphinx output.
+                               Not required if instrument_instance is given
+                                   
+                               (default: None)
+        @type oversampling: int
         @keyword redo_convolution: if you want to do the convolution of the 
-                                 sphinx models regardless of what's already in 
-                                 the database. The pacs id will not change, nor
-                                 the entry in the db, and the old convolved 
-                                 model will be copied to a backup
-                                 Only relevant if instrument==PACS. Not 
-                                 required if instrument_instance is given
+                                   sphinx models for PACS regardless of what's 
+                                   already in the database. The pacs id will 
+                                   not change, nor the entry in the db, and the
+                                   old convolution will be copied to a backup
+                                   Only relevant if instrument==PACS. Not 
+                                   required if instrument_instance is given
                                  
-                                 (default: 0)
+                                   (default: 0)
         @type redo_convolution: bool
+        @keyword resolution: The spectral resolution of the SPIRE apodized 
+                             spectra. Only required when instrument_name is 
+                             SPIRE.
+                             
+                             (default: None)
+        @type resolution: float
         
-        @keyword stat_method: Std/Mean/RMS determination method for PACS. Can  
-                              be 'clipping' or 'preset'. The former 1-sigma 
-                              clips based on std/... of full spectrum, then 
-                              takes std/... of clipped spectrum. Latter takes
-                              values from Data.dat.
+        @keyword stat_method: Std/Mean/RMS determination method for unresolved
+                              data. Options:
+                              - 'clipping': 1-sigma clipping based on std/... 
+                                            of full spectrum, then takes 
+                                            std/... of clipped spectrum. 
+                              - 'preset': wavelength ranges for std/... 
+                                          determination taken from Data.dat.
                          
                               (default: 'clipping')
         @type stat_method: string
+        
         '''
         
-        if instrument.upper() == 'PACS':
+        instrument_name = instrument_name.upper()
+        if instrument_name == 'PACS':
             if instrument_instance <> None:
-                self.instruments['PACS'] = instrument_instance
-                self.instruments['PACS'].setData(data_filenames=data_filenames,\
-                                                 searchstring=searchstring)
+                self.instrument = instrument_instance
+                self.instrument.setData(data_filenames=data_filenames,\
+                                        searchstring=searchstring)
             else:
-                self.instruments['PACS'] = Pacs.Pacs(star_name=self.star_name,\
-                                                     pacs_oversampling\
-                                                        =pacs_oversampling,\
-                                                     path=self.path_code,\
-                                                     path_pacs=data_path,\
-                                                     path_combocode\
-                                                        =self.path_combocode,\
-                                                    redo_convolution\
-                                                        =redo_convolution)
-                self.instruments['PACS'].setData(data_filenames=data_filenames,\
-                                                 searchstring=searchstring)
-            self.doDataStats('PACS',method=stat_method)
+                self.instrument = Pacs.Pacs(star_name=self.star_name,\
+                                            oversampling=oversampling,\
+                                            path=self.path_code,\
+                                            path_pacs=data_path,\
+                                            path_combocode=self.path_combocode,\
+                                            redo_convolution=redo_convolution)
+                self.instrument.setData(data_filenames=data_filenames,\
+                                        searchstring=searchstring)
         
-        elif instrument.upper() == 'FREQ_RESO':
-            #- Make copy so that any changes do not translate to whatever the 
-            #- original list of transitions might be. 
-            [t.fitLP() for t in sample_transitions]
-            self.instruments['FREQ_RESO'] = sample_transitions
-            if not sample_transitions:
-                print 'WARNING! No sample transitions given for Statistics ' +\
-                      'module with instrument == FREQ_RESO. No stats will ' + \
-                      'be calculated.'
+        elif instrument_name == 'SPIRE':
+            if instrument_instance <> None:
+                self.instrument = instrument_instance
+                self.instrument.setData(data_filenames=data_filenames,\
+                                        searchstring=searchstring)
+            else:
+                self.instrument = Spire.Spire(star_name=self.star_name,\
+                                              oversampling=oversampling,\
+                                              path=self.path_code,\
+                                              path_pacs=data_path,\
+                                              resolution=resolution,\
+                                              path_combocode=self.path_combocode)
+                self.instrument.setData(data_filenames=data_filenames,\
+                                        searchstring=searchstring)
+        
+        elif instrument_name == 'FREQ_RESO':
+            self.instrument = None
             
-
-            
-    def setModels(self,instrument,star_grid=[],models=[]):
+        #-- Do data stats for unresolved data. Resolved data will never do this
+        self.doDataStats(method=stat_method)
+        
+        
+        
+    def setModels(self,star_grid=[],models=[]):
         
         '''
         Load the models and remember them.
-        
-        @param instrument: The instrument (such as 'PACS')
-        @type instrument: string
         
         @keyword star_grid: The parameter sets, if not given: model ids needed
         
@@ -179,43 +189,45 @@ class Statistics(object):
         @type extra_keywords: dict
         
         '''        
-        
-        if instrument.upper() == 'PACS':
+
+        #-- The unresolved-data case
+        if self.instrument:
+            instr = self.instrument.instrument.upper()
             print '***********************************'
-            print '** Checking Sphinx models for comparison with PACS.'
+            print '* Checking Sphinx models for comparison with %s.'%instr
+            if instr == 'SPIRE': models = []
             if not star_grid and not models:
                 raise IOError('Statistics.setModels requires either ' + \
                               'star_grid or models to be defined.')
+            #-- star_grid can be reconstructed for PACS through its database
             elif not star_grid:
-                star_grid = self.instruments['PACS'].makeStars(models=models)
+                star_grid = Star.makeStars(models=models,id_type='PACS',\
+                                           path=path_code,code='GASTRoNOoM',\
+                                           path_combocode=self.path_combocode)
+                self.instrument.addStarPars(star_grid)
             if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) == set([0]): 
                 return
-            self.instruments['PACS'].prepareSphinx(star_grid)
+            self.instrument.prepareSphinx(star_grid)
             self.star_grid = [star 
                               for star in star_grid 
-                              if star['LAST_%s_MODEL'%instrument]]
-        elif instrument.upper() == 'FREQ_RESO':
+                              if star['LAST_%s_MODEL'%instr] <> None]
+        #-- The FREQ_RESO case
+        else:
             if not star_grid:
                 raise IOError('Statistics.setModels requires a ' + \
                               'star_grid to be defined for freq-resolved data.')
             if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) == set([0]): 
                 return
             self.star_grid = star_grid
-        else:
-            raise IOError('Instruments other than PACS or freq-resolved ' + \
-                          'data not yet implemented.')
 
 
     
-    def doDataStats(self,instrument,method='clipping'):
+    def doDataStats(self,method='clipping'):
         
         '''
         Calculate mean, std, rms for the data files.
         
-        They are saved in self.data_stats[instrument].
-        
-        @param instrument: The instrument (such as 'PACS')
-        @type instrument: string
+        They are saved in self.data_stats.
         
         @keyword method: Std/Mean/RMS determination method. Can be 'clipping'
                          or 'preset'. The former 1-sigma clips based on 
@@ -228,22 +240,22 @@ class Statistics(object):
         
         '''
         
-        stats = dict()
-        instrument = instrument.upper()
-        if instrument == 'PACS':
-            self.getDataInfo(instrument)
+        method = method.lower()
+        if method not in ['preset','clipping']: method = 'clipping'
+        self.data_stats = dict()
+        if self.instrument:
+            if not self.data_info: self.setDataInfo()
             for filename,data_wave,data_flux,band in \
-                        zip(self.instruments[instrument].data_filenames,\
-                            self.instruments[instrument].data_wave_list,\
-                            self.instruments[instrument].data_flux_list,\
-                            self.instruments[instrument].data_ordernames):
+                        zip(self.instrument.data_filenames,\
+                            self.instrument.data_wave_list,\
+                            self.instrument.data_flux_list,\
+                            self.instrument.data_ordernames):
                 these_stats = dict()
-                bi = self.data_info[instrument]['bands'].index(band)
-                these_stats['sigma'] = self.data_info[instrument]['sigmas'][bi]
-                #filename = os.path.split(filename)[1]
+                iband = self.data_info['bands'].index(band)
+                these_stats['sigma'] = self.data_info['sigmas'][iband]
                 if method == 'preset':
-                    w_std_min = self.data_info[instrument]['w_std_min'][bi]
-                    w_std_max = self.data_info[instrument]['w_std_max'][bi]
+                    w_std_min = self.data_info['w_std_min'][iband]
+                    w_std_max = self.data_info['w_std_max'][iband]
                     if w_std_min < data_wave[0] or w_std_max > data_wave[-1]:
                         method = 'clipping'
                     test_mean = Data.getMean(wave=data_wave,flux=data_flux,\
@@ -261,7 +273,7 @@ class Statistics(object):
                     these_stats['rms'] = Data.getRMS(flux=data_flux-\
                                                           these_stats['mean'],\
                                                      limits=limits)                    
-                elif method == 'preset':
+                else:
                     these_stats['mean'] = Data.getMean(wave=data_wave,\
                                                        flux=data_flux,\
                                                        wmin=w_std_min,\
@@ -275,9 +287,6 @@ class Statistics(object):
                                                           these_stats['mean'],\
                                                      wmin=w_std_min,\
                                                      wmax=w_std_max)
-                else:
-                    raise IOError('Statistics().doDataStats() got wrong ' + \
-                                  'input for method keyword.')
                 print '* Data statistics for %s using "%s" method:'\
                       %(filename,method)
                 if method == 'preset':
@@ -287,12 +296,11 @@ class Statistics(object):
                 print 'std = ',these_stats['std'],' Jy'      
                 print 'RMS = ',these_stats['rms'],' Jy'      
                 stats[filename] = these_stats
-        self.data_stats[instrument] = stats
-        print '***********************************'
+            print '***********************************'
         
         
         
-    def getDataInfo(self,instrument):
+    def setDataInfo(self):
         
         '''
         Read data info from the ComboCode/Data/Data.dat file. Will return
@@ -304,19 +312,18 @@ class Statistics(object):
         
         '''
         
-        instrument = instrument.upper()
-        if self.data_info.has_key(instrument): return
-        self.data_info[instrument] = dict()
+        if not self.instrument: return
+        self.data_info = dict()
         indices = [i
                    for i,band in enumerate(DataIO.getInputData(\
                                 path=os.path.join(self.path_combocode,'Data'),\
                                 keyword='INSTRUMENT',filename='Data.dat'))
-                   if band.find(instrument) == 0]
-        bands = [band.replace('%s_'%instrument,'')
-                 for band in DataIO.getInputData(\
+                   if band.find(self.instrument.instrument) == 0]
+        bands = [band.replace('%s_'%self.instrument.instrument,'')
+                 for i,band in enumerate(DataIO.getInputData(\
                                 path=os.path.join(self.path_combocode,'Data'),\
-                                keyword='INSTRUMENT',filename='Data.dat')
-                 if band.find(instrument) == 0]
+                                keyword='INSTRUMENT',filename='Data.dat'))
+                 if i in indices]
         w_std_min = [wmin
                      for i,wmin in enumerate(DataIO.getInputData(\
                                 path=os.path.join(self.path_combocode,'Data'),\
@@ -332,8 +339,8 @@ class Statistics(object):
                                 path=os.path.join(self.path_combocode,'Data'),\
                                 keyword='SIGMA',filename='Data.dat'))
                   if i in indices]
-        self.data_info[instrument]['sigmas'] = sigmas
-        self.data_info[instrument]['bands'] = bands
-        self.data_info[instrument]['w_std_min'] = w_std_min
-        self.data_info[instrument]['w_std_max'] = w_std_max
+        self.data_info['sigmas'] = sigmas
+        self.data_info['bands'] = bands
+        self.data_info['w_std_min'] = w_std_min
+        self.data_info['w_std_max'] = w_std_max
         

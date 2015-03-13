@@ -448,10 +448,10 @@ class MCMax(ModelingSession):
         if not int(star['TDESITER']):
             self.command_list['Rin'] = float(star['R_INNER_DUST'])\
                                         *float(star['R_STAR'])\
-                                        *star.r_solar/star.au
+                                        *star.Rsun/star.au
         self.command_list['Rout'] = float(star['R_OUTER_DUST'])\
                                         *float(star['R_STAR'])\
-                                        *star.r_solar/star.au
+                                        *star.Rsun/star.au
         
         self.command_list['denstype'] = "'%s'"%star['DENSTYPE']
         if star['DENSTYPE'] == 'MASSLOSS':
@@ -497,12 +497,12 @@ class MCMax(ModelingSession):
                 species_dict['TdesB'] = star['T_DESB_' + species]
             if star.has_key('R_MIN_%s'%species) and star['R_MIN_%s'%species]:
                 species_dict['minrad'] = star['R_MIN_%s'%species]\
-                                           *star['R_STAR']*star.r_solar/star.au
+                                           *star['R_STAR']*star.Rsun/star.au
             #- R_MAX is always created by Star(), even if not requested.
             #- Will be empty string if not available; no maxrad is given
             if star['R_MAX_%s'%species]:
                 species_dict['maxrad'] = star['R_MAX_%s'%species]\
-                                           *star['R_STAR']*star.r_solar/star.au
+                                           *star['R_STAR']*star.Rsun/star.au
             if int(star['MRN_DUST']) and star.has_key(['RGRAIN_%s'%species]):
                 species_dict['rgrain'] = star['RGRAIN_%s'%species]
             else:

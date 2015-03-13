@@ -117,9 +117,7 @@ class ResoStats(Statistics):
                                         ('MOPRA',.20),\
                                         ('NRAO',.20),\
                                         ('OSO',.20),\
-                                        ('PACS',.30),\
-                                        ('SEST',.20),\
-                                        ('SPIRE',.10)])
+                                        ('SEST',.20)])
         #-- The uncertainties and loglikelihoods for each template transition 
         #   is kept here, but the key is the INDEX of the template transition.
         self.trans_uncertainties = dict()
@@ -147,6 +145,9 @@ class ResoStats(Statistics):
         
         In this case, a list of sample transitions in which the data will be 
         read is the only input required.
+        
+        Make sure sample_transitions are copies of the originals, such as 
+        returned by Transition.extractTransFromStars().
     
         @param sample_transitions: Sample transitions used as reference for 
                                    the data files. 
@@ -154,29 +155,18 @@ class ResoStats(Statistics):
         
         '''
         
-        super(ResoStats,self).setInstrument(instrument='FREQ_RESO',\
-                                         sample_transitions=sample_transitions)
-            
-            
-            
-    def setModels(self,star_grid):
-       
-        '''
-        Set and read the models for this statistics module. 
-        
-        In this case, a list of Star() objects in which the sphinx files will 
-        be read is the only input required.
-    
-        @param star_grid: The parameter sets, if not given: model ids needed
-        
-                          (default: [])
-        @type star_grid: list[Star()]
-        
-        '''
-        
-        super(ResoStats,self).setModels('FREQ_RESO',star_grid=star_grid)        
-        
-        
+        super(ResoStats,self).setInstrument(instrument_name='FREQ_RESO')
+        #-- Make copy so that any changes do not translate to whatever the 
+        #   original list of transitions might be. If transitions are 
+        #   selected through Transition.extractTransFromStars, this is 
+        #   taken care of.
+        if not sample_transitions:
+            print 'WARNING! No sample transitions given for Statistics ' +\
+                    'module with instrument == FREQ_RESO. No stats will ' + \
+                    'be calculated.'
+        [t.fitLP() for t in sample_transitions]
+        self.sample_trans = sample_transitions    
+
         
     def setIntensities(self,use_bestvlsr=1):
         
@@ -203,9 +193,11 @@ class ResoStats(Statistics):
         
         """
         
-        tnodata = [t for t in self.instruments['FREQ_RESO'] 
-                     if not t.lpdata]
-        self.translist = [t for t in self.instruments['FREQ_RESO']
+        tnodata = [t 
+                   for t in self.sample_trans
+                   if not t.lpdata]
+        self.translist = [t 
+                          for t in self.sample_trans
                           if t.lpdata]
         self.includedtrans = [i for i in range(len(self.translist))]
 

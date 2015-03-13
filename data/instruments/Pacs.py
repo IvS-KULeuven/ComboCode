@@ -160,9 +160,9 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
     #   needs to be done for every star separately. So play safe, and reset in 
     #   the sample transition list.
     for tr in trans:
-        tr.intintpacs = dict()
-        tr.intinterrpacs = dict()
-        tr.intintpacs_blends = dict()
+        tr.unreso = dict()
+        tr.unreso_err = dict()
+        tr.unreso_blends = dict()
     for star in stars:
         if not dpacs.has_key(star):
             dpacs[star] = Pacs(star,6,path_pacs,path_linefit='lineFit',\
@@ -214,11 +214,11 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
             #   Otherwise, exclude the line from the table. If there's no 
             #   spectrum for this band at all, the line is excluded as well.
             #   In this case, the band will not be added to the table at all.
-            #   Just look at the keys of t.intintpacs. If there's none of the 
+            #   Just look at the keys of t.unreso. If there's none of the 
             #   given band, then exclude the transition. All stars are 
             #   included in the same Transition() objects.
             all_keys = [k 
-                        for k in t.intintpacs.keys()
+                        for k in t.unreso.keys()
                         if band in os.path.split(k)[1].split('_')]
             if not all_keys:
                 continue
@@ -251,7 +251,7 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                 #-- Grab the filename available in the transition object for 
                 #   the measured line strength. If multiple filenames with the
                 #   correct band are available, only the first is taken.
-                all_fn = [sfn for sfn in t.intintpacs.keys()
+                all_fn = [sfn for sfn in t.unreso.keys()
                           if band in os.path.split(sfn)[1].split('_')\
                               and s in os.path.split(sfn)[1].split('_')]
                 
@@ -267,7 +267,7 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                 #-- The filename is present, and thus should have a line 
                 #   strength indicated, or be flagged as a blend. If not, an 
                 #   error will be raised, but this should not happen!
-                fint,finterr,fintblend = t.getIntIntPacs(fn)
+                fint,finterr,fintblend = t.getIntIntUnresolved(fn)
                 if fint == 'inblend':
                     parts.append('Blended')
                 else:
@@ -298,6 +298,7 @@ class Pacs(Instrument):
     
     def __init__(self,star_name,oversampling,path_pacs,path=None,
                  redo_convolution=0,intrinsic=1,path_linefit='',\
+                 abs_flux_err=0.2,\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
         
@@ -344,12 +345,19 @@ class Pacs(Instrument):
                                
                                (default: '')
         @type path_linefit: string
+        @keyword abs_flux_err: The absolute flux calibration uncertainty of the
+                               instrument. 
+                               
+                               (default: 0.2)
+        @type abs_flux_err: float
         
         '''
         
         super(Pacs,self).__init__(star_name=star_name,code='GASTRoNOoM',\
                                   path=path,path_combocode=path_combocode,\
                                   path_instrument=path_pacs,\
+                                  abs_flux_err=abs_flux_err,
+                                  oversampling=oversampling,\
                                   instrument_name='PACS',intrinsic=intrinsic)
         self.data_wave_list = []
         self.data_flux_list = []
@@ -368,10 +376,7 @@ class Pacs(Instrument):
                                        self.star_name,'PACS_results'))
         else:
             self.db = None
-        
         self.sphinx_prep_done = 0
-        self.oversampling = oversampling
-        self.path_linefit = path_linefit
         self.readLineFit()
 
 
@@ -379,12 +384,16 @@ class Pacs(Instrument):
     def readLineFit(self):
         
         '''
-        Read the data from the line fit procedure done by Pierre.
+        Read the data from the line fit procedure done with Pierres Hipe 
+        script.
         
         Assumes structure and syntax as given in the example file
-        /home/robinl/Data/PACS/v669cas/lineFitOH127_os2_us3_9_0_978/lineFitResults
+        /home/robinl/Data/PACS/v1362aql/lineFit/lineFitResults
+        
+        The line fit results are saved in self.linefit as a np.recarray.
         
         The columns include (with unit indicated): 
+        groupid
         band
         wave_in (micron), 
         wave_fit (micron), 
@@ -399,13 +408,11 @@ class Pacs(Instrument):
         
         '''
         
-        fn = os.path.join(self.path_instrument,self.star_name,\
-                          self.path_linefit,'lineFitResults')
-        if not self.path_linefit or not os.path.isfile(fn):
-            self.linefit = None
-            return
-        dd = DataIO.readCols(fn,make_array=0,start_row=1,\
-                             start_from_keyword='GROUPID')
+        kwargs = dict([('start_from_keyword','GROUPID'),\
+                       ('start_row',1)])
+        dd = super(Pacs,self).readLineFit(**kwargs)
+        if dd is None: return
+        
         #-- If no % symbol in 6th last column, new way of giving int ints:
         #   get rid of last 2 columns which do not contain relevant information
         #   as well as the wave ratio column
@@ -427,123 +434,23 @@ class Pacs(Instrument):
             #else:
                 #bands.append(val)
         del dd[1:-11]
-        names = ('groupid','band','wave_in','wave_fit','line_flux','line_flux_err',\
-                 'line_flux_rel','continuum','line_peak','fwhm_fit',\
-                 'fwhm_pacs','fwhm_rel')
+        names = ('groupid','band','wave_in','wave_fit','line_flux',\
+                 'line_flux_err','line_flux_rel','continuum','line_peak',\
+                 'fwhm_fit','fwhm_pacs','fwhm_rel')
         self.linefit = np.recarray(shape=(len(dd[-1]),),\
                                    dtype=zip(names,[int]+['|S3']+[float]*10))
         for n,d in zip(names,dd):
             self.linefit[n] = d
-        
-            
-            
-    def intIntMatch(self,trans_list,ifn):
-        
-        '''
-        Match the wavelengths of integrated intensities with transitions.
-        
-        Checks if a blend might be present based on the data, as well as the 
-        available transitions. 
-        
-        Note that if a line is observed multiple times in the same band (eg in
-        a line scan), it cannot at this moment be discerned. In other words,
-        there is no point including a line fitted twice in two line scans, as 
-        it will not be taken into account for the int matching algorithm.
-        
-        @param trans_list: The list of transitions for which the check is done.
-        @type trans_list: list[Transition()]
-        @param ifn: The index of the filename in self.data_filenames. This is 
-                    done per file! 
-        
-        '''
-        
-        if self.linefit is None:
-            return
-        dwav = self.data_wave_list[ifn]
-        ordername = self.data_ordernames[ifn]
-        fn = self.data_filenames[ifn]
-        #   1) Prep: Create a list of sample transitions and get central
-        #            wavs corrected for vlsr, in micron. Select fit results
-        #            for this particular band.
-        lf = self.linefit[self.linefit['band'] == ordername]
-        #      No info available for band, so don't set anything.
-        if not list(lf.wave_fit):
-            return
-        
-        #   2) Collect all transitions with doppler shifted central wavelength
-        #      within the wavelength region of the datafile selected here.
-        strans = [(t,t.wavelength*10**4*1./(1-self.vlsr/t.c))
-                  for t in trans_list 
-                  if t.wavelength*10**4*1./(1-self.vlsr/t.c) >= dwav[0]\
-                    and t.wavelength*10**4*1./(1-self.vlsr/t.c) <= dwav[-2]]
-                
-        #   3) Check if the wav of a trans matches a wav in the fitted
-        #      intensities list, within the fitted_fwhm/2 of the line with 
-        #      respect to the fitted central wavelength.
-        #      Note that there cannot be 2 fitted lines with central wav
-        #      closer than fwhm/2. Those lines would be inseparable!
-        imatches = [argmin(abs(lf.wave_fit-mwav))
-                    for (st,mwav) in strans]
-        matches = [(mwav <= lf.wave_fit[ii] + lf.fwhm_pacs[ii] \
-                        and mwav >= lf.wave_fit[ii] - lf.fwhm_pacs[ii]) \
-                    and (lf.wave_fit[ii],ii) or (None,None)
-                   for (st,mwav),ii in zip(strans,imatches)]
-        #   4) If match found, check if multiple mtrans fall within   
-        #      fitted_FWHM/2 from the fitted central wavelength of the
-        #      line. These are blended IN MODEL and/or IN DATA.
-        #      Check for model blend is done by looking for ALL transitions 
-        #      that have been matched with a single fitted wavelength.
-        matches_wv = array([mm[0] for mm in matches])
-        wf_blends = [list(array([st for st,mwav in strans])[matches_wv==wv]) 
-                     for wv in lf.wave_fit]
-        #      Use the wave_fit array indices from matches[:][1] to check  
-        #      if indeed multiple transitions were found for the same wav.
-        #      If positive, include True if the particular transition is  
-        #      the first among the blended ones, else include False. The 
-        #      False ones are not taken into account as blended because: 
-        #      1) no match was found at all, 
-        #      2) only one match was found, 
-        #      3) if multiple matches have been found it was not the first. 
-        #      
-        blended = [ii <> None and len(wf_blends[ii]) > 1. \
-                                and wf_blends[ii].index(st) != 0
-                   for (st,mwav),(match,ii) in zip(strans,matches)]
-        for (st,mwav),blend,(match,ii) in zip(strans,blended,matches):
-            #   5) No match found in linefit for this band: no 
-            #      integrated intensity is set for this filename in this  
-            #      transition. Simply move on to the next transtion. (not 
-            #      setting gives None when asking Trans for intintpacs)
-            if match is None:
-                continue
-            #   6) Line is blended with other line that is already added. Just
-            #      for bookkeeping purposes, all blended lines involved are 
-            #      added here as well.
-            elif blend:
-                st.setIntIntPacs(fn,'inblend',None,wf_blends[ii])
-            #   7) Match found with a wave_fit value once. Check for line 
-            #      blend IN DATA: Check the ratio fitted FWHM/PACS FWHM. If
-            #      larger by 30% or more, put the int int negative. 
-            elif len(wf_blends[ii]) == 1:
-                err = sqrt((lf.line_flux_rel[ii]/100)**2+0.2**2)
-                factor = lf.fwhm_rel[ii] >= 1.2 and -1 or 1
-                st.setIntIntPacs(fn,factor*lf.line_flux[ii],err)
-            #   8) If multiple matches, give a selection of strans included
-            #      in the blend (so they can be used to select model 
-            #      specific transitions later for addition of the 
-            #      integrated intensities of the mtrans). Make intintpacs 
-            #      negative to indicate a line blend. 
-            #      The *OTHER* transitions found this way are not compared 
-            #      with any data and get None. (see point 4) )
-            else: 
-                err = sqrt((lf.line_flux_rel[ii]/100)**2+0.2**2)
-                st.setIntIntPacs(fn,-1.*lf.line_flux[ii],err,wf_blends[ii])
-                
+
                 
                 
     def addStarPars(self,star_grid):
         
         '''
         Set parameters taken from the PACS database into empty parameter sets.
+        
+        Typically used in conjunction with making Star() templates through 
+        Star.makeStars().
         
         @param star_grid: The parameter sets that will updated in situ
         @type star_grid: list[Star()]
@@ -594,16 +501,6 @@ class Pacs(Instrument):
         
         super(Pacs,self).setData(data_filenames, searchstring)
         if self.data_filenames:
-            self.data_ordernames = [[word 
-                                     for word in os.path.split(f)[1].split('_') 
-                                     if word.upper() in ('B2A','B3A','B2B',\
-                                                         'R1A','R1B')][0] 
-                                    for f in self.data_filenames]
-            if len(self.data_ordernames) != len(self.data_filenames): 
-                raise IOError('Could not match number of ordernames to ' + \
-                              'number of filenames when selecting PACS ' + \
-                              'datafiles. Check filenames for missing or ' + \
-                              'extra order indications between "_".')
             self.data_orders = [int(o[1]) for o in self.data_ordernames]
             
 
@@ -626,11 +523,9 @@ class Pacs(Instrument):
         '''
         
         if not self.sphinx_prep_done or redo_sphinx_prep:
-                  
+            print '** Loading from database, or convolving with ' + \
+                  'Gaussian and rebinning to data wavelength grid.'  
             for i,star in enumerate(star_grid):
-                if i == 0:
-                    print '** Loading from database, or convolving with ' + \
-                          'Gaussian and rebinning to data wavelength grid.'      
                 print '* Sphinx model %i out of %i.' %(i+1,len(star_grid))
                 if not star['LAST_GASTRONOOM_MODEL']: 
                     print '* No cooling model found.'
@@ -641,6 +536,36 @@ class Pacs(Instrument):
             self.sphinx_prep_done = 1
             self.db.sync()
                       
+
+
+    def getSphinxConvolution(self,star,fn):
+        
+        '''
+        Read the sphinx convolution and return if it has already been done. 
+        
+        Returns None if the convolution is not available. 
+        
+        @param star: The Star() object
+        @type star: Star()
+        @param fn: The filename of the dataset (band) for which the convolution
+                   is to be returned.
+        @type fn: str
+        
+        @return: The sphinx convolution result. (wavelength, flux)
+        @rtype: array
+        
+        '''
+        
+        this_id = star['LAST_PACS_MODEL']
+        if not this_id:
+            return ([],[])
+        fn = os.path.split(fn)[1]
+        sphinx_file = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                   self.path,'stars',self.star_name,\
+                                   'PACS_results',this_id,\
+                                   '%s_%s'%('sphinx',fn))
+        return DataIO.readCols(sphinx_file)
+
 
 
     def __convolveSphinx(self,star):
@@ -678,7 +603,7 @@ class Pacs(Instrument):
             finished_conv_filenames = []
         filenames_to_do = [this_f 
                            for this_f in [os.path.split(f)[1] 
-                           for f in self.data_filenames]
+                                          for f in self.data_filenames]
                            if this_f not in finished_conv_filenames]     
         
         #-Get sphinx model output and merge, for all star models in star_grid

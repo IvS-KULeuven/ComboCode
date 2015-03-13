@@ -871,7 +871,7 @@ class Gastronoom(ModelingSession):
         self.command_list['DUST_TEMPERATURE_FILENAME'] \
                 = '"%s"'%star['DUST_TEMPERATURE_FILENAME']
         self.command_list['TEMDUST_FILENAME'] = '"%s"'%star['TEMDUST_FILENAME']
-        self.command_list['R_STAR'] = float(star['R_STAR'])*star.r_solar
+        self.command_list['R_STAR'] = float(star['R_STAR'])*star.Rsun
         
         if star['MDOT_MODE'].upper() != 'CONSTANT':
             self.command_list['USE_DENSITY_NON_CONSISTENT'] \

@@ -78,7 +78,7 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0):
     
     '''
     
-    modes = {'dint': 'getIntIntPacs',\
+    modes = {'dint': 'getIntIntUnresolved',\
              'mint': 'getIntIntIntSphinx',\
              'dtmb': 'getIntTmbData',\
              'mtmb': 'getIntTmbSphinx'}
@@ -166,17 +166,17 @@ def getTransFromStarGrid(sg,criterion,mode='index'):
 
 
 
-def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,pacs=0):
+def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,dtype='all'):
     
     '''
     Extract a list a of unique transitions included in a list of Star() objects
     and sort them.
     
-    An extra flag is added to the input keyword to determine inclusion of PACS
-    lines or not.
+    A selection can be made on data type, which is either a telescope or 
+    instrument, or all, or all unresolved, or all resolved.
     
-    The list of transitions is copies to make sure no funky references mess 
-    with the original transitions.
+    The list of transitions is copied to make sure no funky references mess 
+    with the original transitions. list() and set() make sure of this.
     
     @param star_grid: The list of Star() objects from which all 'GAS_LINES' 
                        keys are taken and collected in a set. 
@@ -191,11 +191,15 @@ def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,pacs=0):
                       
                          (default: 1) 
     @type sort_molec: bool
-    @keyword pacs: 1: Only select PACS lines. 0: Don't select PACS lines. 2: Do
-                      not make a distinction between the telescope type.
-                      
-                      (default: 0)
-    @type pacs: int
+    @keyword dtype: 'all': return all lines, 
+                    'resolved': return all resolved lines,
+                    'unresolved': return all unresolved lines, 
+                    'pacs'/'spire'/'apex'/'jcmt'/...: return all telescope or 
+                                                      instrument specific lines
+                    Invalid definitions return an empty list.
+                    
+                    (default: 'all')
+    @type pacs: str
     
     @return: a list of unique transitions included in all Star() objects in
              star_grid
@@ -203,7 +207,7 @@ def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,pacs=0):
     
     '''
     
-    pacs = int(pacs)
+    dtype = dtype.upper()
     selection = list(sorted(set([trans 
                                  for star in star_grid
                                  for trans in star['GAS_LINES']]),\
@@ -212,12 +216,14 @@ def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,pacs=0):
                                      x.frequency) \
                                 or  (sort_molec and x.molecule or '',\
                                      x.wavelength)))
-    if not pacs:
-        return [trans for trans in selection if 'PACS' not in trans.telescope]
-    if pacs == 1:
-        return [trans for trans in selection if 'PACS' in trans.telescope]
-    else:
+    if dtype == 'UNRESOLVED':
+        return [trans for trans in selection if trans.unresolved]
+    elif dtype == 'RESOLVED':
+        return [trans for trans in selection if not trans.unresolved]
+    elif dtype == 'ALL':
         return selection
+    else:
+        return [trans for trans in selection if trans.telescope == dtype]
 
 
 
@@ -236,7 +242,7 @@ def updateLineSpec(trans_list):
     
     telescopes = list(set([trans.telescope for trans in trans_list]))
     for telescope in telescopes:
-        if not ('HIFI' in telescope or 'PACS' in telescope):
+        if not ('HIFI' in telescope):
             print 'Warning! Telescope beam efficiencies for %s'%telescope + \
                   ' are added arbitrarily and thus are not the correct values.'
         old_spec = DataIO.readFile(os.path.join(os.path.expanduser('~'),\
@@ -861,8 +867,9 @@ class Transition():
         @type nlow: int
         @keyword offset: The offset of the radiation peak with respect to the 
                          central pixel of the observing instrument. Only 
-                         relevant for non-point corrected PACS or non Pacs data
-                         (so not relevant when INSTRUMENT_INTRINSIC=1)
+                         relevant for non-point corrected PACS/SPIRE or 
+                         resolved data (so not relevant when the intrinsic line
+                         strengths are used from the models)
                          
                          (default: 0.0)
         @type offset: float
@@ -962,10 +969,14 @@ class Transition():
         self.vibrational = vibrational
         self.sphinx = None
         self.path_gastronoom = path_gastronoom
-        if type(datafiles) is types.StringType:
-            self.datafiles = [datafiles]
+        self.unresolved = 'PACS' in self.telescope or 'SPIRE' in self.telescope
+        if self.unresolved:
+            self.datafiles = None
         else:
-            self.datafiles = datafiles
+            if type(datafiles) is types.StringType:
+                self.datafiles = [datafiles]
+            else:
+                self.datafiles = datafiles
         self.lpdata = None 
         self.radiat_trans = None
         if frequency is None:
@@ -977,12 +988,23 @@ class Transition():
         self.h = 6.62606957e-27         #in erg*s Planck constant
         self.k = 1.3806488e-16          #in erg/K Boltzmann constant
         self.wavelength = self.c/self.frequency #in cm
+        #-- The vlsr from Star.dat (set by the unresolved-data objects such as
+        #   Spire or Pacs)
+        self.vlsr = None
         self.best_vlsr = None
         self.fittedlprof = None
         self.best_mfilter = None
-        self.intintpacs = dict()
-        self.intinterrpacs = dict()
-        self.intintpacs_blends = dict()
+        #-- PACS and SPIRE spectra are handled differently (setIntIntUnresolved)
+        if self.unresolved: 
+            self.unreso = dict()
+            self.unreso_err = dict()
+            self.unreso_blends = dict()
+        else:
+            self.unreso = None
+            self.unreso_err = None
+            self.unreso_blends = None
+
+
         
     def __str__(self):
         
@@ -1175,8 +1197,7 @@ class Transition():
         
         '''
         
-        if self.telescope.find('PACS') > -1 \
-                or self.telescope.find('SPIRE') > -1:
+        if self.unresolved:
             #- some random number, it is NOT relevant for PACS or SPIRE...
             return 0.60                 
         if self.telescope.find('HIFI') > -1:
@@ -1608,6 +1629,8 @@ class Transition():
         If datafile has been given a valid value, the self.lpdata list is set
         back to None, so the datafiles can all be read again. 
         
+        When called for a SPIRE or PACS transition, no datafiles are added.
+        
         @param datafile: the full filename, or multiple filenames
         @type datafile: string/list
         
@@ -1623,6 +1646,10 @@ class Transition():
         
         #-- If datafile is None or '', no data available, so leave things as is 
         if not datafile:
+            return
+        
+        #-- PACS and SPIRE spectra are handled differently (setIntIntUnresolved)
+        if self.unresolved: 
             return
         
         #-- In case a single filename is passed, put it in a list. 
@@ -1657,7 +1684,9 @@ class Transition():
         Read the datafiles associated with this transition if available.
         
         '''
-         
+        
+        if self.unresolved:
+            return
         if self.lpdata is None:
             self.lpdata = []
             if self.datafiles <> None:
@@ -1703,13 +1732,16 @@ class Transition():
     def getVlsr(self):
         
         """
-        Return the vlsr read from the fits file, or taken from the Star.dat file.
+        Return the vlsr read from the fits file of a resolved-data object, or 
+        taken from the Star.dat file in case of unresolved data. Note that 
+        resolved data may also return vlsr from Star.dat if the vlsr in the 
+        data file is significantly different from the value in Star.dat.
         
         This is different from the getBestVlsr() method, which determines the 
         best matching vlsr between data and sphinx, if both are available. 
         
         @return: the source velocity taken from the fits file OR Star.dat. 0
-                 if data are not available.
+                 if data are not available. In km/s!
         @rtype: float
         
         """
@@ -1718,7 +1750,7 @@ class Transition():
         if self.lpdata: 
             return self.lpdata[0].getVlsr()
         else:
-            return 0.0
+            return self.vlsr
             
     
     def fitLP(self):
@@ -1818,17 +1850,19 @@ class Transition():
         
         """
         
+        
+        
         #-- check if vlsr was already calculated
         if self.best_vlsr <> None:
             return self.best_vlsr
 
-        #-- attempt to read data and find the initial vlsr guess
-        vlsr = self.getVlsr()
-        #-- check if sphinx is finished, if not return vlsr from data container
+        #-- Cannot be done for unresolved lines. 
+        #   Cannot be done if sphinx has not been calculated.
+        #   Then, return the vlsr from Star.dat
         self.readSphinx()
-        if vlsr == 0.0 or not self.sphinx: 
-            return vlsr
-
+        if self.unresolved or not self.sphinx:
+            return self.getVlsr()
+        
         #-- Auto fit the line profile with a soft parabola and/or gaussian.
         #   This will set the vexp, evexp, soft parabola and gaussian profiles
         self.fitLP()
@@ -1848,7 +1882,8 @@ class Transition():
         #      equial to the data bin size if there is a better match between
         #      model and data. This gives the 'best_vlsr'
         res = dvel[1]-dvel[0]
-        mtmb_filter = filtering.filter_signal(x=mvel+vlsr,y=mtmb,ftype='box',\
+        mtmb_filter = filtering.filter_signal(x=mvel+self.getVlsr(),y=mtmb,\
+                                              ftype='box',\
                                               x_template=dvel,window_width=res)
         #-- Number of values tested is int(0.5*vexp/res+1),0.5*vexp on one side 
         #   and on the other side
@@ -1890,7 +1925,7 @@ class Transition():
         best_step = (imin-1)/2+1
         #-- Determining whether to add or subtract best_step*res from the vlsr
         modifier = imin%2 == 0 and 1 or -1
-        self.best_vlsr = vlsr + modifier*best_step*res
+        self.best_vlsr = self.getVlsr() + modifier*best_step*res
         #-- Note that the velocity grid of best_mfilter is the data velocity
         self.best_mfilter = mtmb_grid[imin]
         
@@ -2094,7 +2129,8 @@ class Transition():
                                      info_path=info_path)
     
     
-    def setIntIntPacs(self,fn,dint,dint_err,st_blends=None):
+    
+    def setIntIntUnresolved(self,fn,dint,dint_err,vlsr,st_blends=None,):
         
         """
         Set the integrated intensity for this transition measured in given 
@@ -2102,9 +2138,13 @@ class Transition():
         
         A negative value is given for those lines suspected of being in a blend
         both by having at least 2 model transitions in a fitted line's breadth
-        or by having a fitted_fwhm/pacs_fwhm of ~ 1.4 or more.
+        or by having a fitted_fwhm/intrinsic_fwhm of ~ 1.2 or more.
         
-        @param fn: The data filename of PACS that contains the measured 
+        The vlsr is also passed through this function as that is only available
+        from the data objects (in this case the Spire or Pacs class). For 
+        unresolved lines, vlsr is read from Star.dat.
+        
+        @param fn: The data filename that contains the measured 
                    integrated intensity.
         @type fn: string
         @param dint: The value for the integrated intensity in W/m2. If the 
@@ -2115,9 +2155,12 @@ class Transition():
         @param dint_err: The fitting uncertainty on the intensity  + absolute 
                          flux calibration uncertainty of 20%.
         @type dint_err: float
+        @param vlsr: The source velocity with respect to the local standard of 
+                     rest in cm/s.
+        @type vlsr: float
         
         @keyword st_blends: List of sample transitions involved in a line blend
-                            detected by finding multiple central wavs in a PACS
+                            detected by finding multiple central wavs in a
                             wavelength resolution bin
         
                             (default: None)
@@ -2126,14 +2169,17 @@ class Transition():
         """
         
         if dint == 'inblend':
-            self.intintpacs[fn] = dint
+            self.unreso[fn] = dint
         else:
-            self.intintpacs[fn] = float(dint)
-        self.intinterrpacs[fn] = dint_err <> None and float(dint_err) or None
-        self.intintpacs_blends[fn] = st_blends
+            self.unreso[fn] = float(dint)
+        self.unreso_err[fn] = dint_err <> None and float(dint_err) or None
+        self.unreso_blends[fn] = st_blends
+        #-- Set the vlsr, but convert to km/s for plotting purposes.
+        self.vlsr = vlsr * 10**(-5)
+        
         
     
-    def getIntIntPacs(self,fn=''):
+    def getIntIntUnresolved(self,fn=''):
     
         '''
         If already set, the integrated intensity can be accessed here based on
@@ -2142,39 +2188,41 @@ class Transition():
         
         Always set and returned in W/m2!
         
-        Must have been set through setIntIntPacs()! Otherwise returns None.
+        Must have been set through setIntIntUnresolved()! Otherwise returns 
+        None.
         
         A negative value is given for those lines suspected of being in a blend
         both by having at least 2 model transitions in a fitted line's breadth
-        or by having a fitted_fwhm/pacs_fwhm of ~ 1.4 or more.
+        or by having a fitted_fwhm/intrinsic_fwhm of ~ 1.2 or more.
         
-        @keyword fn: The data filename of PACS that contains the measured 
-                     integrated intensity. Can be set to '' or None if simply the
+        @keyword fn: The data filename that contains the measured integrated
+                     intensity. Can be set to '' or None if simply the
                      first entry in the keys() list is to be used. Mostly only 
                      one line strength is associated with the object anyway.
                      
                      (default: '')
         @type fn: string
         
-        @return: The integrated intensity measured in PACS for this filename, 
-                 in SI units of W/m2, and the fitting uncertainty + absolute 
-                 flux calibration uncertainty of 20%.
+        @return: The integrated intensity measured in unresolved data for this 
+                 filename, in SI units of W/m2, and the fitting uncertainty + 
+                 absolute flux calibration uncertainty.
         @rtype: (float,float,list)
         
         '''
         
-        if self.intintpacs.has_key(fn):
-            return (self.intintpacs[fn],\
-                    self.intinterrpacs[fn],\
-                    self.intintpacs_blends[fn])
-        elif not fn and self.intintpacs.keys():
-            k = self.intintpacs.keys()[0]
-            return (self.intintpacs[k],\
-                    self.intinterrpacs[k],\
-                    self.intintpacs_blends[k])
+        if self.unreso.has_key(fn):
+            return (self.unreso[fn],\
+                    self.unreso_err[fn],\
+                    self.unreso_blends[fn])
+        elif not fn and self.unreso.keys():
+            k = self.unreso.keys()[0]
+            return (self.unreso[k],\
+                    self.unreso_err[k],\
+                    self.unreso_blends[k])
         else:
             return (None,None,None)
         
+    
     
     def getLoglikelihood(self,use_bestvlsr=1):
         

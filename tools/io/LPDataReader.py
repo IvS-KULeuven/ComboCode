@@ -138,7 +138,8 @@ class LPDataReader(Reader):
         
         If the star is not included in Star.dat, the v_lsr is set to 0.0.
         
-        @return: The source velocity of the observed object in the dataset
+        @return: The source velocity of the observed object in the dataset in
+                 km/s
         @rtype: float
         
         '''
