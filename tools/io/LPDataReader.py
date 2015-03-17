@@ -22,8 +22,9 @@ class LPDataReader(Reader):
     
     '''
     
-    def __init__(self,filename,info_path=os.path.join(os.path.expanduser('~'),\
-                                                      'ComboCode','Data')):
+    def __init__(self,filename,star_name=None,\
+                 info_path=os.path.join(os.path.expanduser('~'),\
+                                        'ComboCode','Data')):
         
         '''
         A data reader for line profiles.
@@ -38,12 +39,20 @@ class LPDataReader(Reader):
                             
                             (default: ~/ComboCode/Data)
         @type info_path: string
+        @keyword star_name: The star name if the filename doesn't follow naming
+                            conventions. None otherwise.
+                            
+                            (default: None)
+        @type star_name: str
         
         '''
                 
         super(LPDataReader, self).__init__()
         self.filename = filename
-        self.star_name = os.path.split(self.filename)[1].split('_')[0]
+        if star_name <> None:
+            self.star_name = star_name
+        else:
+            self.star_name = os.path.split(self.filename)[1].split('_')[0]
         self.info_path = info_path
         self.c = 2.99792458e10          #in cm/s
         self.contents['vlsr'] = None

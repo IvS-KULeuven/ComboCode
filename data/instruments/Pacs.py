@@ -13,8 +13,7 @@ import subprocess
 import cPickle
 from glob import glob
 from time import gmtime
-from scipy import array,argmax,argmin,sqrt, argsort
-import scipy
+from scipy import array,argsort,interpolate
 import numpy as np
 
 from cc.tools.io import DataIO
@@ -298,7 +297,7 @@ class Pacs(Instrument):
     
     def __init__(self,star_name,oversampling,path_pacs,path=None,
                  redo_convolution=0,intrinsic=1,path_linefit='',\
-                 abs_flux_err=0.2,\
+                 absflux_err=0.2,\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
         
@@ -345,18 +344,19 @@ class Pacs(Instrument):
                                
                                (default: '')
         @type path_linefit: string
-        @keyword abs_flux_err: The absolute flux calibration uncertainty of the
-                               instrument. 
+        @keyword absflux_err: The absolute flux calibration uncertainty of the
+                              instrument. 
                                
-                               (default: 0.2)
-        @type abs_flux_err: float
+                              (default: 0.2)
+        @type absflux_err: float
         
         '''
         
         super(Pacs,self).__init__(star_name=star_name,code='GASTRoNOoM',\
                                   path=path,path_combocode=path_combocode,\
                                   path_instrument=path_pacs,\
-                                  abs_flux_err=abs_flux_err,
+                                  path_linefit=path_linefit,\
+                                  absflux_err=absflux_err,
                                   oversampling=oversampling,\
                                   instrument_name='PACS',intrinsic=intrinsic)
         self.data_wave_list = []
@@ -634,7 +634,7 @@ class Pacs(Instrument):
                           gmtime()[3],gmtime()[4],gmtime()[5])
                     self.db[star['LAST_PACS_MODEL']] = \
                         dict([('filenames',[]),\
-                              ('trans_list',star.getTransList()),\
+                              ('trans_list',star.getTransList(dtype='PACS')),\
                               ('cooling_id',star['LAST_GASTRONOOM_MODEL'])])
                     DataIO.testFolderExistence(\
                         os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
@@ -717,7 +717,7 @@ class Pacs(Instrument):
         
         #- Make interpolators for every order
         print '** Interpolating PACS native resolution.'
-        interpolator_list = [scipy.interpolate.interp1d(x,y) 
+        interpolator_list = [interpolate.interp1d(x,y) 
                              for x,y in zip(reso_wave_list,reso_delta_list)]
         
         #- Interpolate the PACS resolution for appropriate order to get sigma's
@@ -725,48 +725,7 @@ class Pacs(Instrument):
         self.data_delta_list = [interpolator_list[order-1](x_new) 
                                 for x_new,order in zip(self.data_wave_list,\
                                                        self.data_orders)]        
-        
-    
 
-    def compareTransLists(self,tranlist,dblist):
-        
-        '''
-        Compare a transition list of a Star instance, with a transition list 
-        from the Pacs db. 
-        
-        Only relevant transitions (in the PACS wavelength range) are taken 
-        into account.      
-        
-        [NOT YET FINISHED]     
-        
-        @param tranlist: transitions from the Star() instance
-        @type tranlist: list[Transition()]
-        @param dblist: transitions from the db entry
-        @type dblist: list[Transition()]
-        
-        @return: comparison between the two transition list
-        @rtype: bool
-        
-        '''
-        
-        #- make Molecule for all molecules in the star and db lists, use these 
-        #- to make transitions OR include wavelength in Pacs db... 
-        #- ==> Star.makeTransList will have to include this... 
-        #- Include in trans.makeDict?
-        #- If so... need to check where trans.makeDict is used, and adapt 
-        #- everything to include the wavelength or frequency
-        
-        #- comparison is done in cm
-        wavmin = 50.0e-4     
-        wavmax = 210.0e-4
-        tranlist_sel = [t 
-                        for t in tranlist 
-                        if t.wavelength < wavmax and t.wavelength > wavmin] 
-        dblist_sel = [t 
-                      for t in dblist 
-                      if t.wavelength < wavmax and t.wavelength > wavmin] 
-        return tranlist_sel == dblist_sel
-    
 
 
     def checkStarDb(self,star):
@@ -794,7 +753,7 @@ class Pacs(Instrument):
             selection = [(k,v) 
                          for k,v in self.db.items() 
                          if v['cooling_id'] == star['LAST_GASTRONOOM_MODEL'] \
-                            and star.getTransList() == v['trans_list']]
+                            and star.getTransList(dtype='PACS') == v['trans_list']]
             if len(selection) == 1:
                 star['LAST_PACS_MODEL'] = selection[0][0]
                 return selection[0][1]['filenames']

@@ -743,17 +743,20 @@ class Star(dict):
         
     
      
-    def getTransList(self):
+    def getTransList(self,**kwargs):
         
         '''
-        Return a list of (transmodelid,molecmodelid,dictionary) 
-        for every transition in the Star model.
+        Return a list of (transmodelid, molecmodelid, dictionary) for every 
+        transition in the Star model.
         
         '''
         
-        return [(trans.getModelId(),trans.molecule.getModelId(),\
-                 trans.makeDict())
-                for trans in self['GAS_LINES']]
+        trl = Transition.extractTransFromStars([self],**kwargs)
+        trl_info = [(trans.getModelId(),\
+                     trans.molecule.getModelId(),\
+                     trans.makeDict())
+                    for trans in trl]
+        return trl_info
 
 
 

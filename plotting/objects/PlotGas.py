@@ -519,6 +519,16 @@ class PlotGas(PlottingSession):
 
             '''
             
+            if cfg.has_key('filename'):
+                filename = cfg.pop('filename')
+            else:
+                filename = os.path.join(os.path.expanduser('~'),\
+                                        'GASTRoNOoM',self.path,'stars',\
+                                        self.star_name,self.plot_id,\
+                                        '%slps_%smodels_%ito%i'\
+                                        %(intrinsic and 'intrinsic_' or '',\
+                                          no_data and 'nodata_' or '',\
+                                          indexi,indexf))
             missing_trans = 0
             n_subplots = (x_dim*y_dim) - (keytags and 1 or 0)
             plot_filenames = []
@@ -645,16 +655,8 @@ class PlotGas(PlottingSession):
                     data.append(ddict)
                     if not trans_list:
                         break
-                extension = '.pdf'
-                filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                        self.path,'stars',self.star_name,\
-                                        self.plot_id,\
-                                        '%sline_profiles_%i_%smodels_%ito%i'\
-                                        %(intrinsic and 'intrinsic_' or '',i,\
-                                          no_data and 'nodata_' or '',\
-                                          indexi,indexf))
-
-                plot_filenames.append(Plotting2.plotTiles(extension=extension,\
+                cfg['filename'] = filename + '_trl%i'%(i)
+                plot_filenames.append(Plotting2.plotTiles(extension='pdf',\
                      data=data,filename=filename,keytags=keytags,\
                      xaxis=r'$v$ (km s$^{-1}$)',fontsize_axis=16,cfg=cfg,\
                      yaxis=intrinsic \
@@ -663,31 +665,19 @@ class PlotGas(PlottingSession):
                      fontsize_ticklabels=16,dimensions=(x_dim,y_dim),\
                      fontsize_label=20,linewidth=2))
             if missing_trans:
-                print 'WARNING! %i requested transitions were not found for a'\
-                      %missing_trans+\
-                      ' Star(). Within one CC session, this should not be '+\
-                      'the case!'
+                print 'WARNING! %i requested transitions were '%missing_trans+\
+                      'not found for a Star(). Within one CC session, this '+\
+                      'should not be the case!'
+            print '** %sine profile plots %scan be found at:'\
+                    %(intrinsic and 'Intrinsic l' or 'L',\
+                        no_data and 'without data ' or '')
             if plot_filenames and plot_filenames[0][-4:] == '.pdf':    
-                new_filename = os.path.join(os.path.expanduser('~'),\
-                                            'GASTRoNOoM',\
-                                            self.path,'stars',self.star_name,\
-                                            self.plot_id,\
-                                            '%sline_profiles_%smodels_%ito%i.pdf'\
-                                            %(intrinsic and 'intrinsic_' or '',\
-                                              no_data and 'nodata_' or '',\
-                                              indexi,indexf))
-                DataIO.joinPdf(old=plot_filenames,new=new_filename)
-                print '** %sine profile plots %scan be found at:'\
-                        %(intrinsic and 'Intrinsic l' or 'L',\
-                          no_data and 'without data ' or '')
-                print new_filename
-                print '***********************************' 
+                DataIO.joinPdf(old=plot_filenames,new=filename+'.pdf')
+                print filename+'.pdf'
             else:
-                print '** %sine profile plots %scan be found at:'\
-                        %(intrinsic and 'Intrinsic l' or 'L',\
-                          no_data and 'without data ' or '')
                 print '\n'.join(plot_filenames)
-                print '***********************************' 
+            print '***********************************' 
+            
     
         if trans_list:
             j = 0
@@ -713,7 +703,7 @@ class PlotGas(PlottingSession):
                                 mfiltered=mfiltered,\
                                 cont_subtract=cont_subtract)
                 j += i
-        if unreso_list:  
+        if unreso_list: 
             j = 0
             while j < len(star_grid):
                 i = 0 

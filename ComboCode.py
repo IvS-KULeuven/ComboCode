@@ -146,7 +146,8 @@ class ComboCode(object):
                           ('show_contdiv',0),('skip_cooling',0),\
                           ('recover_sphinxfiles',0),('stat_print',0),\
                           ('stat_lll_p',None),('stat_method','clipping'),\
-                          ('star_name','model'),('opac_path','')]
+                          ('star_name','model'),('opac_path',''),\
+                          ]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -173,6 +174,7 @@ class ComboCode(object):
         oversampling = self.processed_input.pop('PACS_OVERSAMPLING','')
         intrinsic = self.processed_input.pop('PACS_INTRINSIC',1)
         linefit = self.processed_input.pop('PACS_LINEFIT','')
+        absflux_err = self.processed_input.pop('PACS_ABSFLUX_ERR',0.2)
         if pacs_path:
             self.pacs = Pacs.Pacs(star_name=self.star_name,\
                                   path_combocode=self.path_combocode,\
@@ -181,7 +183,8 @@ class ComboCode(object):
                                   oversampling=oversampling,\
                                   path_pacs=pacs_path,\
                                   intrinsic=intrinsic,\
-                                  path_linefit=linefit)
+                                  path_linefit=linefit,\
+                                  absflux_err=absflux_err)
             self.pacs.setData(searchstring=searchstring)
         else:
             self.pacs = None
@@ -202,6 +205,7 @@ class ComboCode(object):
         intrinsic = self.processed_input.pop('SPIRE_INTRINSIC',1)
         oversampling = self.processed_input.pop('SPIRE_OVERSAMPLING',0)
         linefit = self.processed_input.pop('SPIRE_LINEFIT','')
+        absflux_err = self.processed_input.pop('SPIRE_ABSFLUX_ERR',0.2)
         if spire_path:
             self.spire = Spire.Spire(star_name=self.star_name,\
                                      path_combocode=self.path_combocode,\
@@ -209,8 +213,9 @@ class ComboCode(object):
                                      resolution=resolution,\
                                      path_spire=spire_path,\
                                      intrinsic=intrinsic,\
-                                     oversampling=oversampling,
-                                     path_linefit=linefit)
+                                     oversampling=oversampling,\
+                                     path_linefit=linefit,\
+                                     absflux_err=absflux_err)
             self.spire.setData(searchstring=searchstring)
         else:
             self.spire = None
@@ -823,7 +828,7 @@ class ComboCode(object):
             if not trans_sel:
                 return
             print '************************************************'
-            print '**** Doing statistics for spectrally resolveds line in %s.'\
+            print '**** Doing statistics for spectrally resolved lines in %s.'\
                   %self.star_name
             print '**** Use cc_session.resostats for more interactive tools.'
             print '************************************************'

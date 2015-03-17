@@ -44,9 +44,9 @@ def readLineProfile(filename,info_path=os.path.join(os.path.expanduser('~'),\
     '''
     
     if filename[-5:] == '.fits':
-        lprof = FitsReader.FitsReader(filename,info_path)
+        lprof = FitsReader.FitsReader(filename=filename,info_path=info_path)
     else:
-        lprof = TxtReader.TxtReader(filename,info_path)
+        lprof = TxtReader.TxtReader(filename=filename,info_path=info_path)
     return lprof
     
     

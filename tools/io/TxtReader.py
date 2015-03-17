@@ -23,8 +23,9 @@ class TxtReader(LPDataReader):
     
     '''
     
-    def __init__(self,filename,info_path=os.path.join(os.path.expanduser('~'),\
-                                                      'ComboCode','Data')):
+    def __init__(self,filename,star_name=None,\
+                 info_path=os.path.join(os.path.expanduser('~'),\
+                                        'ComboCode','Data')):
         
         '''
         A txt file reader for line profiles.
@@ -41,11 +42,17 @@ class TxtReader(LPDataReader):
                             stars, called Star.dat. 
                             
                             (default: ~/ComboCode/Data)
-        @type info_path: string       
+        @type info_path: string 
+        @keyword star_name: The star name if the filename doesn't follow naming
+                            conventions. None otherwise.
+                            
+                            (default: None)
+        @type star_name: str
         
         '''
         
-        super(TxtReader, self).__init__(filename,info_path)
+        super(TxtReader, self).__init__(filename=filename,star_name=star_name,\
+                                        info_path=info_path)
         self.readTxt()
         self.checkVlsr()
         

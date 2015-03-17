@@ -196,6 +196,9 @@ def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,dtype='all'):
                     'unresolved': return all unresolved lines, 
                     'pacs'/'spire'/'apex'/'jcmt'/...: return all telescope or 
                                                       instrument specific lines
+                                                      selection is based on 
+                                                      presence of string in 
+                                                      telescope name.
                     Invalid definitions return an empty list.
                     
                     (default: 'all')
@@ -223,7 +226,7 @@ def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,dtype='all'):
     elif dtype == 'ALL':
         return selection
     else:
-        return [trans for trans in selection if trans.telescope == dtype]
+        return [trans for trans in selection if dtype in trans.telescope]
 
 
 
@@ -1693,9 +1696,11 @@ class Transition():
                 for df in self.datafiles:
                     info_path = os.path.join(self.path_combocode,'Data')
                     if df[-5:] == '.fits':
-                        lprof = FitsReader.FitsReader(df,info_path)
+                        lprof = FitsReader.FitsReader(filename=df,\
+                                                      info_path=info_path)
                     else:
-                        lprof = TxtReader.TxtReader(df,info_path)
+                        lprof = TxtReader.TxtReader(filename=df,\
+                                                    info_path=info_path)
                     self.lpdata.append(lprof)
             else:
                 print 'No data found for %s. Setting v_lsr to 0.0'%str(self)+\

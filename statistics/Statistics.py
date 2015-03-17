@@ -63,7 +63,7 @@ class Statistics(object):
     def setInstrument(self,instrument_name,data_path='',searchstring='',\
                       data_filenames=[],instrument_instance=None,\
                       pacs_oversampling=None,sample_transitions=[],\
-                      redo_convolution=0,resolution=None,\
+                      redo_convolution=0,resolution=None,absflux_err=0.2,\
                       stat_method='clipping'):
        
         '''
@@ -126,6 +126,12 @@ class Statistics(object):
                          
                               (default: 'clipping')
         @type stat_method: string
+        @keyword absflux_err: The absolute flux calibration uncertainty of the
+                              instrument. Only relevant for PACS or SPIRE and 
+                              if no instrument_instance is given.
+                               
+                              (default: 0.2)
+        @type absflux_err: float
         
         '''
         
@@ -141,7 +147,8 @@ class Statistics(object):
                                             path=self.path_code,\
                                             path_pacs=data_path,\
                                             path_combocode=self.path_combocode,\
-                                            redo_convolution=redo_convolution)
+                                            redo_convolution=redo_convolution,\
+                                            absflux_err=absflux_err)
                 self.instrument.setData(data_filenames=data_filenames,\
                                         searchstring=searchstring)
         
@@ -156,7 +163,8 @@ class Statistics(object):
                                               path=self.path_code,\
                                               path_pacs=data_path,\
                                               resolution=resolution,\
-                                              path_combocode=self.path_combocode)
+                                              path_combocode=self.path_combocode,\
+                                              absflux_err=absflux_err)
                 self.instrument.setData(data_filenames=data_filenames,\
                                         searchstring=searchstring)
         
@@ -295,7 +303,7 @@ class Statistics(object):
                 print 'mean = ',these_stats['mean'],' Jy'
                 print 'std = ',these_stats['std'],' Jy'      
                 print 'RMS = ',these_stats['rms'],' Jy'      
-                stats[filename] = these_stats
+                self.data_stats[filename] = these_stats
             print '***********************************'
         
         
@@ -314,15 +322,15 @@ class Statistics(object):
         
         if not self.instrument: return
         self.data_info = dict()
+        pathcc = os.path.join(self.path_combocode,'Data')
+        instbands = DataIO.getInputData(path=pathcc,keyword='INSTRUMENT',\
+                                        filename='Data.dat')
+        instbands = [band.upper() for band in instbands]
         indices = [i
-                   for i,band in enumerate(DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'Data'),\
-                                keyword='INSTRUMENT',filename='Data.dat'))
-                   if band.find(self.instrument.instrument) == 0]
-        bands = [band.replace('%s_'%self.instrument.instrument,'')
-                 for i,band in enumerate(DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'Data'),\
-                                keyword='INSTRUMENT',filename='Data.dat'))
+                   for i,band in enumerate(instbands)
+                   if band.find(self.instrument.instrument.upper()) == 0]
+        bands = [band.replace('%s_'%self.instrument.instrument.upper(),'')
+                 for i,band in enumerate(instbands)
                  if i in indices]
         w_std_min = [wmin
                      for i,wmin in enumerate(DataIO.getInputData(\

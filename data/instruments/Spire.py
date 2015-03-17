@@ -8,6 +8,7 @@ Author: R. Lombaert
 """
 
 import os
+import numpy as np
 from scipy import array,sqrt,trapz,log, argmin
 
 from cc.data import Data
@@ -26,7 +27,7 @@ class Spire(Instrument):
     
     def __init__(self,star_name,resolution,path_spire,oversampling,\
                  path='codeSep2010',intrinsic=1,path_linefit='',\
-                 abs_flux_err=0.2,\
+                 absflux_err=0.1,\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
         
@@ -67,19 +68,20 @@ class Spire(Instrument):
                                
                                (default: '')
         @type path_linefit: string
-        @keyword abs_flux_err: The absolute flux calibration uncertainty of the
+        @keyword absflux_err: The absolute flux calibration uncertainty of the
                                instrument. 
                                
-                               (default: 0.2)
-        @type abs_flux_err: float
+                               (default: 0.1)
+        @type absflux_err: float
         
         '''
         
         super(Spire,self).__init__(star_name=star_name,code='GASTRoNOoM',\
                                    path=path,path_combocode=path_combocode,\
                                    path_instrument=path_spire,\
-                                   abs_flux_err=abs_flux_err,\
+                                   absflux_err=absflux_err,\
                                    oversampling=oversampling,\
+                                   path_linefit=path_linefit,\
                                    instrument_name='SPIRE',intrinsic=intrinsic)
         #- resolution is given in cm^-1
         self.resolution = float(resolution)

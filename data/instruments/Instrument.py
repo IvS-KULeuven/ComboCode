@@ -9,7 +9,7 @@ Author: R. Lombaert
 
 import os
 from glob import glob
-from scipy import argmax,array
+from scipy import argmin,argmax,array,sqrt
 import scipy
 
 from cc.tools.io import DataIO
@@ -25,7 +25,7 @@ class Instrument(object):
     """
         
     def __init__(self,star_name,path_instrument,instrument_name,oversampling,\
-                 abs_flux_err=0.2,\
+                 absflux_err,\
                  code='GASTRoNOoM',path=None,intrinsic=1,path_linefit='',\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):        
@@ -45,6 +45,9 @@ class Instrument(object):
         @param oversampling: The instrumental oversampling, for correct
                              convolution of the Sphinx output.
         @type oversampling: int                         
+        @param absflux_err: The absolute flux calibration uncertainty of the
+                            instrument. 
+        @type absflux_err: float
         
         @keyword code: The radiative transfer code used to model the data
         
@@ -74,12 +77,7 @@ class Instrument(object):
                                
                                (default: '')
         @type path_linefit: string
-        @keyword abs_flux_err: The absolute flux calibration uncertainty of the
-                               instrument. 
-                               
-                               (default: 0.2)
-        @type abs_flux_err: float
-        
+
         """
         
         self.path = path
@@ -90,7 +88,7 @@ class Instrument(object):
         self.path_linefit = path_linefit
         self.instrument = instrument_name.lower()
         self.intrinsic = intrinsic
-        self.abs_flux_err = abs_flux_err
+        self.absflux_err = absflux_err
         self.oversampling = int(oversampling)
         self.data_filenames = []
         ccd = os.path.join(self.path_combocode,'Data')
@@ -270,7 +268,6 @@ class Instrument(object):
         
         if self.linefit is None:
             return
-        instrument = instrument.lower()
         dwav = self.data_wave_list[ifn]
         ordername = self.data_ordernames[ifn]
         fn = self.data_filenames[ifn]
@@ -340,7 +337,7 @@ class Instrument(object):
             #      blend IN DATA: Check the ratio fitted FWHM/PACS FWHM. If
             #      larger by 30% or more, put the int int negative. 
             elif len(wf_blends[ii]) == 1:
-                err = sqrt((lf.line_flux_rel[ii]/100)**2+self.abs_flux_err**2)
+                err = sqrt((lf.line_flux_rel[ii]/100)**2+self.absflux_err**2)
                 factor = lf.fwhm_rel[ii] >= 1.2 and -1 or 1
                 st.setIntIntUnresolved(fn,factor*lf.line_flux[ii],err,self.vlsr)
             #   8) If multiple matches, give a selection of strans included
@@ -351,7 +348,7 @@ class Instrument(object):
             #      The *OTHER* transitions found this way are not compared 
             #      with any data and get None. (see point 4) )
             else: 
-                err = sqrt((lf.line_flux_rel[ii]/100)**2+self.abs_flux_err**2)
+                err = sqrt((lf.line_flux_rel[ii]/100)**2+self.absflux_err**2)
                 st.setIntIntUnresolved(fn,-1.*lf.line_flux[ii],err,self.vlsr,
                                        wf_blends[ii])
                 

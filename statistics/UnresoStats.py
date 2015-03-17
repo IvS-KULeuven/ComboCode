@@ -161,7 +161,7 @@ class UnresoStats(Statistics):
         
         inst = self.instrument
         for istar,star in enumerate(self.star_grid):
-            this_id = star['LAST_%s_MODEL'%inst.instrument]
+            this_id = star['LAST_%s_MODEL'%inst.instrument.upper()]
         
             #-- Get all integrated flux chi2s, add them up for a single model
             #   and divide by the amount of comparisons. Line blends not incl. 
@@ -226,7 +226,7 @@ class UnresoStats(Statistics):
         
         for star in self.star_grid:
             #--  From here on, we start extracting the model specific int ints.
-            this_id = star['LAST_%s_MODEL'%inst.instrument]
+            this_id = star['LAST_%s_MODEL'%inst.instrument.upper()]
             mtrans = array([star.getTransition(t) 
                             for t in self.sample_trans[fn]])
             these_ratios = []
@@ -345,7 +345,7 @@ class UnresoStats(Statistics):
             #   5) Calculate the ratios, only if the model flux is not None 
             #      (was a negative model flux value: We don't want that)
             #      Negative ratios are possible, in case of ratio lower limits 
-            this_id = star['LAST_%s_MODEL'%inst.instrument]
+            this_id = star['LAST_%s_MODEL'%inst.instrument.upper()]
             self.peak_ratios[fn][this_id] = [m <> None and m/d or None
                                              for m,d in zip(central_mflux,\
                                                             central_dflux)]
@@ -429,7 +429,7 @@ class UnresoStats(Statistics):
         plot_filenames = []
         inst = self.instrument
         for star in this_grid:
-            this_id = star['LAST_%s_MODEL'%inst.instrument]
+            this_id = star['LAST_%s_MODEL'%inst.instrument.upper()]
             lp = [] 
             waves = []
             ratios = []
@@ -504,10 +504,10 @@ class UnresoStats(Statistics):
             xmax = max([max(x) for x in waves])
             waves.extend([[0.5*xmin,1.5*xmax]]*3)
             ratios.extend([[1,1],\
-                           [1-inst.abs_freq_err,\
-                            1-inst.abs_freq_err],\
-                           [1+inst.abs_freq_err,\
-                            1+inst.abs_freq_err]])
+                           [1-inst.absflux_err,\
+                            1-inst.absflux_err],\
+                           [1+inst.absflux_err,\
+                            1+inst.absflux_err]])
             ratios_err.extend([None,None,None])
             lp.extend(['-k','--k','--k'])
             plot_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
@@ -529,7 +529,8 @@ class UnresoStats(Statistics):
                                                    .replace('_','\_'))[1],\
                                0.05,0.30))
             plot_title = '%s: $\chi^2_\mathrm{con}$ %.4f'\
-                         %(this_id.replace('_','\_'),self.chi2_con[this_id])
+                         %(str(this_id).replace('_','\_'),\
+                           self.chi2_con[this_id])
             if self.chi2_inttot[this_id]: 
                 plot_title += ', $\chi^2_\mathrm{int}$ %.4f'\
                               %(self.chi2_inttot[this_id])
@@ -569,5 +570,5 @@ class UnresoStats(Statistics):
             styp = 'chi2_inttot'
         else: 
             styp = 'chi2_con'
-        ikey = 'LAST_%s_MODEL'%self.instrument.instrument
+        ikey = 'LAST_%s_MODEL'%self.instrument.instrument.upper()
         return sorted(self.star_grid,key=lambda x: getattr(self,styp)[x[ikey]])
