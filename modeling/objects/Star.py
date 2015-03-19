@@ -12,7 +12,7 @@ import types
 from glob import glob
 import os
 from scipy import pi, log, sqrt
-from scipy import array, exp
+from scipy import array, exp, zeros
 from scipy import integrate, linspace
 from scipy import argmin,argmax
 import operator
@@ -1990,14 +1990,23 @@ class Star(dict):
         If second iteration, a DENSFILE is created taking into account the 
         acceleration zone. This file is only created if not already present. 
         
+        The dust density profile is calculated from the h2 number density, 
+        after scaling to the dust mass-loss rate and correcting for the dust
+        velocity profile. 
+        
         """
         
         if not self.has_key('DENSTYPE') or not self.has_key('DENSFILE'):
+            if self['MDOT_MODE'] != 'CONSTANT':
+                exstr = '_var'
+            else:
+                exstr = ''
             filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                     self.path_gastronoom,'data_for_mcmax',\
                                     '_'.join(['dens',\
                                               self['LAST_GASTRONOOM_MODEL'],\
-                                    'mdotd%.2e.dat'%(self['MDOT_DUST'],)]))
+                                    'mdotd%s%.2e.dat'%(exstr,\
+                                                       self['MDOT_DUST'])]))
             if os.path.isfile(filename):
                 self['DENSFILE'] = filename
                 self['DENSTYPE'] = "SHELLFILE"
@@ -2012,17 +2021,31 @@ class Star(dict):
                                              self['LAST_GASTRONOOM_MODEL'],\
                                              'coolfgr_all%s.dat'\
                                              %self['LAST_GASTRONOOM_MODEL'])
-                    radius = DataIO.getGastronoomOutput(inputfile)
-                    gas_vel = DataIO.getGastronoomOutput(inputfile,\
-                                                             keyword='VEL')
-                    avgdrift = self.getAverageDrift()             
+                    rad = DataIO.getGastronoomOutput(inputfile,return_array=1)
+                    #-- Grab the velocity profile so the gas velocity can be 
+                    #   converted to the dust velocity.
+                    vg = DataIO.getGastronoomOutput(inputfile,keyword='VEL',\
+                                                    return_array=1)
+                    #-- Use the H2 density profile to take into account any 
+                    #   type of variable mass loss (including exponents in 
+                    #   r_points_mass_loss.
+                    nh2 = DataIO.getGastronoomOutput(inputfile,keyword='N(H2',\
+                                                     return_array=1)
+                    #-- Get the drift profile, corrected for the average grain 
+                    #   size
+                    drift = self.getAverageDrift()     
                     self['DENSTYPE'] = "SHELLFILE"
-                    density = float(self['MDOT_DUST'])*self.Msun\
-                                    /((array(gas_vel)+array(avgdrift)) \
-                                    *4.*pi*(array(radius)**2.*self.year))
+                    #-- Calc dust density based on md/mg instead of d2g to take
+                    #   into account velocity profiles instead of terminal vels
+                    dens = nh2*self.mh*2.*self['MDOT_DUST']/self['MDOT_GAS']\
+                            *vg/(vg+drift)
+                    #-- GASTRoNOoM calculates smoother density profiles than 
+                    #   this formula ever can accomplish
+                    #dens = float(self['MDOT_DUST'])*self.Msun\
+                    #        /((vg+drift)*4.*pi*rad**2.*self.year)
                     self['DENSFILE'] = filename
-                    DataIO.writeCols(filename,[array(radius)/self.au,density])        
-                    print '** Made MCMax density input file at ' +  filename + '.'
+                    DataIO.writeCols(filename,[rad/self.au,dens])        
+                    print '** Made MCMax density input file at %s.'%filename
                 except IOError:
                     print '** Writing and/or reading DENSFILE output and/or '+\
                           'input failed. Assuming standard mass-loss density'+\

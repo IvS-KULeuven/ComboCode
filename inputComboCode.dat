@@ -99,6 +99,7 @@ VEL_INFINITY_GAS=14.0               # expected terminal velocity [km/s]
 #   DUST_TO_GAS_CHANGE_ML_SP must be defined and nonzero, and MDOT_GAS must be defined if MDOT_DUST is not defined.
 #   DUST_TO_GAS_CHANGE_ML_SP must be defined and nonzero, and MDOT_DUST must be defined if MDOT_GAS is not defined.
 #   One is calculated from the other two through the DUST_TO_GAS keyword. Never define DUST_TO_GAS: it is always calculated from MDOT_DUST/GAS and the expansion velocities. 
+#   Also give proper values here in case of MDOT_MODE=OTHER, so that MCMax can be given the correct density profile based on the dust-to-gas ratio.
 #-- Note that these are recalculated after every GASTRoNOoM iteration unless explicitly defined here. 
 #DUST_TO_GAS_CHANGE_ML_SP=0         # If commented, the empiric d2g ratio is used. If 0, the cooling d2g ratio is used! Can also have any value given here. Changes d2g ratio in mline and sphinx. 
 MDOT_GAS=1.40e-5                    # Gas mass loss rate [Msol/yr] - used to compute v(r) in case of variable mass loss     
@@ -111,11 +112,12 @@ MDOT_DUST=1.6e-7                    # Dust mass-loss rate [Msol/yr]
 DUST_TO_GAS_INITIAL=2e-3            # Dust-to-gass mass ratio, initial guess only!                     
 USE_DENSITY_NON_CONSISTENT=0        # Change density according to your mass loss function, this is off by default
 #DENSTYPE=%                         # If commented, MASSLOSS is used in first iteration of MCMax, then in the 2nd the density distribution from GASTRoNOoM. Put to MASSLOSS if you do not want to use the density from GASTRoNOoM in MCMax.
-MDOT_MODE=CONSTANT                  # Modus of mass-loss prescription (CONSTANT/2STEP/SINUS/PERIODIC/OTHER)  -- Only CONSTANT and OTHER are implemented
+MDOT_MODE=CONSTANT                  # Modus of mass-loss prescription (CONSTANT/2STEP/SINUS/PERIODIC/OTHER)  -- Only CONSTANT and OTHER are implemented. If OTHER, still define MDOT_GAS and MDOT_DUST correctly for the first part of the wind. DUST_TO_GAS is calculated from this. That, or give DUST_TO_GAS_CHANGE_ML_SP.
 
 #Extra in case of MDOT_MODE=OTHER
 #RADIAL GRID POINT ID NUMBER (INTEGER)     RADIUS(R_STAR)    MDOT      EXPONENT
 #In order to calculate grids of parameters (not in definition of "radial grid" here) for the mdot structure, reset the grid point id number to 1 at some point and add the next set after it (order of appearance is important here!)
+#Exponent not yet implemented for MCMax.
 #R_POINTS_MASS_LOSS=1      7    1.e-20   1.
 #R_POINTS_MASS_LOSS=2      8    3.5e-6   1.
 #R_POINTS_MASS_LOSS=1      5    2.e-20   1.

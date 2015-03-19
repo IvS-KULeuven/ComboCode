@@ -1286,20 +1286,20 @@ class PlotGas(PlottingSession):
 
         '''
 
-        if star_grid:
-            alltrans = [t   for star in star_grid
-                            for t in star['GAS_LINES']]
-        elif linelists:
-            alltrans = [t   for ll in linelists
-                            for t in ll.makeTransitions()]
-        else:
-            alltrans = []
-        
         instrument = instrument.upper()
         if instrument == 'PACS':
           vlsr = self.pacs.vlsr
         elif instrument == 'SPIRE':
           vlsr = self.spire.vlsr
+          
+        if star_grid:
+            alltrans = Transition.extractTransFromStars(star_grid,\
+                                                        dtype=instrument)
+        elif linelists:
+            alltrans = [t   for ll in linelists
+                            for t in ll.makeTransitions()]
+        else:
+            alltrans = []
 
         lls = [('%s %s'%(t.molecule.molecule,t.makeLabel()),\
                 t.wavelength*10**4*1./(1-vlsr/t.c),\
@@ -1834,7 +1834,7 @@ class PlotGas(PlottingSession):
                     
 
     def plotSpire(self,star_grid=[],models=[],exclude_data=0,fn_plt='',\
-                  fn_trans_marker='',number_subplots=3,cfg=''):
+                  fn_trans_marker='',number_subplots=3,cfg='',fn_add_star=1):
         
         '''
         Plot SPIRE data along with Sphinx results. In flux (Jy) vs wavelength
@@ -1878,6 +1878,11 @@ class PlotGas(PlottingSession):
                           
                       (default: '')
         @type cfg: string
+        @keyword fn_add_star: Add the star name to the requested plot filename.
+                              Only relevant if fn_plt is given.
+                              
+                              (default: 1)
+        @type fn_add_star: bool
         
         '''
         
@@ -1904,7 +1909,8 @@ class PlotGas(PlottingSession):
             exclude_data = bool(cfg_dict['exclude_data'])
         if cfg_dict.has_key('fn_trans_marker'):
             fn_trans_marker = cfg_dict['fn_trans_marker']
- 
+        if cfg_dict.has_key('fn_add_star'):
+            fn_add_star = cfg_dict['fn_add_star']
         self.spire.prepareSphinx(star_grid)
         lls = self.createLineLabels(star_grid,instrument='SPIRE')
 
@@ -1919,16 +1925,17 @@ class PlotGas(PlottingSession):
                                            self.spire.data_flux_list,\
                                            self.spire.data_ordernames,\
                                            self.spire.data_filenames):
-            if fn_plt:
+            if fn_plt and not fn_add_star:
                 fn_plt = os.path.splitext(fn_plt)[0]
                 this_filename = '%s_%s'%(fn_plt,band)
+            elif fn_plt and fn_add_star:
+                fn_plt = os.path.splitext(fn_plt)[0]
+                this_filename = '%s_%s_%s'%(fn_plt,self.star_name,band)
             else:
-                pfn = 'spire_spectrum_%s'\
-                      %os.path.split(filename)[1].replace('.dat','')
+                pfn = 'spire_spectrum_%s'%band
                 this_filename = os.path.join(os.path.expanduser('~'),\
                                              'GASTRoNOoM',self.path,'stars',\
-                                             self.star_name,self.plot_id,\
-                                             pfn)
+                                             self.star_name,self.plot_id,pfn)
             sphinx_flux = [self.spire.getSphinxConvolution(star,filename)[1]
                            for star in star_grid]
             w = exclude_data \

@@ -491,7 +491,8 @@ class UnresoStats(Statistics):
                                                      return_negative=1)
                 this_ratio_lowerint_err = self.getRatios(sel_type='int_ratios',\
                                                     data_type='int_ratios_err',\
-                                                    this_id=this_id)
+                                                    this_id=this_id,\
+                                                    return_negative=1)
                 this_ratio_lowerint = [abs(r) for r in this_ratio_lowerint]
                 if list(this_wav_lowerint):
                     waves.append(this_wav_lowerint)
