@@ -1964,7 +1964,7 @@ class PlotGas(PlottingSession):
                 newf = '%s_%s.pdf'%(fn_plt,self.star_name)
             else:
                 newf = '%s.pdf'%fn_plt
-            DataIO.joinPdf(old=sorted(plot_filenames),new=newf,\
+            DataIO.joinPdf(old=sorted(plot_filenames,reverse=True),new=newf,\
                            del_old=not fn_plt)
             print '** Your plots can be found at:'
             print newf

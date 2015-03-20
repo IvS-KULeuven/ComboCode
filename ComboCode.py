@@ -147,7 +147,7 @@ class ComboCode(object):
                           ('recover_sphinxfiles',0),('stat_print',0),\
                           ('stat_lll_p',None),('stat_method','clipping'),\
                           ('star_name','model'),('opac_path',''),\
-                          ]
+                          ('corrflux_path',None)]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -602,6 +602,7 @@ class ComboCode(object):
                                          pacs=self.pacs,\
                                          spire=self.spire,\
                                          sed=self.sed,\
+                                         corrflux_path = self.corrflux_path,\
                                          plot_pars=plot_pars)
         
         

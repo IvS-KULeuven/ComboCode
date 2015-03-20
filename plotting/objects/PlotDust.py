@@ -10,6 +10,8 @@ Author: R. Lombaert
 
 import os
 import subprocess
+import pyfits
+import glob
 from scipy import array
 
 from cc.plotting.PlottingSession import PlottingSession
@@ -27,7 +29,7 @@ class PlotDust(PlottingSession):
     
     """
     
-    def __init__(self,star_name='model',sed=None,\
+    def __init__(self,star_name='model',sed=None,corrflux_path=None,\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode'),\
                  path_mcmax='runTestDec09',inputfilename=None):
@@ -60,6 +62,11 @@ class PlotDust(PlottingSession):
                             
                       (default: None)
         @type sed: Sed()
+        @keyword corrflux_path: The full path to the folder containing 
+                                correlated fluxes, such as for MIDI. 
+                                
+                                (default: None)
+        @type corrflux_path: str
         
         '''
 
@@ -69,11 +76,12 @@ class PlotDust(PlottingSession):
                                        code='MCMax',\
                                        inputfilename=inputfilename)
         self.sed = sed
-                
+        self.corrflux_path = corrflux_path
+
 
 
     def plotSed(self,star_grid=[],cfg='',iterative=0,no_models=0,\
-                fn_add_star=0,fn_plt=''):
+                fn_add_star=0):
         
         """ 
         Creating an SED with 0, 1 or more models and data. 
@@ -105,10 +113,6 @@ class PlotDust(PlottingSession):
         
                               (default: 1)
         @type fn_add_star: bool
-        @keyword fn_plt: A plot filename for the SED plot.
-                         
-                         (default: '')
-        @type fn_plt: string
         
         """
         
@@ -126,6 +130,9 @@ class PlotDust(PlottingSession):
         if cfg_dict.has_key('filename'):
             fn_plt = cfg_dict['filename']
             del cfg_dict['filename']
+        else:
+            fn_plt = ''
+        
         ccpath = os.path.join(self.path_combocode,'Data')
         data_labels = dict([(dt,(n,ls))
                             for n,dt,ls in zip(DataIO.getInputData(path=ccpath,\
@@ -138,7 +145,7 @@ class PlotDust(PlottingSession):
                                                DataIO.getInputData(path=ccpath,\
                                                         keyword='LINE_TYPES',\
                                                         filename='Sed.dat'))])
-        
+
         #- filename settings and copying inputfiles to plot output folder
         if not fn_plt:
             fn_plt = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
@@ -155,8 +162,9 @@ class PlotDust(PlottingSession):
                                 self.path,'stars',self.star_name,self.plot_id,\
                                 os.path.split(self.inputfilename)[1])],\
                             shell=True)
+
         plot_title='SED %s'%self.star_name_plots
-        
+       
         #- prepare and collect data, keytags and line types
         keytags = []
         data_x = []
@@ -221,7 +229,146 @@ class PlotDust(PlottingSession):
         print filename
         print '***********************************'
          
+         
+         
+    def plotCorrflux(self,star_grid=[],cfg='',no_models=0,fn_add_star=0):
+        
+        """ 
+        Plot correlated fluxes with 0, 1 or more models and data. 
+        
+        Includes data preparation on the spot.
+        
+        @keyword star_grid: list of Star() models to plot. If star_grid is [], 
+                            only data are plotted.
+                            
+                            (default: [])
+        @type star_grid: list[Star()]
+        @keyword cfg: path to the Plotting2.plotCols config file. If default,
+                      the hard-coded default plotting options are used.
+                        
+                      (default: '')
+        @type cfg: string
+        @keyword no_models: Only show data.
+                                  
+                            (default: 0)
+        @type no_models: bool
+        @keyword fn_add_star: Add the star name to the requested plot filename.
+        
+                              (default: 1)
+        @type fn_add_star: bool
 
+        
+        """
+        
+        if self.corrflux_path is None:
+            print 'No CORRFLUX_PATH given. Cannot plot Correlated Fluxes. Aborting...'
+            return
+        print '***********************************'
+        print '** Creating Correlated Fluxes plot.'
+        
+        cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('no_models'):
+            no_models = cfg_dict['no_models']
+        if cfg_dict.has_key('fn_add_star'):
+            fn_add_star = bool(cfg_dict['fn_add_star'])
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg_dict['filename']
+            del cfg_dict['filename']
+        else:
+            fn_plt = ''
+        
+        #- filename settings and copying inputfiles to plot output folder
+        if not fn_plt:
+            fn_plt = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
+                                  'stars',self.star_name,self.plot_id,\
+                                  'CorrFlux_%s'%self.star_name)
+        if fn_add_star:
+            fn_plt = '_'.join([fn_plt,self.star_name])
+        
+        if self.inputfilename <> None:
+            subprocess.call(['cp ' + self.inputfilename + ' ' + \
+                             os.path.join(os.path.expanduser('~'),'MCMax',\
+                                self.path,'stars',self.star_name,self.plot_id,\
+                                os.path.split(self.inputfilename)[1])],\
+                            shell=True)
+
+        #-- Currently only MIDI is implemented. 
+        #   Assumption: inc=01 is baseline 46.5m   
+        #               inc=02 is baseline 51.4m
+        #               inc=03 is baseline 60.6m
+        baseline = dict([('46.5m','visibility01.0.dat'),\
+                         ('54.4m','visibility02.0.dat'),\
+                         ('60.6m','visibility03.0.dat')])
+
+        ssd = os.path.join(self.corrflux_path,self.star_name,\
+                           '_'.join([self.star_name,'MIDI','*.fits']))
+        ggd = dict([(gi[-10:-5],gi) for gi in glob.glob(ssd)
+                    if gi[-10:-5] in ('46.5m','54.4m','60.6m')])
+        
+        #-- prepare and collect data, keytags and line types
+        data = []
+        for k,v in sorted(ggd.items()):
+            ddict = dict()
+            data.append(ddict)
+            
+            #-- Extract data from the fits file
+            dfits = pyfits.open(v)
+            x = 1e6*dfits['OI_WAVELENGTH'].data['EFF_WAVE']
+            ddict['x'] = [x]
+            ddict['y'] = [dfits['OI_VIS'].data['VISAMP'][0]]
+            ddict['yerr'] = [dfits['OI_VIS'].data['VISAMPERR'][0]]
+            dfits.close()
+            #-- Wavelength limits between 8 and 13 micron, limits of the N band
+            #   atmospheric transmission. Outside these ranges, the flux is not
+            #   relevant
+            ddict['xmin'] = 8
+            ddict['xmax'] = 13
+            ddict['ymin'] = -0.1
+            ddict['ymax'] = 1.3*max(ddict['y'][0][(x<13)*(x>8)])
+            ddict['labels'] = [('MIDI %s'%k,0.05,0.9)]
+            
+            if no_models:
+                continue
+            #-- Extract models from the model folders
+            for s in star_grid:
+                model_id = s['LAST_MCMAX_MODEL']
+                dpath = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                     self.path,'models',model_id)
+                model = MCMax.readVisibilities(dpath=dpath,fn_vis=baseline[k])
+                ddict['x'].append(model[0])
+                if model[1] != []:
+                    ddict['y'].append(model[1]*model[2])
+                else:
+                    ddict['y'].append([])
+                ddict['yerr'].append(None)
+            
+        kwargs = dict()
+        kwargs['keytags'] = ['MIDI']
+        if not no_models:
+            kwargs['keytags'].extend([s['LAST_MCMAX_MODEL'].replace('_','\_') 
+                                      for s in star_grid])
+        kwargs['xaxis'] = '$\lambda$ ($\mu$m)'
+        kwargs['yaxis'] = 'Corr.~FLux (Jy)'
+        kwargs['dimensions'] = (1,4)
+        kwargs['figsize'] = (10,15)
+        kwargs['fontsize_axis'] = 20
+        kwargs['fontsize_ticklabels'] = 20
+        kwargs['fontsize_key'] = 18
+        kwargs['fontsize_label'] = 14
+        kwargs['linewidth'] = 3
+        kwargs['cfg'] = cfg_dict
+        kwargs['extension'] = '.pdf'
+        kwargs['hspace'] = 0.3
+        kwargs['ws_bot'] = 0.01
+        kwargs['ws_top'] = 0.99
+        kwargs['ws_left'] = 0.10
+        kwargs['ws_right'] = 0.98
+        filename = Plotting2.plotTiles(data=data,filename=fn_plt,**kwargs)
+        print '** Your Correlated Flux plots can be found at:'
+        print filename
+        print '***********************************'
+                                    
+                                    
                                     
     def plotTemp(self,star_grid=[],models=[],powerlaw=[0.4],cfg=''):
         

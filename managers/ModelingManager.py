@@ -214,6 +214,7 @@ class ModelingManager():
                 dust_session.doMCMax(star)
                 if dust_session.mcmax_done: 
                     self.mcmax_done = True
+                
                 #- If last iteration, ray trace.
                 if i+1 == self.iterations or self.iterative:
                     dust_session.rayTrace(star)

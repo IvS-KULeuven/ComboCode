@@ -27,7 +27,7 @@ class PlottingManager():
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode'),\
                  inputfilename='inputComboCode.dat',spire=None,\
-                 plot_pars=dict(),sed=None):
+                 plot_pars=dict(),sed=None,corrflux_path=None):
                 
         """ 
         Initializing a PlottingManager instance.
@@ -78,6 +78,11 @@ class PlottingManager():
                           
                       (default: None)
         @type sed: Sed()
+        @keyword corrflux_path: The full path to the folder containing 
+                                correlated fluxes, such as for MIDI. 
+                                
+                                (default: None)
+        @type corrflux_path: str
         @keyword plot_pars: dictionary with all the plotting parameters that
                             turn on or off plotting modules. By default they
                             are all turned off.
@@ -108,7 +113,8 @@ class PlottingManager():
                                                 path_combocode=path_combocode,\
                                                 path_mcmax=path_mcmax,\
                                                 inputfilename=inputfilename,
-                                                sed=sed)
+                                                sed=sed,\
+                                                corrflux_path=corrflux_path)
         else: 
             self.plotter_dust = None
         if self.gastronoom or self.gas_pars.has_key('PLOT_LINE_LISTS'):

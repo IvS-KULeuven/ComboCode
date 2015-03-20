@@ -66,6 +66,34 @@ def readModelSpectrum(dpath,rt_sed=1,fn_spec='spectrum45.0.dat'):
 
 
 
+def readVisibilities(dpath,fn_vis='visibility01.0.dat'):
+    
+    '''
+    Read the model output visibilities.
+     
+    @param dpath: folder that contains the MCMax outputfiles
+    @type dpath: string
+    
+    @keyword fn_spec: The filename of the ray-traced visibilities. Typically 
+                      this is the default name, but can be different depending 
+                      on the inclination (or baseline) that is used. 
+                      
+                      (default: visibility01.0.dat)
+    @type fn_spec: str
+    
+    @return: The wavelength, flux, visibility and phase grid (micron,Jy,,)
+    @rtype: (array,array,array,array)
+     
+    '''
+    
+    dfile = os.path.join(dpath,fn_vis)
+    if not os.path.isfile(dfile):
+        return [],[],[],[]
+    data = DataIO.readCols(dfile)
+    return data[0],data[1],data[2],data[3]
+    
+
+
 def rayTraceSpectrum(model_id,path_mcmax='runTestDec09',inputfilename='',\
                      redo_rt=0):
     

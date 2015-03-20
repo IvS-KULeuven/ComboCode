@@ -51,6 +51,20 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                  
                  Possible keywords in the dicts are:
                  
+                 xerr: List of arrays of x-errors. if [] no errors are included 
+                 on the plot. must have same len() as x, include None in the 
+                 list for data that have to be plotted without errors.
+                 If upper and lower limits differ, instead of single array for 
+                 xerri, a list with two elements can be given as well with two 
+                 lists: one for the upper limit and one for the lower limit
+                 
+                 yerr: List of arrays of y-errors. if [] no errors are included 
+                 on the plot. must have same len() as y, include None in the 
+                 list for data that have to be plotted without errors.
+                 If upper and lower limits differ, instead of single array for 
+                 yerri, a list with two elements can be given as well with two 
+                 lists: one for the upper limit and one for the lower limit
+                 
                  labels: (labels, string, x-, y-position)
                  for label in a list, default []
                  
@@ -288,6 +302,13 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
     
                         (default: 0)
     @type landscape: bool
+    @keyword markeredgewidth: Increase the linewidth of marker edges (eg black 
+                              circles around colored points) or the thickness 
+                              of crosses, dots, etc... Also used for the size 
+                              of error bar caps.
+                              
+                              (default: 1)
+    @type markeredgewidth: int
     
     @return: the plotfilename with extension is returned
     @rtype: string
@@ -338,7 +359,8 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
     landscape = kwargs.get('landscape',0)
     short_label_lines = kwargs.get('short_label_lines',0)
     thick_lw_data = kwargs.get('thick_lw_data',0)
-
+    markeredgewidth = kwargs.get('markeredgewidth',1)
+    
     xdim = dimensions[0]
     ydim = dimensions[1]
     if keytags:
@@ -389,6 +411,10 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
             ddict['xaxis'] = xaxis
         if not ddict.has_key('yaxis'):
             ddict['yaxis'] = yaxis
+        if not ddict.has_key('yerr'):
+            ddict['yerr'] = [None]*len(ddict['x'])
+        if not ddict.has_key('xerr'):
+            ddict['xerr'] = [None]*len(ddict['x'])
             
     pl.rc('text', usetex=True)
     pl.rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
@@ -417,10 +443,11 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
     for ddict,itile in zip(data,xrange(xdim*ydim)):
         sub = pl.subplot(ydim,xdim,itile+1)
         these_data = []
-        [these_data.append([xi,yi,lp]) 
-             for xi,yi,lp in zip(ddict['x'],ddict['y'],line_types)
+        [these_data.append([xi,yi,lp,xerri,yerri]) 
+             for xi,yi,lp,xerri,yerri in zip(ddict['x'],ddict['y'],line_types,\
+                                             ddict['xerr'],ddict['yerr'])
              if list(yi) and yi <> None]
-        for index,(xi,yi,lp) in enumerate(these_data):
+        for index,(xi,yi,lp,xerri,yerri) in enumerate(these_data):
             ls,col = splitLineStyle(lp)
             if index in ddict['histoplot']:
                 leg = sub.step(xi,yi,ls,where='mid',color=col,\
@@ -431,6 +458,53 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                 leg[0].set_dashes([15,5])
             if '.-' in lp or '-.' in lp:
                 leg[0].set_dashes([15,5,2,5])
+            if xerri <> None: 
+                try:
+                    test = len(xerri[0])
+                    lls = xerri[0]
+                    if len(xerri) == 1:
+                        uls = xerri[0]
+                    else:
+                        uls = xerri[1]
+                except TypeError: 
+                    lls = xerri
+                    uls = xerri
+                for (ll,ul,xii,yii) in zip(lls,uls,xi,yi):
+                    if ll != 0 or ul != 0:
+                        sub.errorbar(x=[xii],y=[yii],xerr=[[ll],[ul]],\
+                                     ecolor=col,\
+                                     lolims=ll==0,\
+                                     uplims=ul==0,\
+                                     fmt=None,\
+                                     capsize=5,\
+                                     markeredgewidth=markeredgewidth,\
+                                     elinewidth=linewidth/2.,\
+                                     barsabove=True)#,zorder=zo,alpha=alph)
+            if yerri <> None:
+                try:
+                    test = len(yerri[0])
+                    lls = yerri[0]
+                    if len(yerri) == 1:
+                        uls = yerri[0]
+                    else:
+                        uls = yerri[1]
+                except TypeError: 
+                    lls = yerri
+                    uls = yerri
+                for (ll,ul,xii,yii) in zip(lls,uls,xi,yi):
+                    if ll != 0 or ul != 0:
+                        sub.errorbar(x=[xii],y=[yii],yerr=[[ll],[ul]],\
+                                     ecolor=col,\
+                                     lolims=ll==0,\
+                                     uplims=ul==0,\
+                                     fmt=None,\
+                                     capsize=5,\
+                                     markeredgewidth=markeredgewidth,\
+                                     elinewidth=linewidth/2.,\
+                                     barsabove=False)#,zorder=zo,alpha=alph)
+
+
+
         if keytags and itile == len(data)-1:
             prop = pl.matplotlib.font_manager.FontProperties(size=fontsize_key)
             lg = pl.legend(tuple(keytags),loc=(0,0),prop=prop,\
@@ -439,6 +513,7 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
             ax = pl.gca()
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
+            pl.xlim(xmax=-1)
         else:
             sub.autoscale_view(tight=True,scaley=False)
             if xlogscale:
