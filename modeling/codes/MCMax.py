@@ -141,7 +141,7 @@ def rayTraceSpectrum(model_id,path_mcmax='runTestDec09',inputfilename='',\
 
 
 def rayTraceImage(model_id,path_mcmax='runTestDec09',inputfilename='',\
-                  remove_source=0):
+                  remove_source=0,output_folder=''):
     
     '''
     Do the ray-tracing of images, according to 
@@ -161,6 +161,11 @@ def rayTraceImage(model_id,path_mcmax='runTestDec09',inputfilename='',\
     
                             (default: 0)
     @type remove_source: bool
+    @keyword output_folder: The location of the output folder. By default, set 
+                            at the model output folder.
+    
+                            (default: '')
+    @type output_folder: str
     
     '''
     
@@ -169,17 +174,24 @@ def rayTraceImage(model_id,path_mcmax='runTestDec09',inputfilename='',\
     if not inputfilename:
         inputfilename=os.path.join(os.path.expanduser('~'),'MCMax',path_mcmax,\
                                    'models','inputMCMax_%s.dat'%model_id)
-    output_folder = os.path.join(os.path.expanduser("~"),'MCMax',path_mcmax,\
-                                 'models',model_id)
+    model_folder = os.path.join(os.path.expanduser("~"),'MCMax',\
+                                     path_mcmax,'models',model_id)
     image_file = os.path.join(os.path.expanduser('~'),'MCMax',\
                               'Observation_Files','Image.out')
     if remove_source:
         subprocess.call([' '.join(['MCMax ' + inputfilename,'0',\
-                                   '-s tracestar=.false.','-o',output_folder,\
+                                   '-s tracestar=.false.','-o',model_folder,\
                                    image_file])],shell=True)
     else:
         subprocess.call([' '.join(['MCMax ' + inputfilename,'0','-o',\
-                                   output_folder,image_file])],shell=True)
+                                   model_folder,image_file])],shell=True)
+    
+    if not output_folder:
+        output_folder = model_folder
+    else: 
+        subprocess.call(['mv %s %s'%(os.path.join(model_folder,'Image*'),\
+                                     os.path.join(output_folder,'.'))],\
+                        shell=True)
     print '** Your images can be found at:'
     print output_folder
                                 

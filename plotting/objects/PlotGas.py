@@ -248,7 +248,6 @@ class PlotGas(PlottingSession):
                 plot_title = '%s %s: Temperature Profiles'\
                              %(self.plot_id.replace('_','\_'),\
                                self.star_name_plots)
-                extension='.eps'
                 keytags = star_grid[0].has_key('LAST_PACS_MODEL') \
                             and ['%s,    %s,    Mdot = %.2e'\
                                  %(star['LAST_GASTRONOOM_MODEL']\
@@ -276,15 +275,12 @@ class PlotGas(PlottingSession):
                             keytags=keytags)
                 keys_cm = ['Model %i'%(i+1)
                            for i in xrange(len(star_grid))]
-                temp = [t[rad < 1e17] for t,rad in zip(temp,radii)]
-                radii = [rad[rad < 1e17] for rad in radii]
                 plot_filename = Plotting2.plotCols(x=radii,y=temp,cfg=cfg,\
                         filename=plot_filename,xaxis='$r$ (cm)',\
                         yaxis='$T_\mathrm{g}$ (K)',\
                         plot_title='',figsize=(12.5,8),fontsize_ticklabels=26,\
                         key_location=(0.05,0.05),xlogscale=1,ylogscale=1,\
-                        keytags=keys_cm,extension=extension,fontsize_axis=26,\
-                        linewidth=4,ymin=3,xmax=2e17,ymax=5000,fontsize_key=26)
+                        keytags=keys_cm,fontsize_axis=26,fontsize_key=26)
                 print '** Plots can be found at:'
                 print plot_filename
                 print plot_filename_rstar
@@ -591,10 +587,10 @@ class PlotGas(PlottingSession):
                                     ddict['y'].append([])
                     else:
                         ddict['x'], ddict['y'] = [], []
+                    
                     #- Add data, but only if the data filename is known. This 
                     #- will be Tmb, in K. In case of intrinsic==1, you dont 
                     #- even want to check this.
-                    
                     if current_trans.lpdata and not no_data:
                         ddict['histoplot'] = []
                         n_models = len(ddict['x'])
@@ -682,6 +678,7 @@ class PlotGas(PlottingSession):
         if trans_list:
             j = 0
             while j < len(star_grid):
+                if plot_intrinsic == 1: no_data = 1
                 i = 0 
                 subgrid = []
                 subkeys = []

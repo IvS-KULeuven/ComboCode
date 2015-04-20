@@ -1742,6 +1742,8 @@ class Transition():
         resolved data may also return vlsr from Star.dat if the vlsr in the 
         data file is significantly different from the value in Star.dat.
         
+        Returns 0.0 if not an unresolved line, and there are no data available.
+        
         This is different from the getBestVlsr() method, which determines the 
         best matching vlsr between data and sphinx, if both are available. 
         
@@ -1754,6 +1756,8 @@ class Transition():
         self.readData()
         if self.lpdata: 
             return self.lpdata[0].getVlsr()
+        elif not self.unresolved and not self.lpdata:
+            return 0.0
         else:
             return self.vlsr
             
@@ -1865,13 +1869,13 @@ class Transition():
         #   Cannot be done if sphinx has not been calculated.
         #   Then, return the vlsr from Star.dat
         self.readSphinx()
-        if self.unresolved or not self.sphinx:
+        if self.unresolved or not self.lpdata or not self.sphinx:
             return self.getVlsr()
         
         #-- Auto fit the line profile with a soft parabola and/or gaussian.
         #   This will set the vexp, evexp, soft parabola and gaussian profiles
         self.fitLP()
-        vexp = self.fittedlprof['vexp']
+        vexp = self.getVexp()
         
         #-- get all the profiles and noise values
         noise = self.lpdata[0].getNoise()

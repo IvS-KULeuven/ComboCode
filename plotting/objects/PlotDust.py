@@ -415,13 +415,14 @@ class PlotDust(PlottingSession):
         temps = []
         keytags = []
         for star in star_grid:
-            rad,temp,key = star.getDustTemperature() 
+            rad,temp,key = star.getDustTemperature(add_key=1) 
             radii.append(rad)
             temps.append(temp)
             keytags.append(key)
         if powerlaw:      #take T_STAR from the logfile of model in models
             for power in powerlaw:
-                rad,temp,key = star_grid[0].getDustTemperaturePowerLaw(power)
+                rad,temp,key = star_grid[0].getDustTemperaturePowerLaw(power,\
+                                                                     add_key=1)
                 radii.append(rad)
                 temps.append(temp)
                 keytags.append(key)
@@ -498,7 +499,7 @@ class PlotDust(PlottingSession):
         plot_filenames = []
         for star in star_grid:
             if not int(star['T_CONTACT']):
-                radii,temps,keytags = star.getDustTemperatureSpecies()
+                radii,temps,keytags = star.getDustTemperatureSpecies(add_key=1)
                 vert_lines = []
             else:
                 include_total = 1
@@ -509,7 +510,7 @@ class PlotDust(PlottingSession):
                 vert_lines = [star['R_DES_%s'%d]*star.Rsun*star['R_STAR'] 
                               for d in star['DUST_LIST']]
             if include_total:
-                rad, temp, key = star.getDustTemperature()
+                rad, temp, key = star.getDustTemperature(add_key=1)
                 radii.append(rad[rad>star['R_INNER_GAS']\
                                 *star.Rsun*star['R_STAR']])
                 temps.append(temp[rad>star['R_INNER_GAS']\
@@ -517,7 +518,8 @@ class PlotDust(PlottingSession):
                 keytags.append(key)
             if powerlaw:
                 for power in powerlaw:
-                     rad,temp,key = star.getDustTemperaturePowerLaw(power)
+                     rad,temp,key = star.getDustTemperaturePowerLaw(power,\
+                                                                    add_key=1)
                      radii.append(rad)
                      temps.append(temp)
                      keytags.append(key)

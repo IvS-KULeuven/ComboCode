@@ -779,13 +779,19 @@ class Star(dict):
 
 
 
-    def getDustTemperature(self):
+    def getDustTemperature(self,add_key=0):
          
         '''
         Return the dust temperature profile from the file made for GASTRoNOoM.
         
         This is the total dust temperature without separate components for the 
         different dust species.
+        
+        @keyword add_key: Add a key for a legend to the ouput as third tuple
+                          element.
+                          
+                          (default: 0)
+        @type add_key: bool
         
         @return: Two lists including the radial grid (in cm) and the
                  temperature (K) as well as a key.
@@ -795,18 +801,20 @@ class Star(dict):
         
         try:
             data = DataIO.readCols(self['DUST_TEMPERATURE_FILENAME'])
-            rad = data[0]*self.Rsun*self['R_STAR']
+            rad = data[0]*self['R_STAR']*self.Rsun
             temp = data[1]
         except IOError:
             rad = []
             temp = []
-        key = '$T_{\mathrm{d, avg}}$'
-                #self['LAST_MCMAX_MODEL'].replace('_','\_')
-        return rad, temp, key
-        
+        if add_key:
+            key = '$T_{\mathrm{d, avg}}$'
+                    #self['LAST_MCMAX_MODEL'].replace('_','\_')
+            return rad,temp,key
+        else: 
+            return rad,temp
          
          
-    def getDustTemperaturePowerLaw(self,power):
+    def getDustTemperaturePowerLaw(self,power,add_key=0):
         
         '''
         Return a dust temperature power law of the form as suggested by 
@@ -817,6 +825,13 @@ class Star(dict):
         
         @param power: The power in the power law T(r) given above.
         @type power: float
+        
+        @keyword add_key: Add a key for a legend to the ouput as third tuple
+                          element.
+                          
+                          (default: 0)
+        @type add_key: bool
+
         @return: Two lists including the radial grid (in cm) and the temperature
                     (K) as well as a key.
         @rtype: (list,list,string)
@@ -834,23 +849,30 @@ class Star(dict):
         except IOError:
             rad = []
             temp = []
-        #key = '$T_\mathrm{d} = %i\ K*(2r/R_*)^{-%.1f}$'\
-        #        %(power,int(self['T_STAR']))
-        #key = 'Power law ($p = %.2f$) for $T_\mathrm{eff} = %i\ K$'\
-              #%(power,int(self['T_STAR']))
-        key = 'Power law ($\\beta = 1$) for $T_\mathrm{eff} = %i\ K$'\
-              %(int(self['T_STAR']))
-        #key = 'Eq.~2 with $s=1$'
-        return rad, temp, key
+            #key = '$T_\mathrm{d} = %i\ K*(2r/R_*)^{-%.1f}$'\
+            #     %(power,int(self['T_STAR']))
+            
+        if add_key:
+            key = 'Power law ($p = %.2f$) for $T_\mathrm{eff} = %i\ K$'\
+                  %(power,int(self['T_STAR']))
+            return rad, temp, key
+        else: 
+            return rad,temp
     
     
-    
-    def getDustTemperatureSpecies(self):
+    def getDustTemperatureSpecies(self,add_key=0):
          
         ''' 
         Return the temperature profiles of all species included in Star object.
         
         This information is taken from the denstempP## files for each species.
+        
+        @keyword add_key: Add a key for a legend to the ouput as third tuple
+                          element.
+                          
+                          (default: 0)
+        @type add_key: bool
+
         
         @return: Three lists: one for all radial grids (lists in cm) of the 
                  species, one for all temperature profiles (lists in K) and 
@@ -876,8 +898,10 @@ class Star(dict):
                  for r,t,sp in zip(radii,temps,self['DUST_LIST'])]
         temps = [t[t<=self['T_DES_%s'%sp]] 
                  for t,sp in zip(temps,self['DUST_LIST'])]
-        return radii,temps,self['DUST_LIST']
-
+        if add_key:
+            return radii,temps,self['DUST_LIST']
+        else: 
+            return radii,temps
     
     
     def getGasVelocity(self):
@@ -890,16 +914,49 @@ class Star(dict):
         
         '''
                 
-        fgr_file = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                self.path_gastronoom,'models',\
-                                self['LAST_GASTRONOOM_MODEL'],\
-                                'coolfgr_all%s.dat'\
-                                %self['LAST_GASTRONOOM_MODEL'])
+        fgr_file = self.getCoolFn('fgr_all')
         rad = DataIO.getGastronoomOutput(filename=fgr_file,keyword='RADIUS',\
                                          return_array=1)
         vel = DataIO.getGastronoomOutput(filename=fgr_file,keyword='VEL',\
                                          return_array=1)
         return (rad,vel)
+        
+    
+    
+    def getCoolFn(self,ftype,mstr=''):
+        
+        '''
+        Return the cooling output filename.
+        
+        You can define the type of cooling file you want, as well as an 
+        additional identification string for the molecule/sampling.
+        
+        @param ftype: The cooling output file type. Either '1', '2', '3', 'fgr'
+                      'fgr_all', or 'rate'.
+        @type ftype: str
+        
+        @keyword mstr: The additional identication string. Not applicable to 
+                       'fgr' or 'fgr_all'. Can be any molecule, or 'sampling'.
+                       File must exist to be used further!
+                       
+                       (default: '')
+        @type mstr: str
+        
+        @return: The filename of the requested cooling output file.
+        @rtype: str
+        
+        '''
+        
+        mid = self['LAST_GASTRONOOM_MODEL']
+        ftype = str(ftype)
+        if ftype == 'fgr' or ftype == 'fgr_all':
+            mstr = ''
+        if mstr:
+            mstr = '_' + mstr
+        fn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                          self.path_gastronoom,'models',mid,\
+                          'cool%s%s%s.dat'%(ftype,mid,mstr))
+        return fn
         
         
 

@@ -12,7 +12,7 @@ import subprocess
 from glob import glob
 from scipy import array,zeros
 import types
-from pylab import mlab
+from matplotlib import mlab
 
 
 def getMCMaxOutput(incr,filename,keyword='RADIUS',single=1):
@@ -849,7 +849,7 @@ def joinPdf(old,new,del_old=1):
     
     '''
     
-    subprocess.call([' '.join(['pdftk']+old+['cat','output',new])],shell=True)
+    subprocess.call([' '.join(['pdfunite']+old+[new])],shell=True)
     if bool(del_old):
         subprocess.call([' '.join(['rm']+old)],shell=True)
 
