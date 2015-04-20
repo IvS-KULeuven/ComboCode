@@ -799,6 +799,7 @@ class Star(dict):
         
         '''
         
+        
         try:
             data = DataIO.readCols(self['DUST_TEMPERATURE_FILENAME'])
             rad = data[0]*self['R_STAR']*self.Rsun
