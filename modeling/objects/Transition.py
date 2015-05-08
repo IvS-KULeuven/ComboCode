@@ -1499,7 +1499,7 @@ class Transition():
                 else:
                     return r'$\nu=%i$, $J=%i-%i$' \
                            %(self.vup,self.jup,self.jlow)
-            elif self.molecule.isWater():
+            elif self.molecule.spec_indices == 1:
                 ugly = r'J_{\mathrm{K}_\mathrm{a}, \mathrm{K}_\mathrm{c}}'
                 if ((self.vup == 0 and self.vlow ==0) or not inc_vib) \
                         and not return_vib:
@@ -1517,12 +1517,20 @@ class Transition():
                     return r'$\nu_%i=1$, $%s=%i_{%i,%i} - %i_{%i,%i}$'\
                              %(dvup[self.vup],ugly,self.jup,self.kaup,\
                                self.kcup,self.jlow,self.kalow,self.kclow)
-            elif not self.molecule.isWater() and \
-                    (self.molecule.spec_indices == 2 \
+            elif (self.molecule.spec_indices == 2 \
                      or self.molecule.spec_indices == 3):
-                return '%i,%i$_{%i}$ - %i,%i$_{%i}$'\
-                       %(self.vup,self.jup,self.nup,self.vlow,self.jlow,\
-                         self.nlow)
+                ugly = r'J_{\mathrm{N}}'
+                if ((self.vup == 0 and self.vlow ==0) or not inc_vib)\
+                        and not return_vib:
+                    return r'$%s=%i_{%i} - %i_{%i}$'\
+                           %(ugly,self.jup,self.nup,self.jlow,self.nlow)
+                elif return_vib:
+                    return r'$\nu=%i$' %(self.vup)
+                else:
+                    return r'$\nu=%i$, $%s=%i_{%i} - %i_{%i}$'\
+                           %(ugly,self.vup,self.jup,self.nup,\
+                             self.vlow,self.jlow,self.nlow)
+
             else:
                 return '%i,%i$_{%i,%i}$ - %i,%i$_{%i,%i}$'\
                        %(self.vup,self.jup,self.kaup,self.kcup,\

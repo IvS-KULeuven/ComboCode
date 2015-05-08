@@ -56,11 +56,7 @@ def updateDustMCMaxDatabase(filename,\
         db_new[k] = v
     db_new.sync()
         
-    
-    
-    
-    
-    
+
 
 def convertMCMaxDatabase(path_mcmax,\
                          path_combocode=os.path.join(os.path.expanduser('~'),\

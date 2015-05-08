@@ -194,6 +194,7 @@ class Star(dict):
         self.sigma = 5.67040040e-5         #in erg/cm^2/s/K^4   Harmanec & Psra 2011
         self.pc = 3.08568025e16         #in cm
         self.mh = 1.672661e-24           #in g, mass hydrogen atom
+        self.G = 6.674e-8               # in cm^3 g^-1 s^-2
         
         self.path_combocode = path_combocode
         dust_path = os.path.join(self.path_combocode,'Data')
@@ -900,7 +901,7 @@ class Star(dict):
         temps = [t[t<=self['T_DES_%s'%sp]] 
                  for t,sp in zip(temps,self['DUST_LIST'])]
         if add_key:
-            return radii,temps,self['DUST_LIST']
+            return radii,temps,list(self['DUST_LIST'])
         else: 
             return radii,temps
     

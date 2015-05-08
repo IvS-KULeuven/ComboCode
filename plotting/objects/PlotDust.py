@@ -260,7 +260,7 @@ class PlotDust(PlottingSession):
         
         """
         
-        if self.corrflux_path is None:
+        if not self.corrflux_path:
             print 'No CORRFLUX_PATH given. Cannot plot Correlated Fluxes. Aborting...'
             return
         print '***********************************'
@@ -444,7 +444,7 @@ class PlotDust(PlottingSession):
 
 
     def plotTempSpecies(self,star_grid=[],models=[],include_total=1,\
-                        powerlaw=[0.4],cfg=''):
+                        powerlaw=[0.4],fn_plt='',cfg=''):
         
         """ 
         Plotting the temperature stratification of the dust for the species 
@@ -474,6 +474,10 @@ class PlotDust(PlottingSession):
                 
                            (default: [0.4])
         @type powerlaw: list(float)
+        @keyword fn_plt: A plot filename for the tiled plot.
+                         
+                         (default: '')
+        @type fn_plt: string
         @keyword cfg: path to the Plotting2.plotCols config file. If default, 
                       the hard-coded default plotting options are used.
                           
@@ -496,6 +500,13 @@ class PlotDust(PlottingSession):
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('powerlaw'):
             powerlaw = cfg_dict['powerlaw']
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg_dict['filename']
+            del cfg_dict['filename']    
+        else:
+            fn_plt = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
+                                  'stars',self.star_name,self.plot_id,\
+                                  'Td_species')
         plot_filenames = []
         for star in star_grid:
             if not int(star['T_CONTACT']):
@@ -523,30 +534,21 @@ class PlotDust(PlottingSession):
                      radii.append(rad)
                      temps.append(temp)
                      keytags.append(key)
-            filename = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
-                                    'stars',self.star_name,self.plot_id,\
-                                    'Td_species_%s'%star['LAST_MCMAX_MODEL'])
-            extension = '.eps'
-            title = 'Dust Temperature in %s'%(self.star_name_plots)
-            plot_filenames.append(Plotting2.plotCols(x=radii,y=temps,cfg=cfg,\
-                        filename=filename,xaxis='$r$ (cm)',\
+            filename = '_'.join([fn_plt,star['LAST_MCMAX_MODEL']])
+            plot_filenames.append(Plotting2.plotCols(x=radii,y=temps,\
+                        cfg=cfg_dict,filename=filename,xaxis='$r$ (cm)',\
                         yaxis='$T_\mathrm{d}$ (K)',keytags=keytags,\
-                        key_location=(.65,.45),ymin=20,ymax=3000,\
                         xmax=star['R_OUTER_DUST']*star.Rsun*star['R_STAR'],\
-                        xmin=star['R_STAR']*star.Rsun,\
-                        xlogscale=1,ylogscale=1,fontsize_key=18,\
-                        figsize=(12.5,8),transparent=0,linewidth=4,\
-                        plot_title='',fontsize_title=22,\
-                        extension=extension,fontsize_axis=26,\
+                        xmin=star['R_STAR']*star.Rsun,fontsize_axis=26,\
+                        xlogscale=1,ylogscale=1,fontsize_key=16,\
+                        figsize=(12.5,8),transparent=0,linewidth=3,\
                         fontsize_ticklabels=26,\
                         vert_lines=[star['R_INNER_DUST']\
                                         *star.Rsun*star['R_STAR']]))
         if len(plot_filenames) != len(star_grid):
             print 'At least one of the models does not yet have a MCMax model.'        
         if plot_filenames[0][-4:] == '.pdf':
-            new_filename = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                        self.path,'stars',self.star_name,\
-                                        self.plot_id,'Td_species.pdf')
+            new_filename = fn_plt + '.pdf'
             DataIO.joinPdf(old=plot_filenames,new=new_filename)
             print '** Your plots can be found at:'
             print new_filename

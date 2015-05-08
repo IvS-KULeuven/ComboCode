@@ -579,7 +579,12 @@ class MCMax(ModelingSession):
                 speciesdict = self.command_list['dust_species'][speciesfile]
                 for k,v in speciesdict.items():
                     input_dict['%s%.2i'%(k,index+1)] = v
-                ftype = speciesfile.find('particle') != -1 and 'part' or 'opac'
+                if speciesfile.find('particle') != -1:
+                    ftype = 'part'
+                elif speciesfile.find('.topac') != -1:
+                    ftype = 'topac'
+                else:
+                    ftype = 'opac'
                 #-- Add the opacities home folder (not saved in db)
                 input_dict['%s%.2i'%(ftype,index+1)] = "'%s'"\
                             %(os.path.join(self.opac_path,speciesfile))       

@@ -105,7 +105,7 @@ class KappaReader(object):
         The index determines if you want extinction, scattering or absorption.
         
         @keyword index: The index of the kappas in the .opacity/.particle file. 
-                        0: extinction, 1: scattering, 2: absorption
+                        0: extinction, 1: absorption, 2: scattering
                         
                         (default: 0)
         @type index: int
@@ -131,7 +131,7 @@ class KappaReader(object):
         The index determines if you want extinction, scattering or absorption.
         
         @keyword index: The index of the kappas in the .opacity/.particle file. 
-                        0: extinction, 1: scattering, 2: absorption
+                        0: extinction, 1: absorption, 2: scattering
                         
                         (default: 0)
         @type index: int
