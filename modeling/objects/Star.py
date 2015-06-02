@@ -1028,7 +1028,7 @@ class Star(dict):
     
 
 
-    def getGasRad(self,unit='cm',**kwargs):
+    def getGasRad(self,unit='cm',ftype='fgr_all',**kwargs):
         
         '''
         Return the gas radial grid in cm, AU or Rstar. 
@@ -1041,6 +1041,12 @@ class Star(dict):
                        'm'
         
                        (default: 'cm')
+        @type unit: str
+        @keyword ftype: The cooling output file type. Either '1', '2', '3', 
+                        'fgr', 'fgr_all', or 'rate'.
+                      
+                        (default: 'fgr_all')
+        @type ftype: str
         
         @return: the radial grid
         @rtype: array
@@ -1049,13 +1055,17 @@ class Star(dict):
         
         if not self['LAST_GASTRONOOM_MODEL']: return empty(0)
         unit = str(unit).lower()
-        fgr_file = self.getCoolFn(**kwargs)
+        fgr_file = self.getCoolFn(ftype=ftype,**kwargs)
         rad = DataIO.getGastronoomOutput(filename=fgr_file,keyword='RADIUS',\
                                          return_array=1)
+        #-- fgr_all gives radius in cm. Others in rstar
+        if ftype == 'fgr_all':
+            rad = rad/self['R_STAR']/self.Rsun
+        
         if unit == 'au':
             rad = rad/self.au
-        elif unit == 'rstar':
-            rad = rad/self.Rsun/self['R_STAR']
+        elif unit == 'cm':
+            rad = rad*self.Rsun*self['R_STAR']
         elif unit == 'm':
             rad = rad*10**-2
         return rad
@@ -1070,10 +1080,10 @@ class Star(dict):
         You can define the type of cooling file you want, as well as an 
         additional identification string for the molecule/sampling.
         
-        @keyword ftype: The cooling output file type. Either '1', '2', '3', 'fgr'
-                      'fgr_all', or 'rate'.
+        @keyword ftype: The cooling output file type. Either '1', '2', '3', 
+                        'fgr', 'fgr_all', or 'rate'.
                       
-                      (default: 'fgr_all')
+                        (default: 'fgr_all')
         @type ftype: str
         @keyword mstr: The additional identication string. Not applicable to 
                        'fgr' or 'fgr_all'. Can be any molecule, or 'sampling'.

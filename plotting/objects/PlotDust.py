@@ -371,8 +371,8 @@ class PlotDust(PlottingSession):
                  
                  
                  
-    def plotCorrfluxBaseline(self,wav,star_grid=[],cfg='',no_models=0,\
-                             fn_add_star=0):
+    def plotVisibilities(self,wav,star_grid=[],cfg='',no_models=0,\
+                         fn_add_star=0):
         
         """ 
         Plot correlated fluxes as a function of baseline.
