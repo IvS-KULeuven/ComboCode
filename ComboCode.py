@@ -230,10 +230,14 @@ class ComboCode(object):
         '''
         
         sed_path = self.processed_input.pop('SED_PATH','')
+        psuffix = self.processed_input.pop('SED_PHOT_PSUFFIX','')
+        remove = self.processed_input.pop('SED_PHOT_REMOVE','')
+        remove = remove.split('&')
+        
         if sed_path:
             self.sed = Sed.Sed(star_name=self.star_name,\
                                path_combocode=self.path_combocode,\
-                               path=sed_path)
+                               path=sed_path,psuffix=psuffix,remove=remove)
         else: 
             self.sed = None
         
@@ -434,7 +438,7 @@ class ComboCode(object):
             
             
     
-    def getStarGrid(self):
+    def getStars(self):
          
         '''
         Return the list of Star() objects for this ComboCode session.
@@ -909,7 +913,7 @@ class ComboCode(object):
                     if not int(star['MRN_DUST']):
                         cdcalc = ColumnDensity.ColumnDensity(star)
                         dlist = [sp 
-                                 for sp in star['DUST_LIST'] 
+                                 for sp in star.getDustList() 
                                  if 'H2O' not in sp]
                         print 'Dust FULL column densities (if available):'
                         for species in dlist:
@@ -925,7 +929,8 @@ class ComboCode(object):
                             print 'A_%s/A_H2 = %.3e'\
                                 %(species,cdcalc.dustMolecAbun(species))
                     if star.has_key('T_DES_H2O') or star.has_key('T_DES_CH2O')\
-                            or star.has_key('T_DES_AH2O') and not int(star['MRN_DUST']):
+                            or star.has_key('T_DES_AH2O') \
+                            and not int(star['MRN_DUST']):
                         print ', '.join(['%s = %s K'%(ts,star[ts])
                                          for ts in ['T_DES_H2O','T_DES_CH2O',\
                                                     'T_DES_AH2O']

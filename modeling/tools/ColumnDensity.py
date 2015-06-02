@@ -47,13 +47,6 @@ class ColumnDensity(object):
         """
         
         self.star = star
-        dust_path = os.path.join(star.path_combocode,'Data')
-        self.dustlist = DataIO.getInputData(path=dust_path,\
-                                            keyword='SPECIES_SHORT',\
-                                            filename='Dust.dat')
-        self.dustmolar = DataIO.getInputData(path=dust_path,\
-                                            keyword='MOLAR_WEIGHT',\
-                                            filename='Dust.dat',make_float=1)
         self.Rsun = star.Rsun      #in cm
         self.Msun = star.Msun      #in g
         self.year = star.year            #in s 
@@ -88,17 +81,8 @@ class ColumnDensity(object):
         
         """
         
-        fn = os.path.join(os.path.expanduser('~'),'MCMax',\
-                          self.star.path_mcmax,'models',\
-                          self.star['LAST_MCMAX_MODEL'],'denstemp.dat')
-        dens = DataIO.getMCMaxOutput(filename=fn,keyword='DENSITY',\
-                                        incr=self.star['NRAD']*\
-                                             self.star['NTHETA'])
-        dens = Data.reduceArray(dens,self.star['NTHETA'])
-        temp = DataIO.getMCMaxOutput(filename=fn,keyword='TEMPERATURE',\
-                                        incr=self.star['NRAD']*\
-                                             self.star['NTHETA'])
-        temp = Data.reduceArray(temp,self.star['NTHETA'])
+        dens = self.star.getDustDensity()
+        temp = self.star.getDustTemperature()
         compf = os.path.join(os.path.expanduser('~'),'MCMax',\
                              self.star.path_mcmax,'models',\
                              self.star['LAST_MCMAX_MODEL'],'composition.dat')
@@ -106,7 +90,7 @@ class ColumnDensity(object):
         self.rad = comp.pop(0)*self.au
         self.r_outer = self.rad[-1]
         
-        for species in self.star['DUST_LIST']:
+        for species in self.star.getDustList():
             #- Save the actual density profile for this dust species, as well
             #- as calculating the full column density of a dust species.
             self.dustfractions[species] = comp.pop(0)
@@ -164,13 +148,7 @@ class ColumnDensity(object):
         
         """
         
-        if not (self.star.has_key('A_%s'%species) \
-                and self.star['A_%s'%species]):
-            return 0
-        try:
-            ispecies = self.dustlist.index(species)
-        except ValueError:
-            print 'Dust species %s not found in Dust.dat.'%species
+        if not species in self.star.getDustList():
             return 0
         return self.fullcoldens[species]
         
@@ -192,19 +170,14 @@ class ColumnDensity(object):
         
         """
         
-        if not (self.star.has_key('A_%s'%species) \
-                and float(self.star['A_%s'%species])):
+        if not species in self.star.getDustList():
             return 0
-        try:
-            ispecies = self.dustlist.index(species)
-        except ValueError:
-            print 'Dust species %s not found in Dust.dat.'%species
-            return 0
-        if not self.dustmolar[ispecies]:
+        if not self.star.dust[species]['molar']:
             print 'No molar weight given for dust species %s in Dust.dat.'\
                   %species
             return 0
-        cndsp = self.fullcoldens[species]*self.avogadro/self.dustmolar[ispecies]
+        cndsp = self.fullcoldens[species]*self.avogadro\
+                    /self.star.dust[species]['molar']
         return cndsp
         
         
@@ -227,22 +200,17 @@ class ColumnDensity(object):
         
         """
 
-        if not (self.star.has_key('A_%s'%species) \
-                and float(self.star['A_%s'%species])):
+        if not species in self.star.getDustList():
             return 0
-        try:
-            ispecies = self.dustlist.index(species)
-        except ValueError:
-            print 'Dust species %s not found in Dust.dat.'%species
-            return 0
-        if not self.dustmolar[ispecies]:
+        if not self.star.dust[species]['molar']:
             print 'No molar weight given for dust species %s in Dust.dat.'\
                   %species
             return 0
         if self.r_min_cd[species] == 0:
             print 'No significant amount of dust species %s found.'%species
             return 0
-        cndspecies = self.coldens[species]*self.avogadro/self.dustmolar[ispecies]
+        cndspecies = self.coldens[species]*self.avogadro\
+                        /self.star.dust[species]['molar']
         cndh2 = self.hydrogenColDens(species)
         return cndspecies/cndh2
         
@@ -275,12 +243,8 @@ class ColumnDensity(object):
         rin = self.r_min_cd[species]
         rout = self.r_max_cd[species]
         if modelid:
-            fn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                              self.star.path_gastronoom,'models',\
-                              modelid,'coolfgr%s.dat'%modelid)
-            rad = DataIO.getGastronoomOutput(fn,keyword='RADIUS',return_array=1)
-            rad = rad*self.star.Rsun*self.star['R_STAR']
-            nh2 = DataIO.getGastronoomOutput(fn,keyword='N(H2)',return_array=1)
+            rad = self.star.getGasRad(ftype='fgr')
+            nh2 = self.star.getGasNumberDensity(ftype='fgr')
             cndh2 = trapz(x=rad[(rad<rout)*(rad>rin)],\
                           y=nh2[(rad<rout)*(rad>rin)])
         else: 

@@ -57,7 +57,7 @@ class LPDataReader(Reader):
         self.c = 2.99792458e10          #in cm/s
         self.contents['vlsr'] = None
     
-    
+
     
     def getVelocity(self):
         

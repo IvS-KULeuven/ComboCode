@@ -12,15 +12,106 @@ from scipy import array, hstack
 from scipy.optimize import leastsq
 from scipy.interpolate import interp1d
 from scipy.integrate import trapz
+from numpy.core.defchararray import rfind,ljust
+import numpy as np
 from glob import glob
 import operator
 
 from ivs.sed import extinctionmodels as em 
+from ivs.sed import builder
 
 from cc.tools.numerical import Interpol
 from cc.tools.io import DataIO
 from cc.plotting import Plotting2
 
+
+def buildPhotometry(star_name,fn='Photometric_IvS',psuffix='Raw/IvS_SEDTool/',\
+                    remove=[],\
+                    dp=os.path.join(os.path.expanduser('~'),'Data','SED'),\
+                    cc_path=os.path.join(os.path.expanduser('~'),'ComboCode',\
+                                         'Data')):
+    '''
+    Retrieve the photometry of a star through the IvS repo's SED builder. 
+    
+    Save the photometry in a target location. 
+    
+    @param star_name: Name of the star (cc name from Star.dat)
+    @type star_name: str
+    
+    @keyword fn: Output filename of the photometry file. Always appends 
+                 '_STAR.dat' where STAR is star_name. The file is saved in dp.
+    
+                 (default: 'Photometric_IvS')
+    @type fn: str
+    @keyword psuffix: path suffix for dp where the Raw photometry as downloaded
+                      by the SED tool is saved. To re-download, delete the file
+                      associated with the star.                      
+                  
+                      (default: 'Raw/IvS_SEDTool/')
+    @type psuffix: str
+    @keyword remove: Photometry to be removed from the output file. 
+                     e.g. ['WISE','DENIS'] 
+    
+                     (default: [])
+    @type remove: list[str]
+    
+    @keyword dp: Location for saving the clean photometry file used as input
+                 for CC. 
+    
+                 (default: ~/Data/SED/)
+    @type dp: str
+    @keyword cc_path: path to the combocode folder
+        
+                      (default: ~/ComboCode/Data/)
+    @type cc_path: string
+    
+    '''
+    
+    #-- Get the SIMBAD name of the star
+    si = DataIO.getInputData(cc_path,filename='Star.dat').index(star_name)
+    sn_sim = DataIO.getInputData(path=cc_path,keyword='STAR_NAME_PLOTS')[si]
+    sn_sim = sn_sim.replace('$','').replace('\\','')
+    
+    #-- Define the outputfolder of the Raw data
+    ofn_raw = os.path.join(dp,psuffix,'_'.join([star_name,'phot.txt']))
+    
+    ## Retrieve p = builder.SED()
+    star = builder.SED(sn_sim,photfile=ofn_raw)
+    star.get_photometry()
+    
+    ## Read in photometric data
+    columns = ['wave', 'meas', 'emeas', 'photband', 'bibcode', 'comments']
+    data = np.genfromtxt(star.photfile,usecols = (9,10,11,4,15,16),\
+                         names=columns,dtype = None)
+    
+    #-- Find and remove WISE and DENIS data
+    for photband in remove:
+        selection = rfind(data['photband'],photband)
+        data = data[np.where(selection==-1)]
+    
+    #-- Remove colour measurements (NaN in wavelength)
+    data = data[np.where(np.isfinite(data['wave']))]
+    
+    #-- Fill photbands with whitespace for formatting
+    data['photband'] = ljust(data['photband'],15)
+    
+    #-- Flux: erg/s/cm**2/AA -> Jy (10**-23 erg/s/cm**2/Hz)
+    #   From http://astro.wku.edu/strolger/UNITS.txt (non-linear!)
+    c = 2.99792458e18       # in AA/s 
+    data['meas'] = data['meas']*data['wave']**2/c*1e23
+    data['emeas'] = data['emeas']*data['wave']**2/c*1e23
+    
+    #-- Wavelength: angstrom -> micron
+    data['wave'] = data['wave']*10**-4
+    
+    #-- Sort the data on wavelength
+    data.sort()
+    
+    ofn_final = os.path.join(dp,'_'.join([fn,star_name+'.dat']))
+    hdr = 'Photometry extracted with ivs.sed.builder. \nWave (micron) Flux '+\
+          '(Jy) Error Flux (Jy) Photband Bibcode Comments'
+    np.savetxt(ofn_final,data,fmt=['%.8e']*3+['%s']*3,header=hdr)
+    
 
 
 def normalizeSed(sed):
@@ -51,6 +142,7 @@ class Sed(object):
     '''
     
     def __init__(self,star_name,path,distance=None,plot_extrapol_extinction=0,\
+                 remove=[],psuffix='Raw/IvS_SEDTool/',\
                  path_combocode=os.path.join(os.path.expanduser('~'),\
                                              'ComboCode')):
         
@@ -70,6 +162,16 @@ class Sed(object):
                            
                            (default: None)
         @type distance: float
+        @keyword remove: Photometry to be removed from the output file. 
+                         e.g. ['WISE','DENIS'] 
+    
+                         (default: [])
+        @type remove: list[str]
+        @keyword psuffix: path suffix for dp where the Raw photometry as downloaded
+                          by the SED tool is saved. 
+                  
+                          (default: 'Raw/IvS_SEDTool/')
+        @type psuffix: str
         @keyword path_combocode: path to the combocode folder
         
                                (default: ~/ComboCode/)
@@ -92,7 +194,7 @@ class Sed(object):
         self.data = dict()
         self.data_raw = dict()
         self.setStarPars()
-        self.setData()
+        self.setData(remove=remove,psuffix=psuffix)
         self.readData()
         self.dereddenData()
 
@@ -129,18 +231,28 @@ class Sed(object):
         
        
        
-    def setData(self):
+    def setData(self,**kwargs):
         
         '''
         Select available data.
         
         Based on the data file types in Sed.dat and the available data files.
         
+        Also calls the buildPhotometry method to create a photometry file from
+        the IvS Sed builder tool
+        
+        Any keywords required for buildPhotometry can be passed here.
+        
         '''
         
         cc_path = os.path.join(self.path_combocode,'Data')
         data_types = DataIO.getInputData(path=cc_path,keyword='DATA_TYPES',\
                                          filename='Sed.dat')
+                    
+        if 'Photometric_IvS' in data_types:
+            buildPhotometry(self.star_name,cc_path=cc_path,dp=self.path,\
+                            **kwargs)
+        
         self.data_types = []
         self.data_filenames = []
         for dt in data_types:
@@ -163,11 +275,14 @@ class Sed(object):
         
         for dt,fn in zip(self.data_types,self.data_filenames):
             data = DataIO.readCols(fn,nans=1)
-            data_sorted = array([(x,y) 
+            if dt == 'Photometric_IvS': 
+                self.data_raw[(dt,fn)] = (data[0],data[1],data[2])
+            else:
+                data_sorted = array([(x,y) 
                                  for x,y in sorted(zip(data[0],data[1]),\
                                                    key=operator.itemgetter(0)) 
                                  if y])
-            self.data_raw[(dt,fn)] = (data_sorted[:,0],data_sorted[:,1])
+                self.data_raw[(dt,fn)] = (data_sorted[:,0],data_sorted[:,1])
             
         #print '** LWS is not being aligned automatically with SWS for now.'
         #- Check if SWS and LWS are present (for now, LWS is not aligned automatically)
@@ -233,7 +348,12 @@ class Sed(object):
                              deredfunc),maxfev=20000)[0]
         #- Calculate the extrapolation and interpolation for the datagrids
         #- Then combine and apply the correction to the data
-        for (dt,fn),(data_x, data_y) in self.data_raw.items():
+        for (dt,fn),data in self.data_raw.items():
+            if len(data) == 3: 
+                data_x, data_y, data_ey = data[0], data[1], data[2]
+            else:
+                data_x, data_y = data[0], data[1]
+            
             extra = Interpol.pEval(data_x[data_x>=extrapol_xmin],plsq,deredfunc)
             inter = interp1d(ext_x,ext_y)(data_x[(data_x<extrapol_xmin)\
                                                     *(data_x>=chiar_min)])
@@ -242,7 +362,12 @@ class Sed(object):
             if self.plot_extrapol_extinction: 
                 Plotting2.plotCols(x=[ext_x,data_x],y=[ext_y,corr],\
                                    xlogscale=1,ylogscale=1)
-            self.data[(dt,fn)] = (data_x,data_y*10**(corr*self.ak*0.4))
+            if len(data) == 3: 
+                self.data[(dt,fn)] = (data_x,\
+                                      data_y*10**(corr*self.ak*0.4),\
+                                      data_ey*10**(corr*self.ak*0.4))
+            else:
+                self.data[(dt,fn)] = (data_x,data_y*10**(corr*self.ak*0.4))
                     
         
 

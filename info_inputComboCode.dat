@@ -45,7 +45,6 @@ MANDATORY IMMUTABLE INPUT:
 		* MDOT_GAS:						Gas mass loss rate [Msol/yr] - used to compute v(r) in case of variable mass loss
 		* OUTER_R_MODE:		      Use outer radius (FIXED), else [CO] relative abund. (MAMON)
 		* R_OUTER_DUST:				Outer radius of dust shell [R_STAR]  								
-		* POWER_T_DUST=0.4			T_DUST power law (T_STAR(R_STAR/2r)^power)
 		* STOCHASTIC_VEL_GAS:		Stochastic velocity [km/s]											
 		* T_CONTACT:					1 for Thermal Contact between Dust Particles, 0 for no TC 	
 		* TEMPERATURE_EPSILON_GAS: EPSILON, for GAS temperature power law, whole CSE!					

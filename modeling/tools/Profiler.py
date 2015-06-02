@@ -7,12 +7,55 @@ Author: R. Lombaert
 
 """
 
+from scipy import array 
 import scipy
 import os 
 
-from cc.modeling.objects import Star
 from cc.tools.io import DataIO
 
+
+def dustTemperaturePowerLaw(rad,tstar,s=1,add_key=0):
+    
+    '''
+    Return a dust temperature power law of the form as suggested by 
+    observational evidence. Does not depend on MCMax output.
+    
+    The radial grid is given in Rstar!
+            
+    See Thesis p32, where power is -2/(4+s) in 
+    T(r) = T_eff*(2*r/R_STAR)**(-2/(4+s))
+    and s is typically 1 in the Rayleigh limit and optically thin case.
+    
+    @param rad: The radial grid for the power law in Rstar
+    @type rad: array
+    @param tstar: The stellar effective temperature
+    @type tstar: float
+    
+    @keyword s: The s parameter in the power law T(r) given above.
+    
+                (default: 1)
+    @type s: int
+    @keyword add_key: Add a key for a legend to the ouput as third tuple
+                      element.
+                        
+                      (default: 0)
+    @type add_key: bool
+
+    @return: The temperature profile (K) as well as a key, if requested.
+    @rtype: (array,string)
+    
+    '''
+    
+    s, tstar, rad = int(s), float(tstar), array(rad)
+    temp = tstar*(2.*rad)**(-2./(4+s))
+        
+    if add_key:
+        key = '$T_\mathrm{d}(r) = %i \\left(\\frac{2r}{\mathrm{R}_\star}'%s +\
+              '\\right)^{\\frac{2}{4+%i}}$'%int(Tstar)
+        return temp, key
+    else: 
+        return temp
+    
 
 
 def waterFraction1StepProfiler(model_id,path_gastronoom,fraction,rfrac):

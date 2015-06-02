@@ -69,7 +69,8 @@ def readModelSpectrum(dpath,rt_sed=1,fn_spec='spectrum45.0.dat'):
 def readVisibilities(dpath,fn_vis='visibility01.0.dat'):
     
     '''
-    Read the model output visibilities.
+    Read the model output visibilities, either as function of wavelength or
+    baseline. 
      
     @param dpath: folder that contains the MCMax outputfiles
     @type dpath: string
@@ -81,7 +82,8 @@ def readVisibilities(dpath,fn_vis='visibility01.0.dat'):
                       (default: visibility01.0.dat)
     @type fn_spec: str
     
-    @return: The wavelength, flux, visibility and phase grid (micron,Jy,,)
+    @return: The wavelength (or baseline), flux, visibility and phase grid 
+             (micron,Jy,,) or (m,Jy,,)
     @rtype: (array,array,array,array)
      
     '''
@@ -299,15 +301,7 @@ class MCMax(ModelingSession):
                                                   convert_floats=1,\
                                                   convert_ints=1,\
                                                   comment_chars=['#','*'])
-        path_cc = os.path.join(self.path_combocode,'Data')
-        self.dust_list = DataIO.getInputData(path=path_cc,\
-                                             keyword='SPECIES_SHORT',\
-                                             filename='Dust.dat')
-        self.dust_files = DataIO.getInputData(path=path_cc,\
-                                              keyword='PART_FILE',\
-                                              filename='Dust.dat')
-        
-        
+                
 
     def rayTrace(self,star):
 
@@ -530,7 +524,7 @@ class MCMax(ModelingSession):
         #- Dust.dat is changed. However, this does mean some species specific
         #- outputfiles may not match anymore when e.g. plotting dust opacities
         dust_dict = dict()
-        for species in star['DUST_LIST']:
+        for species in star.getDustList():
             species_dict = dict()
             if star['TDESITER']:
                 species_dict['TdesA'] = star['T_DESA_' + species]
@@ -547,11 +541,9 @@ class MCMax(ModelingSession):
                 species_dict['rgrain'] = star['RGRAIN_%s'%species]
             else:
                 species_dict['abun'] = star['A_%s'%species]
-            dustfile = self.dust_files[self.dust_list.index(species)]
-            if not os.path.split(dustfile)[0]:
+            if not os.path.split(star.dust[species]['fn'])[0]:
                 print('WARNING! %s has an old opacity file. Should replace for reproducibility.'%species)
-            dust_dict[self.dust_files[self.dust_list.index(species)]] \
-                = species_dict
+            dust_dict[star.dust[species]['fn']] = species_dict
         self.command_list['dust_species'] = dust_dict
         print '** DONE!'
         print '***********************************'
@@ -566,25 +558,39 @@ class MCMax(ModelingSession):
             input_dict = self.command_list.copy()
             del input_dict['photon_count']
             del input_dict['dust_species']
-            #-- order in which the species appear is fixed according to the 
-            #   order of the species in the Dust.dat input file. Note that this
-            #   order does not matter for the database. 
-            #   rgrain species are put first, following the DUST_LIST order.
-            #   Then the rest.
-            dl_sort = sorted(star['DUST_LIST'],key=lambda x: \
-                                             (not star.has_key('RGRAIN_%s'%x),\
-                                              star['DUST_LIST'].index(x)))
-            for index,species in enumerate(dl_sort):
-                speciesfile = self.dust_files[self.dust_list.index(species)]
+            #-- dust_list in star is already sorted. rgrains species first, 
+            #   then the rest, according to the order of appearance in Dust.dat
+            for index,species in enumerate(star.getDustList()):
+                speciesfile = star.dust[species]['fn']
                 speciesdict = self.command_list['dust_species'][speciesfile]
                 for k,v in speciesdict.items():
                     input_dict['%s%.2i'%(k,index+1)] = v
-                if speciesfile.find('particle') != -1:
-                    ftype = 'part'
-                elif speciesfile.find('.topac') != -1:
+                #-- If speciesfile is .topac, they are T-dependent opacities
+                #   and should always be given as topac##. The file then points
+                #   to the .particle files of the T-dependent opacities.
+                if speciesfile.find('.topac') != -1:
                     ftype = 'topac'
+                #-- When full scattering is requested, always use .particle 
+                #   files if they are available. If not, use whatever is in 
+                #   Dust.dat, but then the species will not be properly 
+                #   included for full scattering (requires scattering matrix)
+                #   It is OK to have .opac files in Dust.dat, as long as 
+                #   .particle files exist in the same location
+                elif star['SCATTYPE'] == 'FULL':
+                    partfile = os.path.splitext(speciesfile)[0] + '.particle'
+                    if os.isfile(os.path.join(self.opac_path,partfile)):
+                        ftype = 'part'
+                        speciesfile = partfile
+                    else:
+                        ftype = 'opac'
+                #-- If not full scattering, opacity files are fine. So, use 
+                #   whatever is in Dust.dat. Dust.dat should preferentially 
+                #   include .opac (or .opacity) files, but can be .particle 
+                #   files if opacity files are not available, in which case
+                #   ftype should still be 'part'.
                 else:
-                    ftype = 'opac'
+                    if speciesfile.find('.particle') != -1: ftype = 'part'
+                    else: ftype = 'opac'
                 #-- Add the opacities home folder (not saved in db)
                 input_dict['%s%.2i'%(ftype,index+1)] = "'%s'"\
                             %(os.path.join(self.opac_path,speciesfile))       

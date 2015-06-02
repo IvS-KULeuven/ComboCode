@@ -412,7 +412,6 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ])
     pfn_parts = dict([('MDOT_GAS','mg'),\
                       ('MDOT_DUST',r'md'),\
-                      ('DUST_LIST','dustlist'),\
                       ('STARTYPE','startype'),\
                       ('A_SICB','asicb'),\
                       ('A_AMCSPH','aamcsph'),\
@@ -451,7 +450,6 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('A_SICB','A(SICB)'),\
                      ('STARTYPE','StarType'),\
                      ('A_AMCSPH','A(AMCSPH)'),\
-                     ('DUST_LIST','Dust Comp.'),\
                      ('VEL_INFINITY_GAS','$v_{\infty\mathrm{,g}}$'),\
                      ('SHELLMASS','$\bar{M_\mathrm{s}}$'),\
                      ('SHELLDENS',r'$\bar{\rho}$'),\
@@ -484,7 +482,6 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('ABUNDANCE_FILENAME_H2O','h2oAbunFile')])
     keyunits = dict([('MDOT_GAS','$\mathrm{M}_\odot\ \mathrm{yr}^{-1}$'),\
                      ('MDOT_DUST','$\mathrm{M}_\odot\ \mathrm{yr}^{-1}$'),\
-                     ('DUST_LIST',''),\
                      ('STARTYPE',''),\
                      ('A_SICB',''),\
                      ('A_AMCSPH',''),\
@@ -520,7 +517,6 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('ABUNDANCE_FILENAME_H2O','')])
     makeints = dict([('MDOT_GAS',0),\
                      ('MDOT_DUST',0),\
-                     ('DUST_LIST',0),\
                      ('STARTYPE',0),\
                      ('A_SICB',0),\
                      ('A_AMCSPH',0),\

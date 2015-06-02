@@ -233,9 +233,6 @@ class ModelingManager():
                         self.new_entries_mcmax.append(dust_session.model_id)
                 
             if self.gastronoom:    
-                print '***********************************'
-                print '** Starting GASTRoNOoM calculation.'
-                print '** Iteration # %i for Model %i.'%(i+1,star_index+1)
                 #- Initiate a gas session which is used for every iteration
                 if i == 0: 
                     gas_session = Gastronoom(vic=self.vic,\
@@ -254,6 +251,18 @@ class ModelingManager():
                     #-- MCMax was ran successfully, in other words, quite a bit 
                     #   of time has passed, so update the cool database.
                     self.cool_db.sync()
+                
+                #-- If last iteration and no mline is requested, don't run 
+                #   cooling. There is no point anyway (and means you don't have 
+                #   to wait for your MCMax model. 
+                if (i+1 == self.iterations) and not gas_session.molec_list:
+                    continue
+                
+                print '***********************************'
+                print '** Starting GASTRoNOoM calculation.'
+                print '** Iteration # %i for Model %i.'%(i+1,star_index+1)
+                                
+                #-- Otherwise, run cooling and do the rest of the loop
                 gas_session.doGastronoom(star)
                 
                 #- add/change MUTABLE input keys, which MAY be overwritten by 

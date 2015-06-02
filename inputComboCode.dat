@@ -49,7 +49,9 @@ RADIO_AUTOSEARCH=0                  # Put to 1 if TRANSITION objects are to be m
 RADIO_AUTOPARSE=0                   # Put to 1 to automatically parse the target radio data folder for data before selecting candidate transitions. 
 
 #-- SED/Correlated Fluxes data selection and plotting
-SED_PATH=#/home/robinl/Data/SED/    #Path to the Data folder where the text files with SED data are stored. Leave open if no data are to be plotted.
+SED_PATH=#/home/robinl/Data/SED/    # Path to the Data folder where the text files with SED data are stored. The photometric IvS Sed builder tool output files are put here. Leave open if no data are to be plotted.
+SED_PHOT_REMOVE=                    # If any photometric sources (such as WISE or DENIS) are to be removed for whatever reason, include them here separated with ampersand (e.g. WISE&DENIS )  
+SED_PHOT_PSUFFIX=Raw/IvS_SEDTool/   # Path suffix appended to SED_PATH for the location of the raw photometric data downloaded by the IvS Sed builder tool. This folder has to exist!
 CORRFLUX_PATH=#/home/robinl/Data/CorrFlux/   #Path to the Data folder where the text files with correlated fluxed are stored. Leave open if no data are to be plotted.
 
 #-- Opacities home folder
@@ -62,13 +64,13 @@ SHOW_CONTDIV=0                      # Show plots of the intermediary steps of th
 
 #-- Statistics module
 STATISTICS=0                        # Calculate basic statistics
-STAT_PRINT=0                        # RESO_STATS: print statistics for individual lines and models of spectrally resolved lines, use cc_session.resostats for more interactive options
-STAT_LLL_P=                         # RESO_STATS: The number of variable parameters is given here, for the automatic determination of the loglikelihood threshold determination (95% confidence interval). The loglikelihood can be used to determine best-fit models based on the shape of the line profile. 
-STAT_METHOD=clipping                # UNRESO_STATS: (clipping or preset) The method used to determine the noise in an unresolved spectrum. Clipping determines the std/rms/... on the full continuum-subtracted spectrum, then determines std/rms/... after 1-sigma clipping based on the first estimate. 'preset' takes a wavelength range from Data.dat and determines the std/rms/... for a full band, without clipping. Line scans should best be treated with 'clipping'.
-STAT_CHI2=normal                    # UNRESO_STATS: type of chi2 calculation for integrated fluxes of unresolved lines. [normal or log]. log just takes the log of all int fluxes and the uncertainty.
+STAT_PRINT=0                        # RESO_STATS - print statistics for individual lines and models of spectrally resolved lines, use cc_session.resostats for more interactive options
+STAT_LLL_P=                         # RESO_STATS - The number of variable parameters is given here, for the automatic determination of the loglikelihood threshold determination (95% confidence interval). The loglikelihood can be used to determine best-fit models based on the shape of the line profile. 
+STAT_METHOD=clipping                # UNRESO_STATS - (clipping or preset) The method used to determine the noise in an unresolved spectrum. Clipping determines the std/rms/... on the full continuum-subtracted spectrum, then determines std/rms/... after 1-sigma clipping based on the first estimate. 'preset' takes a wavelength range from Data.dat and determines the std/rms/... for a full band, without clipping. Line scans should best be treated with 'clipping'.
+STAT_CHI2=normal                    # UNRESO_STATS - type of chi2 calculation for integrated fluxes of unresolved lines. [normal or log]. log just takes the log of all int fluxes and the uncertainty.
 
 #-- Various settings for this CC session
-REPLACE_DB_ENTRY=0                  # Be very careful with putting this keyword to 1! If a model in a database is found (usually cooling or mcmax), it is replaced by a newly calculated model (also with a new model_id). Any mline, sphinx or pacs models stemming from the same cooling id will also be deleted!!!! Now works with grids as well: Any new calculated model in the grid will NOT be deleted. (hence, if an MCMax model is the same for all models in the grid, it will not be calculated anew every single time)
+REPLACE_DB_ENTRY=0                  # Be very careful with putting this keyword to 1! If a model in a database is found (usually cooling or mcmax), it is replaced by a newly calculated model (also with a new model_id). Any mline, sphinx or pacs models stemming from the same cooling id will also be deleted!!!! Now works with grids as well. Any new calculated model in the grid will NOT be deleted. (hence, if an MCMax model is the same for all models in the grid, it will not be calculated anew every single time)
 UPDATE_SPEC=0                       # Update .spec files for GASTRoNOoM based on the available line lists
 APPEND_RESULTS=0                    # Append model ids of transitions in the grid to the inputfile, regardless if they've been calculated this run or not. By default this is off, since model ids are already appended if successfully calculated *this* run. This switch adds id's even if transitions are pulled from the database.
 WRITE_DUST_DENSITY=0                # Write away separate density files for MCMax models (see Star.writeDensity()) --- The opacity file is now written away fully as input for GASTRoNOoM, so can be read from there.
@@ -83,8 +85,8 @@ M_STAR=1.0                          # Stellar mass [Msol]
 L_STAR=11000                        # Stellar luminosity [Lsol]
 #LOGG=0.0                           # Only relevant if model atmospheres are used for MCMax (STARTYPE=ATMOSPHERE), default is 0.0
 DISTANCE=1300                       # Distance to object [pc]           
-STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody; ATMOSPHERE for a low-resolution model atmosphere spectrum in which case ATM_FILENAME has to be defined; TABLE for a custom file in which case STARTABLE has to be given, otherwise it's ignored)
-#STARTABLE=                          # Only relevant if STARTYPE=TABLE, name of file in ~/ComboCode/StarFiles/. Two columns: one with wavelength in micron, one with flux in Jy. Can be full path or only file. The spectrum is assumed to be taken at the stellar surface, and is converted to intensity.
+STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody, ATMOSPHERE for a low-resolution model atmosphere spectrum in which case ATM_FILENAME has to be defined, TABLE for a custom file in which case STARTABLE has to be given, otherwise it's ignored)
+#STARTABLE=                          # Only relevant if STARTYPE=TABLE, name of file in ~/ComboCode/StarFiles/. Two columns - one with wavelength in micron, one with flux in Jy. Can be full path or only file. The spectrum is assumed to be taken at the stellar surface, and is converted to intensity.
 #ATM_FILENAME=                      # The filename of the model atmosphere (for now only in /STER/pieterd/IVSDATA/sedtables/modelgrids/ folder)
 
 #F_CONT_63=                         # Include 6.3 monochromatic continuum flux if needed (as observed in SWS for instance). Flux is given in Jy.
@@ -95,21 +97,21 @@ STARTYPE=BB                         # The type of lambda-dependent luminosity in
 #-- Must be defined
 VEL_INFINITY_GAS=14.0               # expected terminal velocity [km/s]                                         
 
-#-- 2 out of 3 must ne defined (if not: error. all defined: beware consistency!)
+#-- 2 out of 3 must ne defined (if not, error. all defined, beware consistency!)
 #   MDOT_DUST and MDOT_GAS must be defined if DUST_TO_GAS_CHANGE_ML_SP is not defined OR is equal to zero.
 #   DUST_TO_GAS_CHANGE_ML_SP must be defined and nonzero, and MDOT_GAS must be defined if MDOT_DUST is not defined.
 #   DUST_TO_GAS_CHANGE_ML_SP must be defined and nonzero, and MDOT_DUST must be defined if MDOT_GAS is not defined.
-#   One is calculated from the other two through the DUST_TO_GAS keyword. Never define DUST_TO_GAS: it is always calculated from MDOT_DUST/GAS and the expansion velocities. 
+#   One is calculated from the other two through the DUST_TO_GAS keyword. Never define DUST_TO_GAS, it is always calculated from MDOT_DUST/GAS and the expansion velocities. 
 #   Also give proper values here in case of MDOT_MODE=OTHER, so that MCMax can be given the correct density profile based on the dust-to-gas ratio.
 #-- Note that these are recalculated after every GASTRoNOoM iteration unless explicitly defined here. 
 #DUST_TO_GAS_CHANGE_ML_SP=0         # If commented, the empiric d2g ratio is used. If 0, the cooling d2g ratio is used! Can also have any value given here. Changes d2g ratio in mline and sphinx. 
 MDOT_GAS=1.40e-5                    # Gas mass loss rate [Msol/yr] - used to compute v(r) in case of variable mass loss     
 MDOT_DUST=1.6e-7                    # Dust mass-loss rate [Msol/yr]                                          
 
-#-- These are calculated automatically but can be fixed here if required:
+#-- These are calculated automatically but can be fixed here if required
 #V_EXP_DUST=                        # The dust expansion velocity. Is calculated from VEL_INFINITY_GAS+DRIFT if not given here
 
-#-- These are standard values but can be changed here:
+#-- These are standard values but can be changed here
 DUST_TO_GAS_INITIAL=2e-3            # Dust-to-gass mass ratio, initial guess only!                     
 USE_DENSITY_NON_CONSISTENT=0        # Change density according to your mass loss function, this is off by default
 #DENSTYPE=%                         # If commented, MASSLOSS is used in first iteration of MCMax, then in the 2nd the density distribution from GASTRoNOoM. Put to MASSLOSS if you do not want to use the density from GASTRoNOoM in MCMax.
@@ -133,7 +135,7 @@ ABUN_O=4.0e-4                       # Oxygen abundance
 RATIO_12C_TO_13C=8                  # 12C/13C ratio                                                  
 RATIO_16O_TO_17O=600                # 16O/17O ratio
 RATIO_16O_TO_18O=200                # 16O/18O ratio
-F_H2O=3.5e-4                        # n(H2O)/n(H2) at Rstar. If abundance_file is given for oH2O, this parameter is ignored (either through water specific molecule info, below; or through the MOLECULE definition of 1H1H16O). 
+F_H2O=3.5e-4                        # n(H2O)/n(H2) at Rstar. If abundance_file is given for oH2O, this parameter is ignored (either through water specific molecule info, below, or through the MOLECULE definition of 1H1H16O). 
 OPR=3                               # ortho-2-para water ratio
 
 #-- Radii
@@ -182,7 +184,6 @@ R_OUTER_DUST=2000                   # Outer radius of dust shell [R_STAR]
 #R_OUTER_MULTIPLY=                  # Give this for the outer radius, if you want the outer radius to be a multiple of the inner radius (fi outer radius = 1.5*inner radius) (R_OUTER_DUST and R_OUTER_DUST_AU overwrite this)
 
 #-- Temperature
-POWER_T_DUST=0.45                   # Power for T_DUST power law (T_STAR(R_STAR/2r)^power) when R_MAX is calced from T_MIN
 T_CONTACT=0                         # 1 for Thermal Contact between Dust Particles, 0 for no TC      
 TDESITER=1                          # 1 to destroy high temperature dust, is put to 0 automatically if an inner dust radius is given, in which case it's not sensible to use this option
 
@@ -190,10 +191,10 @@ TDESITER=1                          # 1 to destroy high temperature dust, is put
 SCATTYPE='ISOTROPIC'                #'FULL' for aggregates and when anisotropic scattering is important. Otherwise, 'ISOTROPIC'.
 
 #-- Numerical precision
-PHOTON_COUNT=5000                   # Number of photons used in Monte Carlo simulation                 
+PHOTON_COUNT=10000                   # Number of photons used in Monte Carlo simulation                 
 
 #-- Observational output
-RT_SED=1                            # Put to 0 if no ray tracing for SED (ie MC spectra are OK), if multiple  1;0 (based on ~/MCMax/Observation_Files/Spec.out, and not changing the angle)                   
+RT_SED=0                            # Put to 0 if no ray tracing for SED (ie MC spectra are OK), if multiple  1 or 0 (based on ~/MCMax/Observation_Files/Spec.out, and not changing the angle)                   
 REDO_OBS=0                          # CC checks if ray tracing for the SED has been done already, but this can be circumvented by putting this to 1, and then the observation output is produced regardless 
 IMAGE=0                             # Put to 1 if you want to make images based on ~/MCMax/Observation_Files/Image.out (ie change this file if you want different images), always runs, regardless of REDO_OBS 
 IMAGE_NOSOURCE=0                    # Remove the central source from the image
@@ -260,7 +261,7 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 
 #####################################################################
 # MOLECULAR PARAMETERS FOR WHICH WE WANT TO DO MLINE
-# Sequence for input is (not formatted):
+# Sequence for input is (not formatted)
 #       Molecule_name NY_LOW NY_UP N_IMPACT N_IMPACT_EXTRA ABUN_MOLEC ABUN_MOLEC_RINNER ABUN_MOLEC_RE RMAX_MOLEC ITERA USE_COLLIS_RADIAT_SWITCH R_OUTER ABUNDANCE_FILENAME ENHANCE_ABUNDANCE_FACTOR CHANGE_FRACTION_FILENAME SET_KEYWORD_CHANGE_ABUNDANCE NEW_TEMPERATURE_FILENAME SET_KEYWORD_CHANGE_TEMPERATURE
 # Note that the same molecule can be passed twice, then a model grid will be created
 # taking one of the two for one model, and the other for the second model
@@ -274,7 +275,7 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 ## ABUN_MOLEC_RINNER = abundance at r_inner, will decrease gradually to abun_molec_re at rmax_molec
 ## ABUN_MOLEC_RE =abundance at rmax_molec, abun from willacy and millar is scaled to this value between rmax_molec and r_outer
 ## RMAX_MOLEC = two grid points for abun between r_star and r_outer, this is the middle 
-##            The above 4 parameters are not relevant for water (para+ortho), 12co and 13co: always include dummy value however!
+##            The above 4 parameters are not relevant for water (para+ortho), 12co and 13co, but always include dummy value however!
 ## ITERA = Number of mline iterations, set to 0 for LTE (SiO has to have 0 here, cuz not enough collision rates available)
 ## LTE_REQUEST = Run mline in LTE mode
 ## USE_COLLIS_RADIAT_SWITCH = set to 1 if one wants to use the collision-radiative switching method of Hummer and Voels (1988)
@@ -285,10 +286,10 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 ## ENHANCE_ABUNDANCE_FACTOR = scale the explicit abundance profile from a file with this factor. Put to 1 for no extra scaling. Put to 0 if you do not want to use a file for the abundance
 ##                These two parameters are ignored for isotopologues and para water, as the abundances for these are determined from the main isotopologue and the scaling factors (OPR, RATIO_12C_TO_13C, RATIO_16O_TO_17O)
 ## CHANGE_FRACTION_FILENAME = the filename for the filename below, only relevant if nonzero, but must be included (fraction values with which the values from
-##                           cooling are multiplied to be then used in mline and sphinx; units are [cm, unitless fraction values])
-## SET_KEYWORD_CHANGE_ABUNDANCE = 0 or 1: change the abundance after cooling (in samling.f and init_mline.f)
+##                           cooling are multiplied to be then used in mline and sphinx, units are [cm, unitless fraction values])
+## SET_KEYWORD_CHANGE_ABUNDANCE = 0 or 1 - change the abundance after cooling (in samling.f and init_mline.f)
 ## NEW_TEMPERATURE_FILENAME = the filename for the keyword below, only relevant if nonzero, but must be included (filename with other temperature values to be used in mline and sphinx. Units are [cm,K])
-## SET_KEYWORD_CHANGE_TEMPERATURE = 0 or 1: change the temperature after cooling (in sampling.f)
+## SET_KEYWORD_CHANGE_TEMPERATURE = 0 or 1 - change the temperature after cooling (in sampling.f)
 ##########################################################################
 #MOLECULE=12C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=13C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
@@ -316,17 +317,16 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 ###################
 #-- Use line lists for defining transitions here.
 LINE_LISTS=0                        # Get molecular transitions from line lists
-                                    # 1: line lists are generated automatically
-                                    # 2: line list taken from a file. A filename is required, but other LL_keywords are ignored
-                                    # 3: wavelength ranges for line lists are determined from data files. [NYI]
-                                    # Syntax: TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
+                                    # 1 - line lists are generated automatically
+                                    # 2 - line list taken from a file. A filename is required, but other LL_keywords are ignored
+                                    # 3 - wavelength ranges for line lists are determined from data files. [NYI]
+                                    # Syntax - TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
 LL_FILE=h2o_iktau_hifi.dat          # if LINE_LISTS is 2, otherwise it is ignored
 LL_MAX=218                          # If LINE_LISTS, the max (rest) wavelength for the transitions
 LL_MIN=50                           # If LINE_LISTS, the min (rest) wavelength for the transitions
 LL_UNIT=MICRON                      # The spectral unit of min and max for LINE_LISTS
 LL_TELESCOPE=PACS                   # Telescope for which the lines are to be searched, use ';' if multiple telescopes, in case of
-                                    # PACS, just add PACS and not PACS;PACS-H2O if both molecules are requested. This is taken 
-                                    # care of automatically.
+                                    # PACS, just add PACS. PACS-H2O is just there to cut down on browsing time of the spec file and should never be used apart from explicit TRANSITION definitions. 
 LL_OFFSET=0.0                       # If auto line listing is used, this gives the offset. Default is 0.0
 LL_NO_VIB=0 #12C16O&1H1H16O         # When molecules are indicated here, their vibrational excitation lines are excluded from the calculation!
 N_QUAD=100                          # Number of impact par. in quadrature int(Inu pdp)               GASTRoNOoM  
@@ -334,7 +334,7 @@ N_QUAD=100                          # Number of impact par. in quadrature int(In
                                     # n_quad is otherwise included in TRANSITION input lines or in the input files if LINE_LISTS=2 
 USE_MASER_IN_SPHINX=0               # Use correct masering opacities in Sphinx
 
-#-- Add your TRANSITION definitions explicitly here. Syntax: TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
+#-- Add your TRANSITION definitions explicitly here. Syntax - TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
 #TRANSITION=12C16O 0 2 0 0 0 1 0 0 JCMT 0.0 100
 #TRANSITION=12C16O 0 1 0 0 0 0 0 0 JCMT 0.0 100
 
@@ -353,7 +353,7 @@ LL_MOLECULES=16O1H&1H12C14N         # List the molecules for line listing
 #-- The following plot input is not required to run. Only include those that you need, if you want to plot something.
 #   Any plot method can be activated by putting PLOT_GAS/DUST_[METHOD] to 1. 
 #   Customisation of the plot can be done by giving the cfg file for Plottin2.plotCols() to the CFG_GAS/DUST_[METHOD] parameter
-#-- Plot input: Gas
+#-- Plot input - Gas
 PLOT_GAS_TRANSITIONS=0              # Plot the transitions separately after convolution with the beam profile, in Tmb as calculated by sphinx. For PACS the intrinsic fluxes are plotted
 CFG_GAS_TRANSITIONS=                
 
@@ -385,7 +385,7 @@ PLOT_GAS_PACS_SEGMENTS=0            # Plot segments of a PACS spectrum, either w
 PLOT_GAS_PACS_SEGMENTS_PATH=
 CFG_GAS_PACS_SEGMENTS=
 
-#-- Plot input: Dust
+#-- Plot input - Dust
 PLOT_DUST_SED=0                     # Plot the SED with data as defined in ~/ComboCode/Data/Sed.dat
 CFG_DUST_SED=
 

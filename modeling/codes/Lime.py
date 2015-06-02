@@ -41,8 +41,8 @@ def prepInput(star,path,repl_str=''):
     
     #-- Write dust temperature to a file.
     fntd = os.path.join(path,'td_%s.dat'%(repl_str and repl_str or mcmid))
-    rad,td = star.getDustTemperature()
-    rad = rad*star['R_STAR']*star.Rsun*10**-2
+    rad = star.getDustRad(unit='m')
+    td = star.getDustTemperature()
     DataIO.writeCols(fntd,[rad,td])
     
     #-- Finally the gas properties
@@ -51,29 +51,26 @@ def prepInput(star,path,repl_str=''):
     fngas = star.getCoolFn('fgr_all')
     fncogas = star.getCoolFn('1',mstr='12C16O')
     
-    #-- Radius for all files
-    rad = DataIO.getGastronoomOutput(fngas,keyword='RADIUS',return_array=1)
-    rad = rad*10**-2
-    
+    #-- Radius for nh2 and vel
+    rad = star.getGasRad(unit='m',ftype='fgr_all')
+        
     #-- h2 number density
-    nh2 = DataIO.getGastronoomOutput(fngas,keyword='N(H2)',return_array=1)
+    nh2 = star.getGasNumberDensity(ftype='fgr_all')
     nh2 = nh2*10**6
     fnnh2 = os.path.join(path,'nh2_%s.dat'%repl_str)
     DataIO.writeCols(fnnh2,[rad,nh2])
     
     #-- Velocity profile
-    vel = DataIO.getGastronoomOutput(fngas,keyword='VEL',return_array=1)
+    vel = star.getGasVelocity(ftype='fgr_all')
     vel = vel*10**-2
     fnvel = os.path.join(path,'vg_%s.dat'%repl_str)
     DataIO.writeCols(fnvel,[rad,vel])
     
     #-- CO abundance
-    rad = DataIO.getGastronoomOutput(fncogas,keyword='RADIUS',return_array=1)
-    rad = rad*star['R_STAR']*star.Rsun*10**-2
-    ah2 = DataIO.getGastronoomOutput(fncogas,keyword='N(H2)',return_array=1)
-    aco = DataIO.getGastronoomOutput(fncogas,keyword='N(MOLEC)',key_index=8,\
-                                     return_array=1)
-    aco = aco/ah2
+    rad = star.getGasRad(ftype='1',mstr='12C16O',unit='m')
+    nh2 = star.getGasNumberDensity(ftype='1',mstr='12C16O')
+    nco = star.getGasNumberDensity(ftype='1',mstr='12C16O',molecule=1)
+    aco = nco/nh2
     fnaco = os.path.join(path,'aco_%s.dat'%repl_str)
     DataIO.writeCols(fnaco,[rad,aco])
     

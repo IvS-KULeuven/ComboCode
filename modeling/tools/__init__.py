@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ["ColumnDensity","ContinuumDivision"]
+__all__ = ["ColumnDensity","ContinuumDivision","Profiler","CustomOpacity"]

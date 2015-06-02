@@ -144,8 +144,8 @@ class PlotGas(PlottingSession):
         plot_filenames = []
         for i,star in enumerate(star_grid):
             if star['LAST_GASTRONOOM_MODEL']:    
-                radius,vel = star.getGasVelocity()
-                radius = radius/star['R_STAR']/star.Rsun
+                rad = star.getGasRad(unit='rstar')
+                vel = star.getGasVelocity()
                 vel = vel/10.**5
                 avgdrift = star.getAverageDrift()/10.**5
                 plot_filename = os.path.join(os.path.expanduser('~'),\
@@ -158,7 +158,7 @@ class PlotGas(PlottingSession):
                              %(self.plot_id.replace('_','\_'),\
                                self.star_name_plots,i,\
                                star['LAST_GASTRONOOM_MODEL'].replace('_','\_'))
-                plot_filenames.append(Plotting2.plotCols(x=radius,\
+                plot_filenames.append(Plotting2.plotCols(x=rad,\
                                         y=[vel,avgdrift],cfg=cfg,\
                                         filename=plot_filename,\
                                         xaxis='R (R$_*$)',\
@@ -224,25 +224,8 @@ class PlotGas(PlottingSession):
             valid_sg = [star 
                         for star in star_grid 
                         if star['LAST_GASTRONOOM_MODEL']]
-            radii = [DataIO.getGastronoomOutput(\
-                        filename=os.path.join(os.path.expanduser('~'),\
-                             'GASTRoNOoM',self.path,'models',\
-                             star['LAST_GASTRONOOM_MODEL'],\
-                             'coolfgr_all%s.dat'\
-                             %star['LAST_GASTRONOOM_MODEL']),\
-                        keyword='RADIUS',return_array=1)
-                     for star in valid_sg]
-            radii_rstar = [rads/star['R_STAR']/star.Rsun 
-                                for rads,star in zip(radii,valid_sg)]
-            temp = [DataIO.getGastronoomOutput(\
-                                filename=os.path.join(os.path.expanduser('~'),\
-                                              'GASTRoNOoM',self.path,\
-                                              'models',\
-                                              star['LAST_GASTRONOOM_MODEL'],\
-                                              'coolfgr_all%s.dat'\
-                                              %star['LAST_GASTRONOOM_MODEL']),\
-                                keyword='TEMP',return_array=1)
-                    for star in valid_sg]
+            radii = [star.getGasRad(unit='rstar') for star in valid_sg]
+            temps = [star.getGasTemperature() for star in valid_sg]
 
             if temp:    
                 plot_title = '%s %s: Temperature Profiles'\
@@ -943,7 +926,7 @@ class PlotGas(PlottingSession):
         
                                (default: 0)
         @type per_molecule: bool
-        @keyword unit: The radial unit. Can be 'cm' or 'rstar'
+        @keyword unit: The radial unit. Can be 'cm', 'au', 'm' or 'rstar'
         
                        (default: cm)
         @type unit: str
@@ -962,44 +945,27 @@ class PlotGas(PlottingSession):
         if cfg_dict.has_key('per_molecule'):
             per_molecule = cfg_dict['per_molecule']
         if cfg_dict.has_key('unit'):
-            unit = cfg_dict['unit']
-        if unit.lower() not in ['cm','rstar']: unit = 'cm'
+            unit = cfg_dict['unit'].lower()
+        
         #-- Dict to keep track of all data
         ddata = dict()
         for istar,star in enumerate(star_grid):
             if not star['LAST_GASTRONOOM_MODEL']: continue
             ddata[istar] = dict()
             for molec in star['GAS_LIST']: 
-                if not molec.getModelId(): continue
+                mid = molec.getModelId()
+                if not mid: continue
                 ddata[istar][molec.molecule] = dict()
-                rad = DataIO.getGastronoomOutput(\
-                        filename=os.path.join(os.path.expanduser('~'),\
-                                              'GASTRoNOoM',self.path,'models',\
-                                              molec.getModelId(),\
-                                              'cool1%s_%s.dat'\
-                                               %(molec.getModelId(),\
-                                                 molec.molecule)),\
-                        return_array=1)
-                if unit =='cm': rad = rad*star['R_STAR']*star.Rsun
+                rad = star.getGasRad(unit=unit,ftype='1',mstr=molec.molecule,
+                                     modelid=mid)
+                nh2 = star.getGasNumberDensity(ftype='1',mstr=molec.molecule,
+                                               modelid=mid)
+                nmol = star.getGasNumberDensity(molecule=1,ftype='1',\
+                                                mstr=molec.molecule,\
+                                                modelid=mid)
                 ddata[istar][molec.molecule]['rad'] = rad
-                ah2 = DataIO.getGastronoomOutput(\
-                        filename=os.path.join(os.path.expanduser('~'),\
-                                              'GASTRoNOoM',self.path,'models',\
-                                              molec.getModelId(),\
-                                              'cool1%s_%s.dat'\
-                                               %(molec.getModelId(),\
-                                                 molec.molecule)),\
-                        keyword='N(H2)',return_array=1)
-                ddata[istar][molec.molecule]['ah2'] = ah2
-                amol = DataIO.getGastronoomOutput(\
-                        filename=os.path.join(os.path.expanduser('~'),\
-                                              'GASTRoNOoM',self.path,'models',\
-                                              molec.getModelId(),\
-                                              'cool1%s_%s.dat'\
-                                               %(molec.getModelId(),\
-                                                 molec.molecule)),\
-                                keyword='N(MOLEC)',key_index=8,return_array=1)
-                ddata[istar][molec.molecule]['amol'] = amol
+                ddata[istar][molec.molecule]['nh2'] = nh2
+                ddata[istar][molec.molecule]['nmol'] = nmol
                 if molec.set_keyword_change_abundance:
                     cff = DataIO.readCols(molec.change_fraction_filename)
                     rfrac,frac = cff[0],cff[1]
@@ -1013,10 +979,10 @@ class PlotGas(PlottingSession):
                     #-            y_in=frac,gridsx=[rad])[0][0])
                 else:
                     frac_interpol = 1
-                abun = amol/ah2*frac_interpol   #*molec.abun_factor     GASTRoNOoM output already takes into account this factor.
+                abun = nmol/nh2*frac_interpol   #*molec.abun_factor     GASTRoNOoM output already takes into account this factor.
                 ddata[istar][molec.molecule]['abun'] = abun
                 ddata[istar][molec.molecule]['key'] = molec.molecule_plot
-                ddata[istar][molec.molecule]['id'] = molec.getModelId()
+                ddata[istar][molec.molecule]['id'] = mid
                 
             if not per_molecule:
                 #-- Collect all data
@@ -1039,6 +1005,8 @@ class PlotGas(PlottingSession):
                 
                 yaxis = '$n_\mathrm{molec}/n_{\mathrm{H}_2}$'
                 if unit == 'cm': xaxis = '$r$ (cm)'
+                elif unit =='au': xaxis = '$r$ (AU)'
+                elif unit == 'm': xaxis = '$r$ (m)'
                 else: xaxis = '$r$ (R$_\star$)'
                 #-- Make filename
                 pfn = os.path.join(os.path.expanduser('~'),\
@@ -1075,6 +1043,8 @@ class PlotGas(PlottingSession):
                 strmolec = ddata[0][molec]['key']
                 yaxis = '$n_\mathrm{%s}/n_{\mathrm{H}_2}$'%strmolec
                 if unit == 'cm': xaxis = '$r$ (cm)'
+                elif unit =='au': xaxis = '$r$ (AU)'
+                elif unit == 'm': xaxis = '$r$ (m)'
                 else: xaxis = '$r$ (R$_\star$)'
                 #-- Make filename
                 pfn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',
@@ -1157,10 +1127,10 @@ class PlotGas(PlottingSession):
             else:
                 transitions = star['GAS_LINES']
             if include_velocity:
-                radius,vel = star.getGasVelocity()
-                radius = radius/star['R_STAR']/star.Rsun
+                rad = star.getGasRad(unit='rstar')
+                vel = star.getGasVelocity()
                 vel = vel/10.**5
-                extra_pars['twiny_x'] = [radius]
+                extra_pars['twiny_x'] = [rad]
                 extra_pars['twiny_y'] = [vel]
                 extra_pars['twiny_keytags'] = [r'$v_\mathrm{g}$']
                 extra_pars['twinyaxis'] = r'$v_\mathrm{g}$ (km s$^{-1}$)' 
