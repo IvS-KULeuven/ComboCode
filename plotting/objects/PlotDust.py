@@ -478,9 +478,10 @@ class PlotDust(PlottingSession):
             real_models = [model for model in models if model]
             if not real_models: 
                 no_models = 1 
-                wavelengths = (8.,10.,13.)
             else:
                 wavelengths = sorted(real_models[0]['wavelength'].keys())
+        
+        if no_models: wavelengths = (8.,10.,13.)
         
         #-- Grab the MIDI spectrum
         fn = self.sed.data_filenames[self.sed.data_types.index('MIDI')]
@@ -530,13 +531,13 @@ class PlotDust(PlottingSession):
             
             #-- Set the plot x and y
             bls = [k for k in sorted(ddf.keys())]
-            ddict['x'] = [[[bl] for bl in bls]]
-            ddict['y'] = [[[ddf[bl]['y'][argmin(abs(ddf[bl]['x']-w))]]
+            ddict['x'] = [[bl for bl in bls]]
+            ddict['y'] = [[ddf[bl]['y'][argmin(abs(ddf[bl]['x']-w))]
                            for bl in bls]]
-            ddict['yerr'] = [[[ddf[bl]['yerr'][argmin(abs(ddf[bl]['x']-w))]]
+            ddict['yerr'] = [[ddf[bl]['yerr'][argmin(abs(ddf[bl]['x']-w))]
                               for bl in bls]]
             #-- Set limits and labels
-            ddict['labels'] = [('MIDI %s $\\mu$m'%w,0.05,0.9)]
+            ddict['labels'] = [('MIDI %s $\\mu$m'%w,0.85,0.9)]
             
             if no_models:
                 continue

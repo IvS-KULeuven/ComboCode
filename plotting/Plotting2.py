@@ -226,6 +226,26 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                    
                         (default: 0)
     @type ylogscale: bool
+    @keyword xmin: if default then autoscaling is done, otherwise min x value.
+                   Only used when ddict entries are not defined.
+                   
+                   (default: None)
+    @type xmin: float
+    @keyword xmax: if default then autoscaling is done, otherwise max x value
+                   Only used when ddict entries are not defined.
+                   
+                   (default: None)
+    @type xmax: float
+    @keyword ymin: if default then autoscaling is done, otherwise min y value
+                   Only used when ddict entries are not defined.
+                   
+                   (default: None)
+    @type ymin: float
+    @keyword ymax: if default then autoscaling is done, otherwise max y value
+                   Only used when ddict entries are not defined.
+                   
+                   (default: None)
+    @type ymax: float
     @keyword transparent: for a transparent background
                           
                           (default: 0)
@@ -341,6 +361,10 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
     keytags=kwargs.get('keytags',[])
     legend_numpoints=kwargs.get('legend_numpoints',1)
     line_types=kwargs.get('line_types',[])
+    xmin=kwargs.get('xmin',None)
+    xmax=kwargs.get('xmax',None)
+    ymin=kwargs.get('ymin',None)
+    ymax=kwargs.get('ymax',None)
     wspace = kwargs.get('wspace',0.2)
     hspace = kwargs.get('hspace',0.2)
     ws_bot = kwargs.get('ws_bot',0.1)
@@ -398,13 +422,13 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
         if not ddict.has_key('labels'):
             ddict['labels'] = []
         if not ddict.has_key('xmin'):
-            ddict['xmin'] = None
+            ddict['xmin'] = xmin
         if not ddict.has_key('xmax'):
-            ddict['xmax'] = None
+            ddict['xmax'] = xmax
         if not ddict.has_key('ymin'):
-            ddict['ymin'] = None
+            ddict['ymin'] = ymin
         if not ddict.has_key('ymax'):
-            ddict['ymax'] = None
+            ddict['ymax'] = ymax
         if not ddict.has_key('line_labels'):
             ddict['line_labels'] = []
         if not ddict.has_key('xaxis'):
