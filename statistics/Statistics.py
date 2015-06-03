@@ -118,11 +118,11 @@ class Statistics(object):
         
         @keyword stat_method: Std/Mean/RMS determination method for unresolved
                               data. Options:
-                              - 'clipping': 1-sigma clipping based on std/... 
-                                            of full spectrum, then takes 
-                                            std/... of clipped spectrum. 
-                              - 'preset': wavelength ranges for std/... 
-                                          determination taken from Data.dat.
+                                - 'clipping': 1-sigma clipping based on std/... 
+                                              of full spectrum, then takes 
+                                              std/... of clipped spectrum. 
+                                - 'preset': wavelength ranges for std/... 
+                                            determination taken from Data.dat.
                          
                               (default: 'clipping')
         @type stat_method: string
@@ -314,9 +314,6 @@ class Statistics(object):
         Read data info from the ComboCode/Data/Data.dat file. Will return
         information such as sigma levels and wavelength range for determining
         the std value. 
-        
-        @param instrument: The instrument for which you want this information.
-        @type instrument: string
         
         '''
         

@@ -195,14 +195,12 @@ def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,dtype='all'):
                     'resolved': return all resolved lines,
                     'unresolved': return all unresolved lines, 
                     'pacs'/'spire'/'apex'/'jcmt'/...: return all telescope or 
-                                                      instrument specific lines
-                                                      selection is based on 
-                                                      presence of string in 
-                                                      telescope name.
+                    instrument specific lines selection is based on presence of
+                    string in telescope name.
                     Invalid definitions return an empty list.
                     
                     (default: 'all')
-    @type pacs: str
+    @type dtype: str
     
     @return: a list of unique transitions included in all Star() objects in
              star_grid

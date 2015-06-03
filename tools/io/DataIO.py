@@ -255,7 +255,8 @@ def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
      
                         (default: '=')
     @type delimiter: string
-    @keyword comment_chars: single character strings setting the comment characters
+    @keyword comment_chars: single character strings setting the comment 
+                            characters
      
                             (default: ['#'])
     @type comment_chars: list of strings
@@ -285,10 +286,7 @@ def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
     '''
      
     lines = readFile(filename)
-    if len(comment_chars) > 1:
-        for char in comment_chars[1:]:
-            lines = [line.replace(char,comment_chars[0]) for line in lines]
-    lines = [line.partition(comment_chars[0])[0] for line in lines]
+    lines, comments = removeComments(lines,comment_chars=comment_chars)
     #- Make sure the final character in a value definition doesn't drop off
     #- when splitting the line, in case there's no comment character on the line.
     newdict = dict()
@@ -474,8 +472,39 @@ def printRecArray(recarr,precision=8):
 
 
 
+def removeComments(lines,comment_chars=['#','!',';']):
+
+    '''
+    Split input from comments and return both as separate lists.
+    
+    Takes a list of strings, such as what readFile returns. 
+    
+    @param lines: The strings in a file
+    @type lines: list[str]
+    
+    @keyword comment_chars: single character strings setting the comment 
+                            characters
+     
+                            (default: ['#','!'])
+    @type comment_chars: list[str]
+    
+    @return: The input and the comment lines in two separate lists
+    @rtype: (list,list)
+    
+    '''
+
+    if len(comment_chars) > 1:
+        for char in comment_chars[1:]:
+            lines = [line.replace(char,comment_chars[0]) for line in lines]
+    data = [line.partition(comment_chars[0])[0] for line in lines]
+    comments = [line.partition(comment_chars[0])[2] for line in lines]
+    return (data,comments)
+    
+
+
 def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
-             nans=0,start_from_keyword=''):
+             nans=0,start_from_keyword='',return_comments=0,\
+             comment_chars=['#','!',';']):
     
     '''
     Read columns, remove comments and turn into floats.
@@ -504,66 +533,56 @@ def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
                    
                    (default: 0)
     @type nans: bool
-    @keyword start_from_keyword: Start returning data from the line that starts
-                                 with a given keyword. Only used if not 
+    @keyword start_from_keyword: Start returning data from the line that
+                                 contains a given keyword. Only used if not 
                                  default. The start_row parameter counts from 
                                  this index onward. (not case sensitive)
                                  
                                  (default: '')
     @type start_from_keyword: string
+    @keyword return_comments: Return the comments list in addition to the data
     
-    @return: The columns are returned
-    @rtype: (list or array)
+                              (default: 0)
+    @type return_comments: bool
+    @keyword comment_chars: single character strings setting the comment 
+                            characters
+     
+                            (default: ['#','!',';'])
+    @type comment_chars: list[str]
+    
+    @return: The columns are returned, with in addition the comments if 
+             requested
+    @rtype: list[list or array] or (list[list or array],list[str])
     
     '''
     
-    lines = readFile(filename,delimiter=delimiter)
+    lines = readFile(filename)
     if str(start_from_keyword):
-        i = 0
-        while lines[i][0].upper().find(start_from_keyword.upper()) == -1:
-            i += 1
-        lines = lines[i:]
+        #-- Find occurrences of searchstring
+        indices = [i for i,line in enumerate(lines) 
+                     if line.upper().find(start_from_keyword.upper() != -1)]
+        #-- If any were found, grab the first and cut the lines above it
+        if indices: lines = lines[indices[0]:]
+    #-- Cut anything above start row
     lines = lines[start_row:]
-    lines = removeComments(lines,delimiter)
+    #-- Remove the comments and empty lines, then split the lines
+    lines,comments = removeComments(lines,comment_chars=comment_chars)
+    lines = [line for line in lines if line]
+    lines = splitLines(lines,delimiter=delimiter)
     if not lines:
         print 'WARNING from DataIO.readCols! No numerical data ' + \
               'are available in %s. Returning empty list.'%filename
         return []
+    
+    #-- Apply requests for floatsand arrays and return.
     if make_float:
         lines = [[convertFloat(l,nans=nans) for l in line] for line in lines]
+    ndata = len(lines[0])
     if make_array and make_float:    
-        return [array([line[i] for line in lines]) 
-                for i in xrange(len(lines[0]))]
+        lines = [array([line[i] for line in lines]) for i in xrange(ndata)]
     else:
-        return [[line[i] for line in lines] for i in xrange(len(lines[0]))]
-      
-      
-      
-def removeComments(lines,delimiter=' '):
-    
-    '''
-    Remove all commented lines and comments in the lines.
-    
-    @param lines: the lines to be checked. They are assumed to be split in sub-
-                  strings
-    @type lines: list[list[string]]
-    
-    @keyword delimiter: The delimiter used when reading the file
-    
-                        (default: ' ')
-    @type delimiter: string
-    
-    '''
-    
-    comment_chars = ['#','!',';']
-    lines = [line 
-             for line in lines 
-             if delimiter.join(line)[0] not in comment_chars]
-    for char in comment_chars:
-        lines = [[entry.find(char) != -1 and entry[:entry.find(char)] or entry 
-                  for entry in line] 
-                 for line in lines]
-    return lines
+        lines = [[line[i] for line in lines] for i in xrange(ndata)]
+    return return_comments and (lines,comments) or lines
 
 
 

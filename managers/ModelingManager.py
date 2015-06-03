@@ -255,7 +255,7 @@ class ModelingManager():
                 #-- If last iteration and no mline is requested, don't run 
                 #   cooling. There is no point anyway (and means you don't have 
                 #   to wait for your MCMax model. 
-                if (i+1 == self.iterations) and not gas_session.molec_list:
+                if (i+1 == self.iterations) and not star['GAS_LIST']:
                     continue
                 
                 print '***********************************'

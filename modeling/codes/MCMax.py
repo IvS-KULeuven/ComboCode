@@ -82,18 +82,34 @@ def readVisibilities(dpath,fn_vis='visibility01.0.dat'):
                       (default: visibility01.0.dat)
     @type fn_spec: str
     
-    @return: The wavelength (or baseline), flux, visibility and phase grid 
-             (micron,Jy,,) or (m,Jy,,)
-    @rtype: (array,array,array,array)
+    @return: A dictionary containing either wavelength or baseline, the flux, 
+             and the visibilities for either given baselines or wavelengths
+    @rtype: dict
      
     '''
     
+    #-- Read file and 
     dfile = os.path.join(dpath,fn_vis)
     if not os.path.isfile(dfile):
-        return [],[],[],[]
-    data = DataIO.readCols(dfile)
-    return data[0],data[1],data[2],data[3]
+        return dict()
+    cols, comments = DataIO.readCols(dfile,return_comments=1)
+    comments = [comment for comment in comments if comment]
     
+    if 'visibility' in fn_vis: 
+        xtype = 'wavelength'
+        seltype = 'baseline'
+    elif 'basevis' in fn_vis: 
+        xtype = 'baseline'
+        seltype = 'wavelength'
+    model = dict()
+    model[xtype] = cols[0]
+    model['flux'] = cols[1]
+    model[seltype] = dict()
+    for i,comment in enumerate(comments[2:]):
+        val = float(comment.partition(seltype)[2].partition(',')[0])
+        model[seltype][val] = cols[2+i]
+    return model
+
 
 
 def rayTraceSpectrum(model_id,path_mcmax='runTestDec09',inputfilename='',\

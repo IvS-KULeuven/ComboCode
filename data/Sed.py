@@ -8,7 +8,7 @@ Author: R. Lombaert
 """
 
 import os
-from scipy import array, hstack
+from scipy import array, hstack, argsort
 from scipy.optimize import leastsq
 from scipy.interpolate import interp1d
 from scipy.integrate import trapz
@@ -275,14 +275,20 @@ class Sed(object):
         
         for dt,fn in zip(self.data_types,self.data_filenames):
             data = DataIO.readCols(fn,nans=1)
-            if dt == 'Photometric_IvS': 
-                self.data_raw[(dt,fn)] = (data[0],data[1],data[2])
+            #-- Currently, error bars only available for these types of data.
+            if dt == 'Photometric_IvS' or 'MIDI' in dt or 'Sacha' in dt: 
+                #-- Sort MIDI data
+                if 'MIDI' in dt: 
+                    cdat = [dd[(data[0]<=13.)*(data[0]>=8.)] for dd in data]
+                    i = argsort(cdat[0])
+                    self.data_raw[(dt,fn)] = (cdat[0][i],cdat[1][i],cdat[2][i])
+                else:
+                    self.data_raw[(dt,fn)] = (data[0],data[1],data[2])
             else:
-                data_sorted = array([(x,y) 
-                                 for x,y in sorted(zip(data[0],data[1]),\
-                                                   key=operator.itemgetter(0)) 
-                                 if y])
-                self.data_raw[(dt,fn)] = (data_sorted[:,0],data_sorted[:,1])
+                #-- Still sorting for PACS. Obsolete when separate bands for 
+                #   PACS are available. 
+                i = argsort(data[0])
+                self.data_raw[(dt,fn)] = (data[0][i],data[1][i])
             
         #print '** LWS is not being aligned automatically with SWS for now.'
         #- Check if SWS and LWS are present (for now, LWS is not aligned automatically)

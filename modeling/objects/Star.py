@@ -817,8 +817,7 @@ class Star(dict):
                        'm'
         
                        (default: 'cm')
-        
-        @return: the radial grid (cm)
+        @type unit: str
         
         @return: array giving the radial grid.
         @rtype: array
@@ -1054,6 +1053,10 @@ class Star(dict):
         '''
         
         if not self['LAST_GASTRONOOM_MODEL']: return empty(0)
+        
+        #-- coolrate***.dat does not give radii.
+        if ftype == 'rate': return empty(0)
+        
         unit = str(unit).lower()
         fgr_file = self.getCoolFn(ftype=ftype,**kwargs)
         rad = DataIO.getGastronoomOutput(filename=fgr_file,keyword='RADIUS',\

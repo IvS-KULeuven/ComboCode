@@ -12,7 +12,7 @@ import os
 import subprocess
 import pyfits
 import glob
-from scipy import array
+from scipy import array,sqrt,argmin
 
 from cc.plotting.PlottingSession import PlottingSession
 from cc.plotting import Plotting2
@@ -170,21 +170,26 @@ class PlotDust(PlottingSession):
         keytags = []
         data_x = []
         data_y = []
+        data_err = []
         line_types = []
-        for (dt,fn),(w,f) in sorted([dset
+        for (dt,fn),tdata in sorted([dset
                                      for dset in self.sed.data.items()
                                      if 'PHOT' not in dset[0][0].upper()]):
              keytags.append(data_labels[dt][0])
-             data_x.append(self.sed.data[(dt,fn)][0])
-             data_y.append(self.sed.data[(dt,fn)][1])
+             data_x.append(tdata[0])
+             data_y.append(tdata[1])
+             #data_err.append(tdata[2])
+             #-- For now, no error bars for spectra. 
+             data_err.append(None)
              line_types.append(data_labels[dt][1])
         
-        for (dt,fn),(w,f) in sorted([dset 
-                                     for dset in self.sed.data.items()
-                                     if 'PHOT' in dset[0][0].upper()]):
+        for (dt,fn),(w,f,err) in sorted([dset
+                                         for dset in self.sed.data.items()
+                                         if 'PHOT' in dset[0][0].upper()]):
              keytags.append(data_labels[dt][0])
-             data_x.append(self.sed.data[(dt,fn)][0])
-             data_y.append(self.sed.data[(dt,fn)][1])
+             data_x.append(w)
+             data_y.append(f)
+             data_err.append(err)
              line_types.append(data_labels[dt][1])
         
         #- Collect model data as well as keytags and set line types
@@ -203,6 +208,7 @@ class PlotDust(PlottingSession):
             w,f = MCMax.readModelSpectrum(dpath,rt_sed)
             data_x.append(w)
             data_y.append(f)
+            data_err.append(None)
             keytags.append(model_id.replace('_','\_'))
 
         line_types += [0]*len(star_grid)
@@ -216,7 +222,8 @@ class PlotDust(PlottingSession):
             extra_pars['ymin'] = 0.5*min([min(dy) for dy in data_y])
         except ValueError:
             pass        
-        filename = Plotting2.plotCols(x=data_x,y=data_y,filename=fn_plt,\
+        filename = Plotting2.plotCols(x=data_x,y=data_y,yerr=data_err,\
+                                      filename=fn_plt,\
                                       figsize=(20,10),number_subplots=1,\
                                       plot_title=plot_title,fontsize_axis=20,\
                                       keytags=keytags,fontsize_title=24,\
@@ -293,56 +300,73 @@ class PlotDust(PlottingSession):
                                 os.path.split(self.inputfilename)[1])],\
                             shell=True)
 
-        #-- Currently only MIDI is implemented. 
-        #   Assumption: inc=01 is baseline 46.5m   
-        #               inc=02 is baseline 51.4m
-        #               inc=03 is baseline 60.6m
-        baseline = dict([('46.5m','visibility01.0.dat'),\
-                         ('54.4m','visibility02.0.dat'),\
-                         ('60.6m','visibility03.0.dat')])
-
+        #-- Select MIDI data. Assumes baseline at the end of the filename.
         ssd = os.path.join(self.corrflux_path,self.star_name,\
                            '_'.join([self.star_name,'MIDI','*.fits']))
-        ggd = dict([(gi[-10:-5],gi) for gi in glob.glob(ssd)
-                    if gi[-10:-5] in ('46.5m','54.4m','60.6m')])
-        
-        #-- prepare and collect data, keytags and line types
-        data = []
-        for k,v in sorted(ggd.items()):
-            ddict = dict()
-            data.append(ddict)
-            
-            #-- Extract data from the fits file
-            dfits = pyfits.open(v)
-            x = 1e6*dfits['OI_WAVELENGTH'].data['EFF_WAVE']
-            ddict['x'] = [x]
-            ddict['y'] = [dfits['OI_VIS'].data['VISAMP'][0]]
-            ddict['yerr'] = [dfits['OI_VIS'].data['VISAMPERR'][0]]
-            dfits.close()
-            #-- Wavelength limits between 8 and 13 micron, limits of the N band
-            #   atmospheric transmission. Outside these ranges, the flux is not
-            #   relevant
-            ddict['xmin'] = 8
-            ddict['xmax'] = 13
-            ddict['ymin'] = -0.1
-            ddict['ymax'] = 1.3*max(ddict['y'][0][(x<13)*(x>8)])
-            ddict['labels'] = [('MIDI %s'%k,0.05,0.9)]
-            
-            if no_models:
-                continue
-            #-- Extract models from the model folders
+        files = [os.path.splitext(gi)[0] for gi in glob.glob(ssd)]
+        ggd = dict([(float(gi.split('_')[-1].strip('m')),gi+'.fits') 
+                    for gi in files])
+
+        #-- Read the models
+        models = []
+        if not no_models:
             for s in star_grid:
                 model_id = s['LAST_MCMAX_MODEL']
                 dpath = os.path.join(os.path.expanduser('~'),'MCMax',\
                                      self.path,'models',model_id)
-                model = MCMax.readVisibilities(dpath=dpath,fn_vis=baseline[k])
-                ddict['x'].append(model[0])
-                if model[1] != []:
-                    ddict['y'].append(model[1]*model[2])
-                else:
-                    ddict['y'].append([])
+                model = MCMax.readVisibilities(dpath=dpath,\
+                                               fn_vis='visibility01.0.dat')
+                models.append(model)
+            real_models = [model for model in models if model]
+            if not real_models: 
+                no_models = 1 
+                baselines = sorted(ggd.keys())
+            else:
+                baselines = sorted(real_models[0]['baseline'].keys())
+        
+        #-- prepare and collect data, keytags and line types
+        data = []
+        for bl in baselines:
+            ddict = dict()
+            data.append(ddict)
+
+            #-- Extract data from the fits file
+            if ggd.has_key(bl): 
+                dfits = pyfits.open(ggd[bl])
+                x = 1e6*dfits['OI_WAVELENGTH'].data['EFF_WAVE'][::-1]
+                ddict['x'] = [x]
+                ddict['y'] = [dfits['OI_VIS'].data['VISAMP'][0]][::-1]
+                ddict['yerr'] = [dfits['OI_VIS'].data['VISAMPERR'][0]][::-1]
+                dfits.close()
+            else:
+                ddict['x'] = []
+                ddict['y'] = []
+                ddict['yerr'] = []
+                                
+            if no_models:
+                continue
+           
+            #-- Extract models from the model folders
+            for model in models:
                 ddict['yerr'].append(None)
+                if not model: 
+                    ddict['x'].append([])
+                    ddict['y'].append([])
+                    continue
+                ddict['x'].append(model['wavelength'])
+                ddict['y'].append(model['flux']*model['baseline'][bl])
             
+            #-- Set some plot limits
+            ddict['xmin'] = 8
+            ddict['xmax'] = 13
+            ddict['ymin'] = -0.1
+            ddict['labels'] = [('MIDI %.1f m'%bl,0.05,0.9)]
+            #-- Wavelength limits between 8 and 13 micron, limits of the N band
+            #   atmospheric transmission. Outside these ranges, the flux is not
+            #   relevant
+            ddict['ymax'] = 1.1*max([max(iy[(ix<=13.)*(ix>=8.)]) 
+                                     for ix,iy in zip(ddict['x'],ddict['y'])
+                                     if iy[(ix<=13.)*(ix>=8.)].size])
         kwargs = dict()
         kwargs['keytags'] = ['MIDI']
         if not no_models:
@@ -350,7 +374,7 @@ class PlotDust(PlottingSession):
                                       for s in star_grid])
         kwargs['xaxis'] = '$\lambda$ ($\mu$m)'
         kwargs['yaxis'] = 'Corr.~FLux (Jy)'
-        kwargs['dimensions'] = (1,4)
+        kwargs['dimensions'] = (1,len(data)+1)
         kwargs['figsize'] = (10,15)
         kwargs['fontsize_axis'] = 20
         kwargs['fontsize_ticklabels'] = 20
@@ -371,23 +395,20 @@ class PlotDust(PlottingSession):
                  
                  
                  
-    def plotVisibilities(self,wav,star_grid=[],cfg='',no_models=0,\
+    def plotVisibilities(self,star_grid=[],cfg='',no_models=0,\
                          fn_add_star=0):
         
         """ 
-        Plot correlated fluxes as a function of baseline.
+        Plot visibilities as a function of baseline.
         
-        Requires wavelengths to be requested.
-        
+        Wavelengths plotted are what is requested in the ray tracing
+
         Includes data preparation on the spot.
         
-        Data location is that of correlated flux, but not required. Models can
-        be plotted without data.
+        Data location is that of correlated flux (for the visibilities), but 
+        also requires an sed object to retrieve the MIDI spectrum. If one of 
+        them is not available, models are be plotted without data.
 
-        @param wav: The wavelengths (in micron) at which the visibilities
-                    are plotted. 
-        @type wav: list[float]
-        
         @keyword star_grid: list of Star() models to plot. If star_grid is [], 
                             only data are plotted.
                             
@@ -409,16 +430,20 @@ class PlotDust(PlottingSession):
         
         """
         
+        if not self.corrflux_path:
+            print 'No CORRFLUX_PATH given. Aborting...'
+            return
+        if not self.sed or 'MIDI' not in self.sed.data_types:
+            print 'No SED_PATH given or no MIDI spectral data found. Aborting.'
+            return
+        
         print '***********************************'
         print '** Creating Visibilities plot.'
-        
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('no_models'):
             no_models = cfg_dict['no_models']
         if cfg_dict.has_key('fn_add_star'):
             fn_add_star = bool(cfg_dict['fn_add_star'])
-        if cfg_dict.has_key('wav'):
-            wav = cfg_dict['wav']        
         if cfg_dict.has_key('filename'):
             fn_plt = cfg_dict['filename']
             del cfg_dict['filename']
@@ -429,7 +454,7 @@ class PlotDust(PlottingSession):
         if not fn_plt:
             fn_plt = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
                                   'stars',self.star_name,self.plot_id,\
-                                  'CorrFluxBaseline')
+                                  'Visibilities')
         if fn_add_star:
             fn_plt = '_'.join([fn_plt,self.star_name])
         
@@ -440,71 +465,100 @@ class PlotDust(PlottingSession):
                                 os.path.split(self.inputfilename)[1])],\
                             shell=True)
 
-        #-- Currently only MIDI is implemented. 
-        #   Assumption: inc=01 is baseline 46.5m   
-        #               inc=02 is baseline 51.4m
-        #               inc=03 is baseline 60.6m
-        baseline = dict([('46.5m','visibility01.0.dat'),\
-                         ('54.4m','visibility02.0.dat'),\
-                         ('60.6m','visibility03.0.dat')])
-
+        #-- Read the models. Wavelengths are taken from the ray-tracing output
+        models = []
+        if not no_models:
+            for s in star_grid:
+                model_id = s['LAST_MCMAX_MODEL']
+                dpath = os.path.join(os.path.expanduser('~'),'MCMax',\
+                                     self.path,'models',model_id)
+                model = MCMax.readVisibilities(dpath=dpath,\
+                                               fn_vis='basevis01.0.dat')
+                models.append(model)
+            real_models = [model for model in models if model]
+            if not real_models: 
+                no_models = 1 
+                wavelengths = (8.,10.,13.)
+            else:
+                wavelengths = sorted(real_models[0]['wavelength'].keys())
+        
+        #-- Grab the MIDI spectrum
+        fn = self.sed.data_filenames[self.sed.data_types.index('MIDI')]
+        midi_flux = self.sed.data[('MIDI',fn)][1]
+        midi_err = self.sed.data[('MIDI',fn)][2]
+        midi_relerr = (midi_err/midi_flux)**2
+        
+        #-- Select MIDI data. Assumes baseline at the end of the filename.
         ssd = os.path.join(self.corrflux_path,self.star_name,\
                            '_'.join([self.star_name,'MIDI','*.fits']))
-        ggd = dict([(gi[-10:-5],gi) for gi in glob.glob(ssd)
-                    if gi[-10:-5] in ('46.5m','54.4m','60.6m')])
+        files = [os.path.splitext(gi)[0] for gi in glob.glob(ssd)]
+        ggd = dict([(float(gi.split('_')[-1].strip('m')),gi+'.fits') 
+                    for gi in files])
         
-        #-- Collect MIDI data from the fits file
+        #-- Collect MIDI data from the fits file and calculate visibilities
         ddf = dict()
         for k,v in sorted(ggd.items()):
-            dfits = pyfits.open(v)
             ddf[k] = dict()
-            ddf['x'] = 1e6*dfits['OI_WAVELENGTH'].data['EFF_WAVE']
-            ddf['y'] = dfits['OI_VIS'].data['VISAMP'][0]
-            ddf['yerr'] = dfits['OI_VIS'].data['VISAMPERR'][0]
+            dfits = pyfits.open(v)
+            
+            #-- Read the wavelength
+            cwave = 1e6*dfits['OI_WAVELENGTH'].data['EFF_WAVE'][::-1]
+            
+            #-- Read flux + err and select the right range
+            cflux = dfits['OI_VIS'].data['VISAMP'][0][::-1]
+            cflux = cflux[(cwave<=13.)*(cwave>=8.)]
+            cflux_err = dfits['OI_VIS'].data['VISAMPERR'][0][::-1]
+            cflux_err = cflux_err[(cwave<=13.)*(cwave>=8.)]
+            
+            #-- The visibilities are correlated flux divided by real flux
+            ddf[k]['y'] = cflux/midi_flux
+            
+            #-- Error propagation
+            cflux_relerr = (cflux_err/cflux)**2
+            yerr = sqrt(midi_relerr + cflux_relerr)*cflux/midi_flux
+            ddf[k]['yerr'] = yerr
+            
+            #-- Wavelength grid
+            ddf[k]['x'] = cwave[(cwave<=13.)*(cwave>=8.)]
             dfits.close()
         
         #-- prepare and collect plot data, keytags and line types
         data = []
-        for w in wav:
+        for w in wavelengths:
             ddict = dict()
             data.append(ddict)
             
             #-- Set the plot x and y
             bls = [k for k in sorted(ddf.keys())]
-            ddict['x'] = [float(bl.strip('m')) for bl in bls]
-            ddict['y'] = [ddf[bl]['y'][argmin(abs(ddf[bl]['x']-w))] 
-                          for bl in bls]
-            ddict['yerr'] = [ddf[bl]['yerr'][argmin(abs(ddf[bl]['x']-w))] 
-                             for bl in bls]
-            
-            ddict['ymin'] = -0.1
-            ddict['ymax'] = 1.3*max(ddict['y'][0][(x<13)*(x>8)])
-            ddict['labels'] = [('MIDI %s'%k,0.05,0.9)]
+            ddict['x'] = [[[bl] for bl in bls]]
+            ddict['y'] = [[[ddf[bl]['y'][argmin(abs(ddf[bl]['x']-w))]]
+                           for bl in bls]]
+            ddict['yerr'] = [[[ddf[bl]['yerr'][argmin(abs(ddf[bl]['x']-w))]]
+                              for bl in bls]]
+            #-- Set limits and labels
+            ddict['labels'] = [('MIDI %s $\\mu$m'%w,0.05,0.9)]
             
             if no_models:
                 continue
             
             #-- Extract models from the model folders
-            for s in star_grid:
-                model_id = s['LAST_MCMAX_MODEL']
-                dpath = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                     self.path,'models',model_id)
-                model = MCMax.readVisibilities(dpath=dpath,fn_vis=baseline[k])
-                ddict['x'].append(model[0])
-                if model[1] != []:
-                    ddict['y'].append(model[1]*model[2])
-                else:
-                    ddict['y'].append([])
+            for model in models:
                 ddict['yerr'].append(None)
-            
+                if not model: 
+                    ddict['x'].append([])
+                    ddict['y'].append([])
+                    continue
+                ddict['x'].append(model['baseline'])
+                ddict['y'].append(model['wavelength'][w])
+                            
         kwargs = dict()
         kwargs['keytags'] = ['MIDI']
         if not no_models:
             kwargs['keytags'].extend([s['LAST_MCMAX_MODEL'].replace('_','\_') 
                                       for s in star_grid])
-        kwargs['xaxis'] = '$\lambda$ ($\mu$m)'
-        kwargs['yaxis'] = 'Corr.~FLux (Jy)'
-        kwargs['dimensions'] = (1,4)
+        kwargs['xaxis'] = 'Baseline (m)'
+        kwargs['yaxis'] = 'Visibility'
+        kwargs['dimensions'] = (1,len(data)+1)
         kwargs['figsize'] = (10,15)
         kwargs['fontsize_axis'] = 20
         kwargs['fontsize_ticklabels'] = 20
@@ -518,6 +572,7 @@ class PlotDust(PlottingSession):
         kwargs['ws_top'] = 0.99
         kwargs['ws_left'] = 0.10
         kwargs['ws_right'] = 0.98
+
         filename = Plotting2.plotTiles(data=data,filename=fn_plt,**kwargs)
         print '** Your Correlated Flux plots can be found at:'
         print filename
