@@ -1,7 +1,7 @@
 # Welcome to the ComboCode README file
 If you want to get started with ComboCode, read this file first. That's why it's the README file (u-hu).
 
-## Introduction
+## Introduction & User Manual
 ### What is ComboCode?
 ComboCode is a Python based package designed to work with radiative-transfer codes and the data they are meant to model. 
 The radiative transfer is usually calculated for cool stellar winds of evolved stars, such as AGB stars.
@@ -39,3 +39,12 @@ This is a work in progress!
 Up-to-date documentation that goes with the package is available on GitHub at:
 
 <a href="https://robinlombaert.github.io/ComboCode"> ComboCode Documentation</a>
+
+## Requirements
+TBD
+
+## Developer's Manual
+TBD
+
+
+
