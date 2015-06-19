@@ -802,6 +802,41 @@ class Star(dict):
 
 
 
+    def getDustFn(self,species=''):
+        
+        '''
+        Return the dust output filename for density and temperature.
+        
+        You can choose the species for which the output file is retrieved. 
+        Unless thermal contact for this model is on. 
+        
+        @keyword ftype: The species for which dust info is read. Default if the
+                        average profiles are requested. Can be any species in 
+                        Dust.dat as long as the model calculation included it.
+                      
+                        (default: '')
+        @type ftype: str
+        
+        @return: The filename of the requested dust output file.
+        @rtype: str
+        
+        '''
+        
+        fp = os.path.join(os.path.expanduser('~'),'MCMax',self.path_mcmax,\
+                            'models',self['LAST_MCMAX_MODEL'])
+        
+        #- if T_CONTACT: no specific species denstemp files, 
+        #- so denstemp.dat is taken
+        if species and not self['T_CONTACT']:
+            ispecies = self.getDustList().index(species)
+            fn = os.path.join(fp,'denstempP%.2i.dat'%(ispecies+1))
+        else:
+            fn = os.path.join(fp,'denstemp.dat')
+        
+        return fn
+        
+        
+        
     def getDustRad(self,species='',unit='cm'):
         
         '''
@@ -826,15 +861,7 @@ class Star(dict):
 
         if not self['LAST_MCMAX_MODEL']: return empty(0)
     
-        fp = os.path.join(os.path.expanduser('~'),'MCMax',self.path_mcmax,\
-                            'models',self['LAST_MCMAX_MODEL'])
-        #- if T_CONTACT: no specific species denstemp files, 
-        #- so denstemp.dat is taken
-        if species and not self['T_CONTACT']:
-            ispecies = self.getDustList().index(species)
-            fn = os.path.join(fp,'denstempP%.2i.dat'%ispecies)
-        else:
-            fn = os.path.join(fp,'denstemp.dat')
+        fn = self.getDustFn(species)
         rad = array(DataIO.getMCMaxOutput(incr=int(self['NRAD']),\
                                           keyword='RADIUS',filename=fn))
         
@@ -845,6 +872,7 @@ class Star(dict):
             rad = rad/self.Rsun/self['R_STAR']
         elif unit == 'm':
             rad = rad*10**-2
+            
         return rad   
     
     
@@ -870,11 +898,10 @@ class Star(dict):
         '''
         
         if not self['LAST_MCMAX_MODEL']: return empty(0)
-        fn = os.path.join(os.path.expanduser('~'),'MCMax',self.path_mcmax,\
-                            'models',self['LAST_MCMAX_MODEL'],'denstemp.dat')
         
         #-- Read the dust density profile and reduce the array by averaging
         #   over the azimuthal coordinate.
+        fn = self.getDustFn(species)
         incr = int(self['NRAD'])*int(self['NTHETA'])
         dens_ori = DataIO.getMCMaxOutput(filename=fn,incr=incr,\
                                          keyword='DENSITY')
@@ -917,18 +944,9 @@ class Star(dict):
         if not self['LAST_MCMAX_MODEL']: 
             return add_key and (empty(0),'') or empty(0)
 
-        fp = os.path.join(os.path.expanduser('~'),'MCMax',self.path_mcmax,\
-                            'models',self['LAST_MCMAX_MODEL'])
-        #- if T_CONTACT: no specific species denstemp files, 
-        #- so denstemp.dat is taken
-        if species and not self['T_CONTACT']:
-            ispecies = self.getDustList().index(species)
-            fn = os.path.join(fp,'denstempP%.2i.dat'%ispecies)
-        else:
-            fn = os.path.join(fp,'denstemp.dat')
-
         #-- Read the dust temperature profile and reduce the array by averaging
         #   over the azimuthal coordinate.
+        fn = self.getDustFn(species)
         incr = int(self['NRAD'])*int(self['NTHETA'])
         temp_ori = DataIO.getMCMaxOutput(incr=incr,keyword='TEMPERATURE',\
                                          filename=fn)
@@ -2085,7 +2103,7 @@ class Star(dict):
                     #-- Take the reciprocal relation of the dust temperature
                     #   profile (such as in Profiler.dustTemperaturePowerLaw())
                     #   rmax is in Rstar!
-                    rmax = (tmin/self['T_STAR'])**(-1/power)/2.
+                    rmax = (tmin/self['T_STAR'])**(1/power)/2.
                 self[missing_key] = rmax
             except KeyError:
                 self[missing_key] = None

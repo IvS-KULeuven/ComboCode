@@ -12,11 +12,12 @@ import os
 import subprocess
 import pyfits
 import glob
-from scipy import array,sqrt,argmin
+from scipy import array
+import numpy as np
 
 from cc.plotting.PlottingSession import PlottingSession
 from cc.plotting import Plotting2
-from cc.tools.io import DataIO
+from cc.tools.io import DataIO, KappaReader
 from cc.modeling.objects import Star
 from cc.modeling.codes import MCMax
 from cc.modeling.tools import Profiler
@@ -350,8 +351,8 @@ class PlotDust(PlottingSession):
             for model in models:
                 ddict['yerr'].append(None)
                 if not model: 
-                    ddict['x'].append([])
-                    ddict['y'].append([])
+                    ddict['x'].append(np.empty(0))
+                    ddict['y'].append(np.empty(0))
                     continue
                 ddict['x'].append(model['wavelength'])
                 ddict['y'].append(model['flux']*model['baseline'][bl])
@@ -366,7 +367,7 @@ class PlotDust(PlottingSession):
             #   relevant
             ddict['ymax'] = 1.1*max([max(iy[(ix<=13.)*(ix>=8.)]) 
                                      for ix,iy in zip(ddict['x'],ddict['y'])
-                                     if iy[(ix<=13.)*(ix>=8.)].size])
+                                     if iy.size])
         kwargs = dict()
         kwargs['keytags'] = ['MIDI']
         if not no_models:
@@ -516,7 +517,7 @@ class PlotDust(PlottingSession):
             
             #-- Error propagation
             cflux_relerr = (cflux_err/cflux)**2
-            yerr = sqrt(midi_relerr + cflux_relerr)*cflux/midi_flux
+            yerr = np.sqrt(midi_relerr + cflux_relerr)*cflux/midi_flux
             ddf[k]['yerr'] = yerr
             
             #-- Wavelength grid
@@ -532,9 +533,9 @@ class PlotDust(PlottingSession):
             #-- Set the plot x and y
             bls = [k for k in sorted(ddf.keys())]
             ddict['x'] = [[bl for bl in bls]]
-            ddict['y'] = [[ddf[bl]['y'][argmin(abs(ddf[bl]['x']-w))]
+            ddict['y'] = [[ddf[bl]['y'][np.argmin(abs(ddf[bl]['x']-w))]
                            for bl in bls]]
-            ddict['yerr'] = [[ddf[bl]['yerr'][argmin(abs(ddf[bl]['x']-w))]
+            ddict['yerr'] = [[ddf[bl]['yerr'][np.argmin(abs(ddf[bl]['x']-w))]
                               for bl in bls]]
             #-- Set limits and labels
             ddict['labels'] = [('MIDI %s $\\mu$m'%w,0.85,0.9)]
@@ -546,8 +547,8 @@ class PlotDust(PlottingSession):
             for model in models:
                 ddict['yerr'].append(None)
                 if not model: 
-                    ddict['x'].append([])
-                    ddict['y'].append([])
+                    ddict['x'].append(np.empty(0))
+                    ddict['y'].append(np.empty(0))
                     continue
                 ddict['x'].append(model['baseline'])
                 ddict['y'].append(model['wavelength'][w])
@@ -636,13 +637,13 @@ class PlotDust(PlottingSession):
             fn_plt = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
                                   'stars',self.star_name,self.plot_id,\
                                   'Td_avg')
-        radii = []
+        rads = []
         temps = []
         keytags = []
         for star in star_grid:
             rad = star.getDustRad()
             temp,key = star.getDustTemperature(add_key=1) 
-            radii.append(rad)
+            rads.append(rad)
             temps.append(temp)
             keytags.append(key)
         
@@ -652,13 +653,13 @@ class PlotDust(PlottingSession):
             tstar = star_grid[0]['T_STAR']
             temp,key = Profiler.dustTemperaturePowerLaw(rad=rad,add_key=1,\
                                                         tstar=tstar,s=s)
-            radii.append(rad)
+            rads.append(rad)
             temps.append(temp)
             keytags.append(key)
             
         title = 'Average Dust Temperature Stratification for %s'\
                 %(self.star_name_plots)
-        filename = Plotting2.plotCols(x=radii,y=temps,filename=fn_plt,\
+        filename = Plotting2.plotCols(x=rads,y=temps,filename=fn_plt,\
                                       yaxis='$T_\mathrm{d}$ (K)',\
                                       plot_title=title,xaxis='$R$ (cm)',\
                                       key_location=(0.05,0.05),cfg=cfg_dict,\
@@ -747,22 +748,20 @@ class PlotDust(PlottingSession):
                         for r,t,sp in zip(rads,temps,star.getDustList())]
                 temps = [t[t<=star['T_DES_%s'%sp]] 
                         for t,sp in zip(temps,star.getDustList())]
-                keytags = star.getDustList()
-                vert_lines = []
+                keytags = list(star.getDustList())
             else:
                 include_total = 1
                 print 'Thermal contact is on. All dust species share the ' + \
                       'same temperature profile. Vertical lines indicate ' + \
                       'inner radii of dust species.'
-                radii, temps, keytags = [], [], []
-                vert_lines = [star['R_DES_%s'%d]*star.Rsun*star['R_STAR'] 
-                              for d in star.getDustList()]
-            rad = star.getDustRad()
+                rads, temps, keytags = [], [], []
+            
             if include_total:
+                rad = star.getDustRad()
                 temp, key = star.getDustTemperature(add_key=1)
-                radii.append(rad[rad>star['R_INNER_GAS']\
+                rads.append(rad[rad>star['R_INNER_DUST']\
                                  *star.Rsun*star['R_STAR']])
-                temps.append(temp[rad>star['R_INNER_GAS']\
+                temps.append(temp[rad>star['R_INNER_DUST']\
                                   *star.Rsun*star['R_STAR']])
                 keytags.append(key)
         
@@ -772,12 +771,12 @@ class PlotDust(PlottingSession):
                 tstar = star_grid[0]['T_STAR']
                 temp,key = Profiler.dustTemperaturePowerLaw(rad=rad,add_key=1,\
                                                             tstar=tstar,s=s)
-                radii.append(rad)
+                rads.append(rad)
                 temps.append(temp)
                 keytags.append(key)
                 
             filename = '_'.join([fn_plt,star['LAST_MCMAX_MODEL']])
-            plot_filenames.append(Plotting2.plotCols(x=radii,y=temps,\
+            plot_filenames.append(Plotting2.plotCols(x=rads,y=temps,\
                         cfg=cfg_dict,filename=filename,xaxis='$r$ (cm)',\
                         yaxis='$T_\mathrm{d}$ (K)',keytags=keytags,\
                         xmax=star['R_OUTER_DUST']*star.Rsun*star['R_STAR'],\
@@ -802,8 +801,10 @@ class PlotDust(PlottingSession):
             
 
 
-    def plotOpacities(self,star_grid=[],models=[],scaling=1,species=['AMC'],\
-                      cfg=''):
+    def plotOpacities(self,star_grid=[],scaling=1,species=['AMC'],\
+                      path_opac=os.path.join(os.path.expanduser('~'),\
+                                             'MCMax','Opacities'),\
+                      cfg='',index=0,*args,**kwargs):
         
         """ 
         Plotting wavelength dependent mass extinction coefficients 
@@ -813,17 +814,18 @@ class PlotDust(PlottingSession):
         wanted.
         
         If no model info is given, the input opacities are plotted.
+        
+        Args and kwargs can be given straight to the plot command.
     
         @keyword star_grid: The input Star() models. If default, the MCMax 
                             input opacities are plotted.
                                   
                             (default: [])
         @type star_grid: list(Star())
-        @keyword models: MCMax model_ids. Can be given instead of star_grid. 
-                         Not yet implemented!
-                              
-                         (default: [])
-        @type models: list(string)
+        @keyword path_opac: The path to the opacity home folder
+        
+                            (default: ~/MCMax/Opacities/)
+        @type path_opac: str
         @keyword scaling: allow species abundance scaling of opacities
                                 
                           (default: 1)
@@ -838,52 +840,56 @@ class PlotDust(PlottingSession):
                           
                       (default: '')
         @type cfg: string
+        @keyword index: The index of the kappas in the .opacity/.particle file. 
+                        0: extinction, 1: absorption, 2: scattering
+                        
+                        (default: 0)
+        @type index: int
                 
         """
         
         print '***********************************'
         print '** Starting to plot dust opacities.'
-        if not star_grid and models:
-            #star_grid = self.makeMCMaxStars(models=models,id_type='MCMax')
-            raise IOError('Reading dust opacities from a model id list ' + \
-                          'only, not yet implemented.')
-        filenames = []
-        if not star_grid and not models:
-            species_index = [DataIO.getInputData(keyword='SPECIES_SHORT',\
-                                    filename='Dust.dat',\
-                                    path=os.path.join(self.path_combocode,\
-                                                      'Data')).index(sp)
-                             for sp in species]
-            filename_species = [DataIO.getInputData(keyword='PART_FILE',\
-                                    filename='Dust.dat',\
-                                    path=os.path.join(self.path_combocode,\
-                                                      'Data'))[i] 
-                                for i in species_index]
-            part_file = [DataIO.readFile(filename=\
-                                os.path.join(os.path.expanduser('~'),'MCMax',\
-                                             'src',fn),\
-                                         delimiter=' ') 
-                         for fn in filename_species]
-            wl_list = [array([float(wl[0]) 
-                              for wl in pf if len(wl) == 4]) 
-                       for pf in part_file]
-            q_list = [array([float(q[1]) 
-                             for q in pf if len(q) == 4]) 
-                      for pf in part_file]
-            filename = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                    'dust_opacities_%s'%'_'.join(species))
-            filename = Plotting2.plotCols(x=wl_list,y=q_list,\
-                                          filename=filename,\
-                                          xaxis='$\lambda$ ($\mu \mathrm{m}$)',cfg=cfg,\
-                                          yaxis='$\kappa_\lambda$ ($\mathrm{cm}^2\mathrm{/g}$)',\
-                                          keytags=species,fontsize_key=20,\
-                                          plot_title='Dust Opacities',\
-                                          key_location=(0.05,0.05),\
-                                          number_subplots=1,xlogscale=1,\
-                                          ylogscale=1)
+        
+        #-- Set the filename
+        cfg_dict = Plotting2.readCfg(cfg)
+        ppars = dict()
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg_dict['filename']
+            del cfg_dict['filename']
+        elif kwargs.has_key('filename'):
+            fn_plt = kwargs['filename']
+            del kwargs['filename']
+        elif not star_grid:
+            fn_plt = os.path.join(path_opac,\
+                                  'dust_opacities_%s'%'_'.join(species))
+        else:
+            fn_plt = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
+                                  'stars',self.star_name,self.plot_id,\
+                                  'opacities_species')
+        
+        #-- Set some plot parameters
+        ppars['xaxis'] = '$\lambda$ ($\mu \mathrm{m}$)'
+        ppars['yaxis'] = '$\kappa_\lambda$ ($\mathrm{cm}^2\mathrm{/g}$)'
+        ppars['fontsize_key'] = 20
+        ppars['xlogscale'] = 1
+        ppars['ylogscale'] = 1
+        ppars['key_location'] = (0.05,0.05)
+        ppars.update(kwargs)
+        ppars.update(cfg_dict)
+        
+        #-- Check if raw opacities or modeling results are requested
+        if not star_grid:
+            kr = KappaReader.KappaReader(path_cc=self.path_combocode)
+            wl_list = [kr.getKappas(sp)[0] for sp in species]
+            q_list = [kr.getKappas(sp)[1] for sp in species]
+            fn_plt = Plotting2.plotCols(x=wl_list,y=q_list,filename=fn_plt,\
+                                        plot_title = 'Dust Opacities',\
+                                        keytags=species,*args,**ppars)
             print '** Your plot can be found at:'
-            print filename
+            print fn_plt
         else:    
+            fns = []
             for star in star_grid:        
                 try:    
                     wave,opacities = star.readKappas()
@@ -892,38 +898,28 @@ class PlotDust(PlottingSession):
                 opacities = [(opacities[i]+opacities[i+len(star.getDustList())]) 
                              for i,species in enumerate(star.getDustList())]
                 if scaling:
-                    opacities = [opa*float(star['A_%s'%species]) 
-                                 for opa in opacities]
-                filename = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                        self.path,'stars',self.star_name,\
-                                        self.plot_id,\
-                                        'opacities_species_%s'\
-                                        %star['LAST_MCMAX_MODEL'])
+                    opacities = [opa*star['A_%s'%sp]
+                                 for opa,sp in zip(opacities,species)]
+                fn_mplt = '_'.join(fn_plt,star['LAST_MCMAX_MODEL'])
                 title = 'Dust Opacities in %s (%s)' \
                         %(self.star_name_plots,\
-                            star['LAST_MCMAX_MODEL'].replace('_','\_'))
-                keytags = ['%s with $A$ = %s and $T_{des} = %i$ K'\
-                           %(sp,str(star['A_%s'%sp]),int(star['T_DES_%s'%sp])) 
-                           for sp in star.getDustList()]
-                filenames.append(Plotting2.plotCols(x=wave,y=opacities,\
-                                 xaxis='$\lambda$ ($\mu \mathrm{m}$)',\
-                                 yaxis='$\kappa_\lambda$ ($\mathrm{cm}^2\mathrm{/g}$)',\
-                                 keytags=keytags,plot_title=title,\
-                                 key_location=(0.05,0.05),filename=filename,\
-                                 cfg=cfg,number_subplots=1,xlogscale=1,\
-                                 ylogscale=1,fontsize_key=20))
-            if len(filenames) != len(star_grid):
+                          star['LAST_MCMAX_MODEL'].replace('_','\_'))
+                keys = ['%s with $A$ = %s and $T_{des} = %i$ K'\
+                         %(sp,str(star['A_%s'%sp]),int(star['T_DES_%s'%sp])) 
+                        for sp in star.getDustList()]
+                fns.append(Plotting2.plotCols(x=wave,y=opacities,keytags=keys,\
+                                              plot_title=title,\
+                                              filename=fn_mplt,*args,**ppars))
+            if len(fns) != len(star_grid):
                 print 'At least one of the models requested does not yet ' + \
                       'have a MCMax model.'
             print '** Your plots can be found at:'
-            if filenames[-1][-4] == '.pdf':
-                new_file = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                        self.path,'stars',self.star_name,\
-                                        self.plot_id, 'dust_opacities.pdf')
-                DataIO.joinPdf(old=filenames,new=new_file)
-                print new_file
+            if fns[-1][-4] == '.pdf':
+                fn_plt = fn_plt+'.pdf'
+                DataIO.joinPdf(old=fns,new=fn_plt)
+                print fn_plt
             else:
-                print '\n'.join(filenames)
+                print '\n'.join(fns)
         print '***********************************'
         
 
@@ -948,12 +944,6 @@ class PlotDust(PlottingSession):
         
                          (default: [])
         @type models: list[string]
-        @keyword plot_default: Include the default extinction efficiencies for 
-                               amorphous silicates (temdust.kappa)
-                               [NYI]
-                                      
-                               (default: 1)
-        @type plot_default: bool
         @keyword cfg: path to the Plotting2.plotCols config file. If default, 
                       the hard-coded default plotting options are used.
                           
@@ -969,9 +959,6 @@ class PlotDust(PlottingSession):
             return      
         elif not star_grid and models:
             star_grid = self.makeMCMaxStars(models=models)
-        cfg_dict = Plotting2.readCfg(cfg)
-        if cfg_dict.has_key('plot_default'):
-            plot_default = int(cfg['plot_default'])
         x = []
         y = []
         keys = []
@@ -986,9 +973,6 @@ class PlotDust(PlottingSession):
                             %star['LAST_MCMAX_MODEL'].replace('_','\_'))
             except IOError: 
                 pass
-        if plot_default:
-             print 'Including default amorphous silicate extinction ' + \
-                   'efficiencies not yet implemented.'
         filename = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
                                 'stars',self.star_name,self.plot_id,\
                                 'gastronoom_opacities_%s'\

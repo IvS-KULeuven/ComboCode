@@ -230,10 +230,12 @@ class ComboCode(object):
         '''
         
         sed_path = self.processed_input.pop('SED_PATH','')
-        psuffix = self.processed_input.pop('SED_PHOT_PSUFFIX','Raw/IvS_SEDTool/')
+        psuffix = self.processed_input.pop('SED_PHOT_PSUFFIX',\
+                                           'Raw/IvS_SEDTool/')
         remove = self.processed_input.pop('SED_PHOT_REMOVE','')
         if not remove: remove = []
-        else: remove = remove.split('&')
+        elif type(remove) is types.StringType: remove = [remove]
+        else: remove = list(remove)
         
         if sed_path:
             self.sed = Sed.Sed(star_name=self.star_name,\

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Tools for making opacity files.
+Tools for making and managing opacity files.
 
 Author: R. Lombaert
 
@@ -11,10 +11,66 @@ from scipy import array,argmin
 from glob import glob
 from math import pi
 import os
+import types
 
 from cc.tools.io import DataIO
 from cc.tools.numerical import Interpol
 from cc.modeling.objects import Star
+
+
+def massFractionGSD(acut,amin=0.01,amax=100.,slope=-3.5):
+    
+    '''
+    Calculate the mass fraction of a subset of grain sizes from a grain size
+    distribution.
+    
+    A minimum of two subsets is created, so two masses are returned. Can be 
+    anything higher than that, depending on how many cuts are requested.
+    
+    @param acut: The grain size(s) at which the cuts are made. Can be a float 
+                 or a list. 
+    @type acut: list(float)
+    
+    @keyword amin: The minimum grain size in the distribution
+                    
+                   (default: 0.01)
+    @type amin: float
+    @keyword amax: The maximum grain size in the distribution
+                    
+                   (default: 100)
+    @type amax: float
+    @keyword slope: The slope of the a-dependence of the distribution. Default
+                    is the MRN value of -3.5
+                    
+                    (default: -3.5)
+    @type slope: float
+    
+    @return: The mass fraction of the first slice, the second slice, etc, 
+             depending on how many cuts are requested. Minimum of two.
+    @rtype: [float,float,...]         
+    
+    '''
+    
+    if not type(acut) is types.ListType:
+        acut = [float(acut)]
+    acut = sorted(acut)
+    #-- Slope is negative typically. If slope == -4, this doesn't work
+    if slope == -4.: return np.empty(0)
+    #-- n(a) = Cst * Int(a**3 * a**-3.5 da) ==> Cst * [a**0.5]^amax_amin
+    p = (3.+slope)+1.
+    subsets = []
+    #-- first subset:
+    subsets.append(acut[0]**p-amin**p)    
+    #-- additional subsets if len(acut) > 1
+    for i in xrange(len(acut[1:])):
+        subsets.append(acut[i+1]**p-acut[i]**p)
+    #-- final subset
+    subsets.append(amax**p-acut[-1]**p)
+    #-- Determine the fractions with respect to the total number density.
+    #   Constant does not matter because of it being ratios.
+    fractions = array(subsets)/sum(subsets)
+    return fractions
+    
 
 
 def mergeOpacity(species,lowres='nom_res',highres='high_res'):
@@ -70,7 +126,7 @@ def mergeOpacity(species,lowres='nom_res',highres='high_res'):
             DataIO.writeCols(filename=os.path.join(path,f),cols=merged)
 
 
-class CustomOpa():
+class CustomOpacity():
     """
     An interface for creating custom opacity files by taking the original and 
     tinkering with it.
@@ -107,7 +163,7 @@ class CustomOpa():
     def setSpecies(self,species):
         
         """
-        Change the species of the current CustomOpa instance.
+        Change the species of the current CustomOpacity instance.
         
         @param species: the species short name
         @type species: string
@@ -151,7 +207,7 @@ class CustomOpa():
             getattr(self,'do' + mode)(**args)
             self.output_data = [' '.join(str(line)) 
                                 for line in self.output_data]
-            output_filename = '_'.join(['customOpa',mode] + \
+            output_filename = '_'.join(['customOpacity',mode] + \
                                        sorted(args.values()) + \
                                        [self.filename])
             if self.opacity_file:

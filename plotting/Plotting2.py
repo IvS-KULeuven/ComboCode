@@ -1281,9 +1281,9 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                                markeredgewidth=markeredgewidth,zorder=zo,\
                                alpha=alph,color=col)
             if '--' in lp:
-                leg.set_dashes([6,3])
+                leg.set_dashes([8,3])
             if '.-' in lp or '-.' in lp:
-                leg.set_dashes([6,3,2,3])
+                leg.set_dashes([8,3,2,3])
             legends.append(leg)
             if xerri <> None: 
                 try:
