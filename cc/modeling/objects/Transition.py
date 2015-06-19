@@ -1147,7 +1147,7 @@ class Transition():
         
         #- get telescope diameter in cm
         if 'PACS' in self.telescope.upper():
-            data = DataIO.readCols(os.path.join(self.path_combocode,'Data',\
+            data = DataIO.readCols(os.path.join(self.path_combocode,'aux',\
                                                 'Pacs_beamsize_v4.dat'))
             wav = data[0]/10000.
             beam = data[1]
