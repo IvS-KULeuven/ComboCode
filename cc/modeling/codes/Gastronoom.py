@@ -105,11 +105,11 @@ class Gastronoom(ModelingSession):
         self.vic = vic
         self.trans_in_progress = []
         self.sphinx = sphinx
-        cool_keys = os.path.join(self.path_combocode,'cc',\
+        cool_keys = os.path.join(self.path_combocode,'aux',\
                                  'Input_Keywords_Cooling.dat')
-        ml_keys = os.path.join(self.path_combocode,'cc',\
+        ml_keys = os.path.join(self.path_combocode,'aux',\
                                'Input_Keywords_Mline.dat')
-        sph_keys = os.path.join(self.path_combocode,'cc',\
+        sph_keys = os.path.join(self.path_combocode,'aux',\
                                 'Input_Keywords_Sphinx.dat')
         self.cooling_keywords = [line.strip() 
                                  for line in DataIO.readFile(cool_keys) 
@@ -134,7 +134,8 @@ class Gastronoom(ModelingSession):
                              '1H1H17O','p1H1H17O','1H1H18O','p1H1H18O']
         
         #- Read standard input file with all parameters that should be included
-        filename = os.path.join(self.path_combocode,'cc','inputGASTRoNOoM.dat')
+        filename = os.path.join(self.path_combocode,'aux',\
+                                'inputGASTRoNOoM.dat')
         self.standard_inputfile = DataIO.readDict(filename,\
                                                   comment_chars=['#','!'])
         self.skip_cooling = skip_cooling

@@ -61,7 +61,7 @@ class ModelingSession(object):
         self.model_id = ''
         self.replace_db_entry = replace_db_entry
         self.new_entries = new_entries
-        mutablefile = os.path.join(self.path_combocode,'cc',\
+        mutablefile = os.path.join(self.path_combocode,'aux',\
                                    'Mutable_Parameters_' + code + '.dat')
         self.mutable = [line[0] 
                         for line in DataIO.readFile(mutablefile,delimiter=' ')

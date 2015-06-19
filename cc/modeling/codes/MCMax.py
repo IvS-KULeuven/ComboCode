@@ -312,7 +312,8 @@ class MCMax(ModelingSession):
         
         #- Read standard input file with all parameters that should be included
         #- as well as some dust specific information
-        inputfilename = os.path.join(self.path_combocode,'cc','inputMCMax.dat')
+        inputfilename = os.path.join(self.path_combocode,'aux',\
+                                     'inputMCMax.dat')
         self.standard_inputfile = DataIO.readDict(inputfilename,\
                                                   convert_floats=1,\
                                                   convert_ints=1,\

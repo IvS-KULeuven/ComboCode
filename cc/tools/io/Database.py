@@ -191,7 +191,7 @@ def coolingDbRetrieval(path_gastronoom,r_outer=None):
     
     '''
     
-    coolkeys_path = os.path.join(os.path.expanduser('~'),'ComboCode','CC',\
+    coolkeys_path = os.path.join(os.path.expanduser('~'),'ComboCode','aux',\
                                  'Input_Keywords_Cooling.dat')
     coolkeys = DataIO.readCols(coolkeys_path,make_float=0,make_array=0)[0]
     extra_keys = ['ENHANCE_ABUNDANCE_FACTOR','MOLECULE_TABLE','ISOTOPE_TABLE',\
