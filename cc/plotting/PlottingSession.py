@@ -70,7 +70,7 @@ class PlottingSession(object):
         self.path = path
         self.mutable_mcmax = [line[0] 
                               for line in DataIO.readFile(\
-                                   os.path.join(self.path_combocode,'cc',\
+                                   os.path.join(self.path_combocode,'aux',\
                                                 'Mutable_Parameters_MCMax.dat'),\
                                    delimiter=' ')
                               if ''.join(line).strip()]
@@ -79,7 +79,7 @@ class PlottingSession(object):
                               if line[0] != '#']
         self.mutable_gastronoom = [line[0] 
                                    for line in DataIO.readFile(\
-                                        os.path.join(self.path_combocode,'cc',\
+                                        os.path.join(self.path_combocode,'aux',\
                                         'Mutable_Parameters_GASTRoNOoM.dat'),\
                                         delimiter=' ')
                                    if ''.join(line).strip()]

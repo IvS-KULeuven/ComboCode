@@ -57,7 +57,7 @@ class ComboCode(object):
         
         In the python or ipython shell you can do:
         >>> import ComboCode
-        >>> cc = ComboCode.ComboCode('/home/robinl/ComboCode/CC/inputComboCode.dat')
+        >>> cc = ComboCode.ComboCode('/home/robinl/ComboCode/aux/inputComboCode.dat')
         
         @param inputfilename: The name of the inputfile. If path is not
                               included, it's set to the default path to CC:
