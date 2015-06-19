@@ -672,7 +672,7 @@ class Pacs(Instrument):
 
 
     def getPacsResolution(self,filename=os.path.join(os.path.expanduser('~'),\
-                                                     'ComboCode','Data',\
+                                                     'ComboCode','aux',\
                                                      'Pacs_Resolution.dat')):
         
         '''
@@ -680,7 +680,7 @@ class Pacs(Instrument):
         
         @keyword filename: filename in which the pacs resolution is stored.
         
-                           (default: '~/ComboCode/Data/Pacs_Resolution.dat')
+                           (default: '~/ComboCode/aux/Pacs_Resolution.dat')
         @type filename: string
         
         @return: The resolution as a function of wavelength for the 3 orders
@@ -712,7 +712,7 @@ class Pacs(Instrument):
         print '** Reading PACS native resolution.'
         reso_wave_list,reso_delta_list \
                 = self.getPacsResolution(filename=os.path.join(\
-                                                self.path_combocode,'Data',\
+                                                self.path_combocode,'aux',\
                                                 'Pacs_Resolution.dat'))
         
         #- Make interpolators for every order
