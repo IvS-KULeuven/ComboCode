@@ -10,19 +10,16 @@ The functionality includes:
     - Currently works with GASTRoNOoM for gas radiative transfer, and with MCMax for dust radiative transfer
     - Allowing output of one code to be used as input for another
     - Databases for modeling output and easy parameter space searches
-    - 
 * <b>Data</b>: 
     - Management of data files associated with radio data, SEDs and spectroscopic data
-    - 
 
 ### How do I run ComboCode?
 <ol>
 <li>First you have to install the package itself. See instructions below.</li>
 <li>You will need the radiative-transfer codes to be able to run ComboCode to its fullest potential. For this you will
-have to contact the authors of the codes.
+have to contact the authors of the codes.</li>
     * <b> GASTRoNOoM:</b> L. Decin (KU Leuven, Belgium) 
     * <b> MCMax:</b> M. Min (UvA, the Netherlands)
-</li>
 <li>Examples of how to run ComboCode will be added at a later time.</li>
 </ol>
 
