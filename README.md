@@ -18,12 +18,12 @@ The functionality includes:
 <li>First you have to install the package itself. See instructions below.</li>
 <li>You will need the radiative-transfer codes to be able to run ComboCode to its fullest potential. For this you will
 have to contact the authors of the codes.</li>
-</ol>
-    * <b> GASTRoNOoM:</b> L. Decin (KU Leuven, Belgium) 
-    * <b> MCMax:</b> M. Min (UvA, the Netherlands)
-<ol>
 <li>Examples of how to run ComboCode will be added at a later time.</li>
 </ol>
+
+### The codes currently in ComboCode
+* <b> GASTRoNOoM:</b> L. Decin (KU Leuven, Belgium) 
+* <b> MCMax:</b> M. Min (UvA, the Netherlands)
 
 
 
