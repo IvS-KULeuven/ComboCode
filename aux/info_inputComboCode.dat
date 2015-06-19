@@ -146,3 +146,90 @@ OPTIONAL MUTABLE INPUT:
 
 
 
+
+####################################################################################################################
+###
+###CC_STRUCTURE
+###
+####################################################################################################################
+
+
+Folders marked with [*] are hard-coded in ComboCode for now. Copy these from my home (/home/robinl/) to yours.
+
+Any folder that has [PATH_SOMETHING] next to it, can be defined explicitly in the inputfile by giving the name fully in capitals. 
+The path structure given here is the default, ie is the path used if you do not specify it in the inputfile. 
+
+Inputfiles for ComboCode can be put anywhere you like. If they are in ~/ComboCode/. then you don't 
+have to specify the path when you call ComboCode.py. Otherwise, always include the path.
+(i.e. python ComboCode.py /home/YOUR_HOME/SOMEWHERE/SOMEWHERE_MORE_SPECIFIC/inputComboCode.dat       in the shell
+or    from cc import ComboCode
+      session = ComboCode.ComboCode(/home/YOUR_HOME/SOMEWHERE/SOMEWHERE_MORE_SPECIFIC/inputComboCode.dat)      in ipython) 
+I put mine in ~/ComboCode/input/
+      
+The folder marked by [***] is the one you get by using SVN (see the svn_usage_cc.pdf file), so do not copy that over.
+
+
+/home/YOUR_HOME/
+   
+   ComboCode/        [*]              	    __init__.py is located here. Copy this.
+                     	                      
+      	Data/        [*]    	            Dust.dat, Molecule.dat, Star.dat, Indices.dat, Sed.Dat, Data.dat, Pacs_Resolution* files. Copy these.
+                                              
+         cc/         [***]                  Input_Keywords_cooling.dat, Input_Keywords_mline.dat, Input_Keywords_sphinx.dat
+                                            Mutable_Parameters_GASTRoNOoM.dat, Mutable_Parameters_MCMax.dat
+                                            All .py files and modules, this file (CC_Structure)
+                                            inputComboCode.dat (sample inputfile, copy this elsewhere and modify for your own purposes)
+   
+   
+   GASTRoNOoM/        [*]                   inputGASTRoNOoM.dat
+                     	                    vic_run_jobs_example.sh
+                                            vic_job_example.sh
+                                            ==> Copy over, never change these
+
+      	src/         [*]
+         		data/  [*]                  molecule data files (*_indices.dat, *_radiat.dat, *_collis.dat, sphinx_indices_filename_*.dat)
+                                            *.spec files (generated automatically with [UPDATE_SPEC=1])
+                                            Willacy abundance profiles
+                                            The indices_backup, radiat_backup and collis_backup folders
+                     	
+         		exec/  [*]                  cooling, mline and sphinx executables. Instead of copying, you can also link to these instead to ensure you always have up-to-date versions.
+   
+      	rundir/      [PATH_GASTRONOOM] 	    This is where all the output is saved, is generated automatically, just has to be included in the inputfile for ComboCode. 
+         		
+   
+   
+   MCMax/             [*] 		            inputMCMax.dat : Copy over to the same location. Important for ComboCode to make proper MCMax input files!
+   
+        Observation_Files  [*]              Files for generating MCMax output such as ray-traced spectra and images. 
+                                            Spec.out, visibilities_baseline.out, Image.out 
+        
+      	src_nov2013/    [*]	                MCMax executable (also put this thing in your /home/YOUR_HOME/bin folder (or Bin?))
+                                            *.particle, *.opacity
+  		
+  	Extinction_Curves/   [*]	            Contains extinction curves for extinction correction. This folder IS fixed! 
+      	
+      	rundir/     [PATH_MCMAX]            This is where all the output is saved, is generated automatically, just has to be included in the inputfile
+      	
+      	
+   Data/PACS/        [PATH_PACS]            where the PACS data are taken from, default is ~/Data/PACS/,
+                                            and your data should always be stored in [PATH_PACS]/[STAR_NAME]/cont_subtracted/
+   
+   LineLists/        [LL_PATH]              The JPL/CDMS/... linelists are stored here if you want to plot linelists on top of PACS data for instance (see CC input file)
+
+/home/robinl/Data/Molecular/  [PATH_GAS_DATA]	 Arbitrary, is in the input file, but not really relevant for you yet until you know what's to be done with the ground-based data 
+                     	                       
+
+
+#### THIS IS NOW OBSOLETE. VIC HAS BEEN DECOMMISSIONED. WILL BE UPDATED FOR NEW SUPERCOMPUTER ######
+###################################################################################################
+For Vic usage:  (fill in vsc##### for YOUR_ACCOUNT, YOUR_DISK is equal to the first three digits in vsc#####)
+1) login through ssh at Vic
+2) mkdir COCode
+3) mkdir /data/leuven/YOUR_DISK/YOUR_ACCOUNT/COCode
+4) ln -s /data/leuven/YOUR_DISK/YOUR_ACCOUNT/ /user/leuven/YOUR_DISK/YOUR_ACCOUNT/dataschijf
+5) scp from your local machine:
+scp -r ~/GASTRoNOoM/src/data YOUR_ACCOUNT@login.vic3.cc.kuleuven.be:COCode/
+scp -r ~/GASTRoNOoM/src/exec YOUR_ACCOUNT@login.vic3.cc.kuleuven.be:COCode/
+6) Whenever you change the GASTRoNOoM executables (sphinx only for now), remember to copy the new version of the executables to VIC as well.
+
+Happy modelling!
