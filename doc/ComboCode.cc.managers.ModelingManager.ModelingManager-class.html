@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ComboCode.cc.managers.ModelingManager.ModelingManager</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ComboCode-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ComboCode-module.html">Package&nbsp;ComboCode</a> ::
+        <a href="ComboCode.cc-module.html">Package&nbsp;cc</a> ::
+        <a href="ComboCode.cc.managers-module.html">Package&nbsp;managers</a> ::
+        <a href="ComboCode.cc.managers.ModelingManager-module.html">Module&nbsp;ModelingManager</a> ::
+        Class&nbsp;ModelingManager
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ComboCode.cc.managers.ModelingManager.ModelingManager-class.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== CLASS DESCRIPTION ==================== -->
+<h1 class="epydoc">Class ModelingManager</h1><p class="nomargin-top"><span class="codelink"><a href="ComboCode.cc.managers.ModelingManager-pysrc.html#ModelingManager">source&nbsp;code</a></span></p>
+<p>A modeling manager which maintains information for all modeling 
+  sessions.</p>
+
+<!-- ==================== INSTANCE METHODS ==================== -->
+<a name="section-InstanceMethods"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Instance Methods</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-InstanceMethods"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.managers.ModelingManager.ModelingManager-class.html#__init__" class="summary-sig-name">__init__</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">var_pars</span>,
+        <span class="summary-sig-arg">processed_input</span>,
+        <span class="summary-sig-arg">iterations</span>=<span class="summary-sig-default">1</span>,
+        <span class="summary-sig-arg">mcmax</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">gastronoom</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">sphinx</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">iterative</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">num_model_sessions</span>=<span class="summary-sig-default">1</span>,
+        <span class="summary-sig-arg">vic_manager</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">replace_db_entry</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">path_gastronoom</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">runTest</code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">path_mcmax</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">runTest</code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">skip_cooling</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">recover_sphinxfiles</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">opac_path</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">/home/robinl/MCMax/Opacities</code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">path_combocode</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">/home/robinl/ComboCode</code><code class="variable-quote">'</code></span>)</span><br />
+      Initializing a ModelingManager instance.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.managers.ModelingManager-pysrc.html#ModelingManager.__init__">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="setDatabases"></a><span class="summary-sig-name">setDatabases</span>(<span class="summary-sig-arg">self</span>)</span><br />
+      Initialize all databases relevant for this grid.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.managers.ModelingManager-pysrc.html#ModelingManager.setDatabases">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.managers.ModelingManager.ModelingManager-class.html#startModeling" class="summary-sig-name">startModeling</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">star</span>,
+        <span class="summary-sig-arg">star_index</span>)</span><br />
+      Start the modeling process on a model star.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.managers.ModelingManager-pysrc.html#ModelingManager.startModeling">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+</table>
+<!-- ==================== METHOD DETAILS ==================== -->
+<a name="section-MethodDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Method Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-MethodDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="__init__"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__init__</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">var_pars</span>,
+        <span class="sig-arg">processed_input</span>,
+        <span class="sig-arg">iterations</span>=<span class="sig-default">1</span>,
+        <span class="sig-arg">mcmax</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">gastronoom</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">sphinx</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">iterative</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">num_model_sessions</span>=<span class="sig-default">1</span>,
+        <span class="sig-arg">vic_manager</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">replace_db_entry</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">path_gastronoom</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">runTest</code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">path_mcmax</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">runTest</code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">skip_cooling</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">recover_sphinxfiles</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">opac_path</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">/home/robinl/MCMax/Opacities</code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">path_combocode</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">/home/robinl/ComboCode</code><code class="variable-quote">'</code></span>)</span>
+    <br /><em class="fname">(Constructor)</em>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.managers.ModelingManager-pysrc.html#ModelingManager.__init__">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Initializing a ModelingManager instance.</p>
+  <p>From this class, the MCMax and GASTRoNOoM codes are ran for each 
+  iteration, as well as the database retrieval of older models.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>var_pars</code></strong> (list[string]) - gridded parameters in the CC session</li>
+        <li><strong class="pname"><code>processed_input</code></strong> (dict) - The processed paramaters from the CC inputfile</li>
+        <li><strong class="pname"><code>iterations</code></strong> (int) - Number of iterations
+          <p>(default: 1)</p></li>
+        <li><strong class="pname"><code>mcmax</code></strong> (bool) - Running MCMax?
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>gastronoom</code></strong> (bool) - Running GASTRoNOoM?
+          <p>(default: 0</p></li>
+        <li><strong class="pname"><code>sphinx</code></strong> (bool) - Running Sphinx?
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>iterative</code></strong> (bool) - Ray-trace MCMax models on every iteration
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>num_model_sessions</code></strong> (int) - number of sessions, i.e. len(star_grid)
+          <p>(default: 1)</p></li>
+        <li><strong class="pname"><code>vic_manager</code></strong> (Vic()) - the vic manager to run models (sphinx) on VIC3
+          <p>(default: None)</p></li>
+        <li><strong class="pname"><code>path_combocode</code></strong> (string) - CC home folder
+          <p>(default: '/home/robinl/ComboCode')</p></li>
+        <li><strong class="pname"><code>replace_db_entry</code></strong> (bool) - replace an entry in the database with a newly calculated model 
+          with a new model id (eg if some general data not included in the 
+          inputfiles is changed)
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>skip_cooling</code></strong> (bool) - Skip running cooling in case a model is not found in the 
+          database, for instance if it is already known that the model will
+          fail
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>recover_sphinxfiles</code></strong> (bool) - Try to recover sphinx files from the disk in case they were 
+          correctly calculated, but not saved to the database for one 
+          reason or another.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>path_mcmax</code></strong> (string) - modeling folder in MCMax home
+          <p>(default: 'runTest')</p></li>
+        <li><strong class="pname"><code>opac_path</code></strong> (str) - The path to the home folder of dust opacities
+          <p>(default: ~/MCMax/Opacities/)</p></li>
+        <li><strong class="pname"><code>path_gastronoom</code></strong> (string) - modeling folder in GASTRoNOoM home
+          <p>(default: 'runTest')</p></li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="startModeling"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">startModeling</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">star</span>,
+        <span class="sig-arg">star_index</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.managers.ModelingManager-pysrc.html#ModelingManager.startModeling">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Start the modeling process on a model star.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>star</code></strong> (Star()) - The parameter set for this session</li>
+        <li><strong class="pname"><code>star_index</code></strong> (int) - The index of the Star() object in the full list in CC. Only used 
+          to track earlier iterations if iterative==1</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ComboCode-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jun 19 16:17:59 2015
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ComboCode.cc.modeling.tools.Profiler</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ComboCode-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ComboCode-module.html">Package&nbsp;ComboCode</a> ::
+        <a href="ComboCode.cc-module.html">Package&nbsp;cc</a> ::
+        <a href="ComboCode.cc.modeling-module.html">Package&nbsp;modeling</a> ::
+        <a href="ComboCode.cc.modeling.tools-module.html">Package&nbsp;tools</a> ::
+        Module&nbsp;Profiler
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ComboCode.cc.modeling.tools.Profiler-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ComboCode.cc.modeling.tools.Profiler-module.html">Module ComboCode.cc.modeling.tools.Profiler</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno"> 1</tt>  <tt class="py-line"><tt class="py-comment"># -*- coding: utf-8 -*-</tt> </tt>
+<a name="L2"></a><tt class="py-lineno"> 2</tt>  <tt class="py-line"> </tt>
+<a name="L3"></a><tt class="py-lineno"> 3</tt>  <tt class="py-line"><tt class="py-docstring">"""</tt> </tt>
+<a name="L4"></a><tt class="py-lineno"> 4</tt>  <tt class="py-line"><tt class="py-docstring">Tools for making profiles of any kind.</tt> </tt>
+<a name="L5"></a><tt class="py-lineno"> 5</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L6"></a><tt class="py-lineno"> 6</tt>  <tt class="py-line"><tt class="py-docstring">Author: R. Lombaert</tt> </tt>
+<a name="L7"></a><tt class="py-lineno"> 7</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L8"></a><tt class="py-lineno"> 8</tt>  <tt class="py-line"><tt class="py-docstring">"""</tt> </tt>
+<a name="L9"></a><tt class="py-lineno"> 9</tt>  <tt class="py-line"> </tt>
+<a name="L10"></a><tt class="py-lineno">10</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">scipy</tt> <tt class="py-keyword">import</tt> <tt class="py-name">array</tt>  </tt>
+<a name="L11"></a><tt class="py-lineno">11</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">scipy</tt> </tt>
+<a name="L12"></a><tt class="py-lineno">12</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">os</tt>  </tt>
+<a name="L13"></a><tt class="py-lineno">13</tt>  <tt class="py-line"> </tt>
+<a name="L14"></a><tt class="py-lineno">14</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-0" class="py-name" targets="Package ComboCode.cc=ComboCode.cc-module.html"><a title="ComboCode.cc" class="py-name" href="#" onclick="return doclink('link-0', 'cc', 'link-0');">cc</a></tt><tt class="py-op">.</tt><tt id="link-1" class="py-name" targets="Package ComboCode.cc.modeling.tools=ComboCode.cc.modeling.tools-module.html,Package ComboCode.cc.tools=ComboCode.cc.tools-module.html"><a title="ComboCode.cc.modeling.tools
+ComboCode.cc.tools" class="py-name" href="#" onclick="return doclink('link-1', 'tools', 'link-1');">tools</a></tt><tt class="py-op">.</tt><tt id="link-2" class="py-name" targets="Package ComboCode.cc.tools.io=ComboCode.cc.tools.io-module.html"><a title="ComboCode.cc.tools.io" class="py-name" href="#" onclick="return doclink('link-2', 'io', 'link-2');">io</a></tt> <tt class="py-keyword">import</tt> <tt id="link-3" class="py-name" targets="Module ComboCode.cc.tools.io.DataIO=ComboCode.cc.tools.io.DataIO-module.html"><a title="ComboCode.cc.tools.io.DataIO" class="py-name" href="#" onclick="return doclink('link-3', 'DataIO', 'link-3');">DataIO</a></tt> </tt>
+<a name="L15"></a><tt class="py-lineno">15</tt>  <tt class="py-line"> </tt>
+<a name="L16"></a><tt class="py-lineno">16</tt>  <tt class="py-line"> </tt>
+<a name="dustTemperaturePowerLaw"></a><div id="dustTemperaturePowerLaw-def"><a name="L17"></a><tt class="py-lineno">17</tt> <a class="py-toggle" href="#" id="dustTemperaturePowerLaw-toggle" onclick="return toggle('dustTemperaturePowerLaw');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ComboCode.cc.modeling.tools.Profiler-module.html#dustTemperaturePowerLaw">dustTemperaturePowerLaw</a><tt class="py-op">(</tt><tt class="py-param">rad</tt><tt class="py-op">,</tt><tt class="py-param">tstar</tt><tt class="py-op">,</tt><tt class="py-param">s</tt><tt class="py-op">=</tt><tt class="py-number">1</tt><tt class="py-op">,</tt><tt class="py-param">add_key</tt><tt class="py-op">=</tt><tt class="py-number">0</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="dustTemperaturePowerLaw-collapsed" style="display:none;" pad="++" indent="++++"></div><div id="dustTemperaturePowerLaw-expanded"><a name="L18"></a><tt class="py-lineno">18</tt>  <tt class="py-line">     </tt>
+<a name="L19"></a><tt class="py-lineno">19</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L20"></a><tt class="py-lineno">20</tt>  <tt class="py-line"><tt class="py-docstring">    Return a dust temperature power law of the form as suggested by </tt> </tt>
+<a name="L21"></a><tt class="py-lineno">21</tt>  <tt class="py-line"><tt class="py-docstring">    observational evidence. Does not depend on MCMax output.</tt> </tt>
+<a name="L22"></a><tt class="py-lineno">22</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L23"></a><tt class="py-lineno">23</tt>  <tt class="py-line"><tt class="py-docstring">    The radial grid is given in Rstar!</tt> </tt>
+<a name="L24"></a><tt class="py-lineno">24</tt>  <tt class="py-line"><tt class="py-docstring">            </tt> </tt>
+<a name="L25"></a><tt class="py-lineno">25</tt>  <tt class="py-line"><tt class="py-docstring">    See Thesis p32, where power is -2/(4+s) in </tt> </tt>
+<a name="L26"></a><tt class="py-lineno">26</tt>  <tt class="py-line"><tt class="py-docstring">    T(r) = T_eff*(2*r/R_STAR)**(-2/(4+s))</tt> </tt>
+<a name="L27"></a><tt class="py-lineno">27</tt>  <tt class="py-line"><tt class="py-docstring">    and s is typically 1 in the Rayleigh limit and optically thin case.</tt> </tt>
+<a name="L28"></a><tt class="py-lineno">28</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L29"></a><tt class="py-lineno">29</tt>  <tt class="py-line"><tt class="py-docstring">    @param rad: The radial grid for the power law in Rstar</tt> </tt>
+<a name="L30"></a><tt class="py-lineno">30</tt>  <tt class="py-line"><tt class="py-docstring">    @type rad: array</tt> </tt>
+<a name="L31"></a><tt class="py-lineno">31</tt>  <tt class="py-line"><tt class="py-docstring">    @param tstar: The stellar effective temperature</tt> </tt>
+<a name="L32"></a><tt class="py-lineno">32</tt>  <tt class="py-line"><tt class="py-docstring">    @type tstar: float</tt> </tt>
+<a name="L33"></a><tt class="py-lineno">33</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L34"></a><tt class="py-lineno">34</tt>  <tt class="py-line"><tt class="py-docstring">    @keyword s: The s parameter in the power law T(r) given above.</tt> </tt>
+<a name="L35"></a><tt class="py-lineno">35</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L36"></a><tt class="py-lineno">36</tt>  <tt class="py-line"><tt class="py-docstring">                (default: 1)</tt> </tt>
+<a name="L37"></a><tt class="py-lineno">37</tt>  <tt class="py-line"><tt class="py-docstring">    @type s: int</tt> </tt>
+<a name="L38"></a><tt class="py-lineno">38</tt>  <tt class="py-line"><tt class="py-docstring">    @keyword add_key: Add a key for a legend to the ouput as third tuple</tt> </tt>
+<a name="L39"></a><tt class="py-lineno">39</tt>  <tt class="py-line"><tt class="py-docstring">                      element.</tt> </tt>
+<a name="L40"></a><tt class="py-lineno">40</tt>  <tt class="py-line"><tt class="py-docstring">                        </tt> </tt>
+<a name="L41"></a><tt class="py-lineno">41</tt>  <tt class="py-line"><tt class="py-docstring">                      (default: 0)</tt> </tt>
+<a name="L42"></a><tt class="py-lineno">42</tt>  <tt class="py-line"><tt class="py-docstring">    @type add_key: bool</tt> </tt>
+<a name="L43"></a><tt class="py-lineno">43</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L44"></a><tt class="py-lineno">44</tt>  <tt class="py-line"><tt class="py-docstring">    @return: The temperature profile (K) as well as a key, if requested.</tt> </tt>
+<a name="L45"></a><tt class="py-lineno">45</tt>  <tt class="py-line"><tt class="py-docstring">    @rtype: (array,string)</tt> </tt>
+<a name="L46"></a><tt class="py-lineno">46</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L47"></a><tt class="py-lineno">47</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L48"></a><tt class="py-lineno">48</tt>  <tt class="py-line">     </tt>
+<a name="L49"></a><tt class="py-lineno">49</tt>  <tt class="py-line">    <tt class="py-name">s</tt><tt class="py-op">,</tt> <tt class="py-name">tstar</tt><tt class="py-op">,</tt> <tt class="py-name">rad</tt> <tt class="py-op">=</tt> <tt class="py-name">int</tt><tt class="py-op">(</tt><tt class="py-name">s</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt class="py-name">float</tt><tt class="py-op">(</tt><tt class="py-name">tstar</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt class="py-name">array</tt><tt class="py-op">(</tt><tt class="py-name">rad</tt><tt class="py-op">)</tt> </tt>
+<a name="L50"></a><tt class="py-lineno">50</tt>  <tt class="py-line">    <tt class="py-name">temp</tt> <tt class="py-op">=</tt> <tt class="py-name">tstar</tt><tt class="py-op">*</tt><tt class="py-op">(</tt><tt class="py-number">2.</tt><tt class="py-op">*</tt><tt class="py-name">rad</tt><tt class="py-op">)</tt><tt class="py-op">**</tt><tt class="py-op">(</tt><tt class="py-op">-</tt><tt class="py-number">2.</tt><tt class="py-op">/</tt><tt class="py-op">(</tt><tt class="py-number">4</tt><tt class="py-op">+</tt><tt class="py-name">s</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L51"></a><tt class="py-lineno">51</tt>  <tt class="py-line">         </tt>
+<a name="L52"></a><tt class="py-lineno">52</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">add_key</tt><tt class="py-op">:</tt> </tt>
+<a name="L53"></a><tt class="py-lineno">53</tt>  <tt class="py-line">        <tt class="py-name">key</tt> <tt class="py-op">=</tt> <tt class="py-string">'$T_\mathrm{d}(r) = %i \\left(\\frac{2r}{\mathrm{R}_\star}'</tt><tt class="py-op">%</tt><tt class="py-name">s</tt> <tt class="py-op">+</tt>\ </tt>
+<a name="L54"></a><tt class="py-lineno">54</tt>  <tt class="py-line">              <tt class="py-string">'\\right)^{\\frac{2}{4+%i}}$'</tt><tt class="py-op">%</tt><tt class="py-name">int</tt><tt class="py-op">(</tt><tt class="py-name">Tstar</tt><tt class="py-op">)</tt> </tt>
+<a name="L55"></a><tt class="py-lineno">55</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">temp</tt><tt class="py-op">,</tt> <tt class="py-name">key</tt> </tt>
+<a name="L56"></a><tt class="py-lineno">56</tt>  <tt class="py-line">    <tt class="py-keyword">else</tt><tt class="py-op">:</tt>  </tt>
+<a name="L57"></a><tt class="py-lineno">57</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">temp</tt> </tt>
+</div><a name="L58"></a><tt class="py-lineno">58</tt>  <tt class="py-line">     </tt>
+<a name="L59"></a><tt class="py-lineno">59</tt>  <tt class="py-line"> </tt>
+<a name="L60"></a><tt class="py-lineno">60</tt>  <tt class="py-line"> </tt>
+<a name="waterFraction1StepProfiler"></a><div id="waterFraction1StepProfiler-def"><a name="L61"></a><tt class="py-lineno">61</tt> <a class="py-toggle" href="#" id="waterFraction1StepProfiler-toggle" onclick="return toggle('waterFraction1StepProfiler');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ComboCode.cc.modeling.tools.Profiler-module.html#waterFraction1StepProfiler">waterFraction1StepProfiler</a><tt class="py-op">(</tt><tt class="py-param">model_id</tt><tt class="py-op">,</tt><tt class="py-param">path_gastronoom</tt><tt class="py-op">,</tt><tt class="py-param">fraction</tt><tt class="py-op">,</tt><tt class="py-param">rfrac</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="waterFraction1StepProfiler-collapsed" style="display:none;" pad="++" indent="++++"></div><div id="waterFraction1StepProfiler-expanded"><a name="L62"></a><tt class="py-lineno">62</tt>  <tt class="py-line"> </tt>
+<a name="L63"></a><tt class="py-lineno">63</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L64"></a><tt class="py-lineno">64</tt>  <tt class="py-line"><tt class="py-docstring">    Create a 1-step fractional profile for water.</tt> </tt>
+<a name="L65"></a><tt class="py-lineno">65</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L66"></a><tt class="py-lineno">66</tt>  <tt class="py-line"><tt class="py-docstring">    The original water abundance profile is taken from the output of the </tt> </tt>
+<a name="L67"></a><tt class="py-lineno">67</tt>  <tt class="py-line"><tt class="py-docstring">    original model without fractional abundances. </tt> </tt>
+<a name="L68"></a><tt class="py-lineno">68</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L69"></a><tt class="py-lineno">69</tt>  <tt class="py-line"><tt class="py-docstring">    These fraction profiles can be used for CHANGE_ABUNDANCE_FRACTION in mline</tt> </tt>
+<a name="L70"></a><tt class="py-lineno">70</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L71"></a><tt class="py-lineno">71</tt>  <tt class="py-line"><tt class="py-docstring">    @param model_id: The model id of the original cooling model</tt> </tt>
+<a name="L72"></a><tt class="py-lineno">72</tt>  <tt class="py-line"><tt class="py-docstring">    @type model_id: string</tt> </tt>
+<a name="L73"></a><tt class="py-lineno">73</tt>  <tt class="py-line"><tt class="py-docstring">    @param path_gastronoom: The model subfolder in ~/GASTRoNOoM/</tt> </tt>
+<a name="L74"></a><tt class="py-lineno">74</tt>  <tt class="py-line"><tt class="py-docstring">    @type path_gastronoom: string</tt> </tt>
+<a name="L75"></a><tt class="py-lineno">75</tt>  <tt class="py-line"><tt class="py-docstring">    @param fraction: the fraction used</tt> </tt>
+<a name="L76"></a><tt class="py-lineno">76</tt>  <tt class="py-line"><tt class="py-docstring">    @type fraction: float</tt> </tt>
+<a name="L77"></a><tt class="py-lineno">77</tt>  <tt class="py-line"><tt class="py-docstring">    @param rfrac: the radius at the step to the fractional abundance [cm]</tt> </tt>
+<a name="L78"></a><tt class="py-lineno">78</tt>  <tt class="py-line"><tt class="py-docstring">    @type rfrac: float</tt> </tt>
+<a name="L79"></a><tt class="py-lineno">79</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L80"></a><tt class="py-lineno">80</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L81"></a><tt class="py-lineno">81</tt>  <tt class="py-line">     </tt>
+<a name="L82"></a><tt class="py-lineno">82</tt>  <tt class="py-line">    <tt class="py-name">rfrac</tt> <tt class="py-op">=</tt> <tt class="py-name">float</tt><tt class="py-op">(</tt><tt class="py-name">rfrac</tt><tt class="py-op">)</tt> </tt>
+<a name="L83"></a><tt class="py-lineno">83</tt>  <tt class="py-line">    <tt class="py-name">fraction</tt> <tt class="py-op">=</tt> <tt class="py-name">float</tt><tt class="py-op">(</tt><tt class="py-name">fraction</tt><tt class="py-op">)</tt> </tt>
+<a name="L84"></a><tt class="py-lineno">84</tt>  <tt class="py-line">    <tt class="py-name">filename</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">path</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">path</tt><tt class="py-op">.</tt><tt class="py-name">expanduser</tt><tt class="py-op">(</tt><tt class="py-string">'~'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt><tt class="py-string">'GASTRoNOoM'</tt><tt class="py-op">,</tt>\ </tt>
+<a name="L85"></a><tt class="py-lineno">85</tt>  <tt class="py-line">                            <tt class="py-name">path_gastronoom</tt><tt class="py-op">,</tt><tt class="py-string">'models'</tt><tt class="py-op">,</tt><tt class="py-name">model_id</tt><tt class="py-op">,</tt>\ </tt>
+<a name="L86"></a><tt class="py-lineno">86</tt>  <tt class="py-line">                            <tt class="py-string">'coolfgr_all%s.dat'</tt><tt class="py-op">%</tt><tt class="py-name">model_id</tt><tt class="py-op">)</tt> </tt>
+<a name="L87"></a><tt class="py-lineno">87</tt>  <tt class="py-line">    <tt class="py-name">rad</tt> <tt class="py-op">=</tt> <tt id="link-4" class="py-name" targets="Module ComboCode.cc.modeling.codes.Gastronoom=ComboCode.cc.modeling.codes.Gastronoom-module.html,Class ComboCode.cc.modeling.codes.Gastronoom.Gastronoom=ComboCode.cc.modeling.codes.Gastronoom.Gastronoom-class.html"><a title="ComboCode.cc.modeling.codes.Gastronoom
+ComboCode.cc.modeling.codes.Gastronoom.Gastronoom" class="py-name" href="#" onclick="return doclink('link-4', 'Gastronoom', 'link-4');">Gastronoom</a></tt><tt class="py-op">.</tt><tt id="link-5" class="py-name" targets="Function ComboCode.cc.tools.io.DataIO.getGastronoomOutput()=ComboCode.cc.tools.io.DataIO-module.html#getGastronoomOutput"><a title="ComboCode.cc.tools.io.DataIO.getGastronoomOutput" class="py-name" href="#" onclick="return doclink('link-5', 'getGastronoomOutput', 'link-5');">getGastronoomOutput</a></tt><tt class="py-op">(</tt><tt class="py-name">filename</tt><tt class="py-op">=</tt><tt class="py-name">filename</tt><tt class="py-op">,</tt><tt class="py-name">keyword</tt><tt class="py-op">=</tt><tt class="py-string">'RADIUS'</tt><tt class="py-op">,</tt>\ </tt>
+<a name="L88"></a><tt class="py-lineno">88</tt>  <tt class="py-line">                                         <tt class="py-name">return_array</tt><tt class="py-op">=</tt><tt class="py-number">1</tt><tt class="py-op">)</tt> </tt>
+<a name="L89"></a><tt class="py-lineno">89</tt>  <tt class="py-line">    <tt class="py-name">fraction_profile</tt> <tt class="py-op">=</tt> <tt class="py-name">scipy</tt><tt class="py-op">.</tt><tt class="py-name">ones</tt><tt class="py-op">(</tt><tt class="py-name">len</tt><tt class="py-op">(</tt><tt class="py-name">rad</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L90"></a><tt class="py-lineno">90</tt>  <tt class="py-line">    <tt class="py-name">step_index</tt> <tt class="py-op">=</tt> <tt class="py-name">scipy</tt><tt class="py-op">.</tt><tt class="py-name">argmin</tt><tt class="py-op">(</tt><tt class="py-name">abs</tt><tt class="py-op">(</tt><tt class="py-name">rad</tt><tt class="py-op">-</tt><tt class="py-name">rfrac</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L91"></a><tt class="py-lineno">91</tt>  <tt class="py-line">    <tt class="py-name">fraction_profile</tt><tt class="py-op">[</tt><tt class="py-name">step_index</tt><tt class="py-op">:</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">fraction</tt> </tt>
+<a name="L92"></a><tt class="py-lineno">92</tt>  <tt class="py-line">    <tt class="py-name">output_filename</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">path</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">path</tt><tt class="py-op">.</tt><tt class="py-name">expanduser</tt><tt class="py-op">(</tt><tt class="py-string">'~'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt><tt class="py-string">'GASTRoNOoM'</tt><tt class="py-op">,</tt>\ </tt>
+<a name="L93"></a><tt class="py-lineno">93</tt>  <tt class="py-line">                                   <tt class="py-name">path_gastronoom</tt><tt class="py-op">,</tt><tt class="py-string">'profiles'</tt><tt class="py-op">,</tt>\ </tt>
+<a name="L94"></a><tt class="py-lineno">94</tt>  <tt class="py-line">                                   <tt class="py-string">'water_fractions_%s_%.2f_r%.3e.dat'</tt>\ </tt>
+<a name="L95"></a><tt class="py-lineno">95</tt>  <tt class="py-line">                                   <tt class="py-op">%</tt><tt class="py-op">(</tt><tt class="py-name">model_id</tt><tt class="py-op">,</tt><tt class="py-name">fraction</tt><tt class="py-op">,</tt><tt class="py-name">rfrac</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L96"></a><tt class="py-lineno">96</tt>  <tt class="py-line">    <tt id="link-6" class="py-name"><a title="ComboCode.cc.tools.io.DataIO" class="py-name" href="#" onclick="return doclink('link-6', 'DataIO', 'link-3');">DataIO</a></tt><tt class="py-op">.</tt><tt id="link-7" class="py-name" targets="Function ComboCode.cc.tools.io.DataIO.writeCols()=ComboCode.cc.tools.io.DataIO-module.html#writeCols"><a title="ComboCode.cc.tools.io.DataIO.writeCols" class="py-name" href="#" onclick="return doclink('link-7', 'writeCols', 'link-7');">writeCols</a></tt><tt class="py-op">(</tt><tt class="py-name">output_filename</tt><tt class="py-op">,</tt><tt class="py-op">[</tt><tt class="py-name">rad</tt><tt class="py-op">,</tt><tt class="py-name">fraction_profile</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L97"></a><tt class="py-lineno">97</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ComboCode-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jun 19 16:18:03 2015
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

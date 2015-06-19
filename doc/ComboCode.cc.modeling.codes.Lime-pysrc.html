@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ComboCode.cc.modeling.codes.Lime</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ComboCode-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ComboCode-module.html">Package&nbsp;ComboCode</a> ::
+        <a href="ComboCode.cc-module.html">Package&nbsp;cc</a> ::
+        <a href="ComboCode.cc.modeling-module.html">Package&nbsp;modeling</a> ::
+        <a href="ComboCode.cc.modeling.codes-module.html">Package&nbsp;codes</a> ::
+        Module&nbsp;Lime
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ComboCode.cc.modeling.codes.Lime-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ComboCode.cc.modeling.codes.Lime-module.html">Module ComboCode.cc.modeling.codes.Lime</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno"> 1</tt>  <tt class="py-line"><tt class="py-comment"># -*- coding: utf-8 -*-</tt> </tt>
+<a name="L2"></a><tt class="py-lineno"> 2</tt>  <tt class="py-line"> </tt>
+<a name="L3"></a><tt class="py-lineno"> 3</tt>  <tt class="py-line"><tt class="py-docstring">"""</tt> </tt>
+<a name="L4"></a><tt class="py-lineno"> 4</tt>  <tt class="py-line"><tt class="py-docstring">Preparing input for LIME.</tt> </tt>
+<a name="L5"></a><tt class="py-lineno"> 5</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L6"></a><tt class="py-lineno"> 6</tt>  <tt class="py-line"><tt class="py-docstring">Author: R. Lombaert</tt> </tt>
+<a name="L7"></a><tt class="py-lineno"> 7</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L8"></a><tt class="py-lineno"> 8</tt>  <tt class="py-line"><tt class="py-docstring">"""</tt> </tt>
+<a name="L9"></a><tt class="py-lineno"> 9</tt>  <tt class="py-line"> </tt>
+<a name="L10"></a><tt class="py-lineno">10</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">os</tt> </tt>
+<a name="L11"></a><tt class="py-lineno">11</tt>  <tt class="py-line"> </tt>
+<a name="L12"></a><tt class="py-lineno">12</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-0" class="py-name" targets="Package ComboCode.cc=ComboCode.cc-module.html"><a title="ComboCode.cc" class="py-name" href="#" onclick="return doclink('link-0', 'cc', 'link-0');">cc</a></tt><tt class="py-op">.</tt><tt id="link-1" class="py-name" targets="Package ComboCode.cc.modeling.tools=ComboCode.cc.modeling.tools-module.html,Package ComboCode.cc.tools=ComboCode.cc.tools-module.html"><a title="ComboCode.cc.modeling.tools
+ComboCode.cc.tools" class="py-name" href="#" onclick="return doclink('link-1', 'tools', 'link-1');">tools</a></tt><tt class="py-op">.</tt><tt id="link-2" class="py-name" targets="Package ComboCode.cc.tools.io=ComboCode.cc.tools.io-module.html"><a title="ComboCode.cc.tools.io" class="py-name" href="#" onclick="return doclink('link-2', 'io', 'link-2');">io</a></tt> <tt class="py-keyword">import</tt> <tt id="link-3" class="py-name" targets="Module ComboCode.cc.tools.io.DataIO=ComboCode.cc.tools.io.DataIO-module.html"><a title="ComboCode.cc.tools.io.DataIO" class="py-name" href="#" onclick="return doclink('link-3', 'DataIO', 'link-3');">DataIO</a></tt> </tt>
+<a name="L13"></a><tt class="py-lineno">13</tt>  <tt class="py-line"> </tt>
+<a name="prepInput"></a><div id="prepInput-def"><a name="L14"></a><tt class="py-lineno">14</tt> <a class="py-toggle" href="#" id="prepInput-toggle" onclick="return toggle('prepInput');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ComboCode.cc.modeling.codes.Lime-module.html#prepInput">prepInput</a><tt class="py-op">(</tt><tt class="py-param">star</tt><tt class="py-op">,</tt><tt class="py-param">path</tt><tt class="py-op">,</tt><tt class="py-param">repl_str</tt><tt class="py-op">=</tt><tt class="py-string">''</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="prepInput-collapsed" style="display:none;" pad="++" indent="++++"></div><div id="prepInput-expanded"><a name="L15"></a><tt class="py-lineno">15</tt>  <tt class="py-line">     </tt>
+<a name="L16"></a><tt class="py-lineno">16</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L17"></a><tt class="py-lineno">17</tt>  <tt class="py-line"><tt class="py-docstring">    Prepare inputfiles for LIME from a GASTRoNOoM and MCMax model. </tt> </tt>
+<a name="L18"></a><tt class="py-lineno">18</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L19"></a><tt class="py-lineno">19</tt>  <tt class="py-line"><tt class="py-docstring">    Input is taken from the model ouput and written into files. The output</tt> </tt>
+<a name="L20"></a><tt class="py-lineno">20</tt>  <tt class="py-line"><tt class="py-docstring">    folder can be chosen. The model_id tag can be replaced with an arbitrary</tt> </tt>
+<a name="L21"></a><tt class="py-lineno">21</tt>  <tt class="py-line"><tt class="py-docstring">    string.</tt> </tt>
+<a name="L22"></a><tt class="py-lineno">22</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L23"></a><tt class="py-lineno">23</tt>  <tt class="py-line"><tt class="py-docstring">    Input is converted to SI units, except opacities, which are in cm2/g.</tt> </tt>
+<a name="L24"></a><tt class="py-lineno">24</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L25"></a><tt class="py-lineno">25</tt>  <tt class="py-line"><tt class="py-docstring">    @param star: The model object including the GASTRoNOoM and MCMax model ids.</tt> </tt>
+<a name="L26"></a><tt class="py-lineno">26</tt>  <tt class="py-line"><tt class="py-docstring">    @type star: Star()</tt> </tt>
+<a name="L27"></a><tt class="py-lineno">27</tt>  <tt class="py-line"><tt class="py-docstring">    @param path: The target folder for the files.</tt> </tt>
+<a name="L28"></a><tt class="py-lineno">28</tt>  <tt class="py-line"><tt class="py-docstring">    @type path: str</tt> </tt>
+<a name="L29"></a><tt class="py-lineno">29</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L30"></a><tt class="py-lineno">30</tt>  <tt class="py-line"><tt class="py-docstring">    @keyword repl_str: Replacement string for the model_id tag.</tt> </tt>
+<a name="L31"></a><tt class="py-lineno">31</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L32"></a><tt class="py-lineno">32</tt>  <tt class="py-line"><tt class="py-docstring">                       (default: '')</tt> </tt>
+<a name="L33"></a><tt class="py-lineno">33</tt>  <tt class="py-line"><tt class="py-docstring">    @type repl_str: str</tt> </tt>
+<a name="L34"></a><tt class="py-lineno">34</tt>  <tt class="py-line"><tt class="py-docstring">    </tt> </tt>
+<a name="L35"></a><tt class="py-lineno">35</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L36"></a><tt class="py-lineno">36</tt>  <tt class="py-line">     </tt>
+<a name="L37"></a><tt class="py-lineno">37</tt>  <tt class="py-line">    <tt class="py-comment">#-- First opacities and t_dust, which are not part of the GASTRoNOoM output</tt> </tt>
+<a name="L38"></a><tt class="py-lineno">38</tt>  <tt class="py-line">    <tt class="py-name">mcmid</tt> <tt class="py-op">=</tt> <tt class="py-name">star</tt><tt class="py-op">[</tt><tt class="py-string">'LAST_MCMAX_MODEL'</tt><tt class="py-op">]</tt> </tt>
+<a name="L39"></a><tt class="py-lineno">39</tt>  <tt class="py-line">    <tt class="py-name">fnopac</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">path</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-name">path</tt><tt class="py-op">,</tt><tt class="py-string">'opac_%s.dat'</tt><tt class="py-op">%</tt><tt class="py-op">(</tt><tt class="py-name">repl_str</tt> <tt class="py-keyword">and</tt> <tt class="py-name">repl_str</tt> <tt class="py-keyword">or</tt> <tt class="py-name">mcmid</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L40"></a><tt class="py-lineno">40</tt>  <tt class="py-line">    <tt id="link-4" class="py-name"><a title="ComboCode.cc.tools.io.DataIO" class="py-name" href="#" onclick="return doclink('link-4', 'DataIO', 'link-3');">DataIO</a></tt><tt class="py-op">.</tt><tt id="link-5" class="py-name" targets="Function ComboCode.cc.tools.io.DataIO.writeCols()=ComboCode.cc.tools.io.DataIO-module.html#writeCols"><a title="ComboCode.cc.tools.io.DataIO.writeCols" class="py-name" href="#" onclick="return doclink('link-5', 'writeCols', 'link-5');">writeCols</a></tt><tt class="py-op">(</tt><tt class="py-name">fnopac</tt><tt class="py-op">,</tt><tt class="py-name">star</tt><tt class="py-op">.</tt><tt id="link-6" class="py-name" targets="Method ComboCode.cc.modeling.objects.Star.Star.readWeightedKappas()=ComboCode.cc.modeling.objects.Star.Star-class.html#readWeightedKappas"><a title="ComboCode.cc.modeling.objects.Star.Star.readWeightedKappas" class="py-name" href="#" onclick="return doclink('link-6', 'readWeightedKappas', 'link-6');">readWeightedKappas</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L41"></a><tt class="py-lineno">41</tt>  <tt class="py-line">     </tt>
+<a name="L42"></a><tt class="py-lineno">42</tt>  <tt class="py-line">    <tt class="py-comment">#-- Write dust temperature to a file.</tt> </tt>
+<a name="L43"></a><tt class="py-lineno">43</tt>  <tt class="py-line">    <tt class="py-name">fntd</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">path</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-name">path</tt><tt class="py-op">,</tt><tt class="py-string">'td_%s.dat'</tt><tt class="py-op">%</tt><tt class="py-op">(</tt><tt class="py-name">repl_str</tt> <tt class="py-keyword">and</tt> <tt class="py-name">repl_str</tt> <tt class="py-keyword">or</tt> <tt class="py-name">mcmid</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L44"></a><tt class="py-lineno">44</tt>  <tt class="py-line">    <tt class="py-name">rad</tt> <tt class="py-op">=</tt> <tt class="py-name">star</tt><tt class="py-op">.</tt><tt id="link-7" class="py-name" targets="Method ComboCode.cc.modeling.objects.Star.Star.getDustRad()=ComboCode.cc.modeling.objects.Star.Star-class.html#getDustRad"><a title="ComboCode.cc.modeling.objects.Star.Star.getDustRad" class="py-name" href="#" onclick="return doclink('link-7', 'getDustRad', 'link-7');">getDustRad</a></tt><tt class="py-op">(</tt><tt class="py-name">unit</tt><tt class="py-op">=</tt><tt class="py-string">'m'</tt><tt class="py-op">)</tt> </tt>
+<a name="L45"></a><tt class="py-lineno">45</tt>  <tt class="py-line">    <tt class="py-name">td</tt> <tt class="py-op">=</tt> <tt class="py-name">star</tt><tt class="py-op">.</tt><tt id="link-8" class="py-name" targets="Method ComboCode.cc.modeling.objects.Star.Star.getDustTemperature()=ComboCode.cc.modeling.objects.Star.Star-class.html#getDustTemperature"><a title="ComboCode.cc.modeling.objects.Star.Star.getDustTemperature" class="py-name" href="#" onclick="return doclink('link-8', 'getDustTemperature', 'link-8');">getDustTemperature</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L46"></a><tt class="py-lineno">46</tt>  <tt class="py-line">    <tt id="link-9" class="py-name"><a title="ComboCode.cc.tools.io.DataIO" class="py-name" href="#" onclick="return doclink('link-9', 'DataIO', 'link-3');">DataIO</a></tt><tt class="py-op">.</tt><tt id="link-10" class="py-name"><a title="ComboCode.cc.tools.io.DataIO.writeCols" class="py-name" href="#" onclick="return doclink('link-10', 'writeCols', 'link-5');">writeCols</a></tt><tt class="py-op">(</tt><tt class="py-name">fntd</tt><tt class="py-op">,</tt><tt class="py-op">[</tt><tt class="py-name">rad</tt><tt class="py-op">,</tt><tt class="py-name">td</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L47"></a><tt class="py-lineno">47</tt>  <tt class="py-line">     </tt>
+<a name="L48"></a><tt class="py-lineno">48</tt>  <tt class="py-line">    <tt class="py-comment">#-- Finally the gas properties</tt> </tt>
+<a name="L49"></a><tt class="py-lineno">49</tt>  <tt class="py-line">    <tt class="py-name">props</tt> <tt class="py-op">=</tt> <tt class="py-name">dict</tt><tt class="py-op">(</tt><tt class="py-op">[</tt><tt class="py-op">(</tt><tt class="py-string">'nh2'</tt><tt class="py-op">,</tt><tt class="py-string">'N(H2)'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt><tt class="py-op">(</tt><tt class="py-string">'vg'</tt><tt class="py-op">,</tt><tt class="py-string">'VEL'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt><tt class="py-op">(</tt><tt class="py-string">'rad'</tt><tt class="py-op">,</tt><tt class="py-string">'RADIUS'</tt><tt class="py-op">)</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L50"></a><tt class="py-lineno">50</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">repl_str</tt><tt class="py-op">:</tt> <tt class="py-name">repl_str</tt> <tt class="py-op">=</tt> <tt class="py-name">star</tt><tt class="py-op">[</tt><tt class="py-string">'LAST_GASTRONOOM_MODEL'</tt><tt class="py-op">]</tt> </tt>
+<a name="L51"></a><tt class="py-lineno">51</tt>  <tt class="py-line">    <tt class="py-name">fngas</tt> <tt class="py-op">=</tt> <tt class="py-name">star</tt><tt class="py-op">.</tt><tt id="link-11" class="py-name" targets="Method ComboCode.cc.modeling.objects.Star.Star.getCoolFn()=ComboCode.cc.modeling.objects.Star.Star-class.html#getCoolFn"><a title="ComboCode.cc.modeling.objects.Star.Star.getCoolFn" class="py-name" href="#" onclick="return doclink('link-11', 'getCoolFn', 'link-11');">getCoolFn</a></tt><tt class="py-op">(</tt><tt class="py-string">'fgr_all'</tt><tt class="py-op">)</tt> </tt>
+<a name="L52"></a><tt class="py-lineno">52</tt>  <tt class="py-line">    <tt class="py-name">fncogas</tt> <tt class="py-op">=</tt> <tt class="py-name">star</tt><tt class="py-op">.</tt><tt id="link-12" class="py-name"><a title="ComboCode.cc.modeling.objects.Star.Star.getCoolFn" class="py-name" href="#" onclick="return doclink('link-12', 'getCoolFn', 'link-11');">getCoolFn</a></tt><tt class="py-op">(</tt><tt class="py-string">'1'</tt><tt class="py-op">,</tt><tt class="py-name">mstr</tt><tt class="py-op">=</tt><tt class="py-string">'12C16O'</tt><tt class="py-op">)</tt> </tt>
+<a name="L53"></a><tt class="py-lineno">53</tt>  <tt class="py-line">     </tt>
+<a name="L54"></a><tt class="py-lineno">54</tt>  <tt class="py-line">    <tt class="py-comment">#-- Radius for nh2 and vel</tt> </tt>
+<a name="L55"></a><tt class="py-lineno">55</tt>  <tt class="py-line">    <tt class="py-name">rad</tt> <tt class="py-op">=</tt> <tt class="py-name">star</tt><tt class="py-op">.</tt><tt id="link-13" class="py-name" targets="Method ComboCode.cc.modeling.objects.Star.Star.getGasRad()=ComboCode.cc.modeling.objects.Star.Star-class.html#getGasRad"><a title="ComboCode.cc.modeling.objects.Star.Star.getGasRad" class="py-name" href="#" onclick="return doclink('link-13', 'getGasRad', 'link-13');">getGasRad</a></tt><tt class="py-op">(</tt><tt class="py-name">unit</tt><tt class="py-op">=</tt><tt class="py-string">'m'</tt><tt class="py-op">,</tt><tt class="py-name">ftype</tt><tt class="py-op">=</tt><tt class="py-string">'fgr_all'</tt><tt class="py-op">)</tt> </tt>
+<a name="L56"></a><tt class="py-lineno">56</tt>  <tt class="py-line">         </tt>
+<a name="L57"></a><tt class="py-lineno">57</tt>  <tt class="py-line">    <tt class="py-comment">#-- h2 number density</tt> </tt>
+<a name="L58"></a><tt class="py-lineno">58</tt>  <tt class="py-line">    <tt class="py-name">nh2</tt> <tt class="py-op">=</tt> <tt class="py-name">star</tt><tt class="py-op">.</tt><tt id="link-14" class="py-name" targets="Method ComboCode.cc.modeling.objects.Star.Star.getGasNumberDensity()=ComboCode.cc.modeling.objects.Star.Star-class.html#getGasNumberDensity"><a title="ComboCode.cc.modeling.objects.Star.Star.getGasNumberDensity" class="py-name" href="#" onclick="return doclink('link-14', 'getGasNumberDensity', 'link-14');">getGasNumberDensity</a></tt><tt class="py-op">(</tt><tt class="py-name">ftype</tt><tt class="py-op">=</tt><tt class="py-string">'fgr_all'</tt><tt class="py-op">)</tt> </tt>
+<a name="L59"></a><tt class="py-lineno">59</tt>  <tt class="py-line">    <tt class="py-name">nh2</tt> <tt class="py-op">=</tt> <tt class="py-name">nh2</tt><tt class="py-op">*</tt><tt class="py-number">10</tt><tt class="py-op">**</tt><tt class="py-number">6</tt> </tt>
+<a name="L60"></a><tt class="py-lineno">60</tt>  <tt class="py-line">    <tt class="py-name">fnnh2</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">path</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-name">path</tt><tt class="py-op">,</tt><tt class="py-string">'nh2_%s.dat'</tt><tt class="py-op">%</tt><tt class="py-name">repl_str</tt><tt class="py-op">)</tt> </tt>
+<a name="L61"></a><tt class="py-lineno">61</tt>  <tt class="py-line">    <tt id="link-15" class="py-name"><a title="ComboCode.cc.tools.io.DataIO" class="py-name" href="#" onclick="return doclink('link-15', 'DataIO', 'link-3');">DataIO</a></tt><tt class="py-op">.</tt><tt id="link-16" class="py-name"><a title="ComboCode.cc.tools.io.DataIO.writeCols" class="py-name" href="#" onclick="return doclink('link-16', 'writeCols', 'link-5');">writeCols</a></tt><tt class="py-op">(</tt><tt class="py-name">fnnh2</tt><tt class="py-op">,</tt><tt class="py-op">[</tt><tt class="py-name">rad</tt><tt class="py-op">,</tt><tt class="py-name">nh2</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L62"></a><tt class="py-lineno">62</tt>  <tt class="py-line">     </tt>
+<a name="L63"></a><tt class="py-lineno">63</tt>  <tt class="py-line">    <tt class="py-comment">#-- Velocity profile</tt> </tt>
+<a name="L64"></a><tt class="py-lineno">64</tt>  <tt class="py-line">    <tt class="py-name">vel</tt> <tt class="py-op">=</tt> <tt class="py-name">star</tt><tt class="py-op">.</tt><tt id="link-17" class="py-name" targets="Method ComboCode.cc.modeling.objects.Star.Star.getGasVelocity()=ComboCode.cc.modeling.objects.Star.Star-class.html#getGasVelocity"><a title="ComboCode.cc.modeling.objects.Star.Star.getGasVelocity" class="py-name" href="#" onclick="return doclink('link-17', 'getGasVelocity', 'link-17');">getGasVelocity</a></tt><tt class="py-op">(</tt><tt class="py-name">ftype</tt><tt class="py-op">=</tt><tt class="py-string">'fgr_all'</tt><tt class="py-op">)</tt> </tt>
+<a name="L65"></a><tt class="py-lineno">65</tt>  <tt class="py-line">    <tt class="py-name">vel</tt> <tt class="py-op">=</tt> <tt class="py-name">vel</tt><tt class="py-op">*</tt><tt class="py-number">10</tt><tt class="py-op">**</tt><tt class="py-op">-</tt><tt class="py-number">2</tt> </tt>
+<a name="L66"></a><tt class="py-lineno">66</tt>  <tt class="py-line">    <tt class="py-name">fnvel</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">path</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-name">path</tt><tt class="py-op">,</tt><tt class="py-string">'vg_%s.dat'</tt><tt class="py-op">%</tt><tt class="py-name">repl_str</tt><tt class="py-op">)</tt> </tt>
+<a name="L67"></a><tt class="py-lineno">67</tt>  <tt class="py-line">    <tt id="link-18" class="py-name"><a title="ComboCode.cc.tools.io.DataIO" class="py-name" href="#" onclick="return doclink('link-18', 'DataIO', 'link-3');">DataIO</a></tt><tt class="py-op">.</tt><tt id="link-19" class="py-name"><a title="ComboCode.cc.tools.io.DataIO.writeCols" class="py-name" href="#" onclick="return doclink('link-19', 'writeCols', 'link-5');">writeCols</a></tt><tt class="py-op">(</tt><tt class="py-name">fnvel</tt><tt class="py-op">,</tt><tt class="py-op">[</tt><tt class="py-name">rad</tt><tt class="py-op">,</tt><tt class="py-name">vel</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L68"></a><tt class="py-lineno">68</tt>  <tt class="py-line">     </tt>
+<a name="L69"></a><tt class="py-lineno">69</tt>  <tt class="py-line">    <tt class="py-comment">#-- CO abundance</tt> </tt>
+<a name="L70"></a><tt class="py-lineno">70</tt>  <tt class="py-line">    <tt class="py-name">rad</tt> <tt class="py-op">=</tt> <tt class="py-name">star</tt><tt class="py-op">.</tt><tt id="link-20" class="py-name"><a title="ComboCode.cc.modeling.objects.Star.Star.getGasRad" class="py-name" href="#" onclick="return doclink('link-20', 'getGasRad', 'link-13');">getGasRad</a></tt><tt class="py-op">(</tt><tt class="py-name">ftype</tt><tt class="py-op">=</tt><tt class="py-string">'1'</tt><tt class="py-op">,</tt><tt class="py-name">mstr</tt><tt class="py-op">=</tt><tt class="py-string">'12C16O'</tt><tt class="py-op">,</tt><tt class="py-name">unit</tt><tt class="py-op">=</tt><tt class="py-string">'m'</tt><tt class="py-op">)</tt> </tt>
+<a name="L71"></a><tt class="py-lineno">71</tt>  <tt class="py-line">    <tt class="py-name">nh2</tt> <tt class="py-op">=</tt> <tt class="py-name">star</tt><tt class="py-op">.</tt><tt id="link-21" class="py-name"><a title="ComboCode.cc.modeling.objects.Star.Star.getGasNumberDensity" class="py-name" href="#" onclick="return doclink('link-21', 'getGasNumberDensity', 'link-14');">getGasNumberDensity</a></tt><tt class="py-op">(</tt><tt class="py-name">ftype</tt><tt class="py-op">=</tt><tt class="py-string">'1'</tt><tt class="py-op">,</tt><tt class="py-name">mstr</tt><tt class="py-op">=</tt><tt class="py-string">'12C16O'</tt><tt class="py-op">)</tt> </tt>
+<a name="L72"></a><tt class="py-lineno">72</tt>  <tt class="py-line">    <tt class="py-name">nco</tt> <tt class="py-op">=</tt> <tt class="py-name">star</tt><tt class="py-op">.</tt><tt id="link-22" class="py-name"><a title="ComboCode.cc.modeling.objects.Star.Star.getGasNumberDensity" class="py-name" href="#" onclick="return doclink('link-22', 'getGasNumberDensity', 'link-14');">getGasNumberDensity</a></tt><tt class="py-op">(</tt><tt class="py-name">ftype</tt><tt class="py-op">=</tt><tt class="py-string">'1'</tt><tt class="py-op">,</tt><tt class="py-name">mstr</tt><tt class="py-op">=</tt><tt class="py-string">'12C16O'</tt><tt class="py-op">,</tt><tt class="py-name">molecule</tt><tt class="py-op">=</tt><tt class="py-number">1</tt><tt class="py-op">)</tt> </tt>
+<a name="L73"></a><tt class="py-lineno">73</tt>  <tt class="py-line">    <tt class="py-name">aco</tt> <tt class="py-op">=</tt> <tt class="py-name">nco</tt><tt class="py-op">/</tt><tt class="py-name">nh2</tt> </tt>
+<a name="L74"></a><tt class="py-lineno">74</tt>  <tt class="py-line">    <tt class="py-name">fnaco</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">path</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-name">path</tt><tt class="py-op">,</tt><tt class="py-string">'aco_%s.dat'</tt><tt class="py-op">%</tt><tt class="py-name">repl_str</tt><tt class="py-op">)</tt> </tt>
+<a name="L75"></a><tt class="py-lineno">75</tt>  <tt class="py-line">    <tt id="link-23" class="py-name"><a title="ComboCode.cc.tools.io.DataIO" class="py-name" href="#" onclick="return doclink('link-23', 'DataIO', 'link-3');">DataIO</a></tt><tt class="py-op">.</tt><tt id="link-24" class="py-name"><a title="ComboCode.cc.tools.io.DataIO.writeCols" class="py-name" href="#" onclick="return doclink('link-24', 'writeCols', 'link-5');">writeCols</a></tt><tt class="py-op">(</tt><tt class="py-name">fnaco</tt><tt class="py-op">,</tt><tt class="py-op">[</tt><tt class="py-name">rad</tt><tt class="py-op">,</tt><tt class="py-name">aco</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L76"></a><tt class="py-lineno">76</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ComboCode-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jun 19 16:18:00 2015
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

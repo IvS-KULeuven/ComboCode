@@ -1,0 +1,706 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ComboCode.cc.data.LPTools</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ComboCode-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ComboCode-module.html">Package&nbsp;ComboCode</a> ::
+        <a href="ComboCode.cc-module.html">Package&nbsp;cc</a> ::
+        <a href="ComboCode.cc.data-module.html">Package&nbsp;data</a> ::
+        Module&nbsp;LPTools
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ComboCode.cc.data.LPTools-module.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== MODULE DESCRIPTION ==================== -->
+<h1 class="epydoc">Module LPTools</h1><p class="nomargin-top"><span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html">source&nbsp;code</a></span></p>
+<p>Some tools for measuring line profiles of emission lines.</p>
+  <p>Author: R. Lombaert</p>
+
+<!-- ==================== FUNCTIONS ==================== -->
+<a name="section-Functions"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Functions</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Functions"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">LPDataReader()</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.data.LPTools-module.html#readLineProfile" class="summary-sig-name">readLineProfile</a>(<span class="summary-sig-arg">filename</span>,
+        <span class="summary-sig-arg">info_path</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">/home/robinl/ComboCode/Data</code><code class="variable-quote">'</code></span>)</span><br />
+      Read a line profile, independent of the type of extension.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#readLineProfile">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">float</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.data.LPTools-module.html#integrateLPData" class="summary-sig-name">integrateLPData</a>(<span class="summary-sig-arg">vexp</span>,
+        <span class="summary-sig-arg">filename</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">lprof</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">window</span>=<span class="summary-sig-default">1.2</span>,
+        <span class="summary-sig-arg">info_path</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">/home/robinl/ComboCode/Data</code><code class="variable-quote">'</code></span>)</span><br />
+      Integrate a line profile read from a fits file or a txt file.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#integrateLPData">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">float</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.data.LPTools-module.html#getPeakLPData" class="summary-sig-name">getPeakLPData</a>(<span class="summary-sig-arg">filename</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">lprof</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">vlsr</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">info_path</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">/home/robinl/ComboCode/Data</code><code class="variable-quote">'</code></span>)</span><br />
+      Calculate the peak value of a line profile read from a fits file or a
+      txt file.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#getPeakLPData">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">float</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.data.LPTools-module.html#getLPDataFWHM" class="summary-sig-name">getLPDataFWHM</a>(<span class="summary-sig-arg">lprof</span>)</span><br />
+      Calculate the FWHM of the line profile.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#getLPDataFWHM">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">funclib.soft_parabola</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.data.LPTools-module.html#varyInitialFit" class="summary-sig-name">varyInitialFit</a>(<span class="summary-sig-arg">vel</span>,
+        <span class="summary-sig-arg">flux</span>,
+        <span class="summary-sig-arg">initial</span>,
+        <span class="summary-sig-arg">index</span>,
+        <span class="summary-sig-arg">values</span>,
+        <span class="summary-sig-arg">vary</span>,
+        <span class="summary-sig-arg">function</span>=<span class="summary-sig-default">&lt;function soft_parabola at 0x7f8c589edc80&gt;</span>,
+        <span class="summary-sig-arg">vary_window</span>=<span class="summary-sig-default">0</span>)</span><br />
+      Fit a function to a line profile for different initial guesses of a 
+      single parameter.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#varyInitialFit">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">funclib.function() (some function)</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.data.LPTools-module.html#fitFunction" class="summary-sig-name">fitFunction</a>(<span class="summary-sig-arg">x</span>,
+        <span class="summary-sig-arg">y</span>,
+        <span class="summary-sig-arg">initial</span>,
+        <span class="summary-sig-arg">function</span>,
+        <span class="summary-sig-arg">vary</span>)</span><br />
+      Fit a function to a set of x and y values.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#fitFunction">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">tuple(float)</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.data.LPTools-module.html#checkLPShape" class="summary-sig-name">checkLPShape</a>(<span class="summary-sig-arg">vel</span>,
+        <span class="summary-sig-arg">flux</span>,
+        <span class="summary-sig-arg">vlsr</span>,
+        <span class="summary-sig-arg">vexp</span>,
+        <span class="summary-sig-arg">window</span>=<span class="summary-sig-default">2.0</span>,
+        <span class="summary-sig-arg">show</span>=<span class="summary-sig-default">0</span>)</span><br />
+      Check the shape of the line profile, to see if any irregular patterns
+      are present.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#checkLPShape">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">dict[float,float,float,float,funclib.Function(),                 
+      funclib.Function(),funclib.Function()]</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.data.LPTools-module.html#fitLP" class="summary-sig-name">fitLP</a>(<span class="summary-sig-arg">filename</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">lprof</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">theory</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">show</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">cfg</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">convert_ms_kms</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">vary_pars</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-quote">'</code><code class="variable-string">vexp</code><code class="variable-quote">'</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">i_vexp</span>=<span class="summary-sig-default">15.0</span>,
+        <span class="summary-sig-arg">i_gamma</span>=<span class="summary-sig-default">1.0</span>,
+        <span class="summary-sig-arg">do_gauss</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">info_path</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">/home/robinl/ComboCode/Data</code><code class="variable-quote">'</code></span>)</span><br />
+      Fit a line profile with a soft parabola, and a Gaussian component if 
+      required.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#fitLP">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+</table>
+<!-- ==================== VARIABLES ==================== -->
+<a name="section-Variables"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Variables</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Variables"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="__package__"></a><span class="summary-name">__package__</span> = <code title="'ComboCode.cc.data'"><code class="variable-quote">'</code><code class="variable-string">ComboCode.cc.data</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+</table>
+<!-- ==================== FUNCTION DETAILS ==================== -->
+<a name="section-FunctionDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Function Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-FunctionDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="readLineProfile"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">readLineProfile</span>(<span class="sig-arg">filename</span>,
+        <span class="sig-arg">info_path</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">/home/robinl/ComboCode/Data</code><code class="variable-quote">'</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#readLineProfile">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Read a line profile, independent of the type of extension.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>filename</code></strong> (string) - The filename to the data file of the line profile. If None a line
+          profile object is expected.
+          <p>(default: None)</p></li>
+        <li><strong class="pname"><code>info_path</code></strong> (string) - The path to the folder containing the info file on stars, called 
+          Star.dat.
+          <p>(default: ~/ComboCode/Data)</p></li>
+    </ul></dd>
+    <dt>Returns: LPDataReader()</dt>
+        <dd>The line profile</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="integrateLPData"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">integrateLPData</span>(<span class="sig-arg">vexp</span>,
+        <span class="sig-arg">filename</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">lprof</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">window</span>=<span class="sig-default">1.2</span>,
+        <span class="sig-arg">info_path</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">/home/robinl/ComboCode/Data</code><code class="variable-quote">'</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#integrateLPData">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Integrate a line profile read from a fits file or a txt file.</p>
+  <p>Requires a terminal expansion velocity to determine the window in 
+  which the integration is done.</p>
+  <p>If a fits file is read, the source velocity is taken from it (if 
+  available) If a text file is read, a source velocity needs to be given as
+  input.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>vexp</code></strong> (float) - The terminal gas velocity</li>
+        <li><strong class="pname"><code>filename</code></strong> (string) - The filename to the data file of the line profile. If None a line
+          profile object is expected.
+          <p>(default: None)</p></li>
+        <li><strong class="pname"><code>lprof</code></strong> (LPDataReader()) - A line profile object (LPDataReader or inheriting classes) If 
+          None, a filename is expected!
+          <p>(default: None)</p></li>
+        <li><strong class="pname"><code>window</code></strong> (float) - The factor with which vexp is multiplied when selecting the 
+          integration window in the velocity grid.
+          <p>(default: 1.2)</p></li>
+        <li><strong class="pname"><code>info_path</code></strong> (string) - The path to the folder containing the info file on stars, called 
+          Star.dat.
+          <p>(default: ~/ComboCode/Data)</p></li>
+    </ul></dd>
+    <dt>Returns: float</dt>
+        <dd>The integrated intensity of the profile</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="getPeakLPData"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">getPeakLPData</span>(<span class="sig-arg">filename</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">lprof</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">vlsr</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">info_path</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">/home/robinl/ComboCode/Data</code><code class="variable-quote">'</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#getPeakLPData">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Calculate the peak value of a line profile read from a fits file or a 
+  txt file.</p>
+  <p>If a fits file is read, the source velocity is taken from it (if 
+  available) If a text file is read, a source velocity needs to be given as
+  input.</p>
+  <p>The peak value is defined as the mean of central 5 flux points around 
+  the source velocity.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>filename</code></strong> (string) - The filename to the data file of the line profile. If None a line
+          profile object is expected.
+          <p>(default: None)</p></li>
+        <li><strong class="pname"><code>lprof</code></strong> (LPDataReader()) - A line profile object (LPDataReader or inheriting classes) If 
+          None, a filename is expected!
+          <p>(default: None)</p></li>
+        <li><strong class="pname"><code>info_path</code></strong> (string) - The path to the folder containing the info file on stars, called 
+          Star.dat.
+          <p>(default: ~/ComboCode/Data)</p></li>
+        <li><strong class="pname"><code>vlsr</code></strong> (float) - If you want to provide your own vlsr for some reason. Leave as 
+          default if you don't have a good reason to do that.
+          <p>(default: None)</p></li>
+    </ul></dd>
+    <dt>Returns: float</dt>
+        <dd>The peak intensity of the profile</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="getLPDataFWHM"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">getLPDataFWHM</span>(<span class="sig-arg">lprof</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#getLPDataFWHM">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Calculate the FWHM of the line profile.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>lprof</code></strong> (LPDataReader()) - the line profile object.</li>
+    </ul></dd>
+    <dt>Returns: float</dt>
+        <dd>the fwhm of the line</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="varyInitialFit"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">varyInitialFit</span>(<span class="sig-arg">vel</span>,
+        <span class="sig-arg">flux</span>,
+        <span class="sig-arg">initial</span>,
+        <span class="sig-arg">index</span>,
+        <span class="sig-arg">values</span>,
+        <span class="sig-arg">vary</span>,
+        <span class="sig-arg">function</span>=<span class="sig-default">&lt;function soft_parabola at 0x7f8c589edc80&gt;</span>,
+        <span class="sig-arg">vary_window</span>=<span class="sig-default">0</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#varyInitialFit">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Fit a function to a line profile for different initial guesses of a 
+  single parameter.</p>
+  <p>The best fit function is returned. Best fit is determined by checking 
+  for the smallest relative error for the parameter in question.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>vel</code></strong> (array) - The velocity grid</li>
+        <li><strong class="pname"><code>flux</code></strong> (array) - The intensity grid</li>
+        <li><strong class="pname"><code>initial</code></strong> (list) - initial parameters (eg [int,vlsr,vexp,gamma] for sp)</li>
+        <li><strong class="pname"><code>index</code></strong> (int) - Index of initial parameter to be varied</li>
+        <li><strong class="pname"><code>values</code></strong> (tuple) - The values used for the variable initial parameter</li>
+        <li><strong class="pname"><code>vary</code></strong> (list[bool]) - Allow initial parameter to be changed in fitting process. Must 
+          have same length as initial.</li>
+        <li><strong class="pname"><code>function</code></strong> (funclib.function) - The function to be fitted
+          <p>(default: funclib.soft_parabola)</p></li>
+        <li><strong class="pname"><code>vary_window</code></strong> (bool) - Vary the velocity window based on the third initial parameter. 
+          1.5 for soft parabola, 3 for other functions centered on the 
+          second initial parameter. (mu/vlsr and sigma/vexp respectively)
+          <p>(default: 0)</p></li>
+    </ul></dd>
+    <dt>Returns: funclib.soft_parabola</dt>
+        <dd>The model after minimization</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="fitFunction"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">fitFunction</span>(<span class="sig-arg">x</span>,
+        <span class="sig-arg">y</span>,
+        <span class="sig-arg">initial</span>,
+        <span class="sig-arg">function</span>,
+        <span class="sig-arg">vary</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#fitFunction">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Fit a function to a set of x and y values.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>x</code></strong> (array) - The x grid</li>
+        <li><strong class="pname"><code>y</code></strong> (array) - The y grid</li>
+        <li><strong class="pname"><code>initial</code></strong> (list) - initial parameters</li>
+        <li><strong class="pname"><code>function</code></strong> (funclib.function (e.g. funclib.soft_parabola,funclib.gauss)) - The function to be fitted</li>
+        <li><strong class="pname"><code>vary</code></strong> (list[bool]) - Allow initial parameter to be changed in fitting process. Must 
+          have same length as initial.</li>
+    </ul></dd>
+    <dt>Returns: funclib.function() (some function)</dt>
+        <dd>The model after minimization</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="checkLPShape"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">checkLPShape</span>(<span class="sig-arg">vel</span>,
+        <span class="sig-arg">flux</span>,
+        <span class="sig-arg">vlsr</span>,
+        <span class="sig-arg">vexp</span>,
+        <span class="sig-arg">window</span>=<span class="sig-default">2.0</span>,
+        <span class="sig-arg">show</span>=<span class="sig-default">0</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#checkLPShape">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Check the shape of the line profile, to see if any irregular patterns 
+  are present.</p>
+  <p>Based on the diff() method, and the std on the result of it. If sharp 
+  patterns are present, they should be picked up by this method, and an 
+  extra component can be included in fitting the line.</p>
+  <p>Detects absorption irregularities, not emission! At least, it tries to
+  filter the emission effects out. If an emission effect is stronger than 
+  an absorption effect, it should also not detect any irregularities.</p>
+  <p>Still being tested!</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>vel</code></strong> (array) - The velocity grid</li>
+        <li><strong class="pname"><code>flux</code></strong> (array) - The flux grid</li>
+        <li><strong class="pname"><code>vlsr</code></strong> (float) - the central source velocity</li>
+        <li><strong class="pname"><code>vexp</code></strong> (float) - The expected gas terminal velocity</li>
+        <li><strong class="pname"><code>window</code></strong> (float) - The window for line selection. Value is multiplied with
+          <ol start="6">
+            <li>
+              For the usual window of 2., this is 1.2 (SP). For the 
+              Gaussian window of 3., this is 1.8.
+              <p>(default: 2.)</p>
+            </li>
+          </ol></li>
+        <li><strong class="pname"><code>show</code></strong> (bool) - Show the results of the diff and std methods.
+          <p>(default: 0)</p></li>
+    </ul></dd>
+    <dt>Returns: tuple(float)</dt>
+        <dd>The details of the absorption irregularity. Assuming a Gaussian, 
+          a depth, mid point velocity, a width and a continuum value are 
+          returned. If no irregularity is found, None is returned</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="fitLP"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">fitLP</span>(<span class="sig-arg">filename</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">lprof</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">theory</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">show</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">cfg</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">convert_ms_kms</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">vary_pars</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-quote">'</code><code class="variable-string">vexp</code><code class="variable-quote">'</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">i_vexp</span>=<span class="sig-default">15.0</span>,
+        <span class="sig-arg">i_gamma</span>=<span class="sig-default">1.0</span>,
+        <span class="sig-arg">do_gauss</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">info_path</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">/home/robinl/ComboCode/Data</code><code class="variable-quote">'</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.data.LPTools-pysrc.html#fitLP">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Fit a line profile with a soft parabola, and a Gaussian component if 
+  required.</p>
+  <p>The method automatically checks if a second component is needed (eg an
+  extra absorption component). An estimate of the expansion velocity (width
+  of the profile) and an improved guess of the vlsr are given.</p>
+  <p>A guess for the gas terminal velocity is returned, as well as its 
+  error and the fitted profile (sp/gaussian, and if applicable extra 
+  gaussian and the full fit).</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>filename</code></strong> (string) - The filename to the data file of the line profile. If None a line
+          profile object is expected.
+          <p>(default: None)</p></li>
+        <li><strong class="pname"><code>lprof</code></strong> (LPDataReader()) - A line profile object (LPDataReader or inheriting classes) If 
+          None, a filename is expected! If not None, the results are saved 
+          in this object as well as returned upon method call
+          <p>(default: None)</p></li>
+        <li><strong class="pname"><code>convert_ms_kms</code></strong> (bool) - Convert velocity grid from m/s to km/s.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>theory</code></strong> (bool) - If theoretical profile, and filename is given, set vlsr to 0 and 
+          read two columns. lprof and info_path not relevant if True.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>vary_pars</code></strong> (list[string]) - The soft parabola parameters varied (can only be vexp or gamma 
+          for now). The initial values for parameters listed here are not 
+          used. If 'gamma' is requested, a reasonable guess for i_vexp when
+          calling the method will improve the fitting results. This is done
+          for the first guess only! If a Gaussian absorption is present 
+          improving these first guesses won't make much of a difference. 
+          However, the first guess value for gamma is still used. Vexp is 
+          always varied if absorption is present.
+          <p>(default: ['vexp'])</p></li>
+        <li><strong class="pname"><code>i_vexp</code></strong> (float) - The initial guess for the expansion velocity. Not relevant if 
+          vexp is included in vary_pars.
+          <p>(default: 15.0)</p></li>
+        <li><strong class="pname"><code>i_gamma</code></strong> (float) - The initial guess for the gamma parameter of soft parab. Not 
+          relevant if gamma is included in vary_pars.
+          <p>(default: 1.0)</p></li>
+        <li><strong class="pname"><code>do_gauss</code></strong> (bool) - Force a Gaussian fit regardless of soft parabola fit results. 
+          Still does the soft parabola fit first to allow for comparison of
+          parameters.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>info_path</code></strong> (string) - The path to the folder containing the info file on stars, called 
+          Star.dat.
+          <p>(default: ~/ComboCode/Data)</p></li>
+        <li><strong class="pname"><code>show</code></strong> (bool) - Show the results of the fit
+          <p>(default: 0)</p></li>
+    </ul></dd>
+    <dt>Returns: dict[float,float,float,float,funclib.Function(),                 
+      funclib.Function(),funclib.Function()]</dt>
+        <dd>dictionary including [vexp,evexp,gamma,egamma,fitprof,gaussian,
+          fullfit,dintint,fgintint]</dd>
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ComboCode-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jun 19 16:17:58 2015
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

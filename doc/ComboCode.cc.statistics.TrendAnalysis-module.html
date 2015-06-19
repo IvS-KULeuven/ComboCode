@@ -1,0 +1,820 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ComboCode.cc.statistics.TrendAnalysis</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ComboCode-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ComboCode-module.html">Package&nbsp;ComboCode</a> ::
+        <a href="ComboCode.cc-module.html">Package&nbsp;cc</a> ::
+        <a href="ComboCode.cc.statistics-module.html">Package&nbsp;statistics</a> ::
+        Module&nbsp;TrendAnalysis
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ComboCode.cc.statistics.TrendAnalysis-module.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== MODULE DESCRIPTION ==================== -->
+<h1 class="epydoc">Module TrendAnalysis</h1><p class="nomargin-top"><span class="codelink"><a href="ComboCode.cc.statistics.TrendAnalysis-pysrc.html">source&nbsp;code</a></span></p>
+<p>Tools for trend analysis.</p>
+  <p>Author: R. Lombaert</p>
+
+<!-- ==================== FUNCTIONS ==================== -->
+<a name="section-Functions"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Functions</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Functions"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.statistics.TrendAnalysis-module.html#makeDiagnosticPlot" class="summary-sig-name">makeDiagnosticPlot</a>(<span class="summary-sig-arg">sg</span>,
+        <span class="summary-sig-arg">molec</span>,
+        <span class="summary-sig-arg">scaling</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">escaling</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">combine_water</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">edists</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span><br />
+      Make a diagnostic plot for a series of stars, where Imb for 
+      transitions of a given molecule are compared with their upper level 
+      energies.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.statistics.TrendAnalysis-pysrc.html#makeDiagnosticPlot">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">str</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.statistics.TrendAnalysis-module.html#makeParamPlot" class="summary-sig-name">makeParamPlot</a>(<span class="summary-sig-arg">sg</span>,
+        <span class="summary-sig-arg">xpar</span>,
+        <span class="summary-sig-arg">ypar</span>,
+        <span class="summary-sig-arg">expar</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">eypar</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">xratios</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">yratios</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">emdot</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">exparlog</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">eyparlog</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">edists</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">mode</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">dint</code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">n_data</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">extra_mcon</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">extra_dcon</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">cfg</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">add_linear_fit</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">alf_xmin</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">alf_xmax</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">efcont63</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">**kwargs</span>)</span><br />
+      Make a diagnostic plot of either measured line strengths or intrinsic
+      parameters versus measured line strengths or intrinsic parameters.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.statistics.TrendAnalysis-pysrc.html#makeParamPlot">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">array((n_fit,len(line1)))</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.statistics.TrendAnalysis-module.html#guessRatio" class="summary-sig-name">guessRatio</a>(<span class="summary-sig-arg">line1</span>,
+        <span class="summary-sig-arg">line1_err</span>,
+        <span class="summary-sig-arg">line2</span>,
+        <span class="summary-sig-arg">line2_err</span>,
+        <span class="summary-sig-arg">line1_log</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">line2_log</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">n_fit</span>=<span class="summary-sig-default">10000</span>,
+        <span class="summary-sig-arg">positive</span>=<span class="summary-sig-default">0</span>)</span><br />
+      Guess a ratio of given values with error bars a given number of 
+      times.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.statistics.TrendAnalysis-pysrc.html#guessRatio">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">array</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.statistics.TrendAnalysis-module.html#fitCorrPolyLog" class="summary-sig-name">fitCorrPolyLog</a>(<span class="summary-sig-arg">par1</span>,
+        <span class="summary-sig-arg">par1_err</span>,
+        <span class="summary-sig-arg">par2</span>,
+        <span class="summary-sig-arg">par2_err</span>,
+        <span class="summary-sig-arg">line1</span>,
+        <span class="summary-sig-arg">line1_err</span>,
+        <span class="summary-sig-arg">line2</span>,
+        <span class="summary-sig-arg">line2_err</span>,
+        <span class="summary-sig-arg">par1_log</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">par2_log</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">line1_log</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">line2_log</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">n_fit</span>=<span class="summary-sig-default">10000</span>,
+        <span class="summary-sig-arg">poly_degree</span>=<span class="summary-sig-default">1</span>,
+        <span class="summary-sig-arg">show</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">fn_plt</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">x_for_yratio</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">y_for_xratio</span>=<span class="summary-sig-default">0</span>)</span><br />
+      Fit a polynomial to a data set.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.statistics.TrendAnalysis-pysrc.html#fitCorrPolyLog">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">(arr,arr,arr,bool)</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.statistics.TrendAnalysis-module.html#selectDataSG" class="summary-sig-name">selectDataSG</a>(<span class="summary-sig-arg">sg</span>,
+        <span class="summary-sig-arg">par</span>,
+        <span class="summary-sig-arg">epar</span>,
+        <span class="summary-sig-arg">par_co</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">edist</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span><br />
+      Tool for selecting data from a star_grid.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.statistics.TrendAnalysis-pysrc.html#selectDataSG">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">dict()</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="ComboCode.cc.statistics.TrendAnalysis-module.html#corrSG" class="summary-sig-name">corrSG</a>(<span class="summary-sig-arg">sg</span>,
+        <span class="summary-sig-arg">xpar</span>,
+        <span class="summary-sig-arg">ypar</span>,
+        <span class="summary-sig-arg">expar</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">eypar</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">xratio</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">yratio</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">eyratio</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">exratio</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">edist</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">xpar_co</span>=<span class="summary-sig-default"><code class="variable-group">(</code>None<code class="variable-op">, </code>None<code class="variable-group">)</code></span>,
+        <span class="summary-sig-arg">ypar_co</span>=<span class="summary-sig-default"><code class="variable-group">(</code>None<code class="variable-op">, </code>None<code class="variable-group">)</code></span>,
+        <span class="summary-sig-arg">**kwargs</span>)</span><br />
+      A method focused on finding correlations between parameters and/or 
+      data of multiple Star() objects.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="ComboCode.cc.statistics.TrendAnalysis-pysrc.html#corrSG">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+</table>
+<!-- ==================== VARIABLES ==================== -->
+<a name="section-Variables"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Variables</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Variables"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="__package__"></a><span class="summary-name">__package__</span> = <code title="'ComboCode.cc.statistics'"><code class="variable-quote">'</code><code class="variable-string">ComboCode.cc.statistics</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+</table>
+<!-- ==================== FUNCTION DETAILS ==================== -->
+<a name="section-FunctionDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Function Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-FunctionDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="makeDiagnosticPlot"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">makeDiagnosticPlot</span>(<span class="sig-arg">sg</span>,
+        <span class="sig-arg">molec</span>,
+        <span class="sig-arg">scaling</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">escaling</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">combine_water</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">edists</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.statistics.TrendAnalysis-pysrc.html#makeDiagnosticPlot">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Make a diagnostic plot for a series of stars, where Imb for 
+  transitions of a given molecule are compared with their upper level 
+  energies.</p>
+  <p>Line strengths are always scaled with distance squared. Additional 
+  scaling can be requested.</p>
+  <p>Three plots are made: One with scaling versus distance and two with 
+  scaling versus distance and the CO line strength of the J=15-14 and 
+  J=30-29 lines respectively. The comparison with CO line strengths is not 
+  scaled except with distance.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>sg</code></strong> (list[Star()]) - The stellar models, in which the transitions have been matched 
+          with integrated line strengths.</li>
+        <li><strong class="pname"><code>molec</code></strong> (str) - The molecule for which this is done, shorthand notation.</li>
+        <li><strong class="pname"><code>scaling</code></strong> (list[string]) - Scale the line strengths also with a keyword given here. 
+          'MDOT_GAS', etc. Assumes a Star() object knows the keyword.
+          <p>(default:[])</p></li>
+        <li><strong class="pname"><code>combine_water</code></strong> (bool) - Combine both ortho and para water in a single plot
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>edists</code></strong> (list[float]) - Include errors for distance estimates of stars here.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>escaling</code></strong> (list[list]) - Include relative errors of extra scaling parameters as lists. len
+          is len of scaling, len of an element is len of sg
+          <p>(default: [])</p></li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="makeParamPlot"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">makeParamPlot</span>(<span class="sig-arg">sg</span>,
+        <span class="sig-arg">xpar</span>,
+        <span class="sig-arg">ypar</span>,
+        <span class="sig-arg">expar</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">eypar</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">xratios</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">yratios</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">emdot</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">exparlog</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">eyparlog</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">edists</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">mode</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">dint</code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">n_data</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">extra_mcon</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">extra_dcon</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">cfg</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">add_linear_fit</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">alf_xmin</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">alf_xmax</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">efcont63</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">**kwargs</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.statistics.TrendAnalysis-pysrc.html#makeParamPlot">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Make a diagnostic plot of either measured line strengths or intrinsic 
+  parameters versus measured line strengths or intrinsic parameters.</p>
+  <p>Ratios are possible for line strengths. Not for intrinsic 
+  parameters.</p>
+  <p>Requires preparatory work done for the Pacs() and the Star() 
+  objects.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>sg</code></strong> (list[Star()]) - The stellar models, in which the transitions have been matched 
+          with integrated line strengths. If both models and data are 
+          combined, the data Star() objects are assumed to be listed first.</li>
+        <li><strong class="pname"><code>xpar</code></strong> (string/int) - The parameter on the x-axis. Can be either a string (Star() 
+          keyword), or an index (of the transition in the first object in 
+          the sg list) for line strengths. In a combo mode (cint or ctmb) 
+          this means it is the index in the transition list of the data 
+          objects rather than the model objects. Transitions in objects 
+          other than the first 1 can have different indices.</li>
+        <li><strong class="pname"><code>ypar</code></strong> (string/int) - The parameter on the y-axis. Can be either a string (Star() 
+          keyword), or an index (of the transition in the first object in 
+          the sg list) for line strengths. In a combo mode (cint or ctmb) 
+          this means it is the index in the transition list of the data 
+          objects rather than the model objects. Transitions in objects 
+          other than the first 1 can have different indices.</li>
+        <li><strong class="pname"><code>xratios</code></strong> (list[int/str]) - If xpar is a line strength, multiple ratios can be requested to 
+          be plotted in succession. Therefore, this gives the indices (if 
+          int, refers to the 1st Star() object in sg) or 'mdot' (if ratio 
+          wrt Mdot) or 'fcont63' (if ratio wrt 6.3 mic continuumflux) for 
+          the x-axis ratio.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>yratios</code></strong> (list[int/str]) - If ypar is a line strength, multiple ratios can be requested to 
+          be plotted in succession. Therefore, this gives the indices (if 
+          int, refers to the 1st Star() object in sg) or 'mdot' (if ratio 
+          wrt Mdot) or 'fcont63' (if ratio wrt 6.3 mic continuumflux) for 
+          the x-axis ratio.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>emdot</code></strong> (list[float]) - Include errors for the x/yratio quantity if it is mdot. Not used 
+          for error estimation on mdot as a parameter! The mdot errors are 
+          given in log scale.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>efcont63</code></strong> (list[float]) - Include errors for the x/yratio quantity if it is fcont63. Not 
+          used for error estimation on fcont63 as a parameter! The fcont63 
+          errors are given in linear scale
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>expar</code></strong> (array) - The error on the x-parameter if it is a Star() key and if mode is
+          cint or dint. Number of entries in array is equal to the number 
+          of data Star() objects.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>eypar</code></strong> (array) - The error on the y-parameter if it is a Star() key and if mode is
+          cint or dint. Number of entries in array is equal to the number 
+          of data Star() objects.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>exparlog</code></strong> (bool) - The xpar error is given in logscale. Only relevant for the d and 
+          c modes.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>eyparlog</code></strong> (bool) - The ypar error is given in logscale. Only relevant for the d and 
+          c modes.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>edists</code></strong> (list[float]) - Include errors for distance estimates of stars here. These 
+          distances are only used to rescale line strengths if they are not
+          in a ratio.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>mode</code></strong> (str) - The mode in which line strengths are selected, ie either from 
+          data or from models. Either 'dint', 'mint', 'mtmb' or 'dtmb' 
+          values. A combination of both is possible by setting this key to 
+          'cint' or 'ctmb'. Then the extra keyword 'n_data' is required, 
+          which indicates how many Star() objects are associated with data.
+          The method assumes they are the first objects in the list of 
+          Star() objects.
+          <p>(default: 'dint')</p></li>
+        <li><strong class="pname"><code>n_data</code></strong> (int) - The number of data Star() objects, assuming they are the first in
+          the star_grid. Only required if mode == 'combo'.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>extra_mcon</code></strong> (list[string]) - If extra conditionals are requested for models, the plot is 
+          colour coded based on them. For instance, Star() object keywords 
+          can serve as conditionals. Note that these are only applied when 
+          mode == mtmb, mint, cint or ctmb.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>extra_dcon</code></strong> (list[string]) - If extra conditionals are requested for data, the plot is colour 
+          coded based on them. For instance, Star() object keywords can 
+          serve as conditionals. Note that these are only applied when mode
+          == dtmb, dint, cint or ctmb.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>cfg</code></strong> (string/dict) - config filename read as a dictionary, can replace any keyword 
+          given to plotCols. Can also be a dictionary itself, in which case
+          no file is read and the kwargs are updated with the content of 
+          cfg
+          <p>(default: '')</p></li>
+        <li><strong class="pname"><code>add_linear_fit</code></strong> (bool) - Add a linear fit to the figures. The fit is done through corrSG 
+          method, of which extra arguments can be given in kwargs. 
+          (xpar_co, ypar_co) Only works in dint or cint mode if xratios or 
+          yratios has len less than 2.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>alf_xmin</code></strong> (float) - The minimum x value for the linear fit plot, if requested. (This 
+          is not the cut off value for the fitting routine itself!) Has to 
+          be given if a linear fit is requested.
+          <p>(default: None)</p></li>
+        <li><strong class="pname"><code>alf_xmax</code></strong> (float) - The maximum x value for the linear fit plot, if requested. (This 
+          is not the cut off value for the fitting routine itself!) Has to 
+          be given if a linear fit is requested.
+          <p>(default: None)</p></li>
+        <li><strong class="pname"><code>**kwargs</code></strong> (dict) - extra keywords needed for the linear fit, if requested.</li>
+    </ul></dd>
+    <dt>Returns: str</dt>
+        <dd>The filename of the produced plot is returned.</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="guessRatio"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">guessRatio</span>(<span class="sig-arg">line1</span>,
+        <span class="sig-arg">line1_err</span>,
+        <span class="sig-arg">line2</span>,
+        <span class="sig-arg">line2_err</span>,
+        <span class="sig-arg">line1_log</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">line2_log</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">n_fit</span>=<span class="sig-default">10000</span>,
+        <span class="sig-arg">positive</span>=<span class="sig-default">0</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.statistics.TrendAnalysis-pysrc.html#guessRatio">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Guess a ratio of given values with error bars a given number of 
+  times.</p>
+  <p>For both components of the ratio, values are drawn from a Gaussian 
+  distribution around the given value, with the error as sigma.</p>
+  <p>Can be used for error analysis, or for estimating errors on ratios in 
+  case the errors on the separate components are difficult to propagate 
+  properly.</p>
+  <p>The option to guess a value within error bars in log space is 
+  possible. The resulting value is then converted back to linear space, 
+  after which the ratio is taken.</p>
+  <p>Negative values can occur, due to the Gaussian nature of the guesses. 
+  Keep this in mind when taking the log of output values. If you do not 
+  want negative values, this van be requested via the positive keyword.</p>
+  <p>A guess of the ratio, and a standard deviation, can be calculated by 
+  taking the mean and std of the columns in the ouput array.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>line1</code></strong> (array) - Values of the first parameter on the y-axis</li>
+        <li><strong class="pname"><code>line1_err</code></strong> (array) - Uncertainties on line1, assuming they are in a normal 
+          distribution (1-sigma)</li>
+        <li><strong class="pname"><code>line2</code></strong> (array) - Values of the second parameter on the y-axis. Can be an empty 
+          array in case you want to fit a correlation between par and line1
+          without any ratio involved. Pass an empty array if you simply 
+          want to randomize a single array, instead of a ratio.</li>
+        <li><strong class="pname"><code>line2_err</code></strong> (array) - Uncertainties on line2, assuming they are in a normal 
+          distribution (1-sigma)</li>
+        <li><strong class="pname"><code>line1_log</code></strong> (bool) - If line 1 is in log scale. In the ratio, 10**line1 is then taken.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>line2_log</code></strong> (bool) - if line 2 is in log scale. In the ratio, 10**line1 is then taken.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>n_fit</code></strong> (int) - The number of times the correlation is fitted.
+          <p>(default: 10000)</p></li>
+        <li><strong class="pname"><code>positive</code></strong> (bool) - In some cases, you may want to disallow negative values, eg when 
+          you take the log of the results. This switch allows you to 
+          exclude negative values from the output. Use this with caution! 
+          In some case, this will severely affect the Gaussian 
+          distribution.
+          <p>(default: 0)</p></li>
+    </ul></dd>
+    <dt>Returns: array((n_fit,len(line1)))</dt>
+        <dd>The n_fit guesses of the requested ratio.</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="fitCorrPolyLog"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">fitCorrPolyLog</span>(<span class="sig-arg">par1</span>,
+        <span class="sig-arg">par1_err</span>,
+        <span class="sig-arg">par2</span>,
+        <span class="sig-arg">par2_err</span>,
+        <span class="sig-arg">line1</span>,
+        <span class="sig-arg">line1_err</span>,
+        <span class="sig-arg">line2</span>,
+        <span class="sig-arg">line2_err</span>,
+        <span class="sig-arg">par1_log</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">par2_log</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">line1_log</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">line2_log</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">n_fit</span>=<span class="sig-default">10000</span>,
+        <span class="sig-arg">poly_degree</span>=<span class="sig-default">1</span>,
+        <span class="sig-arg">show</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">fn_plt</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">x_for_yratio</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">y_for_xratio</span>=<span class="sig-default">0</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.statistics.TrendAnalysis-pysrc.html#fitCorrPolyLog">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Fit a polynomial to a data set.</p>
+  <p>The data set can consist of straight up values or of ratios on both 
+  the x and y axis (in log space).</p>
+  <p>Takes into account errors in both dimensions.</p>
+  <p>Can be used for e.g. error estimation on a correlation.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>par1</code></strong> (array) - Values of the first parameter on x-axis.</li>
+        <li><strong class="pname"><code>par1_err</code></strong> (array) - Uncertainties on par, assuming they are in a normal distribution 
+          (1-sigma)</li>
+        <li><strong class="pname"><code>par2</code></strong> (array) - Values of the second parameter on the x-axis. Can be an empty 
+          array in case you don't want a ratio on the x-axis.</li>
+        <li><strong class="pname"><code>par2_err</code></strong> (array) - Uncertainties on par2, assuming they are in a normal distribution
+          (1-sigma)</li>
+        <li><strong class="pname"><code>line1</code></strong> (array) - Values of the first parameter on the y-axis</li>
+        <li><strong class="pname"><code>line1_err</code></strong> (array) - Uncertainties on line1, assuming they are in a normal 
+          distribution (1-sigma)</li>
+        <li><strong class="pname"><code>line2</code></strong> (array) - Values of the second parameter on the y-axis. Can be an empty 
+          array in case you don't want a ratio on the x-axis.</li>
+        <li><strong class="pname"><code>line2_err</code></strong> (array) - Uncertainties on line2, assuming they are in a normal 
+          distribution (1-sigma)</li>
+        <li><strong class="pname"><code>par1_log</code></strong> (bool) - If par is in log scale. If not, the log will be taken of par, 
+          since this method fits log log correlations.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>par2_log</code></strong> (bool) - If par2 is in log scale. If not, the log will be taken of par2, 
+          since this method fits log log correlations.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>line1_log</code></strong> (bool) - If line 1 is in log scale. In the ratio, 10**line1 is then taken.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>line2_log</code></strong> (bool) - if line 2 is in log scale. In the ratio, 10**line1 is then taken.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>n_fit</code></strong> (int) - The number of times the correlation is fitted.
+          <p>(default: 10000)</p></li>
+        <li><strong class="pname"><code>poly_degree</code></strong> (int) - The degree of the polynomial that is fitted.
+          <p>(default: 1)</p></li>
+        <li><strong class="pname"><code>show</code></strong> (bool) - Show a plot with the results. If cfg is given, the plot is 
+          adapted, including the filename.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>fn_plt</code></strong> (str) - The filename of the plot, in case show is True, and a saved plot 
+          is requested.
+          <p>(default: '')</p></li>
+        <li><strong class="pname"><code>x_for_yratio</code></strong> (bool) - Use the par grid as the second component in the y ratio. This can
+          be useful for instance if the ratio has Mdot as numerator, while 
+          Mdot is also on the x axis. In this case, you want to use the 
+          same random value for the same point on both x and y.
+          <p>(default: 0)</p></li>
+        <li><strong class="pname"><code>y_for_xratio</code></strong> (bool) - Use the line1 grid as the second component in the x ratio. This 
+          can be useful for instance if the ratio has Mdot as numerator, 
+          while Mdot is also on the y axis. In this case, you want to use 
+          the same random value for the same point on both x and y.
+          <p>(default: 0)</p></li>
+    </ul></dd>
+    <dt>Returns: array</dt>
+        <dd>The fit results are returned for all n_fit fitted functions. The 
+          parameters are the output of np.polyfit and the amount depends on
+          the polynomial degree.</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="selectDataSG"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">selectDataSG</span>(<span class="sig-arg">sg</span>,
+        <span class="sig-arg">par</span>,
+        <span class="sig-arg">epar</span>,
+        <span class="sig-arg">par_co</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">edist</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.statistics.TrendAnalysis-pysrc.html#selectDataSG">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Tool for selecting data from a star_grid. Mainly used by 
+  corrStarGrid() to define input arrays for the correlation study.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>sg</code></strong> (list[Star()]) - The grid of Star() objects.</li>
+        <li><strong class="pname"><code>par</code></strong> (str/int) - The requested parameter. If a string, a Star() keyword is used 
+          and if MDOT_GAS then the error bars are set as log10(3)/3. If an 
+          integer, it is the index of a Transition() in the Star() and the 
+          line strength and -error on it- of the line is taken.</li>
+        <li><strong class="pname"><code>epar</code></strong> (array) - The 1-sigma error bar of the parameter. Only relevant if par is a
+          string Star() keyword that is not MDOT_GAS.</li>
+        <li><strong class="pname"><code>par_co</code></strong> (array) - Define cutoff values here. Always given as an array of size 2. If
+          a lower and/or upper boundary is not needed, it is set as None. 
+          In case of MDOT_GAS==xpar, these values are converted to log 
+          scale. Can be set as None if no cutoff is needed. Only relevant 
+          if par is a string.
+          <p>(default: None)</p></li>
+        <li><strong class="pname"><code>edist</code></strong> (array) - Give the relative error of the distance here. Used to estimate an
+          uncertainty on the rescaled line strengths according to distance 
+          (down to 100 pc). Not relevant when par is a string. An empty 
+          array implies no scaling.
+          <p>(default: [])</p></li>
+    </ul></dd>
+    <dt>Returns: (arr,arr,arr,bool)</dt>
+        <dd>The values for the requested parameter, as well as the 
+          uncertainty, the cutoff values and the log request, ie all 
+          keywords needed for the fitCorrPolyLog method.</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="corrSG"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">corrSG</span>(<span class="sig-arg">sg</span>,
+        <span class="sig-arg">xpar</span>,
+        <span class="sig-arg">ypar</span>,
+        <span class="sig-arg">expar</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">eypar</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">xratio</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">yratio</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">eyratio</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">exratio</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">edist</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">xpar_co</span>=<span class="sig-default"><code class="variable-group">(</code>None<code class="variable-op">, </code>None<code class="variable-group">)</code></span>,
+        <span class="sig-arg">ypar_co</span>=<span class="sig-default"><code class="variable-group">(</code>None<code class="variable-op">, </code>None<code class="variable-group">)</code></span>,
+        <span class="sig-arg">**kwargs</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="ComboCode.cc.statistics.TrendAnalysis-pysrc.html#corrSG">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>A method focused on finding correlations between parameters and/or 
+  data of multiple Star() objects.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>sg</code></strong> (list[Star()]) - The grid of Star() objects.</li>
+        <li><strong class="pname"><code>xpar</code></strong> (str/int) - The parameter on x-axis. If a string, a Star() keyword is used 
+          and if MDOT_GAS then the error bars are set as log10(3)/3. If an 
+          integer, it is the index of a Transition() in the Star() and the 
+          line strength and -error on it- of the line is taken. If the same
+          as yratio, the same guesses are used for both.</li>
+        <li><strong class="pname"><code>ypar</code></strong> (int/str) - The parameter on y-axis. If a string, a Star() keyword is used 
+          and if MDOT_GAS then the error bars are set as log10(3)/3. If an 
+          integer, it is the index of a Transition() in the Star() and the 
+          line strength and -error on it- of the line is taken. If the same
+          as xratio, the same guesses are used for both.</li>
+        <li><strong class="pname"><code>expar</code></strong> (array) - The 1-sigma error bar of the parameter on the xaxis. Only 
+          relevant if xpar is a string Star() keyword that is not MDOT_GAS.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>eypar</code></strong> (array) - The 1-sigma error bar of the parameter on the yaxis. Only 
+          relevant if ypar is a string Star() keyword that is not MDOT_GAS.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>xratio</code></strong> (int/str) - If a ratio on the x-axis is requested, this is the second 
+          component. Input syntax same as xpar.
+          <p>(default: None)</p></li>
+        <li><strong class="pname"><code>exratio</code></strong> (array) - The relative error bars on the xratio parameter are given here. 
+          Only relevant if xratio is a string Star() keyword that is not 
+          MDOT_GAS.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>yratio</code></strong> (int/str) - If a ratio on the y-axis is requested, this is the second 
+          component. Input syntax same as ypar.
+          <p>(default: None)</p></li>
+        <li><strong class="pname"><code>eyratio</code></strong> (array) - The relative error bars on the yratio parameter are given here. 
+          Only relevant if yratio is a string Star() keyword that is not 
+          MDOT_GAS.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>edist</code></strong> (array) - Give the relative error of the distance here. Used to estimate an
+          uncertainty on the rescaled line strengths according to distance 
+          (down to 100 pc). Not relevant when a line ratio is requested.
+          <p>(default: [])</p></li>
+        <li><strong class="pname"><code>xpar_co</code></strong> (array) - Define cutoff values here. Always given as an array of size 2. If
+          a lower and/or upper boundary is not needed, it set as None. In 
+          case of MDOT_GAS==xpar, these values are converted to log scale.
+          <p>(default: array(None,None))</p></li>
+        <li><strong class="pname"><code>ypar_co</code></strong> (array) - Define cutoff values here. Always given as an array of size 2. If
+          a lower and/or upper boundary is not needed, it set as None. In 
+          case of MDOT_GAS==ypar, these values are converted to log scale.
+          <p>(default: array(None,None))</p></li>
+        <li><strong class="pname"><code>kwargs</code></strong> (dict) - Extra keywords relevant for fitLinearCorr or fitCorrPolyLog</li>
+    </ul></dd>
+    <dt>Returns: dict()</dt>
+        <dd>The resulting fit parameters are returned. NYI if poly_degree!=1.</dd>
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ComboCode-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jun 19 16:17:58 2015
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>
