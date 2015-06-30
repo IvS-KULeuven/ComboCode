@@ -35,7 +35,8 @@ First and foremost, if you have python installed, with all necessary dependencie
 
 * Updating your own clone of ComboCode to the most recent version can be done with:
     - $ cd ~/ComboCode/
-    - $ git pull
+    - $ git checkout master
+    - $ git pull origin master
 
 Note that this does not include the ~/ComboCode/Data/ files. You can copy those over from <a href="http://ster.kuleuven.be/~robinl/cc/Data/"> http://ster.kuleuven.be/~robinl/cc/Data/</a>. Afterwards, you can change those files at your whim. They do not come as part of the repository.
 
@@ -55,7 +56,7 @@ Up-to-date documentation that goes with the package is available on GitHub at:
 TBD
 
 ## Developer's Manual
-If you want to make changes to ComboCode, you should fork the repository to your own github account so you can create your own branch on your machine that will not interfere with the main master branch. 
+If you want to make changes to ComboCode, you should fork the repository to your own github account (thhis version of the code is called *origin* below). In origin, you can create your own developer's branch on your machine that will not interfere with the origin/master branch. In general, it is advised NEVER to work in the origin/master branch. Keep your origin/master branch up-to-date with the original repository (called upstream below), but don't meddle with it, and never merge your changes into the origin/master branch. 
 
 * Go to the main IvS-KULeuven/ComboCode.git page and fork the repository to your account. 
 
@@ -63,19 +64,25 @@ If you want to make changes to ComboCode, you should fork the repository to your
     - $ cd 
     - $ git clone https://github.com/<YOUR_USERNAME>/ComboCode.git ComboCode
 
-* Creating your a developer's branch can be done by:
+* Tell git what the original "upstream" version of the code is, i.e. at IvS-KULeuven:
+    - $ git remote add upstream https://github.com/IvS-KULeuven/ComboCode.git
+
+* Creating a developer's branch can be done by (it is named dev here, but it can be named whatever you want):
     - $ cd ~/ComboCode/
-    - $ git branch mybranch
-    - $ git checkout mybranch
+    - $ git branch dev
+    - $ git checkout dev
 
 * Once you've added changes to the code, and you want to suggest those changes to be included in ComboCode, you can commit the changes and push to the origin of your account on GitHub:
     - $ git commit -a -m "Document your changes! Either in-line, or without the -m tag so a text editor opens for documentation."
-    - $ git push origin  mybranch
+    - $ git push origin  dev
 
-* Then you can create a pull request to the IvS-KULeuven account, and wait for the pull request to be included in ComboCode, as descreibed <a href="https://help.github.com/articles/creating-a-pull-request/"> here</a>.
+* Then you can create a pull request to the upstream version of the code (i.e. the IvS-KULeuven account), and wait for the pull request to be merged with the upstream remote, as described <a href="https://help.github.com/articles/creating-a-pull-request/"> here</a>. 
 
+* To update your own origin/master branch (make sure to be in your master branch!), you should fetch the upstream repo and rebase it (i.e. merge, but keep a clean commit history): 
+    - $ git checkout master
+    - $ git fetch upstream    
+    - $ git rebase upstream/master
 
-This section is a work in progress!
-
-
+* Don't forget to update your online GitHub repo (add the -f flag once after rebasing):
+    - $ git push -f origin master
 
