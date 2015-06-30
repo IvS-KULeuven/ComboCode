@@ -28,7 +28,18 @@ have to contact the authors of the codes.</li>
 
 
 ## Installation
-A shell script for the installation of ComboCode will be provided soon as part of the repository. I will include: 
+First and foremost, if you have python installed, with all necessary dependencies (Anaconda distribution, pyfits, and the IvS repository), you can download the code to your hard disk right away: 
+* Clone the git repository to create a local copy, located in ~/ComboCode/:
+    - $ cd 
+    - $ git clone https://github.com/IvS-KULeuven/ComboCode.git ComboCode
+
+* Updating your own clone of ComboCode to the most recent version can be done with:
+    - $ cd ~/ComboCode/
+    - $ git pull
+
+Note that this does not include the ~/ComboCode/Data/ files. You can copy those over from <a href="http://ster.kuleuven.be/~robinl/cc/Data/"> http://ster.kuleuven.be/~robinl/cc/Data/</a>. Afterwards, you can change those files at your whim. They do not come as part of the repository.
+
+A shell script for the installation of ComboCode will be provided soon as part of the repository. It will include: 
 * Anaconda python distribution installation, including additional packages required to run ComboCode
 * Downloading additional Data files not part of the repository but required to run ComboCode
 * Creating a master branch in your local git repository that can be used to run the code
@@ -44,7 +55,27 @@ Up-to-date documentation that goes with the package is available on GitHub at:
 TBD
 
 ## Developer's Manual
-TBD
+If you want to make changes to ComboCode, you should fork the repository to your own github account so you can create your own branch on your machine that will not interfere with the main master branch. 
+
+* Go to the main IvS-KULeuven/ComboCode.git page and fork the repository to your account. 
+
+* Clone a copy of the code in your account to your local machine (fill in your github username)
+    - $ cd 
+    - $ git clone https://github.com/<YOUR_USERNAME>/ComboCode.git ComboCode
+
+* Creating your a developer's branch can be done by:
+    - $ cd ~/ComboCode/
+    - $ git branch mybranch
+    - $ git checkout mybranch
+
+* Once you've added changes to the code, and you want to suggest those changes to be included in ComboCode, you can commit the changes and push to the origin of your account on GitHub:
+    - $ git commit -a -m "Document your changes! Either in-line, or without the -m tag so a text editor opens for documentation."
+    - $ git push origin  mybranch
+
+* Then you can create a pull request to the IvS-KULeuven account, and wait for the pull request to be included in ComboCode, as descreibed <a href="https://help.github.com/articles/creating-a-pull-request/"> here</a>.
+
+
+This section is a work in progress!
 
 
 
