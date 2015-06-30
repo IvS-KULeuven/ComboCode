@@ -65,8 +65,18 @@ If you want to make changes to ComboCode, you should fork the repository to your
     - $ git clone https://github.com/<YOUR_USERNAME>/ComboCode.git ComboCode
 
 * Tell git what the original "upstream" version of the code is, i.e. at IvS-KULeuven:
-    - $ git remote add upstream https://github.com/IvS-KULeuven/ComboCode.git
+    - $ git remote add --track master upstream https://github.com/IvS-KULeuven/ComboCode.git
 
+* Now you can keep your master branch up-to-date with the upstream. As long as you never make any changes in your master branch, you can merge upstream/master with origin/master (make sure to be on the master branch):
+    - $ git fetch upstream
+    - $ git checkout master
+    - $ git merge upstream/master
+
+* Then update your GitHub repo with the changes:
+    - $ git push origin master
+
+
+When developping code, making hotfixes, or any kind of changes, always work in different branch that is not master. 
 * Creating a developer's branch can be done by (it is named dev here, but it can be named whatever you want):
     - $ cd ~/ComboCode/
     - $ git branch dev
@@ -76,13 +86,5 @@ If you want to make changes to ComboCode, you should fork the repository to your
     - $ git commit -a -m "Document your changes! Either in-line, or without the -m tag so a text editor opens for documentation."
     - $ git push origin  dev
 
-* Then you can create a pull request to the upstream version of the code (i.e. the IvS-KULeuven account), and wait for the pull request to be merged with the upstream remote, as described <a href="https://help.github.com/articles/creating-a-pull-request/"> here</a>. 
-
-* To update your own origin/master branch (make sure to be in your master branch!), you should fetch the upstream repo and rebase it (i.e. merge, but keep a clean commit history): 
-    - $ git checkout master
-    - $ git fetch upstream    
-    - $ git rebase upstream/master
-
-* Don't forget to update your online GitHub repo (add the -f flag once after rebasing):
-    - $ git push -f origin master
+* Then you can go to GitHub and select the dev branch. Create a pull request to the upstream version of the code (i.e. the IvS-KULeuven account), and wait for the pull request to be merged with the upstream remote, as described <a href="https://help.github.com/articles/creating-a-pull-request/"> here</a>. Once the pull-request was accepted, you can proceed to update your master branch as described above. 
 
