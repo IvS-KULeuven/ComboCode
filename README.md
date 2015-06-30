@@ -50,7 +50,7 @@ This is a work in progress!
 ## Documentation
 Up-to-date documentation that goes with the package is available on GitHub at:
 
-<a href="https://robinlombaert.github.io/ComboCode"> ComboCode Documentation</a>
+<a href="https://IvS-KULeuven.github.io/ComboCode"> ComboCode Documentation</a>
 
 ## Requirements
 TBD
