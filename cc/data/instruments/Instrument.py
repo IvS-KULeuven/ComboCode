@@ -169,11 +169,12 @@ class Instrument(object):
                 data_filenames = self.getDataFilenames(searchstring=\
                                                        searchstring)
             if not data_filenames:
-                print 'No data filenames or star object given: ' + \
-                      'Cannot retrieve data. No data will be set.'
-                return
+                print '** No data filenames or star object given: ' + \
+                      'Cannot retrieve data. No %s data will be read.'\
+                      %self.instrument.upper()
+            else:
+                print '** Reading %s data.'%self.instrument.upper()
             self.data_filenames = data_filenames
-            print '** Reading %s data.'%self.instrument.upper()
             self.readData()
             if self.instrument == 'pacs':
                 bands = ['B2A','B3A','B2B','R1A','R1B']

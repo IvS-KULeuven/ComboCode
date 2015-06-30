@@ -243,14 +243,14 @@ def convolveArray(xx, yy=None, sigma=3):
 def convertAngular(angrad,distance):
 
     '''
-    Convert an angular distance measurement into an effictive distance.
+    Convert an angular size measurement into an effictive distance.
     
-    @param angrad: The angular distance in as
+    @param angrad: The angular size in as
     @type angrad: float
     @param distance: The distance to the source in pc
     @type distance: float
     
-    @return: the real distance is returned in cm
+    @return: the real size is returned in cm
     @rtype: float
     
     '''
