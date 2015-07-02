@@ -424,20 +424,21 @@ class Gastronoom(ModelingSession):
                         if not new_trans_id:
                             new_trans_id = self.makeNewId()
                             self.makeIdLog(new_id=new_trans_id,\
-                                        molec_id=molec_id)
+                                           molec_id=molec_id)
                         if not self.sph_db[self.model_id][molec_id]\
                                     .has_key(new_trans_id):
                             self.sph_db[self.model_id][molec_id][new_trans_id]\
                                     = dict()
                         trans.setModelId(new_trans_id)
-                    #-- When the trans is not yet calculated, either a new id was made
-                    #    or an existing one is used. It still needs to be checked if all
-		    #    mline and cooling info is available. You only want to do this
-		    #    once per session for each molecule, because ls/ln checks add
-		    #   a lot of overhead. copyOutput double checks if links already exist
-		    if trans.molecule not in molecules_copied_to_new_id:
-		        self.copyOutput(trans,molec_id,trans.getModelId())
-		        molecules_copied_to_new_id.append(trans.molecule) 
+                    #-- When the trans is not yet calculated, either a new id
+                    #   was made or an existing one is used. It still needs to 
+                    #   be checked if all mline and cooling info is available. 
+                    #   You only want to do this once per session for each 
+                    #   molecule, because ls/ln checks adda lot of overhead. 
+                    #   copyOutput double checks if links already exist
+                    if trans.molecule not in molecules_copied_to_new_id:
+                        self.copyOutput(trans,molec_id,trans.getModelId())
+                        molecules_copied_to_new_id.append(trans.molecule) 
                     self.sph_db[self.model_id][molec_id][trans.getModelId()]\
                             [str(trans)] = trans.makeDict(1)
                     self.sph_db.addChangedKey(self.model_id)
