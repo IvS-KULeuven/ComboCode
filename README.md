@@ -58,7 +58,7 @@ Up-to-date documentation that goes with the package is available on GitHub at:
 <a href="https://IvS-KULeuven.github.io/ComboCode"> ComboCode Documentation</a>
 
 ## Developer's Manual
-If you want to make changes to ComboCode, you should fork the repository to your own github account (thhis version of the code is called *origin* below). In origin, you can create your own developer's branch on your machine that will not interfere with the origin/master branch. In general, it is advised NEVER to work in the origin/master branch. Keep your origin/master branch up-to-date with the original repository (called upstream below), but don't meddle with it, and never merge your changes into the origin/master branch. 
+If you want to make changes to ComboCode, you should fork the repository to your own github account. The convention is to call your online version of the code *origin*. It is is this version that your local machine will refer to when pulling and pushing changes. Once downloaded on a local machine, you can create your own developer's branch that will not interfere with the origin/master branch. In general, it is advised NEVER to work in the origin/master branch. Keep your origin/master branch up-to-date with the original repository (called upstream below), but don't meddle with it, and never merge your changes into the origin/master branch. 
 
 ### Setting up your developer's environment for ComboCode
 * Go to the main IvS-KULeuven/ComboCode.git page and fork the repository to your account. 
@@ -67,7 +67,7 @@ If you want to make changes to ComboCode, you should fork the repository to your
     - $ cd 
     - $ git clone https://github.com/<YOUR_USERNAME>/ComboCode.git ComboCode
 
-* Tell git what the original "upstream" version of the code is, i.e. at IvS-KULeuven:
+* Tell git what the original "upstream" version of the code is at IvS-KULeuven (i.e. the original online version of the code -- don't confuse with origin, or *your* online version of the code):
     - $ git remote add --track master upstream https://github.com/IvS-KULeuven/ComboCode.git
 
 * Tell git that any subfolders in ~/ComboCode/ other than cc/ and aux/ are to be ignored. For this, you can create (or update) the file ~/ComboCode/.git/info/exclude with paths/files to be excluded from any git tracking. An example of such a file for ComboCode is available <a href="http://ster.kuleuven.be/~robinl/cc/exclude"> here</a>.
