@@ -18,7 +18,7 @@ LN_PATH_GASTRONOOM=                 # Leave empty or remove if you don't want to
 LN_PATH_MCMAX=                      # Leave empty or remove if you don't want to use it! Create path_mcmax in this folder, and refer to it with a symbolic link from the main MCMax folder instead of making the folder there
 
 #-- Number of iterations?
-ITERATIONS=2                        # Number of iterations for running MCMax and/or GASTRoNOoM, automatically 1 if mcmax=0, or gastronoom=0
+ITERATIONS=1                        # Number of iterations for running MCMax and/or GASTRoNOoM, automatically 1 if mcmax=0, or gastronoom=0
 PLOT_ITERATIVE=0                    # Compare results between each step for one parameter set (Only for MCMax at the moment)
 
 #-- VIC supercomputer
@@ -159,6 +159,7 @@ STOCHASTIC_VEL_GAS=1.5                      # Stochastic velocity [km/s]
 
 TEMPERATURE_MODE_GAS=cooling        # Use temperature power law (cooling/epsilon)                            
 TEMPERATURE_EPSILON_GAS=0.5         # EPSILON, for GAS temperature power law, whole CSE if eps2 is 0!    if mode is cooling, then this is the power for the inner region before the inner radius                 
+
 #TEMPERATURE_EPSILON2_GAS=0.5       # EPSILON2, for GAS temperature power law, from radius_epsilon2 onward!                
 #RADIUS_EPSILON2_GAS=10             # Only relevant if TEMP_EPS2 is non zero
 #TEMPERATURE_EPSILON3_GAS=0.5       # EPSILON3, for GAS temperature power law, from radius_epsilon3 onward!                
@@ -169,7 +170,7 @@ TEMPERATURE_EPSILON_GAS=0.5         # EPSILON, for GAS temperature power law, wh
 
 #-- Dust opacities. Normally set automatically by ComboCode. 
 INCLUDE_SCAT_GAS=0                  # Include the scattering coefficients into the GASTRoNOoM modelling as an additional contribution to the absorption. This is technically not correct, but can give an idea of the wind acceleration influence of the scattering. Leave this off if you're not sure!
-#TEMDUST_FILENAME=                  # Only relevant if USE_NEW_DUST_KAPPA_FILES=1, temdust.kappa for original (or leave open), other filename (micron | q_ext/a) for own kappa's. File has to be in the DATA_DIRECTORY (~/GASTRoNOoM/src/data/) Is handled automatically if left out
+#TEMDUST_FILENAME=                  # Only relevant if USE_NEW_DUST_KAPPA_FILES=1, temdust.kappa for original (or leave open), other filename (micron | q_ext/a) for own kappa's (inverted wavelength, largest wavelength first). File has to be in the DATA_DIRECTORY (~/GASTRoNOoM/src/data/) Is handled automatically if left out
 #USE_NEW_DUST_KAPPA_FILES=          # Uncomment and put equal to 0 for original qpr.dat/temdust.kappa usage, otherwise leave out or put equal to 1
 
 ####################
