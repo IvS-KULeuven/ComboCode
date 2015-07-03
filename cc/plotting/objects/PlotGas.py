@@ -947,6 +947,20 @@ class PlotGas(PlottingSession):
         if cfg_dict.has_key('unit'):
             unit = cfg_dict['unit'].lower()
         
+        #-- Some general plot settings
+        extra_pars = dict()
+        extra_pars['ymin'] = 1e-9
+        extra_pars['ymax'] = 1e-3
+        extra_pars['ylogscale'] = 1 
+        extra_pars['xlogscale'] = 1
+        extra_pars['figsize'] = (12.5,8.5)
+        
+        if unit == 'cm': xaxis = '$r$ (cm)'
+        elif unit =='au': xaxis = '$r$ (AU)'
+        elif unit == 'm': xaxis = '$r$ (m)'
+        else: xaxis = '$r$ (R$_\star$)'
+        extra_pars['xaxis'] = xaxis
+        
         #-- Dict to keep track of all data
         ddata = dict()
         for istar,star in enumerate(star_grid):
@@ -1003,24 +1017,17 @@ class PlotGas(PlottingSession):
                     keytags.append('Location OH maser')
                     lt.append('-k')
                 
+                #-- Set the yaxis tag
                 yaxis = '$n_\mathrm{molec}/n_{\mathrm{H}_2}$'
-                if unit == 'cm': xaxis = '$r$ (cm)'
-                elif unit =='au': xaxis = '$r$ (AU)'
-                elif unit == 'm': xaxis = '$r$ (m)'
-                else: xaxis = '$r$ (R$_\star$)'
-                #-- Make filename
-                pfn = os.path.join(os.path.expanduser('~'),\
-                                             'GASTRoNOoM',self.path,'stars',\
-                                             self.star_name,self.plot_id,\
-                                             'abundance_profiles_%s'\
-                                              %'_'.join(list(set(ids))))
                 
+                #-- Make filename
+                pfn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+                                   self.path,'stars',self.star_name,\
+                                   self.plot_id,'abundance_profiles_%s'\
+                                   %'_'.join(list(set(ids))))
                 pfns.append(Plotting2.plotCols(x=radii,y=abuns,cfg=cfg,\
-                                               xaxis=xaxis,transparent=0,\
                                                filename=pfn,keytags=keytags,\
-                                               figsize=(12.5,8.5),yaxis=yaxis,\
-                                               ylogscale=1,xlogscale=1,\
-                                               ymin=10**(-9),ymax=10**(-3)))
+                                               yaxis=yaxis,**extra_pars))
         
         if per_molecule:
             #-- Collect all data
@@ -1040,22 +1047,19 @@ class PlotGas(PlottingSession):
                            for istar in ddata.keys()
                            for imolec,dmol in ddata[istar].items()
                            if molec == imolec]
+
+                #-- Set the y axis tag
                 strmolec = ddata[0][molec]['key']
                 yaxis = '$n_\mathrm{%s}/n_{\mathrm{H}_2}$'%strmolec
-                if unit == 'cm': xaxis = '$r$ (cm)'
-                elif unit =='au': xaxis = '$r$ (AU)'
-                elif unit == 'm': xaxis = '$r$ (m)'
-                else: xaxis = '$r$ (R$_\star$)'
+
                 #-- Make filename
                 pfn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',
                                    self.path,'stars',self.star_name,\
                                    self.plot_id,'abundance_profiles_%s'%molec)
-                pfns.append(Plotting2.plotCols(x=radii,y=abuns,\
-                                               xaxis=xaxis,yaxis=yaxis,\
+                pfns.append(Plotting2.plotCols(x=radii,y=abuns,yaxis=yaxis,\
                                                filename=pfn,keytags=keytags,\
-                                               figsize=(12.5,8.5),cfg=cfg,\
-                                               ylogscale=1,xlogscale=1,\
-                                               ymin=10**(-9),ymax=10**(-3)))        
+                                               cfg=cfg,**extra_pars))  
+                
         if not per_molecule and pfns and pfns[0][-4:] == '.pdf':    
             newfn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
                                  self.path,'stars',self.star_name,\
@@ -1134,40 +1138,35 @@ class PlotGas(PlottingSession):
                 extra_pars['twiny_y'] = [vel]
                 extra_pars['twiny_keytags'] = [r'$v_\mathrm{g}$']
                 extra_pars['twinyaxis'] = r'$v_\mathrm{g}$ (km s$^{-1}$)' 
+            
             [trans.readSphinx() for trans in transitions]
             radii = [trans.sphinx.getImpact() for trans in transitions]
             linecontribs =  [normalized \
                                 and list(trans.sphinx.getNormalizedIntensity())\
                                 or list(trans.sphinx.getWeightedIntensity())
                              for trans in transitions]
-            plot_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                         self.path,'stars',self.star_name,\
-                                         self.plot_id,'LineContributions',\
-                                         'linecontrib_%s_%i'\
-                                         %(star['LAST_GASTRONOOM_MODEL'],i))
-            keytags=['%s: %s'%(trans.molecule.molecule_plot,trans.makeLabel())
-                     for trans in transitions]
-            ymin = normalized and -0.01 or None
-            ymax = normalized and 1.02 or None
-            xmin = 1
-            #plot_title = '%s: Line Contributions for %s'\
-                         #%(self.star_name_plots,\
-                           #star['LAST_PACS_MODEL'].replace('_','\_') \
-                            #or star['LAST_GASTRONOOM_MODEL'].replace('_','\_'))
-            plot_title = 'Line Contributions for %s with SCD = %.2e and Fh2o = %.1e.'\
-                         %(star['LAST_PACS_MODEL'] 
-                             and star['LAST_PACS_MODEL'].replace('_','\_') \
-                             or star['LAST_GASTRONOOM_MODEL'].replace('_','\_'),\
-                           star['SHELLCOLDENS'],star['F_H2O'])
-            plot_filename = Plotting2.plotCols(\
-                x=radii,y=linecontribs,filename=plot_filename,cfg=cfg_dict,\
-                xaxis='$p$ (R$_*$)',yaxis='$I(p) \\times g(p^2)$',\
-                plot_title=plot_title,keytags=keytags,extension='.pdf',\
-                xlogscale=1,\
-                key_location='lower right',xmin=xmin,\
-                linewidth=3,ymin=ymin,ymax=ymax,**extra_pars)
+            
+            pfn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',self.path,\
+                               'stars',self.star_name,self.plot_id,\
+                               'LineContributions','linecontrib_%s_%i'\
+                               %(star['LAST_GASTRONOOM_MODEL'],i))
+            extra_pars['filename'] = pfn
+            extra_pars['keytags'] = ['%s: %s'%(trans.molecule.molecule_plot,\
+                                               trans.makeLabel())
+                                     for trans in transitions]
+            extra_pars['key_location'] = 'lower right'
+            extra_pars['ymin'] = normalized and -0.01 or None
+            extra_pars['ymax'] = normalized and 1.02 or None
+            extra_pars['xmin'] = 1
+            extra_pars['xaxis'] = '$p$ (R$_*$)'
+            extra_pars['yaxis'] = '$I(p)\\ pdp$'
+            extra_pars['linewidth'] = 3
+            extra_pars['xlogscale'] = 1
+            
+            pfn = Plotting2.plotCols(x=radii,y=linecontribs,cfg=cfg_dict,\
+                                     **extra_pars)
             print '** Plot can be found at:'
-            print plot_filename
+            print pfn
             print '***********************************'                            
         
 
