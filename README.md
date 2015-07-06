@@ -38,8 +38,7 @@ Once the requirements are sorted out, you can get to work with ComboCode. You ca
 
 * Updating your own clone of ComboCode to the most recent version can be done with:
     - $ cd ~/ComboCode/
-    - $ git checkout master
-    - $ git pull origin master
+    - $ git pull
 
 Note that this does not include the ~/ComboCode/Data/ files. You can copy those over from <a href="http://ster.kuleuven.be/~robinl/cc/Data/"> http://ster.kuleuven.be/~robinl/cc/Data/</a>. Afterwards, you can change those files at your whim. They do not come as part of the repository.
 
@@ -96,7 +95,7 @@ When developing code (such as hotfixing, or adding any other changes), always wo
 * Then you want to update your GitHub repo with the changes
     - $ git push origin  dev
 
-* Then you have to go to your personal ComboCode GitHub page, and select the dev branch. Create a pull request to the upstream version of the code (i.e. the IvS-KULeuven account), and wait for the pull request to be merged with the upstream remote, as described <a href="https://help.github.com/articles/creating-a-pull-request/"> here</a>. Once the pull-request was accepted, you can proceed to update your master branch as described above. 
+* Then you have to go to your personal ComboCode GitHub page, and select the dev branch. Create a pull request to the upstream version of the code (i.e. the IvS-KULeuven account), and wait for the pull request to be merged with the upstream remote, as described <a href="https://help.github.com/articles/creating-a-pull-request/"> here</a>. Once the pull-request was accepted, you can proceed to update your master branch as described <a href="https://github.com/IvS-KULeuven/ComboCode#keeping-your-code-up-to-date-with-the-upstream-version">above</a>. 
 
 * Finally, you want to make sure your developer's branch is updated with any changes to the upstream version by other users:
     - $ git merge master
