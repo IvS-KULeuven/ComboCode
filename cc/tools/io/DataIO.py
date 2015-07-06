@@ -560,7 +560,7 @@ def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
     if str(start_from_keyword):
         #-- Find occurrences of searchstring
         indices = [i for i,line in enumerate(lines) 
-                     if line.upper().find(start_from_keyword.upper() != -1)]
+                     if line.upper().find(start_from_keyword.upper()) != -1]
         #-- If any were found, grab the first and cut the lines above it
         if indices: lines = lines[indices[0]:]
     #-- Cut anything above start row
