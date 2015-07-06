@@ -955,10 +955,10 @@ class PlotGas(PlottingSession):
         extra_pars['xlogscale'] = 1
         extra_pars['figsize'] = (12.5,8.5)
         
-        if unit == 'cm': xaxis = '$r$ (cm)'
-        elif unit =='au': xaxis = '$r$ (AU)'
-        elif unit == 'm': xaxis = '$r$ (m)'
-        else: xaxis = '$r$ (R$_\star$)'
+        if unit == 'cm': xaxis = '$r\ \mathrm{(cm)}$'
+        elif unit =='au': xaxis = '$r\ \mathrm{(AU)}$'
+        elif unit == 'm': xaxis = '$r\ \mathrm{(m)}$'
+        else: xaxis = '$r\ \mathrm{(R}_\star\mathrm{)}$'
         extra_pars['xaxis'] = xaxis
         
         #-- Dict to keep track of all data
@@ -1151,15 +1151,16 @@ class PlotGas(PlottingSession):
                                'LineContributions','linecontrib_%s_%i'\
                                %(star['LAST_GASTRONOOM_MODEL'],i))
             extra_pars['filename'] = pfn
-            extra_pars['keytags'] = ['%s: %s'%(trans.molecule.molecule_plot,\
-                                               trans.makeLabel())
+            extra_pars['keytags'] = ['$\mathrm{%s}:$ %s'\
+                                      %(trans.molecule.molecule_plot,\
+                                        trans.makeLabel())
                                      for trans in transitions]
             extra_pars['key_location'] = 'lower right'
             extra_pars['ymin'] = normalized and -0.01 or None
             extra_pars['ymax'] = normalized and 1.02 or None
             extra_pars['xmin'] = 1
-            extra_pars['xaxis'] = '$p$ (R$_*$)'
-            extra_pars['yaxis'] = '$I(p)\\ pdp$'
+            extra_pars['xaxis'] = '$p\ \mathrm{(R}_\star\mathrm{)}$'
+            extra_pars['yaxis'] = '$I(p)\ pdp$'
             extra_pars['linewidth'] = 3
             extra_pars['xlogscale'] = 1
             

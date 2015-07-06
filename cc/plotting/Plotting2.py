@@ -1170,8 +1170,8 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     #if len(keytags) != len(x) and keytags: keytags = []
     keytags = [k.replace(';',',') for k in keytags]
     labels = [(l1.replace(';',','),l2,l3) for l1,l2,l3 in labels]
-    labels = [(l1.replace('{','('),l2,l3) for l1,l2,l3 in labels]
-    labels = [(l1.replace('}',')'),l2,l3) for l1,l2,l3 in labels]
+    #labels = [(l1.replace('{','('),l2,l3) for l1,l2,l3 in labels]
+    #labels = [(l1.replace('}',')'),l2,l3) for l1,l2,l3 in labels]
     if len(xerr) != len(x) and xerr: xerr = []
     if len(yerr) != len(y) and yerr: yerr = []
     if len(xerr) > len(yerr): yerr = [None]*len(xerr)
