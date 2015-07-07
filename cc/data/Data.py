@@ -14,6 +14,8 @@ from scipy.optimize import leastsq
 from scipy.integrate import trapz
 from scipy.special import erf
 
+import numpy as np
+
 from cc.tools.numerical import Interpol
 
 
@@ -264,32 +266,63 @@ def convertAngular(angrad,distance):
     
     
 
-def reduceArray(arr,stepsize):
+def reduceArray(arr,stepsize,cutoff=None,mode='average'):
     
     '''
-    Reduce the size of a 1d array by averaging subsequent n=stepsize elements.
+    Reduce the size of a 1d-array.
     
-    This can be used when reading MCMax output, where the e.g. the density grid
-    needs to be reduced to the size of the radial grid. The stepsize would then 
-    be the number of angular grid points.
+    Two modes are available: 
+    - average: subsequent n=stepsize elements are averaged 
+    - remove: keep one element every n=stepsize elements
+        
+    The average mode can be used when, e.g., reading MCMax output, where the 
+    density/temperature/... grids are given for radial and angular coordinates.
+    In case only the radial points are needed, the stepsize would then be the 
+    number of angular grid cells.
     
     @param arr: The array to be reduced
-    @type arr: array()
-    @param stepsize: The number of subsequent elements to average
+    @type arr: np.array
+    @param stepsize: The number of subsequent elements to average/frequency of
+                     element removal.
     @type stepsize: int
     
+    @keyword cutoff: A cutoff value below which no reduction is done. Default 
+                     if the full array is to be reduced. Only relevant for 
+                     mode == 'remove'.
+    
+                     (default: None)
+    @type cutoff: float
+    @keyword mode: The reduction mode, either 'average' or 'remove'. If the 
+                   mode is not recognized, it is assumed to be 'average'.
+    
+                   (default: 'average')
+    @type mode: string
+    
     @return: The reduced array
-    @rtype: array()
+    @rtype: np.array
     
     '''
     
-    arr, stepsize = array(arr), int(stepsize)    
-    arr_red = array([sum(arr[i:i + stepsize])/float(stepsize)
-                     for i in xrange(len(arr)) 
-                     if i%float(stepsize) == 0])
-    return arr_red
+    arr, stepsize, mode = array(arr), int(stepsize), str(mode).lower()
     
+    if mode == 'remove':
+        if cutoff <> None:
+            cutoff = float(cutoff)
+            arrkeep = arr[arr<=cutoff]
+            arrsel = arr[arr>cutoff]
+        else:
+            arrkeep = np.empty(0)
+            arrsel = arr
+        
+        arrsel = arrsel[::stepsize]
+        redarr = np.concatenate((arrkeep,arrsel))
+    
+    else:
+        redarr = np.mean(arr.reshape(-1,stepsize),axis=1)
 
+    return redarr
+    
+    
 
 def getRMS(flux,limits=(None,None),wave=None,wmin=None,wmax=None,minsize=20):
     

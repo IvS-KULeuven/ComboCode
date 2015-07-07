@@ -1079,14 +1079,14 @@ class Star(dict):
         fgr_file = self.getCoolFn(ftype=ftype,**kwargs)
         rad = DataIO.getGastronoomOutput(filename=fgr_file,keyword='RADIUS',\
                                          return_array=1)
-        #-- fgr_all gives radius in cm. Others in rstar
-        if ftype == 'fgr_all':
-            rad = rad/self['R_STAR']/self.Rsun
+        #-- fgr_all gives radius in cm. Others in rstar. Convert others to cm
+        if ftype != 'fgr_all':
+            rad = rad*self['R_STAR']*self.Rsun
         
         if unit == 'au':
             rad = rad/self.au
-        elif unit == 'cm':
-            rad = rad*self.Rsun*self['R_STAR']
+        elif unit == 'rstar':
+            rad = rad/self.Rsun/self['R_STAR']
         elif unit == 'm':
             rad = rad*10**-2
         return rad
