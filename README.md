@@ -24,6 +24,8 @@ have to contact the authors of the codes.</li>
 * <b> MCMax:</b> M. Min (UvA, the Netherlands)
 
 ## Requirements
+Currently the code has been tested to run on Unix-based systems, more specifically Fedora and Mac OS X. In principle, any operating systems that fulfills the requirements listed below should be able to run ComboCode. The code runs ons machines with an internal memory of 8 GB, but less is likely fine as well. The memory requirements are primarily set by the numerical codes included in ComboCode.
+
 First and foremost, you require a Python distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. If you have the Anaconda distribution installed, you only require the pyfits package to be installed in addition. 
 
 Secondly, you need the IvS repository, which can be installed as described <a href="https://github.com/JorisDeRidder/IvSPythonRepository"> here</a>. Make sure the IvS repository is included in your PYTHON_PATH. 
