@@ -1,0 +1,13 @@
+#############################################################################################################
+#This file gives relevant data numbers, such as sigma level and wavelength 
+#range for determining the STD value.
+#Instrument and band dependent! Can be source dependent as well!
+#############################################################################################################
+#INSTRUMENT         W_STD_MIN       W_STD_MAX       SIGMA
+PACS_B3A            67.4            68.8            3
+PACS_B2A            67.4            68.8            3
+PACS_B2B            68              89.5            3
+PACS_R1A            105             107.9           3
+PACS_R1B            151             156             3
+SPIRE_SSW           270             300             3
+SPIRE_SLW           560             620             3

@@ -1,0 +1,45 @@
+### Molecule Data
+### Spec Indices: 0 = auto, 1 = indices list, 2 = indices list (SO-type), 3 = indices list (HCN type)
+### Indices relevant for addLineList in Star, and for Transition in 3 methods
+### Abun factor is the factor wrt the main isotope/ortho type molecule, use * for multiple factors (either 1 or a ratio parameter)
+###################################################################################################
+#NAME_SHORT MOLEC_TYPE           TYPE_SHORT     NAME_PLOT       SPEC_INDICES  ABUN_FACTOR          USE_INDICES_DAT
+co       0608.012016             12C16O         CO              0             1                    1
+13co     0608.013016             13C16O         ^{13}CO       0             RATIO_12C_TO_13C     0
+c17o     0608.012017             12C17O         C^{17}O       0             RATIO_16O_TO_17O     0
+c18o     0608.012018             12C18O         C^{18}O       0             RATIO_16O_TO_18O     0
+h2o      010108.001001016        1H1H16O        o-H_2O        1             1                    1
+ph2o     010108.003001016        p1H1H16O       p-H_2O        1             OPR                  1
+h218o    010108.001001018        1H1H18O        o-H_2^{18}O 1             RATIO_16O_TO_18O     0
+ph218o   010108.003001018        p1H1H18O       p-H_2^{18}O 1             RATIO_16O_TO_18O*OPR 0
+oh       0801.016001             16O1H          OH              2             1                    0
+18oh     0801.018001             18O1H          ^{18}OH       2             RATIO_16O_TO_18O     0
+h217o    010108.001001017        1H1H17O        o-H_2^{17}O 1             RATIO_16O_TO_17O     0
+ph217o   010108.003001017        p1H1H17O       p-H_2^{17}O 1             RATIO_16O_TO_17O*OPR 0
+h2co     01010608.001001012016   1H1H12C16O     H_2CO         1             1                    0
+hco+     010608.001012016        1H12C16O+      HCO^+         1             1                    0
+hcn      010607.001012014        1H12C14N       HCN             3             1                    0
+h13cn    010607.001013014        1H13C14N       H^{13}CN      3             1                    0
+sio      1408.028016             28Si16O        SiO             0             1                    1
+29sio    1408.029016             29Si16O        ^{29}SiO      0             1                    0
+30sio    1408.030016             30Si16O        ^{30}SiO      0             1                    0
+si18o    1408.028018             28Si18O        Si^{18}O      0             1                    0
+si17o    1408.028017             28Si17O        Si^{17}O      0             1                    0
+sis      1416.028032             28Si32S        SiS             0             1                    0
+si33s    1416.028033             28Si33S        Si^{33}S      0             1                    0
+si34s    1416.028034             28Si34S        Si^{34}S      0             1                    0
+29sis    1416.029032             29Si32S        ^{29}SiS      0             1                    0
+29si33s  1416.029033             29Si33S        ^{29}Si^{33}S 0           1                    0
+30sis    1416.030032             30Si32S        ^{30}SiS      0             1                    0
+cs       0616.012032             12C32S         CS              0             1                    0
+so2      160808.032016016        32S16O16O      SO_2          1             1                    0
+so       1608.032016             32S16O         SO              2             1                    0
+po       1508.030016             30P16O         PO              2             1                    0 
+pn       1507.030014             30P14N         PN              0             1                    0
+mgs      1216.024032             24Mg32S        MgS             0             1                    0
+sicc     140606.028012012        28Si12C12C     SiC_2         0             1                    0
+sic      1406.028012             28Si12C        SiC             0             1                    0 
+cchh     06060101.012012001001   12C12C1H1H     C_2H_2      1             1                    0
+cch      060601.012012001        12C12C1H       C_2H          1             1                    0
+ch3cn 060101010607.012001001001012014 12C1H1H1H12C14N CH_3CN  1             1                    0
+hno      010708.001014016        1H14N16O       HNO             1             1                    0
