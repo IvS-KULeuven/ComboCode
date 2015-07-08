@@ -1,0 +1,18 @@
+#- This file lists the associated MOLECULE keywords for every collis/radiat/indices files combination
+#- The files are always found in respectively ~/GASTRoNOoM/src/data/collis_backup/ - radiat_backup/ - indices_backup/
+#- CC only uses this list in case USE_INDICES_DAT==1 in Molecule.dat for that molecule.
+#############################################################################################################################
+#MOLECULE           COLLIS                                          RADIAT                                      INDICES
+1H1H16O_45_45_648   o-H2O-H2_collis_nu0_nu2_faure.dat               o-H2O_radiat_nu0_nu2_faure.dat              sphinx_indices_o-H2O-H2_collis_nu0_nu2_faure.dat
+1H1H16O_45_0_158    o-H2O-H2_collis_v0.dat                          o-H2O_radiat_v0.dat                         sphinx_indices_o-H2O-H2_collis_v0_new.dat
+1H1H16O_90_39_1157  o-H2O-H2_collis_nu0_nu2_nu3_hitran_faure.dat    o-H2O_radiat_nu0_nu2_nu3_hitran_faure.dat   sphinx_indices_o-H2O-H2_collis_nu0_nu2_nu3_hitran_faure.dat
+p1H1H16O_45_45_644  p-H2O-H2_collis_nu0_nu2_faure.dat               p-H2O_radiat_nu0_nu2_faure.dat              sphinx_indices_p-H2O-H2_collis_nu0_nu2_faure.dat
+p1H1H16O_45_0_157   p-H2O-H2_collis_v0.dat                          p-H2O_radiat_v0.dat                         sphinx_indices_p-H2O-H2_v0.dat
+p1H1H16O_90_32_1029 p-H2O-H2_collis_nu0_nu2_nu3_hitran_faure.dat    p-H2O_radiat_nu0_nu2_nu3_hitran_faure.dat   sphinx_indices_p-H2O-H2_collis_nu0_nu2_nu3_hitran_faure.dat
+
+12C16O_61_122_420   12C16O_JLOW60_v_2_collis.dat                    12C16O_JLOW60_v_2_radiat.dat                0
+12C16O_61_61_240    12C16O_JUPPER60_collis.dat                      12C16O_radiat_JUP60_Goorvitch.dat           0
+12C16O_61_122_540   12C16O_JLOW60_v_2_collis.dat                    12C16O_radiat_v2_deltav2_JUP60_Goorvitch.dat 0
+
+28Si16O_41_41_160   28Si16O-H2_collis_v0_v1.dat                     28Si16O_radiat_JUP40_Langhoff.dat       0
+28Si16O_151_151_600 28Si16O_collis_associated_with_JUP150_Langhoff.dat  28Si16O_radiat_JUP150_Langhoff.dat      0
