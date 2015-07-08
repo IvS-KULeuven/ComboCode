@@ -21,7 +21,8 @@ have to contact the authors of the codes.</li>
 <ol>
 <li>cc: Contains the Python modules.</li>
 <li>aux: Contains auxiliary files that ComboCode requires, and they come as part of the repository. These files are not to be chanegd by the user.</li>
-<li>Data: Contains files that ComboCode requires but are not part of the repository. They have to be downloaded once, and the settings can then be adapted specific to the user.</li></ol>
+<li>usr: Contains files that ComboCode requires but are not part of the repository. The settings are user specific.</li>
+<li>usr.dist: The blueprint for usr/ that is part of the repository. This folder is to be copied to usr/ upon installation (see below).</li></ol>
 </li>
 </ol>
 
@@ -34,32 +35,32 @@ Currently the code has been tested to run on Unix-based systems, more specifical
 
 First and foremost, you require a Python distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. If you have the Anaconda distribution installed, you only require the pyfits package to be installed in addition. 
 
-Secondly, we are using got for the version control of the repository. Follow the instructions given <a href="https://help.github.com/articles/set-up-git/"> here</a> to set up git on your local machine, after you have created a user account for git.
+Secondly, we are using git for the version control of the repository. Follow the instructions given <a href="https://help.github.com/articles/set-up-git/"> here</a> to set up git on your local machine, after you have created a user account at GitHub.
 
-Thirdly, you need the IvS repository, which can be installed as described <a href="https://github.com/JorisDeRidder/IvSPythonRepository"> here</a>. Make sure the IvS repository is included in your PYTHON_PATH. 
+Thirdly, you need the IvS repository, which can be installed as described <a href="https://github.com/JorisDeRidder/IvSPythonRepository"> here</a>. Make sure the IvS repository is included in the PYTHON\_PATH in your ~/.bash_profile. 
 
 Lastly, ComboCode can be used to its fullest potential when working in tandem with the radiative-transfer codes GASTRoNOoM and MCMax. To use these codes, permission is required from the owners listed above. You can contact them directly, or through me (robinlombaert on GitHub). Once installed, make sure the executables of each code are linked in your Bin folder, and you will be able to run the codes through ComboCode.
 
 ## Installation
-Once the requirements are sorted out, you can get to work with ComboCode. You can download the code to your hard disk right away (or fork the repo, and clone that -- see Developer's Manual below): 
+Once the requirements are sorted out, you can get to work with ComboCode. You can download the code to your hard disk right away (or if you intend to submit code for this repository: fork the repo, and clone that -- see Developer's Manual below): 
 * Clone the git repository to create a local copy, located in ~/ComboCode/:
     - $ cd 
     - $ git clone https://github.com/IvS-KULeuven/ComboCode.git ComboCode
+
+* Copy the contents of the usr.dist/ folder to the usr/ folder. The usr/ folder contains user-specific settings that are not updated with the repository. Any changes made to the structure of those files will come through usr.dist/ and won't affect the usr/ folder, allowing the user to save personal settings before updating usr/ files. 
+    - $ cd ~/ComboCode/
+    - $ mkdir usr/
+    - $ cp usr.dist/* usr/.
+
+* Add ComboCode to the PYTHON\_PATH in your ~/.bash_profile.
 
 * Updating your own clone of ComboCode to the most recent version can be done with:
     - $ cd ~/ComboCode/
     - $ git pull
 
-Note that this does not include the ~/ComboCode/Data/ files. You can copy those over from <a href="http://ster.kuleuven.be/~robinl/cc/Data/"> http://ster.kuleuven.be/~robinl/cc/Data/</a>. Afterwards, you can change those files at your whim. They do not come as part of the repository.
-
-Lastly, when running ComboCode in conjunction with the radiative-transfer codes listed above, ComboCode assumes that the output will be written to default subfolder in your home folder, e.g. ~/GASTRoNOoM/ and ~/MCMax/, respectively. These folders are the only ones you have create yourself. ComboCode will handle the rest. 
-
-
-In the future, a shell script for the installation of ComboCode will be provided. It will include: 
-* Anaconda python distribution installation, including additional packages required to run ComboCode
-* Installation of the IvS repository
-* Downloading additional Data files not part of the repository but required to run ComboCode
-* Creating a master branch in your local git repository that can be used to run the code
+* Lastly, when running ComboCode in conjunction with the radiative-transfer codes listed above, ComboCode assumes that the output will be written to default subfolder in your home folder, e.g. ~/GASTRoNOoM/ and ~/MCMax/, respectively. These folders are the only ones you have create yourself. ComboCode will handle the rest. 
+    - $ mkdir ~/GASTRoNOoM/
+    - $ mkdir ~/MCMax/
 
 ## Documentation
 Up-to-date documentation that goes with the package is available on GitHub at:
@@ -67,20 +68,27 @@ Up-to-date documentation that goes with the package is available on GitHub at:
 <a href="https://IvS-KULeuven.github.io/ComboCode"> ComboCode Documentation</a>
 
 ## Developer's Manual
-If you want to make changes to ComboCode, you should fork the repository to your own github account. The convention is to call your online version of the code *origin*. It is is this version that your local machine will refer to when pulling and pushing changes. Once downloaded on a local machine, you can create your own developer's branch that will not interfere with the origin/master branch. In general, it is advised NEVER to work in the origin/master branch. Keep your origin/master branch up-to-date with the original repository (called upstream below), but don't meddle with it, and never merge your changes into the origin/master branch. 
+If you want to make changes to ComboCode, you should fork the repository to your own github account. The convention is to call your online version of the code *origin*. It is this version that your local machine will refer to when pulling and pushing changes. Once downloaded on a local machine, you can create your own developer's branch that will not interfere with the origin/master branch. In general, it is advised NEVER to work in the origin/master branch. Keep your origin/master branch up-to-date with the original repository (called upstream below), but don't meddle with it, and never merge your changes into the origin/master branch. 
 
 ### Setting up your developer's environment for ComboCode
 * Go to the main IvS-KULeuven/ComboCode.git page and fork the repository to your account. 
 
-* Clone a copy of the code in your account to your local machine (fill in your github username)
+* Clone a copy of the code in your account to your local machine (fill in your github user name)
     - $ cd 
     - $ git clone https://github.com/YOUR_USERNAME/ComboCode.git ComboCode
 
-* Tell git what the original "upstream" version of the code is at IvS-KULeuven (i.e. the original online version of the code -- don't confuse with origin, or *your* online version of the code):
+* Tell git what the original "upstream" version of the code is at IvS-KULeuven (i.e. the original online version of the code -- don't confuse with origin, i.e. *your* online version of the code):
     - $ cd ~/ComboCode/
     - $ git remote add --track master upstream https://github.com/IvS-KULeuven/ComboCode.git
 
-* Tell git that any subfolders in ~/ComboCode/ other than cc/ and aux/ are to be ignored. For this, you can create (or update) the file ~/ComboCode/.git/info/exclude with paths/files to be excluded from any git tracking. An example of such a file for ComboCode is available <a href="http://ster.kuleuven.be/~robinl/cc/exclude"> here</a>.
+* Copy the contents of the usr.dist/ folder to the usr/ folder. 
+    - $ cd ~/ComboCode/
+    - $ mkdir usr/
+    - $ cp usr.dist/* usr/.
+
+* Add ~/ComboCode/ to the PYTHON\_PATH in your ~/.bash_profile.
+
+* Tell git that any subfolders in ~/ComboCode/ other than cc/, aux/ and usr.dist/ are to be ignored (including, e.g., usr/ or input/). For this, you can create (or update) the file ~/ComboCode/.git/info/exclude with paths/files to be excluded from any git tracking. An example of such a file for ComboCode is available <a href="http://ster.kuleuven.be/~robinl/cc/exclude"> here</a>. You can update this as you go if more folders or files end up in ~/ComboCode/ that you don't want tracked.
 
 ### Keeping your code up-to-date with the upstream version
 * Now you can keep your master branch up-to-date with the upstream. As long as you never make any changes in your master branch, you can merge upstream/master with origin/master (make sure to be on the master branch):
