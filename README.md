@@ -19,10 +19,10 @@ have to contact the authors of the codes.</li>
 <li>Examples of how to run ComboCode will be added at a later time.</li>
 <li>ComboCode folder structure: 
 <ol>
-<li>cc: Contains the Python modules.</li>
-<li>aux: Contains auxiliary files that ComboCode requires, and they come as part of the repository. These files are not to be chanegd by the user.</li>
-<li>usr: Contains files that ComboCode requires but are not part of the repository. The settings are user specific.</li>
-<li>usr.dist: The blueprint for usr/ that is part of the repository. This folder is to be copied to usr/ upon installation (see below).</li></ol>
+<li>cc -- Contains the Python modules.</li>
+<li>aux -- Contains auxiliary files that ComboCode requires, and they come as part of the repository. These files are not to be chanegd by the user.</li>
+<li>usr -- Contains files that ComboCode requires but are not part of the repository. The settings are user specific.</li>
+<li>usr.dist -- The blueprint for usr/ that is part of the repository. This folder is to be copied to usr/ upon installation (see below).</li></ol>
 </li>
 </ol>
 
