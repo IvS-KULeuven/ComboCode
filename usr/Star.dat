@@ -1,4 +1,5 @@
-### Stellar Data
+### Stellar Data: Adapt according to your own needs. This file is not tracked by the repo after:
+### git update-index --assume-unchanged usr/
 ### Ak taken from Marschall et al. 2006 where possible, otherwise Drimmel et al 2003
 ### Exception: V669 Cas from Arenou et al. 1992 => Ak ~ 0.24. Now changed to the value from Marshall or Drimmel.
 ### Vlsr taken from De Beck et al 2010. HR 4049 Hinkle et al 2007. V384 Per, S Cep, AFGL4202, V1417 Aql Groenewegen et al 2002. R Lep, S Aur, RV Cyg Olofsson et al 1993, NSV 24044, V829 Cas fr9m loup 1993
