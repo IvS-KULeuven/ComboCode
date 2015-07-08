@@ -177,9 +177,7 @@ class Gastronoom(ModelingSession):
         print '** Running %s...'%subcode
         if not subcode.lower() in ['cooling','mline','sphinx']:
             raise IOError('Subcode of GASTRoNOoM wrongly specified.')
-        exec_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM','src',\
-                                 'exec',subcode.lower())
-        subprocess.call(['echo %s | %s'%(filename,exec_path)],shell=True)
+        subprocess.call(['echo %s | %s'%(filename,subcode.lower())],shell=True)
         print '** DONE!'
         print '***********************************'
 
