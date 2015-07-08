@@ -17,6 +17,12 @@ The functionality includes:
 <li>You will need the radiative-transfer codes to be able to run ComboCode to its fullest potential. For this you will
 have to contact the authors of the codes.</li>
 <li>Examples of how to run ComboCode will be added at a later time.</li>
+<li>ComboCode folder structure: 
+<ol>
+<li>cc: Contains the Python modules.</li>
+<li>aux: Contains auxiliary files that ComboCode requires, and they come as part of the repository. These files are not to be chanegd by the user.</li>
+<li>Data: Contains files that ComboCode requires but are not part of the repository. They have to be downloaded once, and the settings can then be adapted specific to the user.</li></ol>
+</li>
 </ol>
 
 ### The codes currently in ComboCode
@@ -32,7 +38,7 @@ Secondly, we are using got for the version control of the repository. Follow the
 
 Thirdly, you need the IvS repository, which can be installed as described <a href="https://github.com/JorisDeRidder/IvSPythonRepository"> here</a>. Make sure the IvS repository is included in your PYTHON_PATH. 
 
-Lastly, ComboCode can be used to its fullest potential when working in tandem with the radiative-transfer codes GASTRoNOoM and MCMax. Contact the owners above for the respective codes, (and/)or contact me (robinlombaert on GitHub) to gain access to the source of those codes. 
+Lastly, ComboCode can be used to its fullest potential when working in tandem with the radiative-transfer codes GASTRoNOoM and MCMax. To use these codes, permission is required from the owners listed above. You can contact them directly, or through me (robinlombaert on GitHub). Once installed, make sure the executables of each code are linked in your Bin folder, and you will be able to run the codes through ComboCode.
 
 ## Installation
 Once the requirements are sorted out, you can get to work with ComboCode. You can download the code to your hard disk right away (or fork the repo, and clone that -- see Developer's Manual below): 
@@ -45,6 +51,8 @@ Once the requirements are sorted out, you can get to work with ComboCode. You ca
     - $ git pull
 
 Note that this does not include the ~/ComboCode/Data/ files. You can copy those over from <a href="http://ster.kuleuven.be/~robinl/cc/Data/"> http://ster.kuleuven.be/~robinl/cc/Data/</a>. Afterwards, you can change those files at your whim. They do not come as part of the repository.
+
+Lastly, when running ComboCode in conjunction with the radiative-transfer codes listed above, ComboCode assumes that the output will be written to default subfolder in your home folder, e.g. ~/GASTRoNOoM/ and ~/MCMax/, respectively. These folders are the only ones you have create yourself. ComboCode will handle the rest. 
 
 
 In the future, a shell script for the installation of ComboCode will be provided. It will include: 
