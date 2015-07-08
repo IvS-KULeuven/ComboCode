@@ -28,7 +28,9 @@ Currently the code has been tested to run on Unix-based systems, more specifical
 
 First and foremost, you require a Python distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. If you have the Anaconda distribution installed, you only require the pyfits package to be installed in addition. 
 
-Secondly, you need the IvS repository, which can be installed as described <a href="https://github.com/JorisDeRidder/IvSPythonRepository"> here</a>. Make sure the IvS repository is included in your PYTHON_PATH. 
+Secondly, we are using got for the version control of the repository. Follow the instructions given <a href="https://help.github.com/articles/set-up-git/"> here</a> to set up git on your local machine, after you have created a user account for git.
+
+Thirdly, you need the IvS repository, which can be installed as described <a href="https://github.com/JorisDeRidder/IvSPythonRepository"> here</a>. Make sure the IvS repository is included in your PYTHON_PATH. 
 
 Lastly, ComboCode can be used to its fullest potential when working in tandem with the radiative-transfer codes GASTRoNOoM and MCMax. Contact the owners above for the respective codes, (and/)or contact me (robinlombaert on GitHub) to gain access to the source of those codes. 
 
