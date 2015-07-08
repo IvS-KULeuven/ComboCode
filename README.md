@@ -66,9 +66,10 @@ If you want to make changes to ComboCode, you should fork the repository to your
 
 * Clone a copy of the code in your account to your local machine (fill in your github username)
     - $ cd 
-    - $ git clone https://github.com/<YOUR_USERNAME>/ComboCode.git ComboCode
+    - $ git clone https://github.com/YOUR_USERNAME/ComboCode.git ComboCode
 
 * Tell git what the original "upstream" version of the code is at IvS-KULeuven (i.e. the original online version of the code -- don't confuse with origin, or *your* online version of the code):
+    - $ cd ~/ComboCode/
     - $ git remote add --track master upstream https://github.com/IvS-KULeuven/ComboCode.git
 
 * Tell git that any subfolders in ~/ComboCode/ other than cc/ and aux/ are to be ignored. For this, you can create (or update) the file ~/ComboCode/.git/info/exclude with paths/files to be excluded from any git tracking. An example of such a file for ComboCode is available <a href="http://ster.kuleuven.be/~robinl/cc/exclude"> here</a>.
