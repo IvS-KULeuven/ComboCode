@@ -267,7 +267,7 @@ class Star(dict):
         if self.dust_list <> None: return
     
         #-- Read the info
-        dust_path = os.path.join(self.path_combocode,'Data')
+        dust_path = os.path.join(self.path_combocode,'usr')
         dust_info = dict()
         for k,s in zip(['SPECIES_SHORT','SPEC_DENS','MOLAR_WEIGHT','T_DES',\
                         'T_DESA','T_DESB','PART_FILE'],\
@@ -2516,7 +2516,7 @@ class Star(dict):
                 #- PlottingSession.setPacsFromDb
                 molec_indices \
                     = [DataIO.getInputData(path=os.path.join(self.path_combocode,\
-                                                      'Data'),\
+                                                      'usr'),\
                                     keyword='MOLEC_TYPE',\
                                     filename='Molecule.dat',make_float=0)\
                                    .index(molec[0]) 
@@ -2524,14 +2524,14 @@ class Star(dict):
                 molecules_long = [molec[0] for molec in self['MOLECULE']]
                 self['MOLECULE'] \
                     = [[DataIO.getInputData(path=os.path.join(self.path_combocode,\
-                                                       'Data'),\
+                                                       'usr'),\
                                      keyword='TYPE_SHORT',\
                                      filename='Molecule.dat')[index]] \
                         + [molec[1]] 
                        for molec,index in zip(self['MOLECULE'],molec_indices)]
                 self['TRANSITION'] \
                     = [[DataIO.getInputData(path=os.path.join(self.path_combocode,\
-                                                       'Data'),\
+                                                       'usr'),\
                                      keyword='TYPE_SHORT',\
                                      filename='Molecule.dat')\
                             [molec_indices[molecules_long.index(trans[0])]]] \

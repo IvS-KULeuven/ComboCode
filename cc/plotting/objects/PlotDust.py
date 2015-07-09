@@ -135,7 +135,7 @@ class PlotDust(PlottingSession):
         else:
             fn_plt = ''
         
-        ccpath = os.path.join(self.path_combocode,'Data')
+        ccpath = os.path.join(self.path_combocode,'usr')
         data_labels = dict([(dt,(n,ls))
                             for n,dt,ls in zip(DataIO.getInputData(path=ccpath,\
                                                         keyword='PLOT_NAMES',\
@@ -990,9 +990,7 @@ class PlotDust(PlottingSession):
             
             
             
-    def makeMCMaxStars(self,models,\
-                      data_path=os.path.join(os.path.expanduser('~'),'MCMax',\
-                                             'Data')):
+    def makeMCMaxStars(self,models):
         
         '''
         Set parameters for star_list taken from the MCMax database.
@@ -1001,10 +999,6 @@ class PlotDust(PlottingSession):
         
         @param models: model_ids for the MCMax db
         @type models: list(string)
-        @keyword data_path: path to the data used here
-        
-                            (default: ~/MCMax/Data)
-        @type data_path: string
         @return: The model instances 
         @rtype: list(Star())
         
@@ -1020,8 +1014,7 @@ class PlotDust(PlottingSession):
             logfile = os.path.join(filepath,'log.dat')
             grid_shape = DataIO.getMCMaxOutput(filename=denstemp,incr=1,\
                                                keyword='NGRAINS',single=0)[0]
-            star.update({'PATH_DUST_DATA':data_path,\
-                         'NTHETA':int(grid_shape[1]),\
+            star.update({'NTHETA':int(grid_shape[1]),\
                          'NRAD':int(grid_shape[0]),\
                          'T_STAR':float(DataIO.getMCMaxOutput(filename=logfile,\
                                                 incr=0,\
@@ -1080,7 +1073,7 @@ pars_units = dict([('T_STAR',('T_{*}','K','%i')),\
                                 ('KEYWORD_DUST_TEMPERATURE_TABLE',('Consistent T_{d}','','%i')),\
                                 ('NUMBER_INPUT_DUST_TEMP_VALUES',('len(T_d)','','%i')),\
                                 ('MOLECULE',('Molecule','','%s'))])
-        dust_species = DataIO.getInputData(path=os.path.join(self.path_combocode,'Data'),keyword='SPECIES_SHORT',\
+        dust_species = DataIO.getInputData(path=os.path.join(self.path_combocode,'usr'),keyword='SPECIES_SHORT',\
                                                     filename='Dust.dat')
         pars_units.update(dict([('A_' + species,('A_{' + species + '}','','%.2f')) for species in dust_species]))
         pars_units.update(dict([('T_DESA_' + species,('T_{desA,' + species + '}','','%.3f')) for species in dust_species]))

@@ -91,7 +91,7 @@ class Instrument(object):
         self.absflux_err = absflux_err
         self.oversampling = int(oversampling)
         self.data_filenames = []
-        ccd = os.path.join(self.path_combocode,'Data')
+        ccd = os.path.join(self.path_combocode,'usr')
         istar = DataIO.getInputData(path=ccd,keyword='STAR_NAME').index(star_name)
         #-- Set relevant velocities in cm/s
         self.c = 2.99792458e10 

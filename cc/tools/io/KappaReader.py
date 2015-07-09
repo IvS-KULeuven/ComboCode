@@ -38,7 +38,7 @@ class KappaReader(object):
         @type path_cc: str
         """
         
-        path_cc = os.path.join(path_cc,'Data')
+        path_cc = os.path.join(path_cc,'usr')
         self.lspecies = DataIO.getInputData(path=path_cc,\
                                             keyword='SPECIES_SHORT',\
                                             filename='Dust.dat')

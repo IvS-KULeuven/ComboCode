@@ -170,17 +170,17 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
         for ifn in range(len(dpacs[star].data_filenames)):
             dpacs[star].intIntMatch(trans,ifn)
     
-    istars = [DataIO.getInputData(path=os.path.join(path_combocode,'Data'))\
+    istars = [DataIO.getInputData(path=os.path.join(path_combocode,'src'))\
                     .index(star)
               for star in stars]
-    pstars = [DataIO.getInputData(path=os.path.join(path_combocode,'Data'),\
+    pstars = [DataIO.getInputData(path=os.path.join(path_combocode,'src'),\
                                   keyword='STAR_NAME_PLOTS')[istar]
               for istar in istars]
     pstars = [s.replace('_',' ') for s in pstars]
-    all_molecs = DataIO.getInputData(path=os.path.join(path_combocode,'Data'),\
+    all_molecs = DataIO.getInputData(path=os.path.join(path_combocode,'src'),\
                                      keyword='TYPE_SHORT',make_float=0,\
                                      filename='Molecule.dat')
-    all_pmolecs = DataIO.getInputData(path=os.path.join(path_combocode,'Data'),\
+    all_pmolecs = DataIO.getInputData(path=os.path.join(path_combocode,'src'),\
                                      keyword='NAME_PLOT',make_float=0,\
                                      filename='Molecule.dat')
     inlines = []

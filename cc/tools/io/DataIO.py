@@ -118,18 +118,18 @@ def getGastronoomOutput(filename,keyword='RADIUS',begin_index=0,\
 
 
 
-def getInputData(path=os.path.join(os.path.expanduser('~'),'ComboCode','Data'),\
+def getInputData(path=os.path.join(os.path.expanduser('~'),'ComboCode','usr'),\
                  keyword='STAR_NAME',filename='Star.dat',remove_underscore=0,\
                  make_float=1,start_index=1):
     
     """
-    Search ComboCode Input Data files for parameters. 
+    Search ComboCode usr files for parameters. 
     
     Includes files such as Dust.dat, Star.dat, Indices.dat, Molecule.dat.
 
-    @keyword path: CC data path
+    @keyword path: ComboCode usr path
     
-                   (default: ~/ComboCode/Data/)
+                   (default: ~/ComboCode/usr/)
     @type path: string
     @keyword keyword: the type of information required, always equal to one of 
                       the keywords present in the "Data" of ComboCode, and 
@@ -137,7 +137,7 @@ def getInputData(path=os.path.join(os.path.expanduser('~'),'ComboCode','Data'),\
                       
                       (default: STAR_NAME)
     @type keyword: string
-    @keyword filename: filename in PATH_COMBOCODE/Data/ that includes wanted 
+    @keyword filename: filename in PATH_COMBOCODE/usr/ that includes wanted 
                        information
                        
                        (default: 'Star.dat')

@@ -21,7 +21,7 @@ from ivs.sigproc import fit, funclib
 
 
 def readLineProfile(filename,info_path=os.path.join(os.path.expanduser('~'),\
-                                                      'ComboCode','Data')):
+                                                      'ComboCode','usr')):
         
     '''
     Read a line profile, independent of the type of extension. 
@@ -35,7 +35,7 @@ def readLineProfile(filename,info_path=os.path.join(os.path.expanduser('~'),\
     @keyword info_path: The path to the folder containing the info file on
                         stars, called Star.dat. 
                         
-                        (default: ~/ComboCode/Data)
+                        (default: ~/ComboCode/usr/)
     @type info_path: string
     
     @return: The line profile
@@ -53,7 +53,7 @@ def readLineProfile(filename,info_path=os.path.join(os.path.expanduser('~'),\
 
 def integrateLPData(vexp,filename=None,lprof=None,window=1.2,\
                     info_path=os.path.join(os.path.expanduser('~'),\
-                                           'ComboCode','Data')):
+                                           'ComboCode','usr')):
     
     """
     Integrate a line profile read from a fits file or a txt file. 
@@ -85,7 +85,7 @@ def integrateLPData(vexp,filename=None,lprof=None,window=1.2,\
     @keyword info_path: The path to the folder containing the info file on
                         stars, called Star.dat. 
                         
-                        (default: ~/ComboCode/Data)
+                        (default: ~/ComboCode/usr/)
     @type info_path: string
     
     @return: The integrated intensity of the profile
@@ -109,7 +109,7 @@ def integrateLPData(vexp,filename=None,lprof=None,window=1.2,\
 
 def getPeakLPData(filename=None,lprof=None,vlsr=None,\
                   info_path=os.path.join(os.path.expanduser('~'),\
-                                         'ComboCode','Data')):
+                                         'ComboCode','usr')):
     
     """
     Calculate the peak value of a line profile read from a fits file or a txt 
@@ -134,7 +134,7 @@ def getPeakLPData(filename=None,lprof=None,vlsr=None,\
     @keyword info_path: The path to the folder containing the info file on
                         stars, called Star.dat. 
                         
-                        (default: ~/ComboCode/Data)
+                        (default: ~/ComboCode/usr/)
     @type info_path: string
     @keyword vlsr: If you want to provide your own vlsr for some reason. Leave
                    as default if you don't have a good reason to do that. 
@@ -429,7 +429,7 @@ def checkLPShape(vel,flux,vlsr,vexp,window=2.,show=0):
 
 def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
           vary_pars=['vexp'],i_vexp=15.0,i_gamma=1.0,do_gauss=0,\
-          info_path=os.path.join(os.path.expanduser('~'),'ComboCode','Data')):
+          info_path=os.path.join(os.path.expanduser('~'),'ComboCode','usr')):
     
     '''
     Fit a line profile with a soft parabola, and a Gaussian component if 
@@ -497,7 +497,7 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
     @keyword info_path: The path to the folder containing the info file on
                         stars, called Star.dat. 
                         
-                        (default: ~/ComboCode/Data)
+                        (default: ~/ComboCode/usr/)
     @type info_path: string
     @keyword show: Show the results of the fit
                     

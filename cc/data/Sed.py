@@ -29,7 +29,7 @@ def buildPhotometry(star_name,fn='Photometric_IvS',psuffix='Raw/IvS_SEDTool/',\
                     remove=[],\
                     dp=os.path.join(os.path.expanduser('~'),'Data','SED'),\
                     cc_path=os.path.join(os.path.expanduser('~'),'ComboCode',\
-                                         'Data')):
+                                         'usr')):
     '''
     Retrieve the photometry of a star through the IvS repo's SED builder. 
     
@@ -62,7 +62,7 @@ def buildPhotometry(star_name,fn='Photometric_IvS',psuffix='Raw/IvS_SEDTool/',\
     @type dp: str
     @keyword cc_path: path to the combocode folder
         
-                      (default: ~/ComboCode/Data/)
+                      (default: ~/ComboCode/usr/)
     @type cc_path: string
     
     '''
@@ -207,7 +207,7 @@ class Sed(object):
         
         """
         
-        cc_path = os.path.join(self.path_combocode,'Data')
+        cc_path = os.path.join(self.path_combocode,'usr')
         si = DataIO.getInputData(cc_path).index(self.star_name)
         self.star_index = si
         ll = DataIO.getInputData(path=cc_path,keyword='LONG')[si]
@@ -245,7 +245,7 @@ class Sed(object):
         
         '''
         
-        cc_path = os.path.join(self.path_combocode,'Data')
+        cc_path = os.path.join(self.path_combocode,'usr')
         data_types = DataIO.getInputData(path=cc_path,keyword='DATA_TYPES',\
                                          filename='Sed.dat')
                     
