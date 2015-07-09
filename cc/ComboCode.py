@@ -269,7 +269,7 @@ class ComboCode(object):
         radio_autoparse = self.processed_input.pop('RADIO_AUTOPARSE',0)
         fn = os.path.join(self.radio_path,'radio_data.db')
         if self.radio_path:
-            cc_path = os.path.join(self.path_combocode,'Data')
+            cc_path = os.path.join(self.path_combocode,'usr')
             radio_db = Radio.Radio(path=self.radio_path,cc_path=cc_path,\
                                    auto_parse=radio_autoparse)
             if radio_db.has_key(self.star_name):

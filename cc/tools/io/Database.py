@@ -38,7 +38,7 @@ def updateDustMCMaxDatabase(filename,\
     db_old = Database(filename)
     db_new = Database(new_filename)
     
-    path = os.path.join(path_combocode,'Data','Dust_updatefile.dat')
+    path = os.path.join(path_combocode,'usr','Dust_updatefile.dat')
     dustfiles = DataIO.readCols(path)
     pfn_old = list(dustfiles[0])
     pfn_new = list(dustfiles[1])

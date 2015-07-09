@@ -281,27 +281,27 @@ class Molecule():
         self.n_impact_extra = int(n_impact_extra)
         self.path_combocode = path_combocode
         self.molecule_index = DataIO.getInputData(keyword='TYPE_SHORT',\
-                                path=os.path.join(self.path_combocode,'Data'),\
+                                path=os.path.join(self.path_combocode,'usr'),\
                                 filename='Molecule.dat').index(self.molecule)
         self.molecule_full = DataIO.getInputData(keyword='MOLEC_TYPE',\
-                                path=os.path.join(self.path_combocode,'Data'),\
+                                path=os.path.join(self.path_combocode,'usr'),\
                                 filename='Molecule.dat',make_float=0)\
                              [self.molecule_index]
         self.molecule_short = DataIO.getInputData(keyword='NAME_SHORT',\
-                                path=os.path.join(self.path_combocode,'Data'),\
+                                path=os.path.join(self.path_combocode,'usr'),\
                                 filename='Molecule.dat')[self.molecule_index]
         self.molecule_plot = DataIO.getInputData(keyword='NAME_PLOT',\
-                                path=os.path.join(self.path_combocode,'Data'),\
+                                path=os.path.join(self.path_combocode,'usr'),\
                                 filename='Molecule.dat')[self.molecule_index]
         self.spec_indices = DataIO.getInputData(keyword='SPEC_INDICES',\
-                                path=os.path.join(self.path_combocode,'Data'),\
+                                path=os.path.join(self.path_combocode,'usr'),\
                                 filename='Molecule.dat')[self.molecule_index]
         self.use_indices_dat = DataIO.getInputData(keyword='USE_INDICES_DAT',\
-                                path=os.path.join(self.path_combocode,'Data'),\
+                                path=os.path.join(self.path_combocode,'usr'),\
                                 filename='Molecule.dat')[self.molecule_index]
         if self.use_indices_dat and not linelist:
              self.indices_index = DataIO.getInputData(start_index=4,\
-                                path=os.path.join(self.path_combocode,'Data'),\
+                                path=os.path.join(self.path_combocode,'usr'),\
                                 keyword='MOLECULE',filename='Indices.dat')\
                                 .index('_'.join([self.molecule,\
                                                  str(self.ny_low),\
@@ -355,7 +355,7 @@ class Molecule():
                                     'data')
                 if self.use_indices_dat:
                     f = DataIO.getInputData(path=os.path.join(self.path_combocode,\
-                                                            'Data'),\
+                                                            'usr'),\
                                         keyword='INDICES',\
                                         filename='Indices.dat',\
                                         start_index=4)[self.indices_index]
@@ -549,7 +549,7 @@ class Molecule():
         factors = [factor == '1' and 1 or float(getattr(self,factor.lower())) 
                    for factor in DataIO.getInputData(\
                                         path=os.path.join(self.path_combocode,\
-                                                          'Data'),\
+                                                          'usr'),\
                                         keyword='ABUN_FACTOR',\
                                         filename='Molecule.dat')\
                                  [self.molecule_index].split('*')]

@@ -335,7 +335,7 @@ class UnresoStats(Statistics):
                              for wav in self.central_mwav[fn]]
             #   4) Check if the data flux point is actually significant 
             #      compared to the noise in the spectrum. Compare with dstd, 
-            #      given d_sigma from path_combocode/Data/Data.dat .
+            #      given d_sigma from path_combocode/usr/Data.dat .
             #      Insignificant values are multiplied by -1, to indicate they
             #      are upper limits in the data at that wavelength.
             central_dflux = [d >= d_mean+(d_std*d_sigma) \

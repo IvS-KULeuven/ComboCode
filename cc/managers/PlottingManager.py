@@ -11,8 +11,6 @@ import os
 
 from cc.plotting.objects import PlotGas
 from cc.plotting.objects import PlotDust
-from cc.tools.io import DataIO
-
 
 
 class PlottingManager():

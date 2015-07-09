@@ -311,7 +311,7 @@ class Statistics(object):
     def setDataInfo(self):
         
         '''
-        Read data info from the ComboCode/Data/Data.dat file. Will return
+        Read data info from the ComboCode/usr/Data.dat file. Will return
         information such as sigma levels and wavelength range for determining
         the std value. 
         
@@ -319,7 +319,7 @@ class Statistics(object):
         
         if not self.instrument: return
         self.data_info = dict()
-        pathcc = os.path.join(self.path_combocode,'Data')
+        pathcc = os.path.join(self.path_combocode,'usr')
         instbands = DataIO.getInputData(path=pathcc,keyword='INSTRUMENT',\
                                         filename='Data.dat')
         instbands = [band.upper() for band in instbands]
@@ -331,17 +331,17 @@ class Statistics(object):
                  if i in indices]
         w_std_min = [wmin
                      for i,wmin in enumerate(DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'Data'),\
+                                path=os.path.join(self.path_combocode,'usr'),\
                                 keyword='W_STD_MIN',filename='Data.dat'))
                      if i in indices]
         w_std_max = [wmax
                      for i,wmax in enumerate(DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'Data'),\
+                                path=os.path.join(self.path_combocode,'usr'),\
                                 keyword='W_STD_MAX',filename='Data.dat'))
                      if i in indices]
         sigmas = [sigma
                   for i,sigma in enumerate(DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'Data'),\
+                                path=os.path.join(self.path_combocode,'usr'),\
                                 keyword='SIGMA',filename='Data.dat'))
                   if i in indices]
         self.data_info['sigmas'] = sigmas

@@ -15,7 +15,6 @@ import types
 
 from cc.tools.io import DataIO
 from cc.tools.numerical import Interpol
-from cc.modeling.objects import Star
 
 
 def massFractionGSD(acut,amin=0.01,amax=100.,slope=-3.5):
@@ -135,7 +134,7 @@ class CustomOpacity():
     
     def __init__(self,species,\
                  path_cc=os.path.join(os.path.expanduser('~'),'ComboCode',\
-                                      'Data'),\
+                                      'usr'),\
                  path_mcmax=os.path.join(os.path.expanduser('~'),'MCMax')):
         
         """
@@ -171,12 +170,12 @@ class CustomOpacity():
         """
         
         self.species = species
-        self.index = Star.getInputData(keyword='SPECIES_SHORT',\
-                                       filename='Dust.dat',\
-                                       path=self.path_cc).index(self.species)
-        self.filename =  Star.getInputData(keyword='PART_FILE',\
-                                           filename='Dust.dat',\
-                                           path=self.path_cc)[self.index]
+        self.index = DataIO.getInputData(keyword='SPECIES_SHORT',\
+                                         filename='Dust.dat',\
+                                         path=self.path_cc).index(self.species)
+        self.filename =  DataIO.getInputData(keyword='PART_FILE',\
+                                             filename='Dust.dat',\
+                                             path=self.path_cc)[self.index]
         self.input_data = DataIO.readFile(\
                                 filename=os.path.join(self.path_mcmax,'src',\
                                                       self.filename),\
@@ -220,20 +219,20 @@ class CustomOpacity():
             #- parameters and the short name can be kept, 
             #- nothing is changed in the Dust.dat file
             try:    
-                Star.getInputData(keyword='PART_FILE', filename='Dust.dat',\
+                DataIO.getInputData(keyword='PART_FILE', filename='Dust.dat',\
                                   path=self.path_cc).index(output_filename)
             #- filename is not present: do the normal procedure, ie check if 
             #- short name is already present
             except ValueError:        
                 i=0
-                while ' '.join(Star.getInputData(keyword='SPECIES_SHORT',\
+                while ' '.join(DataIO.getInputData(keyword='SPECIES_SHORT',\
                                                  filename='Dust.dat',\
                                                  path=self.path_cc))\
                                                  .find(new_short) != -1:
                     i+=1    
                     new_short = new_short + str(i)
                 adding_line = [new_short] + \
-                              [str(Star.getInputData(keyword=key,\
+                              [str(DataIO.getInputData(keyword=key,\
                                                      filename='Dust.dat',\
                                                      path=self.path_cc)\
                                     [self.index])
@@ -354,7 +353,7 @@ class CustomOpacity():
         
         """
 
-        spec_dens = Star.getInputData(keyword='SPEC_DENS',filename='Dust.dat',\
+        spec_dens = DataIO.getInputData(keyword='SPEC_DENS',filename='Dust.dat',\
                                       path=self.path_cc)[self.index]
         opa_cst = q_cst/4.0*3.0/spec_dens/(a_mod*10**(-4))      
         for line in self.input_data:
@@ -400,7 +399,7 @@ class CustomOpacity():
         
         """
         
-        spec_dens = Star.getInputData(keyword='SPEC_DENS',filename='Dust.dat',\
+        spec_dens = DataIO.getInputData(keyword='SPEC_DENS',filename='Dust.dat',\
                                       path=self.path_cc)[self.index]
         wl1 = metallic and pi*a_mod or 2*pi*a_mod
         opa_cst = q_cst/4.0*3.0/spec_dens/(a_mod*10**(-4))

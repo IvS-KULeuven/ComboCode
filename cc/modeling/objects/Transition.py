@@ -340,7 +340,7 @@ def makeTransition(trans,star=None,def_molecs=None,\
     '''
     
     if trans[0].find('.') != -1:
-        path = os.path.join(path_combocode,'Data')
+        path = os.path.join(path_combocode,'usr')
         imolec = DataIO.getInputData(keyword='MOLEC_TYPE',path=path,\
                                      filename='Molecule.dat',\
                                      make_float=0).index(trans[0])
@@ -1700,7 +1700,7 @@ class Transition():
             self.lpdata = []
             if self.datafiles <> None:
                 for df in self.datafiles:
-                    info_path = os.path.join(self.path_combocode,'Data')
+                    info_path = os.path.join(self.path_combocode,'usr')
                     if df[-5:] == '.fits':
                         lprof = FitsReader.FitsReader(filename=df,\
                                                       info_path=info_path)
@@ -1789,7 +1789,7 @@ class Transition():
         if self.lpdata and self.fittedlprof is None:
             self.fittedlprof = \
               LPTools.fitLP(lprof=self.lpdata[0],\
-                            info_path=os.path.join(self.path_combocode,'Data'))
+                            info_path=os.path.join(self.path_combocode,'usr'))
             vexp = self.fittedlprof['vexp']
             self.lpdata[0].setNoise(vexp)
             
@@ -2137,7 +2137,7 @@ class Transition():
         if self.fittedlprof is None:
             return None
         
-        info_path = os.path.join(self.path_combocode,'Data')
+        info_path = os.path.join(self.path_combocode,'usr')
         #-- Do not use the best vlsr for the data peak determination. This 
         #   should be model independent.
         return LPTools.getPeakLPData(lprof=self.lpdata[0],\

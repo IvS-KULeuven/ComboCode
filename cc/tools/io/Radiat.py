@@ -35,7 +35,7 @@ class Radiat():
         @type molecule: Molecule()
         
         @keyword use_indices_dat: If True, get the radiat filename from 
-                                  ~/ComboCode/Data/Indices.dat
+                                  ~/ComboCode/usr/Indices.dat
                                         
                                   (default: 0)
         @type use_indices_dat: bool
@@ -52,7 +52,7 @@ class Radiat():
         self.path = path
         if use_indices_dat:
             f = DataIO.getInputData(path=os.path.join(\
-                                        self.molecule.path_combocode,'Data'),\
+                                        self.molecule.path_combocode,'usr'),\
                                   keyword='RADIAT',filename='Indices.dat',\
                                   start_index=4)[self.molecule.indices_index]
             self.filename = os.path.join(self.path,'radiat_backup',f)

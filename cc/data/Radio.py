@@ -23,7 +23,7 @@ class Radio(Database):
         
     def __init__(self,path,auto_parse=0,db_name='radio_data.db',\
                  cc_path=os.path.join(os.path.expanduser('~'),\
-                                      'ComboCode','Data')):        
+                                      'ComboCode','usr')):        
         
         """ 
         Initializing an instance of Radio.
@@ -121,7 +121,7 @@ class Radio(Database):
         @keyword cc_path: The path to the data files of CC, to access Star.dat   
                           and Molecule.dat
                         
-                          (default: ~/ComboCode/Data/)
+                          (default: ~/ComboCode/usr/)
         @type cc_path: str
         
         """
@@ -224,7 +224,7 @@ class Radio(Database):
         
         '''
         Add a new star to the database. A check is ran to see if the requested 
-        star is known in ~/ComboCode/Data/Star.dat. 
+        star is known in ~/ComboCode/usr/Star.dat. 
         
         @param star_name: The name of the star (from Star.dat)
         @type star_name: str

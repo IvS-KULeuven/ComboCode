@@ -61,10 +61,10 @@ class PlottingSession(object):
         self.star_name = star_name
         self.path_combocode = path_combocode
         self.star_index = DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'Data'))\
+                                path=os.path.join(self.path_combocode,'usr'))\
                               .index(self.star_name)
         self.star_name_plots = DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'Data'),\
+                                path=os.path.join(self.path_combocode,'usr'),\
                                 keyword='STAR_NAME_PLOTS',remove_underscore=1)\
                                [self.star_index]
         self.path = path
