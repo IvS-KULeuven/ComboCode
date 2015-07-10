@@ -13,12 +13,11 @@ import time
 import subprocess
 from glob import glob
 
+import cc.path
 from cc.tools.io import DataIO
 
 
-def updateDustMCMaxDatabase(filename,\
-                            path_combocode=os.path.join(os.path.expanduser('~'),\
-                                                        'ComboCode')):
+def updateDustMCMaxDatabase(filename):
 
     '''
     Update dust filenames in MCMax database with the new OPAC_PATH system. 
@@ -26,10 +25,6 @@ def updateDustMCMaxDatabase(filename,\
     @param filename: The file and path to the MCMax database. 
     @type filename: str
     
-    @keyword path_combocode: Location of the ComboCode folder.
-    
-                             (default: ~/ComboCode/)
-    @type path_combocode: str
     '''
     
     i = 0
@@ -38,7 +33,7 @@ def updateDustMCMaxDatabase(filename,\
     db_old = Database(filename)
     db_new = Database(new_filename)
     
-    path = os.path.join(path_combocode,'usr','Dust_updatefile.dat')
+    path = os.path.join(cc.path.usr,'Dust_updatefile.dat')
     dustfiles = DataIO.readCols(path)
     pfn_old = list(dustfiles[0])
     pfn_new = list(dustfiles[1])
@@ -58,9 +53,7 @@ def updateDustMCMaxDatabase(filename,\
         
 
 
-def convertMCMaxDatabase(path_mcmax,\
-                         path_combocode=os.path.join(os.path.expanduser('~'),\
-                                                     'ComboCode')):
+def convertMCMaxDatabase(path_mcmax):
     
     '''
     Convert MCMax database to the dict format.
@@ -70,17 +63,13 @@ def convertMCMaxDatabase(path_mcmax,\
     
     @param path_mcmax: the name of the MCMac subfolder.
     @type path_mcmax: string
-    
-    @keyword path_combocode: CC home folder
-    
-                             (default: /home/robinl/ComboCode/')
-    @type path_combocode: string
 
     '''
     
     print '** Converting MCMax database to dictionary format...'
-    db_path = os.path.join(os.path.expanduser('~'),'MCMax',path_mcmax,\
-                           'MCMax_models.db')
+    #-- Convenience path
+    cc.path.mout = os.path.join(cc.path.mcmax,path_mcmax)
+    db_path = os.path.join(cc.path.mout,'MCMax_models.db')
     i = 0
     backup_file = '%s_backup%i'%(db_path,i)
     while os.path.isfile(backup_file):
@@ -191,24 +180,24 @@ def coolingDbRetrieval(path_gastronoom,r_outer=None):
     
     '''
     
-    coolkeys_path = os.path.join(os.path.expanduser('~'),'ComboCode','aux',\
-                                 'Input_Keywords_Cooling.dat')
+    #-- Convenience path
+    cc.path.gout = os.path.join(cc.path.gastronoom,path_gastronoom)
+                                
+    coolkeys_path = os.path.join(cc.path.aux,'Input_Keywords_Cooling.dat')
     coolkeys = DataIO.readCols(coolkeys_path,make_float=0,make_array=0)[0]
     extra_keys = ['ENHANCE_ABUNDANCE_FACTOR','MOLECULE_TABLE','ISOTOPE_TABLE',\
                   'ABUNDANCE_FILENAME','NUMBER_INPUT_ABUNDANCE_VALUES',\
-                  'KEYWORD_TABLE',]
+                  'KEYWORD_TABLE']
     coolkeys = [k for k in coolkeys if k not in extra_keys]
-    cool_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                path_gastronoom,'GASTRoNOoM_cooling_models.db')
-    ml_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                              path_gastronoom,'GASTRoNOoM_mline_models.db')
+    cool_db_path = os.path.join(cc.path.gout,'GASTRoNOoM_cooling_models.db')
+    ml_db_path = os.path.join(cc.path.gout,'GASTRoNOoM_mline_models.db')
     subprocess.call(['mv %s %s_backupCoolDbRetrieval'\
                      %(cool_db_path,cool_db_path)],shell=True)
     cool_db = Database(db_path=cool_db_path)
     ml_db = Database(db_path=ml_db_path)
     for ml_id in ml_db.keys():
-        file_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                 path_gastronoom,'gastronoom_%s.inp'%ml_id)
+        file_path = os.path.join(cc.path.gout,'models',\
+                                 'gastronoom_%s.inp'%ml_id)
         input_dict = DataIO.readDict(file_path)
         input_dict = dict([(k,v) for k,v in input_dict.items() 
                                  if k in coolkeys])

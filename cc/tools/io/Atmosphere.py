@@ -11,7 +11,7 @@ from glob import glob
 import pyfits, os
 from scipy import rec,array,argmin
 
-
+import cc.path
 
 class Atmosphere(object):
     
@@ -20,8 +20,7 @@ class Atmosphere(object):
     
     """
     
-    def __init__(self,modeltype,filename=None,\
-                 folder='/STER/pieterd/IVSDATA/sedtables/modelgrids/'):
+    def __init__(self,modeltype,filename=None):
         
         """
         Initializing an Atmosphere() object. 
@@ -29,6 +28,8 @@ class Atmosphere(object):
         The stellar model atmospheres are read from a given folder and the 
         preferred model is chosen after initialisation.
         
+        The location of the model atmospheres is taken from Path.dat.
+
         @param modeltype: Type of model atmosphere (any from IVSDATA folder)
         @type modeltype: string
         
@@ -38,19 +39,14 @@ class Atmosphere(object):
                            
                            (default: None)
         @type filename: string
-        @keyword folder: The folder where the model grids are stored
-        
-                         (default: '/STER/100/pieterd/IVSDATA/sedtables/modelgrids/')
-        @type folder: string
                 
         """
         
         self.modeltype = modeltype
-        self.folder = folder
         self.filename = filename
         if self.filename <> None:
-            self.filepath = os.path.join(self.folder,self.filename)
-        self.modellist = glob(os.path.join(self.folder,modeltype+'*'))
+            self.filepath = os.path.join(cc.path.atm,self.filename)
+        self.modellist = glob(os.path.join(cc.path.atm,modeltype+'*'))
         self.modelgrid = None
         self.teff_actual = None
         self.logg_actual = None
@@ -87,7 +83,7 @@ class Atmosphere(object):
         
         if self.filename is None:
             self.filename = os.path.split(self.modellist[index])[1]
-            self.filepath = os.path.join(self.folder,self.filename)
+            self.filepath = os.path.join(cc.path.atm,self.filename)
 
 
     

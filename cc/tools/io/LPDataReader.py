@@ -22,9 +22,7 @@ class LPDataReader(Reader):
     
     '''
     
-    def __init__(self,filename,star_name=None,\
-                 info_path=os.path.join(os.path.expanduser('~'),\
-                                        'ComboCode','usr')):
+    def __init__(self,filename,star_name=None):
         
         '''
         A data reader for line profiles.
@@ -34,11 +32,6 @@ class LPDataReader(Reader):
         @param filename: The data filename, including filepath.
         @type filename: string
         
-        @keyword info_path: The path to the folder containing the info file on
-                            stars, called Star.dat. 
-                            
-                            (default: ~/ComboCode/usr)
-        @type info_path: string
         @keyword star_name: The star name if the filename doesn't follow naming
                             conventions. None otherwise.
                             
@@ -53,7 +46,6 @@ class LPDataReader(Reader):
             self.star_name = star_name
         else:
             self.star_name = os.path.split(self.filename)[1].split('_')[0]
-        self.info_path = info_path
         self.c = 2.99792458e10          #in cm/s
         self.contents['vlsr'] = None
     
@@ -168,11 +160,9 @@ class LPDataReader(Reader):
         """
         
         try:
-            star_index = DataIO.getInputData(path=self.info_path,\
-                                             keyword='STAR_NAME')\
+            star_index = DataIO.getInputData(keyword='STAR_NAME')\
                                             .index(self.star_name)
-            vlsr = DataIO.getInputData(path=self.info_path,\
-                                       keyword='V_LSR')[star_index]
+            vlsr = DataIO.getInputData(keyword='V_LSR',rindex=star_index)
         except KeyError,ValueError: 
             print 'Star not found in Star.dat for %s. '%(self.filename) + \
                   'Add star to Star.dat!'

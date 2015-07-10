@@ -11,6 +11,7 @@ import os
 from scipy import array,arange
 import pyfits
 
+import cc.path
 from cc.tools.io.LPDataReader import LPDataReader
 from cc.tools.io import DataIO
 
@@ -59,9 +60,7 @@ class FitsReader(LPDataReader):
     
     '''
     
-    def __init__(self,filename,star_name=None,\
-                 info_path=os.path.join(os.path.expanduser('~'),\
-                                        'ComboCode','usr')):
+    def __init__(self,filename,star_name=None):
         
         '''
         A FITS file reader for line profiles.
@@ -70,12 +69,7 @@ class FitsReader(LPDataReader):
         
         @param filename: The FITS filename, including filepath.
         @type filename: string
-        
-        @keyword info_path: The path to the folder containing the info file on
-                            stars, called Star.dat. 
-                            
-                            (default: ~/ComboCode/usr)
-        @type info_path: string
+
         @keyword star_name: The star name if the filename doesn't follow naming
                             conventions. None otherwise.
                             
@@ -84,8 +78,7 @@ class FitsReader(LPDataReader):
         
         '''
         
-        super(FitsReader, self).__init__(filename=filename,star_name=star_name,\
-                                         info_path=info_path)
+        super(FitsReader, self).__init__(filename=filename,star_name=star_name)
         self.readFits()
         
     

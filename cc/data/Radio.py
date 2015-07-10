@@ -10,6 +10,7 @@ Author: R. Lombaert
 import os, pyfits
 from glob import glob
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.tools.io.Database import Database
 
@@ -21,9 +22,7 @@ class Radio(Database):
     
     """
         
-    def __init__(self,path,auto_parse=0,db_name='radio_data.db',\
-                 cc_path=os.path.join(os.path.expanduser('~'),\
-                                      'ComboCode','usr')):        
+    def __init__(self,auto_parse=0,db_name='radio_data.db'):        
         
         """ 
         Initializing an instance of Radio.
@@ -118,17 +117,11 @@ class Radio(Database):
                       
                           (default: radio_data.db)
         @type db_name: str      
-        @keyword cc_path: The path to the data files of CC, to access Star.dat   
-                          and Molecule.dat
-                        
-                          (default: ~/ComboCode/usr/)
-        @type cc_path: str
         
         """
         
-        db_path = os.path.join(path,db_name)
+        db_path = os.path.join(cc.path.dradio,db_name)
         super(Radio,self).__init__(db_path=db_path)
-        self.cc_path = cc_path
                 
         if auto_parse:
             self.parseFolder()
@@ -166,14 +159,11 @@ class Radio(Database):
         molec_trans = [ff.split('_')[1] for ff in ggf]
         telescopes = [os.path.splitext(ff)[0].split('_')[-1] for ff in ggf]
         
-        defmolecs = DataIO.getInputData(path=self.cc_path,\
-                                        keyword='TYPE_SHORT',\
+        defmolecs = DataIO.getInputData(keyword='TYPE_SHORT',\
                                         filename='Molecule.dat')
-        defmolecs_short = DataIO.getInputData(path=self.cc_path,\
-                                              keyword='NAME_SHORT',\
+        defmolecs_short = DataIO.getInputData(keyword='NAME_SHORT',\
                                               filename='Molecule.dat')
-        defspec_indices = DataIO.getInputData(path=self.cc_path,\
-                                              keyword='SPEC_INDICES',\
+        defspec_indices = DataIO.getInputData(keyword='SPEC_INDICES',\
                                               filename='Molecule.dat')
         for ff,s,mt,tel in zip(ggf,stars,molec_trans,telescopes):
             this_dm,this_dms,this_dsi = None, None, None
@@ -233,11 +223,10 @@ class Radio(Database):
         
         if star_name in self.keys():
             return
-        known_stars = DataIO.getInputData(path=self.cc_path,\
-                                          keyword='STAR_NAME')
+        known_stars = DataIO.getInputData(keyword='STAR_NAME')
         if star_name not in known_stars:
             print('Requested star %s is unknown in %s/Star.dat.'\
-                  %(star_name,self.cc_path))
+                  %(star_name,cc.path.usr))
             return
         self[star_name] = dict()
 
@@ -279,8 +268,7 @@ class Radio(Database):
         entries = trans.split()
         trans = ' '.join(entries)
         
-        defmolecs = DataIO.getInputData(path=self.cc_path,\
-                                        keyword='TYPE_SHORT',\
+        defmolecs = DataIO.getInputData(keyword='TYPE_SHORT',\
                                         filename='Molecule.dat')
         this_molec = entries[0].replace('TRANSITION=','',1)
         if this_molec not in defmolecs:

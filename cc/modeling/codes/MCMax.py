@@ -11,6 +11,7 @@ import os
 import subprocess
 from glob import glob
 
+import cc.path
 from cc.tools.io import DataIO, Database
 from cc.modeling.ModelingSession import ModelingSession
 
@@ -116,9 +117,8 @@ def rayTraceSpectrum(model_id,path_mcmax='runTestDec09',inputfilename='',\
                      redo_rt=0):
     
     '''
-    Do the ray-tracing of the spectrum according to 
-    ~/MCMax/Observation_Files/Spec.out, but only if spectrum45.0.dat does not 
-    exist yet.
+    Do the ray-tracing of the spectrum according to cc.path.mobs/Spec.out, but 
+    only if spectrum45.0.dat does not exist yet.
     
     @param model_id: the model_id of the requested model
     @type model_id: string
@@ -139,18 +139,16 @@ def rayTraceSpectrum(model_id,path_mcmax='runTestDec09',inputfilename='',\
     '''
     
     redo_rt = int(redo_rt)
-    spectrum_file = os.path.join(os.path.expanduser("~"),'MCMax',path_mcmax,\
-                                 'models',model_id,'spectrum45.0.dat')
+    spectrum_file = os.path.join(cc.path.mcmax,path_mcmax,'models',model_id,\
+                                 'spectrum45.0.dat')
     if not os.path.isfile(spectrum_file) or redo_rt:
         print '** Ray-tracing spectrum now...'
         if not inputfilename:
-            inputfilename=os.path.join(os.path.expanduser('~'),'MCMax',\
-                                       path_mcmax,'models',\
+            inputfilename=os.path.join(cc.path.mcmax,path_mcmax,'models',\
                                        'inputMCMax_%s.dat'%model_id)
-        output_folder = os.path.join(os.path.expanduser("~"),'MCMax',\
-                                     path_mcmax,'models',model_id)
-        spec_file = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                 'Observation_Files','Spec.out')
+        output_folder = os.path.join(cc.path.mcmax,path_mcmax,'models',\
+                                     model_id)
+        spec_file = os.path.join(cc.path.mobs,'Spec.out')
         subprocess.call([' '.join(['MCMax ' + inputfilename,'0','-o',\
                                    output_folder,spec_file])],shell=True)
     else:
@@ -162,8 +160,7 @@ def rayTraceImage(model_id,path_mcmax='runTestDec09',inputfilename='',\
                   remove_source=0,output_folder=''):
     
     '''
-    Do the ray-tracing of images, according to 
-    ~/MCMax/Observation_Files/Image.out.
+    Do the ray-tracing of images, according to cc.path.mobs/Image.out.
     
     @param model_id: the model_id of the requested model
     @type model_id: string
@@ -190,12 +187,10 @@ def rayTraceImage(model_id,path_mcmax='runTestDec09',inputfilename='',\
     remove_source = int(remove_source)
     print '** Ray-tracing images now...'
     if not inputfilename:
-        inputfilename=os.path.join(os.path.expanduser('~'),'MCMax',path_mcmax,\
-                                   'models','inputMCMax_%s.dat'%model_id)
-    model_folder = os.path.join(os.path.expanduser("~"),'MCMax',\
-                                     path_mcmax,'models',model_id)
-    image_file = os.path.join(os.path.expanduser('~'),'MCMax',\
-                              'Observation_Files','Image.out')
+        inputfilename=os.path.join(cc.path.mcmax,path_mcmax,'models',\
+                                   'inputMCMax_%s.dat'%model_id)
+    model_folder = os.path.join(cc.path.mcmax,path_mcmax,'models',model_id)
+    image_file = os.path.join(cc.path.mobs,'Image.out')
     if remove_source:
         subprocess.call([' '.join(['MCMax ' + inputfilename,'0',\
                                    '-s tracestar=.false.','-o',model_folder,\
@@ -219,7 +214,7 @@ def rayTraceVisibilities(model_id,path_mcmax='runTestDec09',inputfilename=''):
     
     '''
     Do the ray-tracing of visibilities, according to 
-    ~/MCMax/Observation_Files/Visibilities.out.
+    cc.path.mobs/Visibilities.out.
     
     @param model_id: the model_id of the requested model
     @type model_id: string
@@ -236,12 +231,10 @@ def rayTraceVisibilities(model_id,path_mcmax='runTestDec09',inputfilename=''):
     
     print '** Ray-tracing visibilities now...'
     if not inputfilename:
-        inputfilename=os.path.join(os.path.expanduser('~'),'MCMax',path_mcmax,\
-                                   'models','inputMCMax_%s.dat'%model_id)
-    output_folder = os.path.join(os.path.expanduser("~"),'MCMax',path_mcmax,\
-                                 'models',model_id)
-    visibilities_file = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                     'Observation_Files','Visibilities.out')
+        inputfilename=os.path.join(cc.path.mcmax,path_mcmax,'models',\
+                                   'inputMCMax_%s.dat'%model_id)
+    output_folder = os.path.join(cc.path.mcmax,path_mcmax,'models',model_id)
+    visibilities_file = os.path.join(cc.path.mobs,'Visibilities.out')
     subprocess.call([' '.join(['MCMax ' + inputfilename,'0','-o',\
                                output_folder,visibilities_file])],shell=True)
     print '** Your visibilities can be found at:'
@@ -257,11 +250,7 @@ class MCMax(ModelingSession):
     """
     
     def __init__(self,path_mcmax='runTest',replace_db_entry=0,db=None,\
-                 new_entries=[],\
-                 opac_path=os.path.join(os.path.expanduser('~'),'MCMax',\
-                                        'Opacities'),\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode')):
+                 new_entries=[]):
         
         """ 
         Initializing an instance of ModelingSession.
@@ -281,16 +270,6 @@ class MCMax(ModelingSession):
         
                              (default: 'runTest')
         @type path_mcmax: string
-        @keyword path_combocode: CC home folder
-        
-                                 (default: /home/<user>/ComboCode/')
-        @type path_combocode: string
-        @keyword opac_path: opacity home folder. Filepaths in Dust.dat are 
-                            added onto this. The home folder is not saved in 
-                            the database. The subfolder from Dust.dat is. 
-        
-                            (default: ~/MCMax/Opacities/)
-        @type opac_path: string
         @keyword new_entries: The new model_ids when replace_db_entry is 1
                                    of other models in the grid. These are not 
                                    replaced!
@@ -301,19 +280,18 @@ class MCMax(ModelingSession):
         """
         
         super(MCMax, self).__init__(code='MCMax',path=path_mcmax,\
-                                    path_combocode=path_combocode,\
                                     replace_db_entry=replace_db_entry,\
                                     new_entries=new_entries)
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser("~"),\
-                                   'MCMax',self.path,'data_for_gastronoom'))
+        #-- Convenience path
+        cc.path.mout = os.path.join(cc.path.mcmax,self.path)
+        DataIO.testFolderExistence(os.path.join(cc.path.mout,\
+                                                'data_for_gastronoom'))
         self.db = db
-        self.opac_path = opac_path
         self.mcmax_done = False
         
         #- Read standard input file with all parameters that should be included
         #- as well as some dust specific information
-        inputfilename = os.path.join(self.path_combocode,'aux',\
-                                     'inputMCMax.dat')
+        inputfilename = os.path.join(cc.path.aux,'inputMCMax.dat')
         self.standard_inputfile = DataIO.readDict(inputfilename,\
                                                   convert_floats=1,\
                                                   convert_ints=1,\
@@ -595,7 +573,7 @@ class MCMax(ModelingSession):
                 #   .particle files exist in the same location
                 elif star['SCATTYPE'] == 'FULL':
                     partfile = os.path.splitext(speciesfile)[0] + '.particle'
-                    if os.isfile(os.path.join(self.opac_path,partfile)):
+                    if os.isfile(os.path.join(cc.path.mopac,partfile)):
                         ftype = 'part'
                         speciesfile = partfile
                     else:
@@ -610,12 +588,10 @@ class MCMax(ModelingSession):
                     else: ftype = 'opac'
                 #-- Add the opacities home folder (not saved in db)
                 input_dict['%s%.2i'%(ftype,index+1)] = "'%s'"\
-                            %(os.path.join(self.opac_path,speciesfile))       
-            input_filename = os.path.join(os.path.expanduser("~"),'MCMax',\
-                                          self.path,'models',\
+                            %(os.path.join(cc.path.mopac,speciesfile))       
+            input_filename = os.path.join(cc.path.mout,'models',\
                                           'inputMCMax_%s.dat'%self.model_id)
-            output_folder = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                         self.path,'models',self.model_id)
+            output_folder = os.path.join(cc.path.mout,'models',self.model_id)
             input_lines = ["%s=%s"%(k,str(v)) 
                            for k,v in sorted(input_dict.items())]
             DataIO.writeFile(filename=input_filename,input_lines=input_lines)

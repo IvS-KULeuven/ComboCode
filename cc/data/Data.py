@@ -272,8 +272,8 @@ def reduceArray(arr,stepsize,cutoff=None,mode='average'):
     Reduce the size of a 1d-array.
     
     Two modes are available: 
-    - average: subsequent n=stepsize elements are averaged 
-    - remove: keep one element every n=stepsize elements
+        - average: subsequent n=stepsize elements are averaged 
+        - remove: keep one element every n=stepsize elements
         
     The average mode can be used when, e.g., reading MCMax output, where the 
     density/temperature/... grids are given for radial and angular coordinates.

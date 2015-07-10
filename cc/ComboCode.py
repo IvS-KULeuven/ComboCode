@@ -13,6 +13,7 @@ import types
 import subprocess
 import time
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.tools.numerical import Gridding
 from cc.managers import ModelingManager
@@ -27,8 +28,6 @@ from cc.data.instruments import Pacs
 from cc.data.instruments import Spire
 from cc.data import Sed, Radio
 from cc.modeling.tools import ColumnDensity, ContinuumDivision
-
-
 
 class ComboCode(object):
     
@@ -57,25 +56,17 @@ class ComboCode(object):
         
         In the python or ipython shell you can do:
         >>> import ComboCode
-        >>> cc = ComboCode.ComboCode('/home/robinl/ComboCode/aux/inputComboCode.dat')
+        >>> cc = ComboCode.ComboCode('/home/robinl/ComboCode/input/inputComboCode.dat')
         
-        @param inputfilename: The name of the inputfile. If path is not
-                              included, it's set to the default path to CC:
-                              ~/ComboCode/. Inputfiles should ideally be in 
-                              this folder.
+        @param inputfilename: The name of the inputfile. 
         @type inputfilename: string
         
         '''
         
-        self.path_combocode = os.path.join(os.path.expanduser('~'),'ComboCode')
-        if not os.path.split(inputfilename)[0]:
-            self.inputfilename = os.path.join(self.path_combocode,\
-                                              os.path.split(inputfilename)[1])
-        else:
-            self.inputfilename = inputfilename
+        self.inputfilename = inputfilename
         self.readInput()
         self.setGlobalPars()
-        self.setLinks()
+        self.setOutputFolders()
         self.setPacs()
         self.setSpire()
         self.setSed()
@@ -139,15 +130,13 @@ class ComboCode(object):
                           ('vic_time_per_sphinx',30),('vic_credits',None),\
                           ('append_results',0),('write_dust_density',0),\
                           ('replace_db_entry',0),('update_spec',0),\
-                          ('ln_path_gastronoom',''),('ln_path_mcmax',''),\
                           ('path_gastronoom',''),('path_mcmax',''),\
                           ('print_model_info',1),('stat_chi2','normal'),\
                           ('contdiv_features',[]),('cfg_contdiv',''),\
                           ('show_contdiv',0),('skip_cooling',0),\
                           ('recover_sphinxfiles',0),('stat_print',0),\
                           ('stat_lll_p',None),('stat_method','clipping'),\
-                          ('star_name','model'),('opac_path',''),\
-                          ('corrflux_path',None)]
+                          ('star_name','model')]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -168,20 +157,17 @@ class ComboCode(object):
         
         '''
         
-        pacs_path = self.processed_input.pop('PACS_PATH','')
         redo_convolution = self.processed_input.pop('PACS_REDO_CONVOLUTION',0)
         searchstring = self.processed_input.pop('PACS_SEARCHSTRING','')
         oversampling = self.processed_input.pop('PACS_OVERSAMPLING','')
         intrinsic = self.processed_input.pop('PACS_INTRINSIC',1)
         linefit = self.processed_input.pop('PACS_LINEFIT','')
         absflux_err = self.processed_input.pop('PACS_ABSFLUX_ERR',0.2)
-        if pacs_path:
+        if cc.path.dpacs:
             self.pacs = Pacs.Pacs(star_name=self.star_name,\
-                                  path_combocode=self.path_combocode,\
                                   path=self.path_gastronoom,\
                                   redo_convolution=redo_convolution,\
                                   oversampling=oversampling,\
-                                  path_pacs=pacs_path,\
                                   intrinsic=intrinsic,\
                                   path_linefit=linefit,\
                                   absflux_err=absflux_err)
@@ -199,19 +185,16 @@ class ComboCode(object):
         
         '''
         
-        spire_path = self.processed_input.pop('SPIRE_PATH','')
         searchstring = self.processed_input.pop('SPIRE_SEARCHSTRING','')
         resolution = self.processed_input.pop('SPIRE_RESOLUTION',0)
         intrinsic = self.processed_input.pop('SPIRE_INTRINSIC',1)
         oversampling = self.processed_input.pop('SPIRE_OVERSAMPLING',0)
         linefit = self.processed_input.pop('SPIRE_LINEFIT','')
         absflux_err = self.processed_input.pop('SPIRE_ABSFLUX_ERR',0.2)
-        if spire_path:
+        if cc.path.dspire:
             self.spire = Spire.Spire(star_name=self.star_name,\
-                                     path_combocode=self.path_combocode,\
                                      path=self.path_gastronoom,\
                                      resolution=resolution,\
-                                     path_spire=spire_path,\
                                      intrinsic=intrinsic,\
                                      oversampling=oversampling,\
                                      path_linefit=linefit,\
@@ -229,18 +212,13 @@ class ComboCode(object):
         
         '''
         
-        sed_path = self.processed_input.pop('SED_PATH','')
-        psuffix = self.processed_input.pop('SED_PHOT_PSUFFIX',\
-                                           'Raw/IvS_SEDTool/')
         remove = self.processed_input.pop('SED_PHOT_REMOVE','')
         if not remove: remove = []
         elif type(remove) is types.StringType: remove = [remove]
         else: remove = list(remove)
         
-        if sed_path:
-            self.sed = Sed.Sed(star_name=self.star_name,\
-                               path_combocode=self.path_combocode,\
-                               path=sed_path,psuffix=psuffix,remove=remove)
+        if cc.path.dsed:
+            self.sed = Sed.Sed(star_name=self.star_name,remove=remove)
         else: 
             self.sed = None
         
@@ -264,14 +242,10 @@ class ComboCode(object):
         '''
         
         self.radio = None
-        self.radio_path = self.processed_input.pop('RADIO_PATH','')
         self.radio_autosearch = self.processed_input.pop('RADIO_AUTOSEARCH',0)
         radio_autoparse = self.processed_input.pop('RADIO_AUTOPARSE',0)
-        fn = os.path.join(self.radio_path,'radio_data.db')
-        if self.radio_path:
-            cc_path = os.path.join(self.path_combocode,'usr')
-            radio_db = Radio.Radio(path=self.radio_path,cc_path=cc_path,\
-                                   auto_parse=radio_autoparse)
+        if cc.path.dradio:
+            radio_db = Radio.Radio(auto_parse=radio_autoparse)
             if radio_db.has_key(self.star_name):
                 self.radio = radio_db[self.star_name]            
             
@@ -314,8 +288,7 @@ class ComboCode(object):
                     if trans:
                         trstr = trans.getInputString(include_nquad=0)
                         if trstr in self.radio.keys():
-                            trans.addDatafile(self.radio[trstr],\
-                                              path=self.radio_path)
+                            trans.addDatafile(self.radio[trstr])
 
         
 
@@ -467,7 +440,6 @@ class ComboCode(object):
         '''
         
         base_star = Star.Star(example_star=self.processed_input,\
-                              path_combocode=self.path_combocode,\
                               path_gastronoom=self.path_gastronoom,\
                               path_mcmax=self.path_mcmax)
         if self.additive_grid:
@@ -481,7 +453,6 @@ class ComboCode(object):
                                         for key,grid in self.additive_grid.items()])
                                   for index in xrange(grid_lengths[0])]
                 self.star_grid = [Star.Star(example_star=base_star,\
-                                         path_combocode=self.path_combocode,\
                                          path_gastronoom=self.path_gastronoom,\
                                          path_mcmax=self.path_mcmax,\
                                          extra_input=d)
@@ -489,8 +460,7 @@ class ComboCode(object):
         else:
             self.star_grid = [base_star]
         for key,grid in self.multiplicative_grid.items():
-            self.star_grid = [Star.Star(path_combocode=self.path_combocode,\
-                                        path_gastronoom=self.path_gastronoom,\
+            self.star_grid = [Star.Star(path_gastronoom=self.path_gastronoom,\
                                         path_mcmax=self.path_mcmax,\
                                         example_star=star,\
                                         extra_input=dict([(key,value)]))
@@ -515,31 +485,22 @@ class ComboCode(object):
             
         
     
-    def setLinks(self):
+    def setOutputFolders(self):
         
         '''
-        Set the output folder links if requested.
+        Set the output folders.
         
-        If the folders/links already exist, nothing is done. 
+        If the folders do not already exist, they are created.
+        
+        The locations are saved in cc.path for later use, but this is generally
+        only done inside a ComboCode session. Each module sets these themselves
         
         '''
         
-        if self.ln_path_gastronoom:
-            DataIO.checkLink(path=os.path.join(self.ln_path_gastronoom,\
-                                               self.path_gastronoom),\
-                             ln_path=os.path.join(os.path.expanduser('~'),\
-                                                  'GASTRoNOoM'))
-        else:
-            DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                       'GASTRoNOoM',self.path_gastronoom))
-        if self.ln_path_mcmax:
-            DataIO.checkLink(path=os.path.join(self.ln_path_mcmax,\
-                                               self.path_mcmax),\
-                             ln_path=os.path.join(os.path.expanduser('~'),\
-                                                  'MCMax'))
-        else:
-            DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                       'MCMax',self.path_mcmax))
+        cc.path.gout = os.path.join(cc.path.gastronoom,self.path_gastronoom)
+        cc.path.mout = os.path.join(cc.path.mcmax,self.path_mcmax)
+        DataIO.testFolderExistence(cc.path.gout)
+        DataIO.testFolderExistence(cc.path.mout)
         
         
     def setVicManager(self):
@@ -551,7 +512,6 @@ class ComboCode(object):
         
         if self.vic and self.gastronoom and self.sphinx : 
             self.vic_manager = Vic.Vic(path=self.path_gastronoom,\
-                                       path_combocode=self.path_combocode,\
                                        account=self.vic_account,\
                                        time_per_sphinx=self.vic_time_per_sphinx,\
                                        credits_acc=self.vic_credits,\
@@ -580,12 +540,10 @@ class ComboCode(object):
                                        iterative=self.plot_iterative,\
                                        num_model_sessions=len(self.star_grid),\
                                        vic_manager=self.vic_manager,\
-                                       path_combocode=self.path_combocode,\
                                        replace_db_entry=self.replace_db_entry,\
                                        path_mcmax=self.path_mcmax,\
                                        skip_cooling=self.skip_cooling,\
-                                       recover_sphinxfiles=self.recover_sphinxfiles,\
-                                       opac_path=self.opac_path)
+                                       recover_sphinxfiles=self.recover_sphinxfiles)
     
     
     def setPlotManager(self):    
@@ -605,11 +563,9 @@ class ComboCode(object):
                                          path_gastronoom=self.path_gastronoom,\
                                          path_mcmax=self.path_mcmax,\
                                          inputfilename=self.inputfilename,\
-                                         path_combocode=self.path_combocode,\
                                          pacs=self.pacs,\
                                          spire=self.spire,\
                                          sed=self.sed,\
-                                         corrflux_path = self.corrflux_path,\
                                          plot_pars=plot_pars)
         
         
@@ -750,16 +706,13 @@ class ComboCode(object):
                             i = 0
                             while True:
                                 dummy = DataIO.readFile(\
-                                    os.path.join(os.path.expanduser('~'),\
-                                        'GASTRoNOoM',self.path_gastronoom,\
-                                        'models',model_id,\
+                                    os.path.join(cc.path.gout,'models',model_id,\
                                         os.path.split(self.inputfilename)[1]+\
                                         '_%s_%i'%(model_id,i)))
                                 i += 1
                         except IOError:
                             subprocess.call(['cp %s %s'%(self.inputfilename,\
-                                        os.path.join(os.path.expanduser('~'),\
-                                        'GASTRoNOoM',self.path_gastronoom,\
+                                        os.path.join(cc.path.gout,\
                                         'models',model_id,\
                                         os.path.split(self.inputfilename)[1]+\
                                         '_%s_%i'%(model_id,i)))],shell=True)
@@ -778,15 +731,13 @@ class ComboCode(object):
                         i = 0
                         while True:
                             dummy = DataIO.readFile(os.path.join(\
-                                        os.path.expanduser('~'),'MCMax',\
-                                        self.path_mcmax,'models',model_id,\
+                                        cc.path.mout,'models',model_id,\
                                         os.path.split(self.inputfilename)[1]+\
                                         '_%s_%i'%(model_id,i)))
                             i += 1
                     except IOError:
-                        subprocess.call(['cp %s %s'%(self.inputfilename,\
-                                    os.path.join(os.path.expanduser('~'),\
-                                    'MCMax',self.path_mcmax,'models',model_id,\
+                        subprocess.call(['cp %s %s'%(self.inputfilename,os.path.join(\
+                                    cc.path.mout,'models',model_id,\
                                     os.path.split(self.inputfilename)[1]+\
                                     '_%s_%i'%(model_id,i)))],shell=True)
         if appendage: DataIO.writeFile(filename=self.inputfilename,\
@@ -809,8 +760,7 @@ class ComboCode(object):
             print '**** Doing PACS statistics for %s.'%self.star_name
             print '************************************************'
             self.pacsstats = UnresoStats.UnresoStats(star_name=self.star_name,\
-                                            path_code=self.path_gastronoom,\
-                                            path_combocode=self.path_combocode)
+                                            path_code=self.path_gastronoom)
             self.pacsstats.setInstrument(instrument_name='PACS',\
                                          instrument_instance=self.pacs,\
                                          stat_method=self.stat_method)
@@ -822,8 +772,7 @@ class ComboCode(object):
             print '**** Doing SPIRE statistics for %s.'%self.star_name
             print '************************************************'
             self.spirestats = UnresoStats.UnresoStats(star_name=self.star_name,\
-                                            path_code=self.path_gastronoom,\
-                                            path_combocode=self.path_combocode)
+                                            path_code=self.path_gastronoom)
             self.spirestats.setInstrument(instrument_name='SPIRE',\
                                           instrument_instance=self.spire,\
                                           stat_method=self.stat_method)
@@ -842,7 +791,6 @@ class ComboCode(object):
             print '************************************************'
             self.resostats = ResoStats.ResoStats(star_name=self.star_name,\
                                            path_code=self.path_gastronoom,\
-                                           path_combocode=self.path_combocode,\
                                            lll_p=self.stat_lll_p)
             self.resostats.setInstrument(trans_sel)
             self.resostats.setModels(star_grid=self.star_grid)
@@ -877,7 +825,6 @@ class ComboCode(object):
                                         star_grid=self.star_grid,\
                                         spec=[self.sed],franges=franges,\
                                         plot=self.show_contdiv,func=func,\
-                                        path_combocode=self.path_combocode,\
                                         cfg=self.cfg_contdiv)
                 self.contdiv.prepareModels()
                 self.contdiv.prepareData()
@@ -1007,6 +954,6 @@ if __name__ == "__main__":
     except IndexError:
         raise IOError('Please provide an inputfilename. (syntax in the ' + \
                       'command shell: python ComboCode.py ' + \
-                      '/home/robinl/path_combocode/inputComboCode.dat)')
+                      '/home/robinl/inputComboCode.dat)')
     cc = ComboCode(inputfilename)
     cc.startSession()

@@ -13,6 +13,7 @@ from glob import glob
 import subprocess      
 from scipy import array
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.tools.io import Atmosphere
 from cc.modeling.ModelingSession import ModelingSession
@@ -27,9 +28,7 @@ class Gastronoom(ModelingSession):
     
     """
         
-    def __init__(self,path_combocode=os.path.join(os.path.expanduser('~'),\
-                                                  'ComboCode'),\
-                 path_gastronoom='runTest',vic=None,sphinx=0,\
+    def __init__(self,path_gastronoom='runTest',vic=None,sphinx=0,\
                  replace_db_entry=0,cool_db=None,ml_db=None,sph_db=None,\
                  skip_cooling=0,recover_sphinxfiles=0,\
                  new_entries=[]):
@@ -44,10 +43,6 @@ class Gastronoom(ModelingSession):
         
                                   (default: 'runTest')
         @type path_gastronoom: string
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '/home/robinl/ComboCode')
-        @type path_combocode: string
         @keyword vic: the vic manager for running sphinx models on VIC3 
         
                       (default: None)
@@ -99,18 +94,16 @@ class Gastronoom(ModelingSession):
         
         super(Gastronoom,self).__init__(code='GASTRoNOoM',\
                                         path=path_gastronoom,\
-                                        path_combocode=path_combocode,\
                                         replace_db_entry=replace_db_entry,\
                                         new_entries=new_entries)
+        #-- Convenience path
+        cc.path.gout = os.path.join(cc.path.gastronoom,self.path)
         self.vic = vic
         self.trans_in_progress = []
         self.sphinx = sphinx
-        cool_keys = os.path.join(self.path_combocode,'aux',\
-                                 'Input_Keywords_Cooling.dat')
-        ml_keys = os.path.join(self.path_combocode,'aux',\
-                               'Input_Keywords_Mline.dat')
-        sph_keys = os.path.join(self.path_combocode,'aux',\
-                                'Input_Keywords_Sphinx.dat')
+        cool_keys = os.path.join(cc.path.aux,'Input_Keywords_Cooling.dat')
+        ml_keys = os.path.join(cc.path.aux,'Input_Keywords_Mline.dat')
+        sph_keys = os.path.join(cc.path.aux,'Input_Keywords_Sphinx.dat')
         self.cooling_keywords = [line.strip() 
                                  for line in DataIO.readFile(cool_keys) 
                                  if line]
@@ -120,8 +113,7 @@ class Gastronoom(ModelingSession):
         self.sphinx_keywords = [line.strip() 
                                 for line in DataIO.readFile(sph_keys) 
                                 if line]
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                   'GASTRoNOoM',self.path,'data_for_mcmax'))
+        DataIO.testFolderExistence(os.path.join(cc.path.gout,'data_for_mcmax'))
         self.trans_bools = []
         self.mline_done = False
         self.cool_done = False
@@ -134,8 +126,7 @@ class Gastronoom(ModelingSession):
                              '1H1H17O','p1H1H17O','1H1H18O','p1H1H18O']
         
         #- Read standard input file with all parameters that should be included
-        filename = os.path.join(self.path_combocode,'aux',\
-                                'inputGASTRoNOoM.dat')
+        filename = os.path.join(cc.path.aux,'inputGASTRoNOoM.dat')
         self.standard_inputfile = DataIO.readDict(filename,\
                                                   comment_chars=['#','!'])
         self.skip_cooling = skip_cooling
@@ -200,13 +191,11 @@ class Gastronoom(ModelingSession):
         
         '''
         
-        DataIO.writeFile(filename=os.path.join(os.path.expanduser('~'),\
-                         'GASTRoNOoM',self.path,'models',new_id,\
+        DataIO.writeFile(filename=os.path.join(cc.path.gout,'models',new_id,\
                          'cooling_id.log'),input_lines=[self.model_id])
         if molec_id <> None:
-            DataIO.writeFile(filename=os.path.join(os.path.expanduser('~'),\
-                             'GASTRoNOoM',self.path,'models',new_id,\
-                             'mline_id.log'),input_lines=[molec_id])
+            DataIO.writeFile(filename=os.path.join(cc.path.gout,'models',\
+                             new_id,'mline_id.log'),input_lines=[molec_id])
 
 
 
@@ -457,10 +446,8 @@ class Gastronoom(ModelingSession):
         
         '''
         
-        folder_old = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                  self.path,'models',old_id)
-        folder_new = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                  self.path,'models',new_id)
+        folder_old = os.path.join(cc.path.gout,'models',old_id)
+        folder_new = os.path.join(cc.path.gout,'models',new_id)
         lsprocess = subprocess.Popen('ls %s'%folder_old,shell=True,\
                                      stdout=subprocess.PIPE)
         lsfile = lsprocess.communicate()[0].split('\n')
@@ -516,13 +503,11 @@ class Gastronoom(ModelingSession):
         if star.getMolecule('1H1H16O') <> None:
             h2o_dict = star.getMolecule('1H1H16O').makeDict()
         else:            
-            h2o_dict = Molecule('1H1H16O',45,45,648,50,\
-                                path_combocode=self.path_combocode).makeDict()
+            h2o_dict = Molecule('1H1H16O',45,45,648,50).makeDict()
         if star.getMolecule('12C16O') <> None:
             co_dict = star.getMolecule('12C16O').makeDict()
         else:
-            co_dict = Molecule('12C16O',61,61,240,50,\
-                               path_combocode=self.path_combocode).makeDict()
+            co_dict = Molecule('12C16O',61,61,240,50).makeDict()
         
         #-- no abundance profiles should be possible for CO. 
         if co_dict.has_key('MOLECULE_TABLE'):
@@ -544,9 +529,8 @@ class Gastronoom(ModelingSession):
         
         #- Run cooling if above is False
         if not model_bool:
-            DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                       self.code,self.path,'models',\
-                                       self.model_id))
+            DataIO.testFolderExistence(os.path.join(cc.path.gout,'models',\
+                                                    self.model_id))
             commandfile = ['%s=%s'%(k,v) 
                            for k,v in sorted(self.command_list.items())
                            if k != 'R_POINTS_MASS_LOSS'] + \
@@ -560,15 +544,13 @@ class Gastronoom(ModelingSession):
                                     for v in self.command_list\
                                                     ['R_POINTS_MASS_LOSS']] + \
                                    ['####'])
-            filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                    self.path,'models',\
+            filename = os.path.join(cc.path.gout,'models',\
                                     'gastronoom_' + self.model_id + '.inp')
             DataIO.writeFile(filename,commandfile)
             if not self.skip_cooling:
                 self.execGastronoom(subcode='cooling',filename=filename)
                 self.cool_done = True
-            if os.path.isfile(os.path.join(os.path.expanduser("~"),\
-                                           'GASTRoNOoM',self.path,'models',\
+            if os.path.isfile(os.path.join(cc.path.gout,'models',\
                                            self.model_id,'coolfgr_all%s.dat'\
                                            %self.model_id)):
                 #-- Add the other input keywords for cooling to the H2O info. 
@@ -613,14 +595,12 @@ class Gastronoom(ModelingSession):
                                         for v in self.command_list\
                                                     ['R_POINTS_MASS_LOSS']] +\
                                        ['####'])
-                filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                        self.path,'models','gastronoom_%s.inp'\
-                                        %molec.getModelId())
+                filename = os.path.join(cc.path.gout,'models',\
+                                        'gastronoom_%s.inp'%molec.getModelId())
                 DataIO.writeFile(filename,commandfile)                
                 self.execGastronoom(subcode='mline',filename=filename)
                 self.mline_done=True
-                if len([f for f in glob(os.path.join(os.path.expanduser("~"),\
-                                        'GASTRoNOoM',self.path,'models',\
+                if len([f for f in glob(os.path.join(cc.path.gout,'models',\
                                         molec.getModelId(),'ml*%s_%s.dat'\
                                         %(molec.getModelId(),molec.molecule)))])\
                         == 3:
@@ -695,8 +675,7 @@ class Gastronoom(ModelingSession):
                                             for v in self.command_list\
                                                     ['R_POINTS_MASS_LOSS']] + \
                                            ['####'])
-                    filename = os.path.join(os.path.expanduser('~'),\
-                                            'GASTRoNOoM',self.path,'models',\
+                    filename = os.path.join(cc.path.gout,'models',\
                                             'gastronoom_%s.inp'\
                                             %trans.getModelId())
                     DataIO.writeFile(filename,commandfile)                
@@ -759,8 +738,7 @@ class Gastronoom(ModelingSession):
         
         filename = trans.makeSphinxFilename(number='*')
         #- Sphinx puts out 2 files per transition
-        if len(glob(os.path.join(os.path.expanduser("~"),'GASTRoNOoM',\
-                self.path,'models',trans.getModelId(),filename))) == 2:                    
+        if len(glob(os.path.join(cc.path.gout,'models',trans.getModelId(),filename))) == 2:                    
             if self.sph_db[self.model_id][trans.molecule.getModelId()]\
                           [trans.getModelId()][str(trans)]\
                           .has_key('IN_PROGRESS'):
@@ -856,15 +834,11 @@ class Gastronoom(ModelingSession):
         self.trans_list=star['GAS_LINES']    
         self.molec_list=star['GAS_LIST']
         self.command_list = dict()
-        self.command_list['DATA_DIRECTORY'] \
-                = '"' + os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                     'src','data/') + '"'
+        self.command_list['DATA_DIRECTORY'] = '"' + cc.path.gdata + '"'
         self.command_list['OUTPUT_DIRECTORY'] \
-                = '"' + os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                     self.path,'models',self.model_id) + '/"'
+                = '"' + os.path.join(cc.path.gout,'models',self.model_id) +'/"'
         self.command_list['PARAMETER_FILE'] \
-                = '"' + os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                     self.path,'models',self.model_id,\
+                = '"' + os.path.join(cc.path.gout,'models',self.model_id,\
                                      'parameter_file_%s.dat'%self.model_id)+'"'
         self.command_list['OUTPUT_SUFFIX'] = self.model_id
         

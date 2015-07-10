@@ -9,6 +9,7 @@ Author: R. Lombaert
 
 import os
 
+import cc.path
 from cc.modeling.codes.MCMax import MCMax
 from cc.modeling.codes.Gastronoom import Gastronoom
 from cc.tools.io import Database
@@ -26,11 +27,7 @@ class ModelingManager():
                  mcmax=0,gastronoom=0,sphinx=0,iterative=0,\
                  num_model_sessions=1,vic_manager=None,replace_db_entry=0,\
                  path_gastronoom='runTest',path_mcmax='runTest',\
-                 skip_cooling=0,recover_sphinxfiles=0,\
-                 opac_path=os.path.join(os.path.expanduser('~'),\
-                                        'MCMax','Opacities'),\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode')):
+                 skip_cooling=0,recover_sphinxfiles=0):
         
         """ 
         Initializing a ModelingManager instance.
@@ -70,10 +67,6 @@ class ModelingManager():
         
                               (default: None)
         @type vic_manager: Vic()
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '/home/robinl/ComboCode')
-        @type path_combocode: string
         @keyword replace_db_entry: replace an entry in the database with a 
                                    newly calculated model with a new model id 
                                    (eg if some general data not included in 
@@ -98,10 +91,6 @@ class ModelingManager():
         
                              (default: 'runTest')
         @type path_mcmax: string
-        @keyword opac_path: The path to the home folder of dust opacities
-        
-                            (default: ~/MCMax/Opacities/)
-        @type opac_path: str
         @keyword path_gastronoom: modeling folder in GASTRoNOoM home
         
                                   (default: 'runTest')
@@ -117,7 +106,6 @@ class ModelingManager():
         self.iterative = int(iterative)
         self.star_grid_old = [[] for i in xrange(num_model_sessions)]
         self.vic = vic_manager
-        self.path_combocode = path_combocode
         self.replace_db_entry = replace_db_entry
         self.new_entries_mcmax = []
         self.new_entries_cooling = []
@@ -127,10 +115,15 @@ class ModelingManager():
         self.path_mcmax = path_mcmax
         self.path_gastronoom = path_gastronoom
         self.recover_sphinxfiles = recover_sphinxfiles
+        
+        #-- Convenience paths
+        cc.path.gout = os.path.join(cc.path.gastronoom,self.path_gastronoom)
+        cc.path.mout = os.path.join(cc.path.mcmax,self.path_mcmax)
         self.setDatabases()
+        
+        #-- Initialize code booleans for checking if a code was ran
         self.mcmax_done = False
         self.mline_done = False
-        self.opac_path = opac_path
         
         
     def setDatabases(self):
@@ -141,33 +134,18 @@ class ModelingManager():
         '''
         
         if self.gastronoom:
-            cool_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                    self.path_gastronoom,\
-                                    'GASTRoNOoM_cooling_models.db')
-            ml_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                  self.path_gastronoom,\
-                                  'GASTRoNOoM_mline_models.db')
-            sph_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                  self.path_gastronoom,\
-                                  'GASTRoNOoM_sphinx_models.db')
+            cool_db_path = os.path.join(cc.path.gout,\
+                                        'GASTRoNOoM_cooling_models.db')
+            ml_db_path = os.path.join(cc.path.gout,\
+                                      'GASTRoNOoM_mline_models.db')
+            sph_db_path = os.path.join(cc.path.gout,\
+                                       'GASTRoNOoM_sphinx_models.db')
             self.cool_db = Database.Database(db_path=cool_db_path)
             self.ml_db = Database.Database(db_path=ml_db_path)
             self.sph_db = Database.Database(db_path=sph_db_path)       
         if self.mcmax:
-            mcmax_db_path = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                         self.path_mcmax,'MCMax_models.db')
+            mcmax_db_path = os.path.join(cc.path.mout,'MCMax_models.db')
             self.mcmax_db = Database.Database(db_path=mcmax_db_path)
-        #if self.replace_db_entry:
-            #pacs_db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                        #self.path_gastronoom,'stars',\
-                                        #self.star_name,\
-                                        #'GASTRoNOoM_pacs_models.db')
-            #if os.path.isfile(pacs_db_path):
-                #self.pacs_db = Database.Database(db_path=pacs_db_path)        
-            #else:
-                #self.pacs_db = None
-        #else:
-            #self.pacs_db = None
         if self.vic <> None:
             self.vic.setSphinxDb(self.sph_db)
         
@@ -204,12 +182,10 @@ class ModelingManager():
                     self.mcmax_db.sync()
                 #-- Initiate a dust session which is used for every iteration
                 if i == 0: 
-                    dust_session = MCMax(path_combocode=self.path_combocode,\
-                                         path_mcmax=self.path_mcmax,\
+                    dust_session = MCMax(path_mcmax=self.path_mcmax,\
                                          db=self.mcmax_db,\
                                          new_entries=self.new_entries_mcmax,\
-                                         replace_db_entry=self.replace_db_entry,\
-                                         opac_path=self.opac_path)
+                                         replace_db_entry=self.replace_db_entry)
                 self.mcmax_done = False
                 dust_session.doMCMax(star)
                 if dust_session.mcmax_done: 
@@ -236,7 +212,6 @@ class ModelingManager():
                 #- Initiate a gas session which is used for every iteration
                 if i == 0: 
                     gas_session = Gastronoom(vic=self.vic,\
-                                        path_combocode=self.path_combocode,\
                                         path_gastronoom=self.path_gastronoom,\
                                         cool_db=self.cool_db,\
                                         ml_db=self.ml_db,\
