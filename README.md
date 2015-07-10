@@ -83,7 +83,7 @@ If you want to make changes to ComboCode, you should fork the repository to your
     - $ cd ~/ComboCode/
     - $ git remote add --track master upstream https://github.com/IvS-KULeuven/ComboCode.git
 
-* Copy the contents of the usr.dist/ folder to the usr/ folder. 
+* Copy the contents of the usr.dist/ folder to the usr/ folder. Note especially usr/Path.dat which contains all the relevant folders for ComboCode.
     - $ cd ~/ComboCode/
     - $ mkdir usr/
     - $ cp usr.dist/* usr/.
