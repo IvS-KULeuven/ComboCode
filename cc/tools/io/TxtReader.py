@@ -11,6 +11,7 @@ import os
 from scipy import array 
 import pyfits
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.tools.io.LPDataReader import LPDataReader
 
@@ -23,9 +24,7 @@ class TxtReader(LPDataReader):
     
     '''
     
-    def __init__(self,filename,star_name=None,\
-                 info_path=os.path.join(os.path.expanduser('~'),\
-                                        'ComboCode','usr')):
+    def __init__(self,filename,star_name=None):
         
         '''
         A txt file reader for line profiles.
@@ -38,11 +37,6 @@ class TxtReader(LPDataReader):
         @param filename: The txt filename, including filepath.
         @type filename: string
                
-        @keyword info_path: The path to the folder containing the info file on
-                            stars, called Star.dat. 
-                            
-                            (default: ~/ComboCode/usr)
-        @type info_path: string 
         @keyword star_name: The star name if the filename doesn't follow naming
                             conventions. None otherwise.
                             
@@ -51,8 +45,7 @@ class TxtReader(LPDataReader):
         
         '''
         
-        super(TxtReader, self).__init__(filename=filename,star_name=star_name,\
-                                        info_path=info_path)
+        super(TxtReader, self).__init__(filename=filename,star_name=star_name)
         self.readTxt()
         self.checkVlsr()
         

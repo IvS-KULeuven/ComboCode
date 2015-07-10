@@ -11,6 +11,7 @@ import os
 from time import gmtime
 import types
 
+import cc.path
 from cc.tools.io import DataIO
 
 
@@ -22,9 +23,7 @@ class ModelingSession(object):
     
     """
       
-    def __init__(self,code,path,replace_db_entry=0,new_entries=[],\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode')):
+    def __init__(self,code,path,replace_db_entry=0,new_entries=[]):
         
         """ 
         Initializing an instance of ModelingSession.
@@ -34,11 +33,6 @@ class ModelingSession(object):
         @param path: modeling output folder in the code's home folder
         @type path: string
         
-        @keyword replace_db_entry: 
-        @keyword path_combocode: CC home folder
-          
-                                 (default: '/home/robinl/ComboCode')
-        @type path_combocode: string
         @keyword replace_db_entry: replace an entry in the database with a 
                                    newly calculated model with a new model id 
                                    (eg if some general data not included in 
@@ -55,20 +49,19 @@ class ModelingSession(object):
           
         """
         
-        self.path_combocode = path_combocode
         self.path = path
         self.code = code
         self.model_id = ''
         self.replace_db_entry = replace_db_entry
         self.new_entries = new_entries
-        mutablefile = os.path.join(self.path_combocode,'aux',\
-                                   'Mutable_Parameters_' + code + '.dat')
+        mutablefile = os.path.join(cc.path.aux,\
+                                   'Mutable_Parameters_%s.dat'%code)
         self.mutable = [line[0] 
                         for line in DataIO.readFile(mutablefile,delimiter=' ')
                         if ' '.join(line)]
         self.mutable = [line for line in self.mutable if line[0] != '#']
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                                self.code,self.path,'models'))
+        fout = os.path.join(getattr(cc.path,self.code.lower()),self.path)
+        DataIO.testFolderExistence(os.path.join(fout,'models'))
         
 
 

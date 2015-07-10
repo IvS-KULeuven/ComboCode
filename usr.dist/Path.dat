@@ -1,0 +1,53 @@
+#-- Folder paths. Must exist. Must contain $star_name$ subfolders where indicated.
+#   $star_name$ is taken from the ComboCode inputfile.
+#
+#-- Takes full folder paths (when the home of a different user is needed)
+#   Takes subfolders of ~/ when not specifying '/home/user/'
+#   Some ComboCode options require writing permissions, e.g. for gastronoom and 
+#   mcmax, which are model output home folders.
+#
+#-- Naming convention:  g+$name$  -- GASTRoNOoM related
+#                       m+$name$  -- MCMax related
+#                       d+$name$  -- Observational data related
+#                       ll+$name$ -- Line list related
+#
+#-- List as: keyword=path. No comments on the same line!
+#
+#-- ComboCode's home folder is defined as cc.path.home by default
+#   ComboCode's usr folder is defined as cc.path.usr by default
+#   ComboCode's aux folder is defined as cc.path.aux by default
+###############################################################################
+#-- GASTRoNOoM home folder
+gastronoom=GASTRoNOoM
+#-- GASTRoNOoM data folder, such as temdust, radiat, collis files
+gdata=GASTRoNOoM/src/data
+
+#-- MCMax home folder
+mcmax=MCMax
+#-- MCMax observation files folder
+mobs=MCMax/Observation_Files
+#-- Dust opacities home folder. Can contain subfolders (see Dust.dat)
+mopac=MCMax/Opacities
+
+#-- Data home folder
+data=Data
+#-- Radio data folder. See cc.data.Radio. Folder requires radio_data.db
+dradio=Data/Molecular
+#-- PACS data folder (micron, Jy) Data taken from $dpacs$/$star_name$/cont_subtracted/ 
+dpacs=Data/PACS
+#-- SPIRE data folder (micron, Jy) Data taken from $dspire$/$star_name$/cont_subtracted/ 
+dspire=Data/SPIRE
+#-- SED data folder (micron, Jy)  includes processed photometry from the IvS SED builder tool.
+dsed=Data/SED
+#-- RAW photometric data folder downloaded by the IvS Sed builder tool.
+dphot=Data/SED/Raw/IvS_SEDTool
+#-- Correlated fluxes data folder (fits files with visibilities/flux) Data taken from $dcflux$/$star_name$/. 
+dcflux=Data/CorrFlux
+
+#-- Folder for CDMS, JPL, LAMDA downloaded line lists.
+ll=LineLists
+
+#-- Folder for model atmospheres
+atm=/STER/pieterd/IVSDATA/sedtables/modelgrids
+#-- Folder for processed model atmospheres used in ComboCode
+starf=ComboCode/StarFiles

@@ -1,9 +1,7 @@
-###########################
-### INPUT FOR COMBOCODE ###
-###########################
-###################
-# GENERAL INPUT
-###################
+#-- ComboCode inputfile.
+####################
+#-- General
+####################
 #-- Which codes to run
 GASTRONOOM=0                        # Put to 0 if no GASTRoNOoM is needed
 MCMAX=0                             # Put to 0 if no MCMax is needed
@@ -12,50 +10,39 @@ SKIP_COOLING=0                      # In case a model is not found in the coolin
 RECOVER_SPHINXFILES=0               # Try checking if the sphinx files are present at the expected model id instead of calculating the sphinx model. Sphinx will not be ran in any case! Before doing this, always run 'from cc.tools.io import Database', followed by 'Database.cleanSphinxDatabase(filename)' where filename is the full path and filename of the sphinx database (usually ~/GASTRoNOoM/<PATH_GASTRONOOM>/GASTRoNOoM_sphinx.db)
 
 #-- Output folder management
-PATH_GASTRONOOM=test                # Path in ~/GASTRoNOoM/. for models to be stored       
-PATH_MCMAX=test                     # Path in ~/MCMax/. for models to be stored              
-LN_PATH_GASTRONOOM=                 # Leave empty or remove if you don't want to use it! Create path_gastronoom in this folder, and refer to it with a symbolic link from the main GASTRoNOoM folder instead of making the folder there
-LN_PATH_MCMAX=                      # Leave empty or remove if you don't want to use it! Create path_mcmax in this folder, and refer to it with a symbolic link from the main MCMax folder instead of making the folder there
+PATH_GASTRONOOM=test                # Output folder in cc.path.gastronoom (see usr/Path.dat). This folder is associated with unique databases.
+PATH_MCMAX=test                     # Output folder in cc.path.mcmax (see usr/Path.dat). This folder is associated with unique databases.
 
 #-- Number of iterations?
-ITERATIONS=1                        # Number of iterations for running MCMax and/or GASTRoNOoM, automatically 1 if mcmax=0, or gastronoom=0
+ITERATIONS=1                        # Number of iterations for running MCMax and/or GASTRoNOoM. Automatically set to 1 if mcmax=0, or gastronoom=0
 PLOT_ITERATIVE=0                    # Compare results between each step for one parameter set (Only for MCMax at the moment)
 
-#-- VIC supercomputer
+#-- VIC supercomputer (OBSOLETE. VIC IS GONE)
 VIC=0                               # Run Sphinx on VIC3
 VIC_ACCOUNT=vsc30226                # Account on VIC3 supercluster
 VIC_TIME_PER_SPHINX=30              # Pre-allocated time in minutes per Sphinx single line calculation
 VIC_CREDITS=                        # Credits account to be charged, leave open or remove for making use of your own personal credits.
 
-#-- PACS convolution and plotting
-PACS_PATH=#/home/robinl/Data/PACS/  # Path to PACS data, leave empty if not relevant/no dust data are used. Data will be taken from path_pacs/star_name/cont_subtracted/.  The star_name does not have to be specified.
+#-- PACS convolution and plotting. Location given in cc.path.home/usr/Path.dat
 PACS_REDO_CONVOLUTION=0             # Re-do the convolution of sphinx output to PACS resolution (fi if the data has changed, sphinx convolution output depends on the wavelength list in the data lists)
 PACS_SEARCHSTRING=oversampling2     # searchstring used when looking for data, all data that include this string will be taken so make it unique
 PACS_OVERSAMPLING=2                 # The oversampling factor of the PACS data, this should also be included in the filenames of the data
 PACS_LINEFIT=                       # folder name in $PACS_PATH$/$STAR_NAME$/ of line fit results, done by Pierre (assumes his structure and syntax, as well as the presence of a file called 'lineFitResults')
 #PACS_ABSFLUX_ERR=0.2               # The absolute flux calibration uncertainty for PACS. Default is set at 20%. Used when calculating the line-strength uncertainty for line fit results.
 
-#-- SPIRE convolution and plotting
-SPIRE_PATH=#/home/robinl/Data/SPIRE/ #Path to Spire data, leave empty if not relevant/no dust data are used. Data will be taken from path_spire/star_name/cont_subtracted/.  The star_name does not have to be specified. Syntax is assumed to be two columns, wavelength (micron) and flux (Jy).
+#-- SPIRE convolution and plotting. Location given in cc.path.home/usr/Path.dat
 SPIRE_SEARCHSTRING=oversampling2    # searchstring used when looking for data, all data that include this string will be taken so make it unique
 SPIRE_RESOLUTION=0.06               # The resolution of the apodized Spire spectrum in cm^-1. This is typically 1.5*0.04 cm-1, with 0.04 cm-1 the intrinsic SPIRE resolution
 SPIRE_OVERSAMPLING=6                # The oversampling factor of the apodized SPIRE spectrum. This is typically 6.
 SPIRE_LINEFIT=                      # folder name in $SPIRE_PATH$/$STAR_NAME$/ of line fit results, done in Hipe on the intrinsic UNAPODIZED spectra (using sinc functions) and with SPIRE resolution of 0.04 cm-1 and oversampling 5, as well as the presence of a file called 'lineFitResults'
 #SPIRE_ABSFLUX_ERR=0.1              # The absolute flux calibration uncertainty for PACS. Default is set at 10%. Used when calculating the line-strength uncertainty for line fit results.
 
-#-- RADIO data selection (including autosearch) and plotting (typically resolved lines in K vs km/s)
-RADIO_PATH=#/home/robinl/Data/Molecular/ # Path for gas radio data, leave empty if not relevant/no gas data are used other than pacs. Any requested transition that matches data in this folder will have the data plotted alongside the model! Folder requires database for data named radio_data.db
+#-- RADIO data selection (including autosearch) and plotting (typically resolved lines in K vs km/s). Location given in cc.path.home/usr/Path.dat
 RADIO_AUTOSEARCH=0                  # Put to 1 if TRANSITION objects are to be made automatically based on the available data.
 RADIO_AUTOPARSE=0                   # Put to 1 to automatically parse the target radio data folder for data before selecting candidate transitions. 
 
-#-- SED/Correlated Fluxes data selection and plotting
-SED_PATH=#/home/robinl/Data/SED/    # Path to the Data folder where the text files with SED data are stored. The photometric IvS Sed builder tool output files are put here. Leave open if no data are to be plotted.
+#-- SED/Correlated Fluxes data selection and plotting. Location givens in cc.path.home/usr/Path.dat
 SED_PHOT_REMOVE=                    # If any photometric sources (such as WISE or DENIS) are to be removed for whatever reason, include them here separated with ampersand (e.g. WISE&DENIS )  
-SED_PHOT_PSUFFIX=Raw/IvS_SEDTool/   # Path suffix appended to SED_PATH for the location of the raw photometric data downloaded by the IvS Sed builder tool. This folder has to exist!
-CORRFLUX_PATH=#/home/robinl/Data/CorrFlux/   #Path to the Data folder where the text files with correlated fluxed are stored. Leave open if no data are to be plotted.
-
-#-- Opacities home folder
-OPAC_PATH=/home/robinl/MCMax/Opacities/   # Home folder of the dust opacities, possibly in subfolders. The subfolder + filename's are listed in ~/ComboCode/Data/Dust.dat for each dust species. 
 
 #-- Continuum division for select features in the SED is possible, for comparison between data and model
 CONTDIV_FEATURES= #H2O3.1&MGS       # For now only the 3.1 water ice feature (H2O3.1) and the 30 micron MgS feature (MGS) are available
@@ -77,7 +64,7 @@ WRITE_DUST_DENSITY=0                # Write away separate density files for MCMa
 PRINT_MODEL_INFO=0                  # Print extra model info at the end of a CC session. Is off automatically for grids > 20 models
 
 ####################
-# Stellar parameters
+#-- Stellar parameters
 ####################
 STAR_NAME=model                     # Stellar Name (lower cases, no spaces, only SIMBAD name is accepted, greek letters written in full, omicron = o)
 T_STAR=2400                         # Stellar temperature [K]
@@ -86,8 +73,8 @@ L_STAR=11000                        # Stellar luminosity [Lsol]
 #LOGG=0.0                           # Only relevant if model atmospheres are used for MCMax (STARTYPE=ATMOSPHERE), default is 0.0
 DISTANCE=1300                       # Distance to object [pc]           
 STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody, ATMOSPHERE for a low-resolution model atmosphere spectrum in which case ATM_FILENAME has to be defined, TABLE for a custom file in which case STARTABLE has to be given, otherwise it's ignored)
-#STARTABLE=                          # Only relevant if STARTYPE=TABLE, name of file in ~/ComboCode/StarFiles/. Two columns - one with wavelength in micron, one with flux in Jy. Can be full path or only file. The spectrum is assumed to be taken at the stellar surface, and is converted to intensity.
-#ATM_FILENAME=                      # The filename of the model atmosphere (for now only in /STER/pieterd/IVSDATA/sedtables/modelgrids/ folder)
+#STARTABLE=                         # Only relevant if STARTYPE=TABLE. Two columns - one with wavelength in micron, one with flux in Jy. Has to contain full path. The spectrum is assumed to be taken at the stellar surface, and is converted to intensity.
+#ATM_FILENAME=                      # The filename of the model atmosphere located in cc.path.home/usr/Path.dat (atm keyword)
 
 #F_CONT_63=                         # Include 6.3 monochromatic continuum flux if needed (as observed in SWS for instance). Flux is given in Jy.
 
@@ -170,7 +157,7 @@ TEMPERATURE_EPSILON_GAS=0.5         # EPSILON, for GAS temperature power law, wh
 
 #-- Dust opacities. Normally set automatically by ComboCode. 
 INCLUDE_SCAT_GAS=0                  # Include the scattering coefficients into the GASTRoNOoM modelling as an additional contribution to the absorption. This is technically not correct, but can give an idea of the wind acceleration influence of the scattering. Leave this off if you're not sure!
-#TEMDUST_FILENAME=                  # Only relevant if USE_NEW_DUST_KAPPA_FILES=1, temdust.kappa for original (or leave open), other filename (micron | q_ext/a) for own kappa's (inverted wavelength, largest wavelength first). File has to be in the DATA_DIRECTORY (~/GASTRoNOoM/src/data/) Is handled automatically if left out
+#TEMDUST_FILENAME=                  # Only relevant if USE_NEW_DUST_KAPPA_FILES=1, temdust.kappa for original (or leave open), other filename (micron | q_ext/a) for own kappa's (inverted wavelength, largest wavelength first). File has to be in the cc.path.gdata folder (given in Path.dat)
 #USE_NEW_DUST_KAPPA_FILES=          # Uncomment and put equal to 0 for original qpr.dat/temdust.kappa usage, otherwise leave out or put equal to 1
 
 ####################
@@ -314,33 +301,40 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 #MOLECULE=1H1H12C16O  40  0   104 50  0  1.0e-13 1.0e-13   1.0e-31   50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 
 ###################
-# GASTRoNOoM line lists
+#-- GASTRoNOoM line selection & sphinx parameters
+#   Four ways to select lines:
+#   1) Specify TRANSITION definitions explicitly
+#      Syntax - TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
+#      In case of PACS, use PACS-H2O for water lines, use PACS for all other lines
+#   2) Autosearch for radio data in your radio folder (requires RADIO_AUTOSEARCH in general input section above)
+#   3) LINE_SELECT = 1: lines are selected for requested MOLECULEs in the wavelength range of an instrument (requires LS_TELESCOPE/_OFFSET/_NO_VIB)
+#   4) LINE_SELECT = 2: lines are selected from a file, which contains the TRANSITION definitions (requires LS_FILE) 
 ###################
-#-- Use line lists for defining transitions here.
-LINE_LISTS=0                        # Get molecular transitions from line lists
-                                    # 1 - line lists are generated automatically
-                                    # 2 - line list taken from a file. A filename is required, but other LL_keywords are ignored
-                                    # 3 - wavelength ranges for line lists are determined from data files. [NYI]
-                                    # Syntax - TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
-LL_FILE=h2o_iktau_hifi.dat          # if LINE_LISTS is 2, otherwise it is ignored
-LL_MAX=218                          # If LINE_LISTS, the max (rest) wavelength for the transitions
-LL_MIN=50                           # If LINE_LISTS, the min (rest) wavelength for the transitions
-LL_UNIT=MICRON                      # The spectral unit of min and max for LINE_LISTS
-LL_TELESCOPE=PACS                   # Telescope for which the lines are to be searched, use ';' if multiple telescopes, in case of
-                                    # PACS, just add PACS. PACS-H2O is just there to cut down on browsing time of the spec file and should never be used apart from explicit TRANSITION definitions. 
-LL_OFFSET=0.0                       # If auto line listing is used, this gives the offset. Default is 0.0
-LL_NO_VIB=0 #12C16O&1H1H16O         # When molecules are indicated here, their vibrational excitation lines are excluded from the calculation!
-N_QUAD=100                          # Number of impact par. in quadrature int(Inu pdp)               GASTRoNOoM  
-                                    # N_QUAD is always the same for all lines requested if LINE_LISTS=1 or if an auto-search for data is done
-                                    # n_quad is otherwise included in TRANSITION input lines or in the input files if LINE_LISTS=2 
-USE_MASER_IN_SPHINX=0               # Use correct masering opacities in Sphinx
-
-#-- Add your TRANSITION definitions explicitly here. Syntax - TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
+#-- Add your explicit TRANSITION definitions here. 
 #TRANSITION=12C16O 0 2 0 0 0 1 0 0 JCMT 0.0 100
 #TRANSITION=12C16O 0 1 0 0 0 0 0 0 JCMT 0.0 100
 
-#-- Plotting line lists from downloaded line lists. Note that the searchstring for searching pacs data is given by PACS_SEARCHSTRING
-LL_PATH=/home/robinl/LineLists      # path to line lists
+
+#-- Sphinx keywords
+N_QUAD=100                  # Number of impact par. in quadrature int(Inu pdp)         
+                            # N_QUAD is always the same for all lines requested if LINE_LISTS=1 or if an auto-search for data is done
+                            # n_quad is otherwise included in TRANSITION input lines or in the input files if LINE_LISTS=2 
+USE_MASER_IN_SPHINX=0       # Use correct masering opacities in Sphinx
+
+
+#-- Use line selection for defining transitions here.
+LINE_SELECT=0               # Mode for selecting lines to be calculated in GASTRoNOoM
+LS_TELESCOPE=PACS           # If LINE_SELECT=1: instrument for line selection, use '&' for multiple telescopes
+                            # Currently only PACS and SPIRE are implemented. In case of PACS, just add PACS (not PACS-H2O).
+LS_OFFSET=0.0               # If auto line listing is used, this gives the offset. Default is 0.0
+LS_NO_VIB=0#12C16O&1H1H16O  # When molecules are indicated here, their vibrational excitation lines are excluded from the calculation! use '&' if multiple molecules
+LS_FILE=                    # if LINE_SELECT=2, otherwise it is ignored. Gives the full path and filename.
+
+
+###################
+#-- Plotting line lists from downloaded line lists. Data can be plotted as well according to the data settings in the general input.
+#   Does not calculate RT models.
+###################
 LL_CDMS=1                           # Pull data from CDMS
 LL_JPL=0                            # Pull data from JPL
 LL_LAMDA=0                          # Pull data from LAMDA

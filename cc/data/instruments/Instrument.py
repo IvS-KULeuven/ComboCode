@@ -12,6 +12,7 @@ from glob import glob
 from scipy import argmin,argmax,array,sqrt
 import scipy
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.modeling.objects import Star
 
@@ -24,22 +25,14 @@ class Instrument(object):
     
     """
         
-    def __init__(self,star_name,path_instrument,instrument_name,oversampling,\
-                 absflux_err,\
-                 code='GASTRoNOoM',path=None,intrinsic=1,path_linefit='',\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode')):        
+    def __init__(self,star_name,instrument_name,oversampling,absflux_err,\
+                 code='GASTRoNOoM',path=None,intrinsic=1,path_linefit=''):        
         
         """ 
         Initializing an instance of Instrument.
         
         @param star_name: The name of the star from Star.py
         @type star_name: string
-        @param path_instrument: The data folder for this instrument. Data are
-                                  located in ~/<path_instrument>/<star_name>/
-                                  cont_subtracted/
-                                  If None
-        @type path_instrument: string                          
         @param instrument_name: The name of the instrument (SPIRE or PACS)
         @type instrument_name: string
         @param oversampling: The instrumental oversampling, for correct
@@ -65,10 +58,7 @@ class Instrument(object):
                             
                             (default: 1)
         @type intrinsic: bool
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '/home/robinl/ComboCode/')
-        @type path_combocode: string        
+     
         @keyword path_linefit: The folder name for linefit results from Hipe
                                (created by Pierre, assuming his syntax). The 
                                folder is located in $path_pacs$/$star_name$/.
@@ -81,27 +71,24 @@ class Instrument(object):
         """
         
         self.path = path
-        self.path_combocode = path_combocode
         self.code = code
         self.star_name = star_name
-        self.path_instrument = path_instrument
         self.path_linefit = path_linefit
         self.instrument = instrument_name.lower()
+        self.path_instrument = getattr(cc.path,'d%s'%self.instrument)
         self.intrinsic = intrinsic
         self.absflux_err = absflux_err
         self.oversampling = int(oversampling)
         self.data_filenames = []
-        ccd = os.path.join(self.path_combocode,'usr')
-        istar = DataIO.getInputData(path=ccd,keyword='STAR_NAME').index(star_name)
+        istar = DataIO.getInputData(keyword='STAR_NAME').index(star_name)
         #-- Set relevant velocities in cm/s
         self.c = 2.99792458e10 
-        self.vlsr = DataIO.getInputData(path=ccd,keyword='V_LSR')[istar]*10**5
+        self.vlsr = DataIO.getInputData(keyword='V_LSR',rindex=istar)*10**5
         if self.path <> None:
-            DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                                  self.code,self.path,'stars'))
-            DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                                  self.code,self.path,'stars',\
-                                                  self.star_name))
+            pp = getattr(cc.path,self.code.lower())
+            DataIO.testFolderExistence(os.path.join(pp,self.path,'stars'))
+            DataIO.testFolderExistence(os.path.join(pp,self.path,'stars',\
+                                                    self.star_name))
         
 
 

@@ -10,6 +10,7 @@ Author: R. Lombaert
 import os
 from scipy import array
 
+import cc.path
 from cc.tools.io import DataIO
 
 
@@ -20,35 +21,22 @@ class KappaReader(object):
     
     """
     
-    def __init__(self,path_opac=os.path.join(os.path.expanduser('~'),\
-                                             'MCMax','Opacities'),\
-                 path_cc=os.path.join(os.path.expanduser('~'),'ComboCode')):
+    def __init__(self):
         
         """
         Initiating an instance of the KappaReader.
         
-        @keyword path_opac: The path to the opacity home folder
-        
-                               (default: ~/MCMax/Opacities/)
-        @type path_opac: str
-        
-        @keyword path_cc: Location of the ComboCode folder.
-    
-                          (default: ~/ComboCode/)
-        @type path_cc: str
         """
         
-        path_cc = os.path.join(path_cc,'usr')
-        self.lspecies = DataIO.getInputData(path=path_cc,\
+        self.lspecies = DataIO.getInputData(path=cc.path.usr,\
                                             keyword='SPECIES_SHORT',\
                                             filename='Dust.dat')
-        self.lfilenames = DataIO.getInputData(path=path_cc,\
+        self.lfilenames = DataIO.getInputData(path=cc.path.usr,\
                                               keyword='PART_FILE',\
                                               filename='Dust.dat')
-        self.lspec_dens = DataIO.getInputData(path=path_cc,\
+        self.lspec_dens = DataIO.getInputData(path=cc.path.usr,\
                                               keyword='SPEC_DENS',\
                                               filename='Dust.dat')
-        self.path_opac = path_opac
         self.kappas = dict()
         self.qext_a = dict()
         self.waves = dict()
@@ -75,7 +63,7 @@ class KappaReader(object):
         except ValueError:
             print 'Species not found in Dust.dat.'
             return
-        fn = os.path.join(self.path_opac,self.lfilenames[ispecies])
+        fn = os.path.join(cc.path.mopac,self.lfilenames[ispecies])
         sd = self.lspec_dens[ispecies]
         if fn[-9:] == '.particle':
             part_file = DataIO.readFile(filename=fn,delimiter=' ') 

@@ -11,6 +11,7 @@ import os
 import numpy as np
 from scipy import array,sqrt,trapz,log, argmin
 
+import cc.path
 from cc.data import Data
 from cc.tools.io import Database
 from cc.tools.io import DataIO
@@ -25,11 +26,9 @@ class Spire(Instrument):
     
     """
     
-    def __init__(self,star_name,resolution,path_spire,oversampling,\
+    def __init__(self,star_name,resolution,oversampling,\
                  path='codeSep2010',intrinsic=1,path_linefit='',\
-                 absflux_err=0.1,\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode')):
+                 absflux_err=0.1):
         
         '''
         Initializing an instance of Spire().
@@ -39,8 +38,6 @@ class Spire(Instrument):
         @param resolution: The spectral resolution of the SPIRE apodized 
                            spectra
         @type resolution: float
-        @param path_spire: full path to SPIRE data folder, excluding star_name
-        @type path_spire: string
         @param oversampling: The SPIRE instrumental oversampling, for correct
                              convolution of the Sphinx output. This is the 
                              oversampling factor for the apodized spectra!
@@ -56,10 +53,6 @@ class Spire(Instrument):
                             
                             (default: 1)
         @type intrinsic: bool
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '~/ComboCode/'
-        @type path_combocode: string
         @keyword path_linefit: The folder name for linefit results from Hipe
                                (created by Maries script, assuming her syntax).
                                The folder is located in
@@ -77,9 +70,7 @@ class Spire(Instrument):
         '''
         
         super(Spire,self).__init__(star_name=star_name,code='GASTRoNOoM',\
-                                   path=path,path_combocode=path_combocode,\
-                                   path_instrument=path_spire,\
-                                   absflux_err=absflux_err,\
+                                   path=path,absflux_err=absflux_err,\
                                    oversampling=oversampling,\
                                    path_linefit=path_linefit,\
                                    instrument_name='SPIRE',intrinsic=intrinsic)
@@ -90,7 +81,10 @@ class Spire(Instrument):
         if not self.resolution:
             print 'WARNING! SPIRE resolution is undefined!'
         self.readLineFit()
-
+        
+        #-- Convenience path
+        cc.path.gout = os.path.join(cc.path.gastronoom,self.path)
+       
     
     def prepareSphinx(self,star_grid,redo_sphinx_prep=0):
         

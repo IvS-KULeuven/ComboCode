@@ -13,6 +13,7 @@ from math import pi
 import os
 import types
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.tools.numerical import Interpol
 
@@ -97,7 +98,7 @@ def mergeOpacity(species,lowres='nom_res',highres='high_res'):
     
     '''
     
-    path = os.path.join(os.path.expanduser('~'),'MCMax','DustOpacities',species)
+    path = os.path.join(cc.path.mopac,species)
     lowres_files = [f 
                     for f in glob(os.path.join(path,lowres,'*')) 
                     if f[-5:] == '.opac']
@@ -132,29 +133,16 @@ class CustomOpacity():
     
     """
     
-    def __init__(self,species,\
-                 path_cc=os.path.join(os.path.expanduser('~'),'ComboCode',\
-                                      'usr'),\
-                 path_mcmax=os.path.join(os.path.expanduser('~'),'MCMax')):
+    def __init__(self,species):
         
         """
         Initializing an instance of the custom opacities interface.
     
         @param species: the species short name
         @type species: string
-        @keyword path_cc: The CC home folder
-        
-                          (default: ~/ComboCode/)
-        @type path_cc: string
-        @keyword path_mcmax: The MCMax home folder
-                    
-                     (default: ~/MCMax/)
-        @type path_mcmax: string
         
         """
         
-        self.path_cc = path_cc
-        self.path_mcmax = path_mcmax
         self.setSpecies(species)
         self.opacity_file = False
 
@@ -171,15 +159,13 @@ class CustomOpacity():
         
         self.species = species
         self.index = DataIO.getInputData(keyword='SPECIES_SHORT',\
-                                         filename='Dust.dat',\
-                                         path=self.path_cc).index(self.species)
+                                         filename='Dust.dat')\
+                                        .index(self.species)
         self.filename =  DataIO.getInputData(keyword='PART_FILE',\
                                              filename='Dust.dat',\
-                                             path=self.path_cc)[self.index]
-        self.input_data = DataIO.readFile(\
-                                filename=os.path.join(self.path_mcmax,'src',\
-                                                      self.filename),\
-                                delimiter=' ') 
+                                             rindex=self.index)
+        fn = os.path.join(cc.path.mopac,self.filename)
+        self.input_data = DataIO.readFile(filename=fn,delimiter=' ') 
         
         
         
@@ -211,7 +197,7 @@ class CustomOpacity():
                                        [self.filename])
             if self.opacity_file:
                 output_filename.replace('.particle','.opacity')
-            DataIO.writeFile(filename=os.path.join(self.path_mcmax,'src',\
+            DataIO.writeFile(filename=os.path.join(cc.path.mopac,\
                                                    output_filename),\
                              input_lines=self.output_data)
             new_short = self.species + mode
@@ -219,27 +205,25 @@ class CustomOpacity():
             #- parameters and the short name can be kept, 
             #- nothing is changed in the Dust.dat file
             try:    
-                DataIO.getInputData(keyword='PART_FILE', filename='Dust.dat',\
-                                  path=self.path_cc).index(output_filename)
+                DataIO.getInputData(keyword='PART_FILE',filename='Dust.dat')\
+                                   .index(output_filename)
             #- filename is not present: do the normal procedure, ie check if 
             #- short name is already present
             except ValueError:        
                 i=0
                 while ' '.join(DataIO.getInputData(keyword='SPECIES_SHORT',\
-                                                 filename='Dust.dat',\
-                                                 path=self.path_cc))\
-                                                 .find(new_short) != -1:
+                                                   filename='Dust.dat'))\
+                                                  .find(new_short) != -1:
                     i+=1    
                     new_short = new_short + str(i)
                 adding_line = [new_short] + \
                               [str(DataIO.getInputData(keyword=key,\
-                                                     filename='Dust.dat',\
-                                                     path=self.path_cc)\
-                                    [self.index])
+                                                       filename='Dust.dat',\
+                                                       rindex=self.index))
                                for key in ['SPEC_DENS','T_DES','T_DESA','T_DESB']]
                 adding_line.insert(2,output_filename)
                 adding_line = '\t\t'.join(adding_line)
-                DataIO.writeFile(os.path.join(self.path_cc,'Dust.dat'),\
+                DataIO.writeFile(os.path.join(cc.path.usr,'Dust.dat'),\
                                  [adding_line+'\n'],mode='a')
         else:
             print 'Mode "' + mode + '" not available. Aborting.'
@@ -353,8 +337,8 @@ class CustomOpacity():
         
         """
 
-        spec_dens = DataIO.getInputData(keyword='SPEC_DENS',filename='Dust.dat',\
-                                      path=self.path_cc)[self.index]
+        spec_dens = DataIO.getInputData(keyword='SPEC_DENS',rindex=self.index\
+                                        filename='Dust.dat')
         opa_cst = q_cst/4.0*3.0/spec_dens/(a_mod*10**(-4))      
         for line in self.input_data:
             if len(line) == 4 and float(line[0]) < wl1:
@@ -399,8 +383,8 @@ class CustomOpacity():
         
         """
         
-        spec_dens = DataIO.getInputData(keyword='SPEC_DENS',filename='Dust.dat',\
-                                      path=self.path_cc)[self.index]
+        spec_dens = DataIO.getInputData(keyword='SPEC_DENS',rindex=self.index\
+                                        filename='Dust.dat')
         wl1 = metallic and pi*a_mod or 2*pi*a_mod
         opa_cst = q_cst/4.0*3.0/spec_dens/(a_mod*10**(-4))
         i = 0

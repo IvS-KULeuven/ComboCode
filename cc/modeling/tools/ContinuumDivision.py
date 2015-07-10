@@ -11,6 +11,7 @@ Author: R. Lombaert
 import os,types
 from scipy.integrate import trapz
 
+import cc.path
 from cc.tools.numerical import Interpol
 from cc.data import Data
 from cc.modeling.codes import MCMax
@@ -26,9 +27,7 @@ class ContinuumDivision(object):
     '''
     
     def __init__(self,star_grid=[],spec=[],franges=[2.6,2.85,3.3,3.7],plot=0,\
-                 func='power',cfg='',\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode')):
+                 func='power',cfg=''):
         
         '''
         Initializing a ContinuumDivision instance.
@@ -55,10 +54,6 @@ class ContinuumDivision(object):
                         
                           (default: [2.6,2.85,3.3,3.7])
         @type franges: list[float] or list[list[float]]
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '~/ComboCode/')
-        @type path_combocode: string
         @keyword plot: Show the continuum division and fitting plots.
         
                        (default: 0)
@@ -76,7 +71,6 @@ class ContinuumDivision(object):
         
         '''
     
-        self.path_combocode = path_combocode
         self.star_grid = star_grid
         self.spec = spec
         self.cont_division = dict()
