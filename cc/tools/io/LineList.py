@@ -12,6 +12,7 @@ import os
 import re
 import string
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.modeling.objects import Transition
 
@@ -25,8 +26,7 @@ class LineList():
     '''
     
     def __init__(self,molecule,x_min,x_max,x_unit='micron',cdms=0,jpl=0,\
-                 lamda=0,min_strength=None,max_exc=None,include_extra=0,\
-                 path=os.path.join(os.path.expanduser('~'),'LineLists')):
+                 lamda=0,min_strength=None,max_exc=None,include_extra=0):
         '''
         Creating a LineList object. 
         
@@ -68,11 +68,6 @@ class LineList():
                           
                           (default: None)
         @type max_exc: float
-        @keyword path: path where the line lists have been stored, names of 
-                       files are molecule_DATABASE.dat 
-                       
-                       (default: '~/LineLists/')
-        @type path: string
         @keyword include_extra: include extra information such as integrated 
                                 line intensity and excitation energy                                
                                 
@@ -103,7 +98,6 @@ class LineList():
         else:
             raise IOError('Unit %s not yet supported, or wrongly spelled.' + \
                           'Check LineList.__init__.__doc__ for more info.')
-        self.path = path
         self.input_unit = 'mhz'
         self.line_list = []
         self.include_extra = include_extra 
@@ -222,7 +216,7 @@ class LineList():
         
         '''
         
-        data = DataIO.readFile(os.path.join(self.path,\
+        data = DataIO.readFile(os.path.join(cc.path.ll,\
                                           self.molecule.molecule+'_CDMS.dat'),\
                                replace_spaces=0)
         print 'Reading data from CDMS database for %s.'%self.molecule.molecule
@@ -255,7 +249,7 @@ class LineList():
         
         '''
         
-        data = DataIO.readFile(os.path.join(self.path,\
+        data = DataIO.readFile(os.path.join(cc.path.ll,\
                                            self.molecule.molecule+'_JPL.dat'),\
                                replace_spaces=0)
         print 'Reading data from JPL database for %s.'%self.molecule.molecule
@@ -289,20 +283,20 @@ class LineList():
             except IOError:
                 self.cdms = 0
                 print 'CDMS line list not found for %s in %s.' \
-                      %(self.molecule.molecule,self.path)
+                      %(self.molecule.molecule,cc.path.ll)
         if self.jpl:
             try:
                 self.readJPL()
             except IOError:
                 print 'JPL line list not found for %s in %s.' \
-                      %(self.molecule.molecule,self.path)
+                      %(self.molecule.molecule,cc.path.ll)
                 self.jpl = 0
         if self.lamda:
             try:
                 self.readLAMDA()
             except IOError:
                 print 'LAMDA line list not found for %s in %s.' \
-                      %(self.molecule.molecule,self.path)
+                      %(self.molecule.molecule,cc.path.ll)
         self.line_list = sorted(self.line_list)
     
 

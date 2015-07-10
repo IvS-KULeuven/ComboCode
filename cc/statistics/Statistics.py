@@ -11,6 +11,7 @@ import os
 import scipy
 import scipy.stats
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.data.instruments import Pacs
 from cc.data import Data
@@ -25,10 +26,7 @@ class Statistics(object):
     
     """
         
-    def __init__(self,star_name,path_code='codeSep2010',\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode'),\
-                 code='GASTRoNOoM'):
+    def __init__(self,star_name,path_code='codeSep2010',code='GASTRoNOoM'):
         
         """ 
         Initializing an instance of Statistics.
@@ -40,17 +38,14 @@ class Statistics(object):
                        
                             (default: 'codeSep2010')
         @type path_code: string
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '~/ComboCode/')
-        @type path_combocode: string
         @keyword code: the code used for producing your output 
+        
+                       (default: 'GASTRoNOoM')
         @type code: string
         
         """
 
         self.star_name = star_name
-        self.path_combocode = path_combocode
         self.star_grid = []
         self.instrument = None
         self.path_code = path_code
@@ -60,7 +55,7 @@ class Statistics(object):
 
 
 
-    def setInstrument(self,instrument_name,data_path='',searchstring='',\
+    def setInstrument(self,instrument_name,searchstring='',\
                       data_filenames=[],instrument_instance=None,\
                       pacs_oversampling=None,sample_transitions=[],\
                       redo_convolution=0,resolution=None,absflux_err=0.2,\
@@ -73,11 +68,6 @@ class Statistics(object):
                                 or 'FREQ_RESO')
         @type instrument_name: string
         
-        @keyword data_path: full path to the data folder, excluding star_name. 
-                            Not required if instrument_instance is given.
-                            
-                            (default: '')
-        @type data_path: string
         @keyword data_filenames: The data filenames. If empty, auto-search is 
                                  done, with searchstring.
                                  
@@ -145,8 +135,6 @@ class Statistics(object):
                 self.instrument = Pacs.Pacs(star_name=self.star_name,\
                                             oversampling=oversampling,\
                                             path=self.path_code,\
-                                            path_pacs=data_path,\
-                                            path_combocode=self.path_combocode,\
                                             redo_convolution=redo_convolution,\
                                             absflux_err=absflux_err)
                 self.instrument.setData(data_filenames=data_filenames,\
@@ -161,9 +149,7 @@ class Statistics(object):
                 self.instrument = Spire.Spire(star_name=self.star_name,\
                                               oversampling=oversampling,\
                                               path=self.path_code,\
-                                              path_pacs=data_path,\
                                               resolution=resolution,\
-                                              path_combocode=self.path_combocode,\
                                               absflux_err=absflux_err)
                 self.instrument.setData(data_filenames=data_filenames,\
                                         searchstring=searchstring)
@@ -210,8 +196,7 @@ class Statistics(object):
             #-- star_grid can be reconstructed for PACS through its database
             elif not star_grid:
                 star_grid = Star.makeStars(models=models,id_type='PACS',\
-                                           path=path_code,code='GASTRoNOoM',\
-                                           path_combocode=self.path_combocode)
+                                           path=path_code,code=self.code)
                 self.instrument.addStarPars(star_grid)
             if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) == set([0]): 
                 return
@@ -319,8 +304,7 @@ class Statistics(object):
         
         if not self.instrument: return
         self.data_info = dict()
-        pathcc = os.path.join(self.path_combocode,'usr')
-        instbands = DataIO.getInputData(path=pathcc,keyword='INSTRUMENT',\
+        instbands = DataIO.getInputData(keyword='INSTRUMENT',\
                                         filename='Data.dat')
         instbands = [band.upper() for band in instbands]
         indices = [i
@@ -331,18 +315,15 @@ class Statistics(object):
                  if i in indices]
         w_std_min = [wmin
                      for i,wmin in enumerate(DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'usr'),\
-                                keyword='W_STD_MIN',filename='Data.dat'))
+                                      keyword='W_STD_MIN',filename='Data.dat'))
                      if i in indices]
         w_std_max = [wmax
                      for i,wmax in enumerate(DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'usr'),\
-                                keyword='W_STD_MAX',filename='Data.dat'))
+                                      keyword='W_STD_MAX',filename='Data.dat'))
                      if i in indices]
         sigmas = [sigma
                   for i,sigma in enumerate(DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'usr'),\
-                                keyword='SIGMA',filename='Data.dat'))
+                                          keyword='SIGMA',filename='Data.dat'))
                   if i in indices]
         self.data_info['sigmas'] = sigmas
         self.data_info['bands'] = bands

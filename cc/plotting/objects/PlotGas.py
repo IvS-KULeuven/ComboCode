@@ -14,6 +14,7 @@ import subprocess
 from scipy.interpolate import interp1d
 import numpy as np
 
+import cc.path
 from cc.plotting.PlottingSession import PlottingSession
 from cc.tools.io import DataIO
 from cc.modeling.objects import Transition
@@ -31,9 +32,7 @@ class PlotGas(PlottingSession):
     
     """    
     
-    def __init__(self,star_name,path_gastronoom='codeJun2013',
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode'),\
+    def __init__(self,star_name,path_gastronoom='codeJun2013',\
                  inputfilename=None,pacs=None,spire=None):
         
         """ 
@@ -43,10 +42,6 @@ class PlotGas(PlottingSession):
                           when never using any star model specific things 
         @type star_name: string
         
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '~/ComboCode/')
-        @type path_combocode: string
         @keyword path_gastronoom: Output modeling folder in MCMax home folder
         
                                   (default: 'codeJun2013')
@@ -71,16 +66,16 @@ class PlotGas(PlottingSession):
         """
         
         super(PlotGas, self).__init__(star_name=star_name,\
-                                      path_combocode=path_combocode,\
                                       path=path_gastronoom,\
                                       code='GASTRoNOoM',\
                                       inputfilename=inputfilename)
+        #-- Convenience path
+        cc.path.gout = os.path.join(cc.path.gastronoom,self.path)
         self.pacs = pacs
         if self.pacs:
-            DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                       'GASTRoNOoM',self.path,'stars',\
-                                       self.star_name,self.plot_id,\
-                                       'PACS_results'))
+            fn = os.path.join(cc.path.gout,'stars',self.star_name,\
+                              self.plot_id,'PACS_results')
+            DataIO.testFolderExistence(fn)
         self.spire = spire
         self.sphinx_flux_list = []
 
@@ -103,7 +98,6 @@ class PlotGas(PlottingSession):
                                    id_type='pacs' in models[0].lower() \
                                                 and 'PACS' \
                                                 or 'GASTRoNOoM',\
-                                   path_combocode=self.path_combocode,\
                                    code='GASTRoNOoM',path=self.path)
         if 'pacs' in models[0].lower():
             self.pacs.addStarPars(star_grid)
@@ -141,26 +135,22 @@ class PlotGas(PlottingSession):
         elif (not models and not star_grid) or (models and star_grid):
             print '** Input is undefined or doubly defined. Aborting.'
             return
-        plot_filenames = []
+        pfns = []
         for i,star in enumerate(star_grid):
             if star['LAST_GASTRONOOM_MODEL']:    
                 rad = star.getGasRad(unit='rstar')
                 vel = star.getGasVelocity()
                 vel = vel/10.**5
                 avgdrift = star.getAverageDrift()/10.**5
-                plot_filename = os.path.join(os.path.expanduser('~'),\
-                                             'GASTRoNOoM',self.path,'stars',\
-                                             self.star_name,self.plot_id,\
-                                             'velocity_%s_%i'\
-                                             %(star['LAST_GASTRONOOM_MODEL'],\
-                                               i))
+                pfn = os.path.join(self.pplot,'velocity_%s_%i'\
+                                   %(star['LAST_GASTRONOOM_MODEL'],i))
                 plot_title = '%s %s: Velocity Profile for Model %i (%s)'\
                              %(self.plot_id.replace('_','\_'),\
                                self.star_name_plots,i,\
                                star['LAST_GASTRONOOM_MODEL'].replace('_','\_'))
-                plot_filenames.append(Plotting2.plotCols(x=rad,\
+                pfns.append(Plotting2.plotCols(x=rad,\
                                         y=[vel,avgdrift],cfg=cfg,\
-                                        filename=plot_filename,\
+                                        filename=pfn,\
                                         xaxis='R (R$_*$)',\
                                         yaxis=r'$v$ (km s$^{-1}$)',\
                                         plot_title=plot_title,\
@@ -169,16 +159,14 @@ class PlotGas(PlottingSession):
                                                  'Grain-size Weighted Drift'],\
                                         xlogscale=1))
         if plot_filenames and plot_filenames[0][-4:] == '.pdf':    
-            new_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                        self.path,'stars',self.star_name,\
-                                        self.plot_id,'velocity_profiles.pdf')
-            DataIO.joinPdf(old=sorted(plot_filenames),new=new_filename)
+            new_filename = os.path.join(self.pplot,'velocity_profiles.pdf')
+            DataIO.joinPdf(old=sorted(pfns),new=new_filename)
             print '** Plots can be found at:'
             print new_filename
             print '***********************************' 
-        elif plot_filenames:
+        elif pfns:
             print '** Plots can be found at:'
-            print '\n'.join(plot_filenames)
+            print '\n'.join(pfns)
             print '***********************************' 
         else:
             print '** No GASTRoNOoM models were calculated successfully. '+\
@@ -227,10 +215,7 @@ class PlotGas(PlottingSession):
             radii = [star.getGasRad(unit='rstar') for star in valid_sg]
             temps = [star.getGasTemperature() for star in valid_sg]
 
-            if temp:    
-                plot_title = '%s %s: Temperature Profiles'\
-                             %(self.plot_id.replace('_','\_'),\
-                               self.star_name_plots)
+            if temps:    
                 keytags = star_grid[0].has_key('LAST_PACS_MODEL') \
                             and ['%s,    %s,    Mdot = %.2e'\
                                  %(star['LAST_GASTRONOOM_MODEL']\
@@ -241,27 +226,18 @@ class PlotGas(PlottingSession):
                                  for star in star_grid] \
                             or [star['LAST_GASTRONOOM_MODEL'].replace('_','\_')
                                 for star in valid_sg]
-                plot_filename = os.path.join(os.path.expanduser('~'),\
-                                             'GASTRoNOoM',self.path,\
-                                             'stars',self.star_name,\
-                                             self.plot_id,\
-                                             'temperature_profiles')
-                plot_filename_rstar=os.path.join(os.path.expanduser('~'),\
-                                                 'GASTRoNOoM',self.path,\
-                                                 'stars',self.star_name,\
-                                                 self.plot_id,\
-                                                 'temperature_profiles_rstar')
-                plot_filename_rstar = Plotting2.plotCols(x=radii_rstar,y=temp,\
-                            cfg=cfg,xaxis='R (R$_*$)',plot_title='',\
-                            filename=plot_filename_rstar,yaxis='T (K)',\
-                            key_location=(0.0,0.0),xlogscale=1,ylogscale=1,\
-                            keytags=keytags)
+                pfn = os.path.join(self.pplot,'temperature_profiles')
+                pfn_rstar=os.path.join(self.pplot,'temperature_profiles_rstar')
+                pfn_rstar = Plotting2.plotCols(x=radii_rstar,y=temp,\
+                            cfg=cfg,xaxis='R (R$_*$)',\
+                            filename=pfn_rstar,yaxis='T (K)',\
+                            xlogscale=1,ylogscale=1,keytags=keytags)
                 keys_cm = ['Model %i'%(i+1)
                            for i in xrange(len(star_grid))]
-                plot_filename = Plotting2.plotCols(x=radii,y=temp,cfg=cfg,\
-                        filename=plot_filename,xaxis='$r$ (cm)',\
+                pfn = Plotting2.plotCols(x=radii,y=temp,cfg=cfg,\
+                        filename=pfn,xaxis='$r$ (cm)',\
                         yaxis='$T_\mathrm{g}$ (K)',\
-                        plot_title='',figsize=(12.5,8),fontsize_ticklabels=26,\
+                        figsize=(12.5,8),fontsize_ticklabels=26,\
                         key_location=(0.05,0.05),xlogscale=1,ylogscale=1,\
                         keytags=keys_cm,fontsize_axis=26,fontsize_key=26)
                 print '** Plots can be found at:'
@@ -501,13 +477,11 @@ class PlotGas(PlottingSession):
             if cfg.has_key('filename'):
                 filename = cfg.pop('filename')
             else:
-                filename = os.path.join(os.path.expanduser('~'),\
-                                        'GASTRoNOoM',self.path,'stars',\
-                                        self.star_name,self.plot_id,\
-                                        '%slps_%smodels_%ito%i'\
-                                        %(intrinsic and 'intrinsic_' or '',\
-                                          no_data and 'nodata_' or '',\
-                                          indexi,indexf))
+                seg = '%slps_%smodels_%ito%i'\
+                      %(intrinsic and 'intrinsic_' or '',\
+                        no_data and 'nodata_' or '',\
+                        indexi,indexf)
+                filename = os.path.join(self.pplot,seg)
             missing_trans = 0
             n_subplots = (x_dim*y_dim) - (keytags and 1 or 0)
             plot_filenames = []
@@ -758,13 +732,13 @@ class PlotGas(PlottingSession):
                             and float(star['LL_MIN_STRENGTH']) or None
         max_exc = float(star['LL_MAX_EXC']) \
                         and float(star['LL_MAX_EXC']) or None
-        path = star['LL_PATH']
+        
         linelists = []
         for molecule in star['LL_GAS_LIST']:
             if not 'p1H' in molecule.molecule:
                 ll = LineList.LineList(molecule=molecule,x_min=xmin,\
                                        x_unit=xunit,cdms=cdms,jpl=jpl,\
-                                       lamda=lamda,path=path,x_max=xmax,\
+                                       lamda=lamda,x_max=xmax,\
                                        min_strength=min_strength,\
                                        max_exc=max_exc,include_extra=1)
                 linelists.append(ll)
@@ -845,10 +819,7 @@ class PlotGas(PlottingSession):
                                                      fn_trans_marker,\
                                                  instrument=instrument)
         plot_filenames = []
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                                'GASTRoNOoM',self.path,\
-                                                'stars',self.star_name,\
-                                                self.plot_id,'LineLists'))
+        DataIO.testFolderExistence(os.path.join(self.pplot,'LineLists'))
         if include_sphinx:
             if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) \
                             == set([0]) \
@@ -870,12 +841,8 @@ class PlotGas(PlottingSession):
                                for star in star_grid]
             else:
                 sphinx_flux = []
-            plot_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                         self.path,'stars',self.star_name,\
-                                         self.plot_id,'LineLists',\
-                                         'line_id_'\
-                                         +os.path.split(filename)[1]\
-                                                    .replace('.dat',''))
+            seg = 'line_id_'+os.path.split(filename)[1].replace('.dat','')
+            plot_filename = os.path.join(self.pplot,'LineLists',seg)
             keytags = ['%s %s'%(instrument,filename.replace('_','\_'))] + \
                       ['Model %i: %s'\
                        %(i+1,instrument=='PACS' \
@@ -890,11 +857,8 @@ class PlotGas(PlottingSession):
                     number_subplots=3,line_labels=lls,\
                     line_label_color=1,line_label_lines=1,\
                     line_label_spectrum=1))
-        new_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                    self.path,'stars',self.star_name,\
-                                    self.plot_id,'LineLists',\
-                                    'line_id_%s_%s.pdf'%(instrument.lower(),\
-                                                         self.star_name))
+        seg = 'line_id_%s_%s.pdf'%(instrument.lower(),self.star_name)
+        new_filename = os.path.join(self.pplot,'LineLists',seg)
         DataIO.joinPdf(old=sorted(plot_filenames),new=new_filename)
         print '** Plots can be found at:'
         print new_filename
@@ -993,7 +957,9 @@ class PlotGas(PlottingSession):
                     #-            y_in=frac,gridsx=[rad])[0][0])
                 else:
                     frac_interpol = 1
-                abun = nmol/nh2*frac_interpol   #*molec.abun_factor     GASTRoNOoM output already takes into account this factor.
+                #-- GASTRoNOoM output already takes into account enhance_abundance_factor
+                #   abun_factor only takes into account isotope ratios and OPR
+                abun = nmol/nh2*frac_interpol*molec.abun_factor     
                 ddata[istar][molec.molecule]['abun'] = abun
                 ddata[istar][molec.molecule]['key'] = molec.molecule_plot
                 ddata[istar][molec.molecule]['id'] = mid
@@ -1021,10 +987,8 @@ class PlotGas(PlottingSession):
                 yaxis = '$n_\mathrm{molec}/n_{\mathrm{H}_2}$'
                 
                 #-- Make filename
-                pfn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                   self.path,'stars',self.star_name,\
-                                   self.plot_id,'abundance_profiles_%s'\
-                                   %'_'.join(list(set(ids))))
+                pfn = os.path.join(self.pplot,'abundance_profiles_%s'\
+                                              %'_'.join(list(set(ids))))
                 pfns.append(Plotting2.plotCols(x=radii,y=abuns,cfg=cfg,\
                                                filename=pfn,keytags=keytags,\
                                                yaxis=yaxis,**extra_pars))
@@ -1053,17 +1017,13 @@ class PlotGas(PlottingSession):
                 yaxis = '$n_\mathrm{%s}/n_{\mathrm{H}_2}$'%strmolec
 
                 #-- Make filename
-                pfn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',
-                                   self.path,'stars',self.star_name,\
-                                   self.plot_id,'abundance_profiles_%s'%molec)
+                pfn = os.path.join(self.pplot,'abundance_profiles_%s'%molec)
                 pfns.append(Plotting2.plotCols(x=radii,y=abuns,yaxis=yaxis,\
                                                filename=pfn,keytags=keytags,\
                                                cfg=cfg,**extra_pars))  
                 
         if not per_molecule and pfns and pfns[0][-4:] == '.pdf':    
-            newfn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                 self.path,'stars',self.star_name,\
-                                 self.plot_id,'abundance_profiles.pdf')
+            newfn = os.path.join(self.pplot,'abundance_profiles.pdf')
             DataIO.joinPdf(old=pfns,new=newfn)
             print '** Plots can be found at:'
             print newfn
@@ -1116,10 +1076,7 @@ class PlotGas(PlottingSession):
              normalized = int(cfg_dict['normalized'])
         if cfg_dict.has_key('include_velocity'):
              include_velocity = int(cfg_dict['include_velocity'])
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                                'GASTRoNOoM',self.path,'stars',\
-                                                self.star_name,self.plot_id,\
-                                                'LineContributions'))
+        DataIO.testFolderExistence(os.path.join(self.pplot,'LCs'))
         normalized = int(normalized)
         for i,star in enumerate(star_grid):
             extra_pars = dict()
@@ -1146,9 +1103,7 @@ class PlotGas(PlottingSession):
                                 or list(trans.sphinx.getWeightedIntensity())
                              for trans in transitions]
             
-            pfn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',self.path,\
-                               'stars',self.star_name,self.plot_id,\
-                               'LineContributions','linecontrib_%s_%i'\
+            pfn = os.path.join(self.pplot,'LCs','linecontrib_%s_%i'\
                                %(star['LAST_GASTRONOOM_MODEL'],i))
             extra_pars['filename'] = pfn
             extra_pars['keytags'] = ['$\mathrm{%s}:$ %s'\
@@ -1276,17 +1231,23 @@ class PlotGas(PlottingSession):
 
         used_indices = list(set([ll[-2] for ll in lls]))
         if fn_trans_marker:
-            extra_trans = Transition.makeTransitionsFromTransList(\
-                                    filename=fn_trans_marker,\
-                                    star=star_grid and star_grid[0] or None,\
-                                    path_combocode=self.path_combocode)
+            def_molecs = dict([(ll.molecule.molecule,ll.molecule) 
+                               for ll in linelists])
+            if star_grid: star = star_grid[0]
+            else: star = None
+            trl = DataIO.readDict(fn_trans_marker,multi_keys=['TRANSITION'])
+            n_entry = len(trl['TRANSITION'][0].split())
+            trl_sorted = DataIO.checkEntryInfo(trl['TRANSITION'],n_entry,\
+                                               'TRANSITION')
+            etrans = [makeTransition(trans=t,def_molecs=def_molecs,star=star) 
+                      for t in trl_sorted]
             this_index = max(used_indices)+1
             used_indices = used_indices + [this_index]
             ells = [('%s %s'%(t.molecule.molecule,t.makeLabel()),\
                     t.wavelength*10**4*1./(1-vlsr/t.c),\
                     this_index,\
                     t.vup>0)
-                   for t in extra_trans]
+                   for t in etrans]
             lls = lls + ells
 
         if mark_undetected:
@@ -1460,9 +1421,7 @@ class PlotGas(PlottingSession):
                                     and r'$F_\nu$ (Jy)' or ''
             tiles.append(ddict)
         if not fn_plt:
-            fn_plt = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                  self.path,'stars',self.star_name,\
-                                  self.plot_id,'PACS_results','PACS_linescans')
+            fn_plt = os.path.join(self.pplot,'PACS_results','PACS_linescans')
         if fn_add_star:
             fn_plt = '_'.join([fn_plt,self.star_name])
         #tiles = sorted(tiles,key = lambda x: x['x'][0][0])
@@ -1557,9 +1516,7 @@ class PlotGas(PlottingSession):
             return
         if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) == set([0]): 
             return
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-               'GASTRoNOoM',self.path,'stars',self.star_name,self.plot_id,\
-               'PACS_results'))
+        
         self.setSphinxPacs(star_grid)
         print '** Plotting now...'
         
@@ -1601,12 +1558,9 @@ class PlotGas(PlottingSession):
                 fn_plt = os.path.splitext(fn_plt)[0]
                 this_filename = '%s_%s_%s'%(fn_plt,self.star_name,ordername)
             else:    
-                this_filename = os.path.join(os.path.expanduser('~'),\
-                                             'GASTRoNOoM',self.path,'stars',\
-                                             self.star_name,self.plot_id,\
-                                             'PACS_results',\
+                this_filename = os.path.join(self.pplot,'PACS_results',\
                                              os.path.split(filename)[1]\
-                                                    .replace('.dat',''))
+                                            .replace('.dat',''))
             keytags = ['Model %i: %s'%(i+1,str(star['LAST_PACS_MODEL'])\
                                 .replace('_','\_')) 
                        for i,star in enumerate(star_grid)]
@@ -1631,9 +1585,7 @@ class PlotGas(PlottingSession):
                     line_label_spectrum=1,line_label_color=1))
         if plot_filenames and plot_filenames[0][-4:] == '.pdf':
             if not fn_plt:
-                newf = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                    self.path,'stars',self.star_name,\
-                                    self.plot_id,'PACS_results',\
+                newf = os.path.join(self.pplot,'PACS_results',\
                                     'PACS_spectrum.pdf')
             elif fn_plt and fn_add_star:
                 newf = '%s_%s.pdf'%(fn_plt,self.star_name)
@@ -1658,7 +1610,7 @@ class PlotGas(PlottingSession):
         '''
         Plot segments of spectra only.
         
-        An inputfile gives the wavelength ranges, given by pacs_path_path.
+        An inputfile gives the wavelength ranges, given by pacs_segments_path.
         
         Can include the sphinx results overplotted with the data, as well as line
         labels generated either for sphinx results (mode == 'sphinx') or from a 
@@ -1783,10 +1735,7 @@ class PlotGas(PlottingSession):
                         folder = mode=='ll' and 'LineLists' or 'PACS_results'
                         dfn_seg = os.path.split(filename)[1].replace('.dat','')
                         pfn = '%s_segment_%.1f-%.1f_'%(mode,wmin,wmax)+dfn_seg
-                        plot_filename = os.path.join(os.path.expanduser('~'),\
-                                                     'GASTRoNOoM',self.path,\
-                                                     'stars',self.star_name,\
-                                                     self.plot_id,folder,pfn)
+                        plot_filename = os.path.join(self.pplot,folder,pfn)
                     extra_stats = dict([('line_labels',lls),\
                                         ('histoplot',not exclude_data \
                                                         and [0] or []),\
@@ -1900,9 +1849,7 @@ class PlotGas(PlottingSession):
                 this_filename = '%s_%s_%s'%(fn_plt,self.star_name,band)
             else:
                 pfn = 'spire_spectrum_%s'%band
-                this_filename = os.path.join(os.path.expanduser('~'),\
-                                             'GASTRoNOoM',self.path,'stars',\
-                                             self.star_name,self.plot_id,pfn)
+                this_filename = os.path.join(self.pplot,pfn)
             sphinx_flux = [self.spire.getSphinxConvolution(star,filename)[1]
                            for star in star_grid]
             w = exclude_data \
@@ -1924,9 +1871,7 @@ class PlotGas(PlottingSession):
                 line_label_spectrum=1))
         if plot_filenames and plot_filenames[0][-4:] == '.pdf':
             if not fn_plt:
-                newf = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                    self.path,'stars',self.star_name,\
-                                    self.plot_id,'SPIRE_spectrum.pdf')
+                newf = os.path.join(self.pplot,'SPIRE_spectrum.pdf')
             elif fn_plt and fn_add_star:
                 newf = '%s_%s.pdf'%(fn_plt,self.star_name)
             else:

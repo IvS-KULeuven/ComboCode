@@ -12,6 +12,7 @@ import scipy
 from scipy import argmin,array,sqrt,log10
 import operator
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.modeling.objects import Transition
 from cc.statistics.Statistics import Statistics
@@ -28,9 +29,7 @@ class UnresoStats(Statistics):
     
     """
         
-    def __init__(self,star_name,path_code='codeSep2010',\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode')):        
+    def __init__(self,star_name,code='GASTRoNOoM',path_code='codeSep2010'):        
         
         """ 
         Initializing an instance of UnresoStats.
@@ -38,20 +37,19 @@ class UnresoStats(Statistics):
         @param star_name: Star name from Star.dat
         @type star_name: string
         
+        @keyword code: the code used for producing your output 
+        
+                       (default: 'GASTRoNOoM')
+        @type code: string
         @keyword path_code: Output folder in the code's home folder
                        
                             (default: 'codeSep2010')
         @type path_code: string
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '~/ComboCode/')
-        @type path_combocode: string
         
         """
         
         super(UnresoStats,self).__init__(star_name=star_name,\
-                                       path_combocode=path_combocode,\
-                                       code='GASTRoNOoM',path_code=path_code)
+                                         code=code,path_code=path_code)
         
         #-- Remember sample transitions per band and their central wavelengths. 
         #   key: filename, value: list[Transition()]
@@ -424,7 +422,10 @@ class UnresoStats(Statistics):
         @type no_peak: bool
         
         '''
-
+        
+        if not self.chi2_inttot: 
+            print "No Sphinx models calculated. Aborting statistics plot. "
+            return
         this_grid = self.sortStarGrid()
         plot_filenames = []
         inst = self.instrument
@@ -511,7 +512,7 @@ class UnresoStats(Statistics):
                             1+inst.absflux_err]])
             ratios_err.extend([None,None,None])
             lp.extend(['-k','--k','--k'])
-            plot_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+            plot_filename = os.path.join(getattr(cc.path,self.code.lower()),\
                                          self.path_code,'stars',\
                                          self.star_name,\
                                          '%s_results_'%inst.instrument+\
@@ -543,7 +544,7 @@ class UnresoStats(Statistics):
                     xmax=xmax*1.03,figsize=(10.*scipy.sqrt(2.), 10.),\
                     linewidth=2,fontsize_title=20,fontsize_label=16))
         inputf_short = os.path.splitext(os.path.split(inputfilename)[1])[0]
-        new_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+        new_filename = os.path.join(getattr(cc.path,self.code.lower()),\
                                     self.path_code,'stars',self.star_name,\
                                     '%s_results_'%inst.instrument+\
                                     'ratio_wav_%s.pdf'%inputf_short)
@@ -567,6 +568,7 @@ class UnresoStats(Statistics):
         
         '''
         
+        print self.chi2_inttot
         if self.chi2_inttot.values()[0]:
             styp = 'chi2_inttot'
         else: 

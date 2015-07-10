@@ -15,6 +15,7 @@ from scipy import array
 import operator
 import types
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.statistics.Statistics import Statistics
 
@@ -28,9 +29,8 @@ class ResoStats(Statistics):
     
     """
         
-    def __init__(self,star_name,path_code='codeSep2010',lll_p=None,\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode')):        
+    def __init__(self,star_name,code='GASTRoNOoM',path_code='codeSep2010',\
+                 lll_p=None):        
         
         """ 
         Initializing an instance of IntIntStats.
@@ -41,14 +41,14 @@ class ResoStats(Statistics):
         @param star_name: Star name from Star.dat
         @type star_name: string
         
+        @keyword code: the code used for producing your output 
+        
+                       (default: 'GASTRoNOoM')
+        @type code: string
         @keyword path_code: Output folder in the code's home folder
                        
                             (default: 'codeSep2010')
         @type path_code: string
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '~/ComboCode/')
-        @type path_combocode: string
         @keyword lll_p: The number of variable parameters in the model grid. If 
                         None, the automatic loglikelihood determination is not 
                         done. You can still set the threshold values with a 
@@ -60,8 +60,7 @@ class ResoStats(Statistics):
         """
         
         super(ResoStats,self).__init__(star_name=star_name,\
-                                       path_combocode=path_combocode,\
-                                       code='GASTRoNOoM',path_code=path_code)
+                                       code=code,path_code=path_code)
         
         #-- List of template transitions
         self.translist = []

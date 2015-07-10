@@ -16,6 +16,7 @@ from time import gmtime
 from scipy import array,argsort,interpolate
 import numpy as np
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.data.instruments.Instrument import Instrument
 from cc.tools.io import Database
@@ -74,10 +75,7 @@ def compareInts(pp1,pp2):
 def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                      mark_trans=[],extra_marker=r'\tablefootmark{f}',\
                      blend_mark=r'\tablefootmark{$\star$}',print_summary=0,\
-                     path_pacs=os.path.join(os.path.expanduser('~'),\
-                                            'Data','PACS'),sort_freq=1,\
-                     path_combocode=os.path.join(os.path.expanduser('~'),\
-                                                 'ComboCode')):
+                     sort_freq=1):
 
     '''
     Write a table with integrated line intensities and their uncertainties for
@@ -124,10 +122,6 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
         
                            (default: 'os2_us3')
     @type searchstring: string
-    @keyword path_combocode: CC home folder
-        
-                             (default: '~/ComboCode/')
-    @type path_combocode: string
     @keyword sort_freq: Sort the transitions on frequency. Otherwise sort on 
                         wavelength.
     
@@ -164,24 +158,18 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
         tr.unreso_blends = dict()
     for star in stars:
         if not dpacs.has_key(star):
-            dpacs[star] = Pacs(star,6,path_pacs,path_linefit='lineFit',\
-                               path_combocode=path_combocode)
+            dpacs[star] = Pacs(star,6,path_linefit='lineFit')
         dpacs[star].setData(searchstring=searchstring)
         for ifn in range(len(dpacs[star].data_filenames)):
             dpacs[star].intIntMatch(trans,ifn)
     
-    istars = [DataIO.getInputData(path=os.path.join(path_combocode,'src'))\
-                    .index(star)
-              for star in stars]
-    pstars = [DataIO.getInputData(path=os.path.join(path_combocode,'src'),\
-                                  keyword='STAR_NAME_PLOTS')[istar]
+    istars = [DataIO.getInputData().index(star) for star in stars]
+    pstars = [DataIO.getInputData(keyword='STAR_NAME_PLOTS',rindex=istar)
               for istar in istars]
     pstars = [s.replace('_',' ') for s in pstars]
-    all_molecs = DataIO.getInputData(path=os.path.join(path_combocode,'src'),\
-                                     keyword='TYPE_SHORT',make_float=0,\
+    all_molecs = DataIO.getInputData(keyword='TYPE_SHORT',make_float=0,\
                                      filename='Molecule.dat')
-    all_pmolecs = DataIO.getInputData(path=os.path.join(path_combocode,'src'),\
-                                     keyword='NAME_PLOT',make_float=0,\
+    all_pmolecs = DataIO.getInputData(keyword='NAME_PLOT',make_float=0,\
                                      filename='Molecule.dat')
     inlines = []
     inlines.append('&'.join(['']*(no_vib and 4 or 5)+pstars[:-1]+\
@@ -295,11 +283,8 @@ class Pacs(Instrument):
     
     """
     
-    def __init__(self,star_name,oversampling,path_pacs,path=None,
-                 redo_convolution=0,intrinsic=1,path_linefit='',\
-                 absflux_err=0.2,\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode')):
+    def __init__(self,star_name,oversampling,path=None,redo_convolution=0,\
+                 intrinsic=1,path_linefit='',absflux_err=0.2):
         
         '''
         Initializing an instance of Pacs().
@@ -309,8 +294,6 @@ class Pacs(Instrument):
         @param oversampling: The PACS instrumental oversampling, for correct
                              convolution of the Sphinx output]
         @type oversampling: int
-        @param path_pacs: full path to PACS data folder, excluding star_name
-        @type path_pacs: string
         
         @keyword path: Output folder in the code's home folder. Used to locate 
                        the PACS database. If None, it is not used (eg for line
@@ -318,10 +301,6 @@ class Pacs(Instrument):
                        
                        (default: None)
         @type path: string
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '~/ComboCode/')
-        @type path_combocode: string
         @keyword intrinsic: Use the intrinsic Sphinx line profiles for 
                             convolving with the spectral resolution? Otherwise
                             the beam convolved line profiles are used.
@@ -353,9 +332,7 @@ class Pacs(Instrument):
         '''
         
         super(Pacs,self).__init__(star_name=star_name,code='GASTRoNOoM',\
-                                  path=path,path_combocode=path_combocode,\
-                                  path_instrument=path_pacs,\
-                                  path_linefit=path_linefit,\
+                                  path_linefit=path_linefit,path=path,\
                                   absflux_err=absflux_err,
                                   oversampling=oversampling,\
                                   instrument_name='PACS',intrinsic=intrinsic)
@@ -365,14 +342,15 @@ class Pacs(Instrument):
         self.data_orders = []
         self.data_delta_list = []
         self.redo_convolution = redo_convolution
+        #-- Convenience path
+        cc.path.gout = os.path.join(cc.path.gastronoom,self.path)
+        
         #-- Check the path for the PACS database if a model folder is known.
-        if self.path <> None: 
-            self.db_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                        self.path,'stars',self.star_name,\
+        if self.path <> None:
+            self.db_path = os.path.join(cc.path.gout,'stars',self.star_name,\
                                         'GASTRoNOoM_pacs_models.db')
             self.db = Database.Database(self.db_path)
-            DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                       'GASTRoNOoM',self.path,'stars',\
+            DataIO.testFolderExistence(os.path.join(cc.path.gout,'stars',\
                                        self.star_name,'PACS_results'))
         else:
             self.db = None
@@ -560,10 +538,8 @@ class Pacs(Instrument):
         if not this_id:
             return ([],[])
         fn = os.path.split(fn)[1]
-        sphinx_file = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                   self.path,'stars',self.star_name,\
-                                   'PACS_results',this_id,\
-                                   '%s_%s'%('sphinx',fn))
+        sphinx_file = os.path.join(cc.path.gout,'stars',self.star_name,\
+                                  'PACS_results',this_id,'%s_%s'%('sphinx',fn))
         return DataIO.readCols(sphinx_file)
 
 
@@ -590,12 +566,10 @@ class Pacs(Instrument):
         #- and the convolution will be done anyway
         if self.redo_convolution and star['LAST_PACS_MODEL']:    
             for filename in finished_conv_filenames:
-                ori = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                   self.path,'stars',self.star_name,\
+                ori = os.path.join(cc.path.gout,'stars',self.star_name,\
                                    'PACS_results',star['LAST_PACS_MODEL'],\
                                    '_'.join(['sphinx',filename]))
-                backup = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                      self.path,'stars',self.star_name,\
+                backup = os.path.join(cc.path.gout,'stars',self.star_name,\
                                       'PACS_results',star['LAST_PACS_MODEL'],\
                                       '_'.join(['backup','sphinx',filename]))
                 subprocess.call(['mv %s %s'%(ori,backup)],shell=True)
@@ -637,8 +611,7 @@ class Pacs(Instrument):
                               ('trans_list',star.getTransList(dtype='PACS')),\
                               ('cooling_id',star['LAST_GASTRONOOM_MODEL'])])
                     DataIO.testFolderExistence(\
-                        os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                     self.path,'stars',self.star_name,\
+                        os.path.join(cc.path.gout,'stars',self.star_name,\
                                      'PACS_results',star['LAST_PACS_MODEL']))
                 #-- Correct for the v_lsr of the central source
                 sphinx_wave_corr = array(sphinx_wave)*(1./(1-self.vlsr/self.c))
@@ -648,8 +621,7 @@ class Pacs(Instrument):
                                         x_out=self.data_wave_list[i_file],\
                                         widths=self.data_delta_list[i_file],\
                                         oversampling=self.oversampling)
-                sph_fn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                      self.path,'stars',self.star_name,\
+                sph_fn = os.path.join(cc.path.gout,'stars',self.star_name,\
                                       'PACS_results',star['LAST_PACS_MODEL'],\
                                       '_'.join(['sphinx',filename])) 
                 DataIO.writeCols(filename=sph_fn,\
@@ -671,29 +643,23 @@ class Pacs(Instrument):
         
 
 
-    def getPacsResolution(self,filename=os.path.join(os.path.expanduser('~'),\
-                                                     'ComboCode','aux',\
-                                                     'Pacs_Resolution.dat')):
+    def getPacsResolution(self):
         
         '''
-        Get the Pacs resolution from CC Data file for all orders.
-        
-        @keyword filename: filename in which the pacs resolution is stored.
-        
-                           (default: '~/ComboCode/aux/Pacs_Resolution.dat')
-        @type filename: string
+        Get the Pacs resolution from cc aux file for all orders.
         
         @return: The resolution as a function of wavelength for the 3 orders
         @rtype: (list[list],list[list])
         
         '''
-        reso_wave_list = [DataIO.getInputData(path=os.path.split(filename)[0],\
-                                          filename=os.path.split(filename)[1],\
-                                          keyword='WAVE='+str(order))
+        
+        reso_wave_list = [DataIO.getInputData(path=cc.path.aux,\
+                                              filename='Pacs_Resolution.dat',\
+                                              keyword='WAVE='+str(order))
                           for order in range(1,4)]
-        reso_delta_list = [DataIO.getInputData(path=os.path.split(filename)[0],\
-                                          filename=os.path.split(filename)[1],\
-                                          keyword='ORDER='+str(order))
+        reso_delta_list = [DataIO.getInputData(path=cc.path.aux,\
+                                               filename='Pacs_Resolution.dat',\
+                                               keyword='ORDER='+str(order))
                            for order in range(1,4)]
         return reso_wave_list,reso_delta_list
 
@@ -710,10 +676,7 @@ class Pacs(Instrument):
         '''
         
         print '** Reading PACS native resolution.'
-        reso_wave_list,reso_delta_list \
-                = self.getPacsResolution(filename=os.path.join(\
-                                                self.path_combocode,'aux',\
-                                                'Pacs_Resolution.dat'))
+        reso_wave_list,reso_delta_list = self.getPacsResolution()
         
         #- Make interpolators for every order
         print '** Interpolating PACS native resolution.'

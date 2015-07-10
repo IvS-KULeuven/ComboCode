@@ -15,6 +15,7 @@ import glob
 from scipy import array
 import numpy as np
 
+import cc.path
 from cc.plotting.PlottingSession import PlottingSession
 from cc.plotting import Plotting2
 from cc.tools.io import DataIO, KappaReader
@@ -31,9 +32,7 @@ class PlotDust(PlottingSession):
     
     """
     
-    def __init__(self,star_name='model',sed=None,corrflux_path=None,\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode'),\
+    def __init__(self,star_name='model',sed=None,\
                  path_mcmax='runTestDec09',inputfilename=None):
         
         '''
@@ -44,10 +43,6 @@ class PlotDust(PlottingSession):
                                   
                             (default: "model")
         @type star_name: string
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '~/ComboCode/')
-        @type path_combocode: string
         @keyword path_mcmax: Output modeling folder in MCMax home folder
         
                              (default: 'runTestDec09')
@@ -64,21 +59,16 @@ class PlotDust(PlottingSession):
                             
                       (default: None)
         @type sed: Sed()
-        @keyword corrflux_path: The full path to the folder containing 
-                                correlated fluxes, such as for MIDI. 
-                                
-                                (default: None)
-        @type corrflux_path: str
         
         '''
 
         super(PlotDust, self).__init__(star_name=star_name,\
-                                       path_combocode=path_combocode,\
                                        path=path_mcmax,\
                                        code='MCMax',\
                                        inputfilename=inputfilename)
+        #-- Convenience path
+        cc.path.mout = os.path.join(cc.path.mcmax,self.path)
         self.sed = sed
-        self.corrflux_path = corrflux_path
 
 
 
@@ -119,7 +109,7 @@ class PlotDust(PlottingSession):
         """
         
         if self.sed is None:
-            print 'No PATH_SED given. Cannot plot SED. Aborting...'
+            print 'No dsed given in Path.dat. Cannot plot SED. Aborting...'
             return
         print '***********************************'
         print '** Creating SED plot.'
@@ -135,34 +125,30 @@ class PlotDust(PlottingSession):
         else:
             fn_plt = ''
         
-        ccpath = os.path.join(self.path_combocode,'usr')
         data_labels = dict([(dt,(n,ls))
-                            for n,dt,ls in zip(DataIO.getInputData(path=ccpath,\
+                            for n,dt,ls in zip(DataIO.getInputData(path=cc.path.usr,\
                                                         keyword='PLOT_NAMES',\
                                                         filename='Sed.dat',\
                                                         remove_underscore=1),\
-                                               DataIO.getInputData(path=ccpath,\
+                                               DataIO.getInputData(path=cc.path.usr,\
                                                         keyword='DATA_TYPES',\
                                                         filename='Sed.dat'),\
-                                               DataIO.getInputData(path=ccpath,\
+                                               DataIO.getInputData(path=cc.path.usr,\
                                                         keyword='LINE_TYPES',\
                                                         filename='Sed.dat'))])
 
         #- filename settings and copying inputfiles to plot output folder
         if not fn_plt:
-            fn_plt = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
-                                  'stars',self.star_name,self.plot_id,\
-                                  'SED_%s'%self.star_name)
+            fn_plt = os.path.join(self.pplot,'SED_%s'%self.star_name)
         if fn_add_star:
             fn_plt = '_'.join([fn_plt,self.star_name])
         if iterative:
             fn_plt = fn_plt + '_iterative_%i'%iterative
         
         if self.inputfilename <> None:
+            ipfn = os.path.split(self.inputfilename)[1]
             subprocess.call(['cp ' + self.inputfilename + ' ' + \
-                             os.path.join(os.path.expanduser('~'),'MCMax',\
-                                self.path,'stars',self.star_name,self.plot_id,\
-                                os.path.split(self.inputfilename)[1])],\
+                             os.path.join(self.pplot,ipfn)],\
                             shell=True)
 
         plot_title='SED %s'%self.star_name_plots
@@ -204,8 +190,7 @@ class PlotDust(PlottingSession):
         if model_ids_mcm: 
             rt_sed = star_grid[0]['RT_SED']
         for model_id in model_ids_mcm:
-            dpath = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
-                                 'models',model_id)
+            dpath = os.path.join(cc.path.mout,'models',model_id)
             w,f = MCMax.readModelSpectrum(dpath,rt_sed)
             data_x.append(w)
             data_y.append(f)
@@ -269,8 +254,8 @@ class PlotDust(PlottingSession):
         
         """
         
-        if not self.corrflux_path:
-            print 'No CORRFLUX_PATH given. Cannot plot Correlated Fluxes. Aborting...'
+        if not cc.path.dcflux:
+            print 'No dcflux given in Path.dat. Cannot plot Correlated Fluxes. Aborting...'
             return
         print '***********************************'
         print '** Creating Correlated Fluxes plot.'
@@ -288,21 +273,18 @@ class PlotDust(PlottingSession):
         
         #- filename settings and copying inputfiles to plot output folder
         if not fn_plt:
-            fn_plt = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
-                                  'stars',self.star_name,self.plot_id,\
-                                  'CorrFlux')
+            fn_plt = os.path.join(self.pplot,'CorrFlux')
         if fn_add_star:
             fn_plt = '_'.join([fn_plt,self.star_name])
         
         if self.inputfilename <> None:
+            ipfn = os.path.split(self.inputfilename)[1]
             subprocess.call(['cp ' + self.inputfilename + ' ' + \
-                             os.path.join(os.path.expanduser('~'),'MCMax',\
-                                self.path,'stars',self.star_name,self.plot_id,\
-                                os.path.split(self.inputfilename)[1])],\
+                             os.path.join(self.pplot,ipfn)],\
                             shell=True)
 
         #-- Select MIDI data. Assumes baseline at the end of the filename.
-        ssd = os.path.join(self.corrflux_path,self.star_name,\
+        ssd = os.path.join(cc.path.dcflux,self.star_name,\
                            '_'.join([self.star_name,'MIDI','*.fits']))
         files = [os.path.splitext(gi)[0] for gi in glob.glob(ssd)]
         ggd = dict([(float(gi.split('_')[-1].strip('m')),gi+'.fits') 
@@ -313,8 +295,7 @@ class PlotDust(PlottingSession):
         if not no_models:
             for s in star_grid:
                 model_id = s['LAST_MCMAX_MODEL']
-                dpath = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                     self.path,'models',model_id)
+                dpath = os.path.join(cc.path.mout,'models',model_id)
                 model = MCMax.readVisibilities(dpath=dpath,\
                                                fn_vis='visibility01.0.dat')
                 models.append(model)
@@ -431,11 +412,11 @@ class PlotDust(PlottingSession):
         
         """
         
-        if not self.corrflux_path:
-            print 'No CORRFLUX_PATH given. Aborting...'
+        if not cc.path.dcflux:
+            print 'No dcflux given in Path.dat. Aborting...'
             return
         if not self.sed or 'MIDI' not in self.sed.data_types:
-            print 'No SED_PATH given or no MIDI spectral data found. Aborting.'
+            print 'No dsed given in Path.dat or no MIDI spectral data found. Aborting.'
             return
         
         print '***********************************'
@@ -453,17 +434,14 @@ class PlotDust(PlottingSession):
         
         #- filename settings and copying inputfiles to plot output folder
         if not fn_plt:
-            fn_plt = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
-                                  'stars',self.star_name,self.plot_id,\
-                                  'Visibilities')
+            fn_plt = os.path.join(self.pplot,'Visibilities')
         if fn_add_star:
             fn_plt = '_'.join([fn_plt,self.star_name])
         
         if self.inputfilename <> None:
+            ipfn = os.path.split(self.inputfilename)[1]
             subprocess.call(['cp ' + self.inputfilename + ' ' + \
-                             os.path.join(os.path.expanduser('~'),'MCMax',\
-                                self.path,'stars',self.star_name,self.plot_id,\
-                                os.path.split(self.inputfilename)[1])],\
+                             os.path.join(self.pplot,ipfn)],\
                             shell=True)
 
         #-- Read the models. Wavelengths are taken from the ray-tracing output
@@ -471,8 +449,7 @@ class PlotDust(PlottingSession):
         if not no_models:
             for s in star_grid:
                 model_id = s['LAST_MCMAX_MODEL']
-                dpath = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                     self.path,'models',model_id)
+                dpath = os.path.join(cc.path.mout,'models',model_id)
                 model = MCMax.readVisibilities(dpath=dpath,\
                                                fn_vis='basevis01.0.dat')
                 models.append(model)
@@ -491,7 +468,7 @@ class PlotDust(PlottingSession):
         midi_relerr = (midi_err/midi_flux)**2
         
         #-- Select MIDI data. Assumes baseline at the end of the filename.
-        ssd = os.path.join(self.corrflux_path,self.star_name,\
+        ssd = os.path.join(cc.path.dcflux,self.star_name,\
                            '_'.join([self.star_name,'MIDI','*.fits']))
         files = [os.path.splitext(gi)[0] for gi in glob.glob(ssd)]
         ggd = dict([(float(gi.split('_')[-1].strip('m')),gi+'.fits') 
@@ -634,9 +611,7 @@ class PlotDust(PlottingSession):
             fn_plt = cfg_dict['filename']
             del cfg_dict['filename']    
         else:
-            fn_plt = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
-                                  'stars',self.star_name,self.plot_id,\
-                                  'Td_avg')
+            fn_plt = os.path.join(self.pplot,'Td_avg')
         rads = []
         temps = []
         keytags = []
@@ -734,9 +709,7 @@ class PlotDust(PlottingSession):
             fn_plt = cfg_dict['filename']
             del cfg_dict['filename']    
         else:
-            fn_plt = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
-                                  'stars',self.star_name,self.plot_id,\
-                                  'Td_species')
+            fn_plt = os.path.join(self.pplot,'Td_species')
         plot_filenames = []
         for star in star_grid:
             if not int(star['T_CONTACT']):
@@ -802,8 +775,6 @@ class PlotDust(PlottingSession):
 
 
     def plotOpacities(self,star_grid=[],scaling=1,species=['AMC'],\
-                      path_opac=os.path.join(os.path.expanduser('~'),\
-                                             'MCMax','Opacities'),\
                       cfg='',index=0,*args,**kwargs):
         
         """ 
@@ -822,10 +793,6 @@ class PlotDust(PlottingSession):
                                   
                             (default: [])
         @type star_grid: list(Star())
-        @keyword path_opac: The path to the opacity home folder
-        
-                            (default: ~/MCMax/Opacities/)
-        @type path_opac: str
         @keyword scaling: allow species abundance scaling of opacities
                                 
                           (default: 1)
@@ -861,12 +828,10 @@ class PlotDust(PlottingSession):
             fn_plt = kwargs['filename']
             del kwargs['filename']
         elif not star_grid:
-            fn_plt = os.path.join(path_opac,\
+            fn_plt = os.path.join(cc.path.mopac,\
                                   'dust_opacities_%s'%'_'.join(species))
         else:
-            fn_plt = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
-                                  'stars',self.star_name,self.plot_id,\
-                                  'opacities_species')
+            fn_plt = os.path.join(self.pplot,'opacities_species')
         
         #-- Set some plot parameters
         ppars['xaxis'] = '$\lambda$ ($\mu \mathrm{m}$)'
@@ -880,7 +845,7 @@ class PlotDust(PlottingSession):
         
         #-- Check if raw opacities or modeling results are requested
         if not star_grid:
-            kr = KappaReader.KappaReader(path_cc=self.path_combocode)
+            kr = KappaReader.KappaReader()
             wl_list = [kr.getKappas(sp)[0] for sp in species]
             q_list = [kr.getKappas(sp)[1] for sp in species]
             fn_plt = Plotting2.plotCols(x=wl_list,y=q_list,filename=fn_plt,\
@@ -964,8 +929,7 @@ class PlotDust(PlottingSession):
         keys = []
         for star in star_grid:        
             try:
-                inputfile = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                         'src','data',star['TEMDUST_FILENAME'])
+                inputfile = os.path.join(cc.path.gdata,star['TEMDUST_FILENAME'])
                 opacities = DataIO.readCols(filename=inputfile)
                 x.append(opacities[0])
                 y.append(opacities[1])
@@ -973,9 +937,7 @@ class PlotDust(PlottingSession):
                             %star['LAST_MCMAX_MODEL'].replace('_','\_'))
             except IOError: 
                 pass
-        filename = os.path.join(os.path.expanduser('~'),'MCMax',self.path,\
-                                'stars',self.star_name,self.plot_id,\
-                                'gastronoom_opacities_%s'\
+        filename = os.path.join(self.pplot,'gastronoom_opacities_%s'\
                                 %star['LAST_MCMAX_MODEL'])
         title = 'GASTRoNOoM Extinction Efficiencies in %s'\
                  %(self.star_name_plots)
@@ -1004,11 +966,10 @@ class PlotDust(PlottingSession):
         
         '''
         
-        star_grid = Star.makeStars(models=models,\
-                                   code='MCMax',id_type='MCMax',path=self.path)
+        star_grid = Star.makeStars(models=models,code='MCMax',id_type='MCMax',\
+                                   path=self.path)
         for star,model in zip(star_grid,models):    
-            filepath = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                    self.path,'models',\
+            filepath = os.path.join(cc.path.mout,'models',\
                                     star['LAST_MCMAX_MODEL'])
             denstemp = os.path.join(filepath,'denstemp.dat')
             logfile = os.path.join(filepath,'log.dat')
@@ -1073,8 +1034,7 @@ pars_units = dict([('T_STAR',('T_{*}','K','%i')),\
                                 ('KEYWORD_DUST_TEMPERATURE_TABLE',('Consistent T_{d}','','%i')),\
                                 ('NUMBER_INPUT_DUST_TEMP_VALUES',('len(T_d)','','%i')),\
                                 ('MOLECULE',('Molecule','','%s'))])
-        dust_species = DataIO.getInputData(path=os.path.join(self.path_combocode,'usr'),keyword='SPECIES_SHORT',\
-                                                    filename='Dust.dat')
+        dust_species = DataIO.getInputData(keyword='SPECIES_SHORT',filename='Dust.dat')
         pars_units.update(dict([('A_' + species,('A_{' + species + '}','','%.2f')) for species in dust_species]))
         pars_units.update(dict([('T_DESA_' + species,('T_{desA,' + species + '}','','%.3f')) for species in dust_species]))
         pars_units.update(dict([('T_DESB_' + species,('T_{desB,' + species + '}','','%.3f')) for species in dust_species]))

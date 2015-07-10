@@ -9,6 +9,7 @@ Author: R. Lombaert
 
 import os
 
+import cc.path
 from cc.plotting.objects import PlotGas
 from cc.plotting.objects import PlotDust
 
@@ -22,10 +23,8 @@ class PlottingManager():
     
     def __init__(self,star_name,mcmax=False,gastronoom=False,pacs=None,\
                  path_gastronoom='codeJun2010',path_mcmax='codeJun2010',\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode'),\
                  inputfilename='inputComboCode.dat',spire=None,\
-                 plot_pars=dict(),sed=None,corrflux_path=None):
+                 plot_pars=dict(),sed=None):
                 
         """ 
         Initializing a PlottingManager instance.
@@ -49,10 +48,6 @@ class PlottingManager():
         
                              (default: 0)
         @type gastronoom: bool
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '/home/robinl/ComboCode')
-        @type path_combocode: string
         @keyword path_mcmax: modeling folder in MCMax home
         
                              (default: 'runTest')
@@ -76,11 +71,6 @@ class PlottingManager():
                           
                       (default: None)
         @type sed: Sed()
-        @keyword corrflux_path: The full path to the folder containing 
-                                correlated fluxes, such as for MIDI. 
-                                
-                                (default: None)
-        @type corrflux_path: str
         @keyword plot_pars: dictionary with all the plotting parameters that
                             turn on or off plotting modules. By default they
                             are all turned off.
@@ -90,7 +80,6 @@ class PlottingManager():
         
         """
         
-        self.path_combocode = path_combocode
         self.dust_pars = dict()
         self.dust_cfg = dict()
         self.gas_pars = dict()
@@ -108,16 +97,13 @@ class PlottingManager():
         self.gastronoom = gastronoom
         if self.mcmax: 
             self.plotter_dust = PlotDust.PlotDust(star_name=star_name,\
-                                                path_combocode=path_combocode,\
-                                                path_mcmax=path_mcmax,\
-                                                inputfilename=inputfilename,
-                                                sed=sed,\
-                                                corrflux_path=corrflux_path)
+                                                  path_mcmax=path_mcmax,\
+                                                  inputfilename=inputfilename,
+                                                  sed=sed)
         else: 
             self.plotter_dust = None
         if self.gastronoom or self.gas_pars.has_key('PLOT_LINE_LISTS'):
             self.plotter_gas = PlotGas.PlotGas(star_name=star_name,pacs=pacs,\
-                                               path_combocode=path_combocode,\
                                                path_gastronoom=path_gastronoom,\
                                                inputfilename=inputfilename,\
                                                spire=spire)                                     

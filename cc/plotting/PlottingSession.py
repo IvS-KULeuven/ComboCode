@@ -12,6 +12,7 @@ from time import gmtime
 import cPickle
 import subprocess
 
+import cc.path
 from cc.tools.io import DataIO
 
 
@@ -24,8 +25,6 @@ class PlottingSession(object):
     """
         
     def __init__(self,star_name='model',inputfilename=None,\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode'),\
                  path='codeJun2010',code='GASTRoNOoM'):
         
         """ 
@@ -36,10 +35,6 @@ class PlottingSession(object):
                                   
                             (default: "model")
         @type star_name: string
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '~/ComboCode/')
-        @type path_combocode: string
         @keyword path: Output modeling folder in code home folder
         
                        (default: 'codeJun2010')
@@ -50,7 +45,7 @@ class PlottingSession(object):
                                 
                                 (default: None)
         @type inputfilename: string
-        @keyword code: the code itself with which we're working
+        @keyword code: the modeling code
         
                        (default: GASTRoNOoM)
         @type code: string
@@ -59,29 +54,27 @@ class PlottingSession(object):
         
         self.inputfilename = inputfilename
         self.star_name = star_name
-        self.path_combocode = path_combocode
-        self.star_index = DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'usr'))\
-                              .index(self.star_name)
-        self.star_name_plots = DataIO.getInputData(\
-                                path=os.path.join(self.path_combocode,'usr'),\
-                                keyword='STAR_NAME_PLOTS',remove_underscore=1)\
-                               [self.star_index]
+        self.star_index = DataIO.getInputData(path=cc.path.usr)\
+                                            .index(self.star_name)
+        self.star_name_plots = DataIO.getInputData(path=cc.path.usr,
+                                                   keyword='STAR_NAME_PLOTS',\
+                                                   remove_underscore=1,\
+                                                   rindex=self.star_index)
+        #-- Can't use convenience paths here through cc.path, because the 
+        #   module is not code specific. Within a single pything session, there
+        #   may be multiple instances of PlottingSession
         self.path = path
+        fn_mcm = os.path.join(cc.path.aux,'Mutable_Parameters_MCMax.dat')
         self.mutable_mcmax = [line[0] 
-                              for line in DataIO.readFile(\
-                                   os.path.join(self.path_combocode,'aux',\
-                                                'Mutable_Parameters_MCMax.dat'),\
-                                   delimiter=' ')
+                              for line in DataIO.readFile(fn_mcm,delimiter=' ')
                               if ''.join(line).strip()]
         self.mutable_mcmax = [line 
                               for line in self.mutable_mcmax 
                               if line[0] != '#']
+        fn_gas = os.path.join(cc.path.aux,'Mutable_Parameters_GASTRoNOoM.dat')
         self.mutable_gastronoom = [line[0] 
-                                   for line in DataIO.readFile(\
-                                        os.path.join(self.path_combocode,'aux',\
-                                        'Mutable_Parameters_GASTRoNOoM.dat'),\
-                                        delimiter=' ')
+                                   for line in DataIO.readFile(fn_gas,\
+                                                               delimiter=' ')
                                    if ''.join(line).strip()]
         self.mutable_gastronoom = [line 
                                    for line in self.mutable_gastronoom 
@@ -91,18 +84,18 @@ class PlottingSession(object):
                        %(gmtime()[0],gmtime()[1],gmtime()[2],\
                          gmtime()[3],gmtime()[4],gmtime()[5])
         self.code = code
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                                self.code,self.path,'stars'))
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                                self.code,self.path,'stars',\
-                                                self.star_name))
-        DataIO.testFolderExistence(os.path.join(os.path.expanduser('~'),\
-                                                self.code,self.path,'stars',\
-                                                self.star_name,self.plot_id))
+        
+        #-- Folder management and copying inputfile to plot output folder
+        pout = os.path.join(getattr(cc.path,self.code.lower()),self.path,\
+                            'stars')
+        pstar = os.path.join(pout,self.star_name)
+        self.pplot = os.path.join(pstar,self.plot_id)
+        for pp in [pout,pstar,self.pplot]:
+            DataIO.testFolderExistence(pp)
+        
         if self.inputfilename <> None:
-            newf = os.path.join(os.path.expanduser('~'),self.code,self.path,\
-                                'stars',self.star_name,self.plot_id,\
-                                os.path.split(self.inputfilename)[1])
+            ipfn = os.path.split(self.inputfilename)[1]
+            newf = os.path.join(self.pplot,ipfn)
             subprocess.call(['cp %s %s'%(self.inputfilename,newf)],shell=True)
             
             
@@ -135,24 +128,22 @@ class PlottingSession(object):
         
         
           
-    def makeModelList(self,star_grid,code):
+    def makeModelList(self,star_grid,id_type):
         
         '''
-        Return a list of all model id's in the star_grid.
+        Return a list of model id's in the star_grid.
                 
         @param star_grid: The parameter sets
         @type star_grid: list[Star()]
-        @param code: the code itself with which we're working
-        
-                     (default: GASTRoNOoM)
-        @type code: string
+        @param id_type: the type of model id (MCMAX or GASTRONOOM or PACS)
+        @type id_type: string
         
         @return: the model_ids
         @rtype: list[string]
         
         '''
         
-        return [star['LAST_'+code.upper()+'_MODEL'] 
+        return [star['LAST_'+id_type.upper()+'_MODEL'] 
                 for star in star_grid 
-                if star['LAST_'+code.upper()+'_MODEL']]
+                if star['LAST_'+id_type.upper()+'_MODEL']]
         

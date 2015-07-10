@@ -14,6 +14,8 @@ from scipy import array,zeros
 import types
 from matplotlib import mlab
 
+import cc.path
+
 
 def getMCMaxOutput(incr,filename,keyword='RADIUS',single=1):
     
@@ -118,18 +120,18 @@ def getGastronoomOutput(filename,keyword='RADIUS',begin_index=0,\
 
 
 
-def getInputData(path=os.path.join(os.path.expanduser('~'),'ComboCode','usr'),\
-                 keyword='STAR_NAME',filename='Star.dat',remove_underscore=0,\
-                 make_float=1,start_index=1):
+def getInputData(path=cc.path.usr,keyword='STAR_NAME',filename='Star.dat',\
+                 remove_underscore=0,make_float=1,start_index=1,rindex=None):
     
     """
-    Search ComboCode usr files for parameters. 
+    Search ComboCode/usr files for parameters. (Can be applied to other files
+    as well)
     
     Includes files such as Dust.dat, Star.dat, Indices.dat, Molecule.dat.
 
-    @keyword path: ComboCode usr path
+    @keyword path: Location of the input file
     
-                   (default: ~/ComboCode/usr/)
+                   (default: cc.path.usr)
     @type path: string
     @keyword keyword: the type of information required, always equal to one of 
                       the keywords present in the "Data" of ComboCode, and 
@@ -137,8 +139,7 @@ def getInputData(path=os.path.join(os.path.expanduser('~'),'ComboCode','usr'),\
                       
                       (default: STAR_NAME)
     @type keyword: string
-    @keyword filename: filename in PATH_COMBOCODE/usr/ that includes wanted 
-                       information
+    @keyword filename: filename in that includes wanted information
                        
                        (default: 'Star.dat')
     @type filename: string
@@ -157,8 +158,13 @@ def getInputData(path=os.path.join(os.path.expanduser('~'),'ComboCode','usr'),\
      
                           (default: 1)
     @type start_index: int
-
-    @return: The requested data from the CC input
+    @keyword rindex: Only return element with this index. Default if full list
+                     is to be returned.
+    
+                     (default: None)
+    @type rindex: int                 
+   
+    @return: Requested data from the usr input (either list or single element)
     @rtype: list
      
     """
@@ -183,19 +189,22 @@ def getInputData(path=os.path.join(os.path.expanduser('~'),'ComboCode','usr'),\
         if not make_float: 
             raise ValueError
         else: 
-            return [float(line[data_index]) 
-                    for line in data[i:end_index] 
-                    if line[0]]
+            elements = [float(line[data_index]) 
+                        for line in data[i:end_index] 
+                        if line[0]]
     except ValueError:
         if remove_underscore: 
-            return [line[data_index].replace('_',' ') 
-                    for line in data[i:end_index] 
-                    if line[0]]
+            elements = [line[data_index].replace('_',' ') 
+                        for line in data[i:end_index] 
+                        if line[0]]
         else: 
-            return [line[data_index] 
-                    for line in data[i:end_index] 
-                    if line[0]]
-
+            elements = [line[data_index] 
+                        for line in data[i:end_index] 
+                        if line[0]]
+    if rindex <> None:
+        return elements[rindex]
+    else:
+        return elements
 
 
 def readFile(filename,delimiter=None,replace_spaces=1):
