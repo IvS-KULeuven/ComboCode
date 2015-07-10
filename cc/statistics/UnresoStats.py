@@ -422,7 +422,10 @@ class UnresoStats(Statistics):
         @type no_peak: bool
         
         '''
-
+        
+        if not self.chi2_inttot: 
+            print "No Sphinx models calculated. Aborting statistics plot. "
+            return
         this_grid = self.sortStarGrid()
         plot_filenames = []
         inst = self.instrument
@@ -565,6 +568,7 @@ class UnresoStats(Statistics):
         
         '''
         
+        print self.chi2_inttot
         if self.chi2_inttot.values()[0]:
             styp = 'chi2_inttot'
         else: 
