@@ -7,9 +7,13 @@ The functionality includes:
 * <b>Modeling</b>:
     - Currently works with GASTRoNOoM for gas radiative transfer, and with MCMax for dust radiative transfer
     - Allowing output of one code to be used as input for another
+    - Automatic line selection based on available data and line listing
     - Databases for modeling output and easy parameter space searches
+    - Interaction with a supercomputer clusters built into the databases
+    - Statistical analysis for samples and individual sources, and both resolved and unresolved emission lines
 * <b>Data</b>: 
     - Management of data files associated with radio data, SEDs and spectroscopic data
+    - Fitting routines for resolved emission lines
 
 ### How do I run ComboCode?
 <ol>
@@ -43,24 +47,22 @@ Lastly, ComboCode can be used to its fullest potential when working in tandem wi
 
 ## Installation
 Once the requirements are sorted out, you can get to work with ComboCode. You can download the code to your hard disk right away (or if you intend to submit code for this repository: fork the repo, and clone that -- see Developer's Manual below): 
-* Clone the git repository to create a local copy, located in ~/ComboCode/:
+* Clone the git repository to create a local copy, located in ~/ComboCode/ (or whichever location your prefer):
     - $ cd 
     - $ git clone https://github.com/IvS-KULeuven/ComboCode.git ComboCode
 
-* Copy the contents of the usr.dist/ folder to the usr/ folder. The usr/ folder contains user-specific settings that are not updated with the repository. Any changes made to the structure of those files will come through usr.dist/ and won't affect the usr/ folder, allowing the user to save personal settings before updating usr/ files. 
+* Copy the contents of the usr.dist/ folder to the usr/ folder. The usr/ folder contains user-specific settings that are not updated with the repository. Any changes made to the structure of those files will come through usr.dist/ and won't affect the usr/ folder, allowing the user to save personal settings before updating usr/ files. Note especially usr/Path.dat which contains all the relevant folders for ComboCode.
     - $ cd ~/ComboCode/
     - $ mkdir usr/
     - $ cp usr.dist/* usr/.
 
-* Add ComboCode to the PYTHON\_PATH in your ~/.bash_profile.
+* Add the ComboCode home folder you chose to the PYTHON\_PATH in your ~/.bash_profile.
 
 * Updating your own clone of ComboCode to the most recent version can be done with:
     - $ cd ~/ComboCode/
     - $ git pull
 
-* Lastly, when running ComboCode in conjunction with the radiative-transfer codes listed above, ComboCode assumes that the output will be written to default subfolder in your home folder, e.g. ~/GASTRoNOoM/ and ~/MCMax/, respectively. These folders are the only ones you have create yourself. ComboCode will handle the rest. 
-    - $ mkdir ~/GASTRoNOoM/
-    - $ mkdir ~/MCMax/
+* Lastly, when running ComboCode in conjunction with the radiative-transfer codes listed above, ComboCode will write the output to folders for GASTRoNOoM and MCMax separately. You can choose these locations by adding them to usr/Path.dat.
 
 ## Documentation
 Up-to-date documentation that goes with the package is available on GitHub at:
@@ -73,7 +75,7 @@ If you want to make changes to ComboCode, you should fork the repository to your
 ### Setting up your developer's environment for ComboCode
 * Go to the main IvS-KULeuven/ComboCode.git page and fork the repository to your account. 
 
-* Clone a copy of the code in your account to your local machine (fill in your github user name)
+* Clone a copy of the code in your account to your local machine (fill in your github user name, and change the ComboCode folder to whatever you want for your copy)
     - $ cd 
     - $ git clone https://github.com/YOUR_USERNAME/ComboCode.git ComboCode
 
@@ -86,9 +88,9 @@ If you want to make changes to ComboCode, you should fork the repository to your
     - $ mkdir usr/
     - $ cp usr.dist/* usr/.
 
-* Add ~/ComboCode/ to the PYTHON\_PATH in your ~/.bash_profile.
+* Add the ComboCode home folder to the PYTHON\_PATH in your ~/.bash_profile.
 
-* Tell git that any subfolders in ~/ComboCode/ other than cc/, aux/ and usr.dist/ are to be ignored (including, e.g., usr/ or input/). For this, you can create (or update) the file ~/ComboCode/.git/info/exclude with paths/files to be excluded from any git tracking. An example of such a file for ComboCode is available <a href="http://ster.kuleuven.be/~robinl/cc/exclude"> here</a>. You can update this as you go if more folders or files end up in ~/ComboCode/ that you don't want tracked.
+* Tell git that any subfolders in the ComboCode home folder other than cc/, aux/ and usr.dist/ are to be ignored (including, e.g., usr/ or input/). For this, you can create (or update) the file ~/ComboCode/.git/info/exclude with paths/files to be excluded from any git tracking. An example of such a file for ComboCode is available <a href="http://ster.kuleuven.be/~robinl/cc/exclude"> here</a>. You can update this as you go if more folders or files end up in ~/ComboCode/ that you don't want tracked.
 
 ### Keeping your code up-to-date with the upstream version
 * Now you can keep your master branch up-to-date with the upstream. As long as you never make any changes in your master branch, you can merge upstream/master with origin/master (make sure to be on the master branch):
