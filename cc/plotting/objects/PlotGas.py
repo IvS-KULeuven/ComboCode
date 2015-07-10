@@ -73,8 +73,9 @@ class PlotGas(PlottingSession):
         cc.path.gout = os.path.join(cc.path.gastronoom,self.path)
         self.pacs = pacs
         if self.pacs:
-            DataIO.testFolderExistence(cc.path.gout,'stars',self.star_name,\
-                                       self.plot_id,'PACS_results')
+            fn = os.path.join(cc.path.gout,'stars',self.star_name,\
+                              self.plot_id,'PACS_results')
+            DataIO.testFolderExistence(fn)
         self.spire = spire
         self.sphinx_flux_list = []
 

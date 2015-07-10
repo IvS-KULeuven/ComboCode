@@ -73,7 +73,7 @@ L_STAR=11000                        # Stellar luminosity [Lsol]
 #LOGG=0.0                           # Only relevant if model atmospheres are used for MCMax (STARTYPE=ATMOSPHERE), default is 0.0
 DISTANCE=1300                       # Distance to object [pc]           
 STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody, ATMOSPHERE for a low-resolution model atmosphere spectrum in which case ATM_FILENAME has to be defined, TABLE for a custom file in which case STARTABLE has to be given, otherwise it's ignored)
-#STARTABLE=                         # Only relevant if STARTYPE=TABLE. Two columns - one with wavelength in micron, one with flux in Jy. Has to contain full path. The spectrum is assumed to be taken at the stellar surface, and is converted to intensity.
+#STARTABLE=                         # Only relevant if STARTYPE=TABLE. Two columns - one with wavelength in micron, one with flux in Jy. If the full path is not given, the file is assumed to be in starf in Path.dat. The spectrum is assumed to be taken at the stellar surface, and is converted to intensity.
 #ATM_FILENAME=                      # The filename of the model atmosphere located in cc.path.home/usr/Path.dat (atm keyword)
 
 #F_CONT_63=                         # Include 6.3 monochromatic continuum flux if needed (as observed in SWS for instance). Flux is given in Jy.
