@@ -10,6 +10,7 @@ Author: R. Lombaert
 import os 
 import re
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.tools.io.Database import Database
 from cc.tools.io import Radiat
@@ -17,8 +18,6 @@ from cc.tools.io import Radiat
 
 
 def makeMoleculeFromDb(molec_id,molecule,path_gastronoom='codeSep2010',\
-                       path_combocode=os.path.join(os.path.expanduser('~'),\
-                                                   'ComboCode'),\
                        mline_db=None):
     
     '''
@@ -35,10 +34,6 @@ def makeMoleculeFromDb(molec_id,molecule,path_gastronoom='codeSep2010',\
     
                               (default: codeSep2010)
     @type path_gastronoom: string
-    @keyword path_combocode: the path to the ComboCode home directory
-    
-                             (default: ~/ComboCode/)
-    @type path_combocode: 
     @keyword mline_db: The mline database, which can be passed in case one 
                        wants to reduce overhead. Not required though.
                        
@@ -50,18 +45,19 @@ def makeMoleculeFromDb(molec_id,molecule,path_gastronoom='codeSep2010',\
     
     '''
     
-    filepath = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                            path_gastronoom)
-    if os.path.isfile(os.path.join(filepath,'models',molec_id,\
-                                   'cooling_id.log')):
-        model_id = DataIO.readFile(os.path.join(filepath,'models',molec_id,\
-                                                'cooling_id.log'))[0]
+    #-- Convenience path
+    cc.path.gout = os.path.join(cc.path.gastronoom,path_gastronoom)
+    
+    #-- Retrieve cooling id log
+    cooling_log = os.path.join(cc.path.gout,'models',molec_id,'cooling_id.log')
+    if os.path.isfile(cooling_log):
+        model_id = DataIO.readFile(cooling_log)[0]
     #- ie mline id is the same as model id, the first calced for this id
     else: 
         model_id = molec_id
         
     if mline_db is None:
-        molec_db = Database(os.path.join(filepath,\
+        molec_db = Database(os.path.join(cc.path.gout,\
                                          'GASTRoNOoM_mline_models.db'))
     else:
         molec_db = mline_db
@@ -81,8 +77,7 @@ def makeMoleculeFromDb(molec_id,molecule,path_gastronoom='codeSep2010',\
         if molec_dict.has_key(key):
             del molec_dict[key]
     molec_dict = dict([(k.lower(),v) for k,v in molec_dict.items()])
-    molec = Molecule(molecule=molecule,path_combocode=path_combocode,\
-                     **molec_dict)
+    molec = Molecule(molecule=molecule,**molec_dict)
     molec.setModelId(molec_id)
     return molec
     
@@ -101,8 +96,6 @@ class Molecule():
                  use_collis_radiat_switch=0,dust_to_gas_change_ml_sp=0,\
                  ratio_12c_to_13c=0,ratio_16o_to_17o=0,ratio_16o_to_18o=0,\
                  opr=0,r_outer=0,outer_r_mode='MAMON',abundance_filename=None,\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode'),\
                  change_fraction_filename=None,set_keyword_change_abundance=0,\
                  set_keyword_change_temperature=0,enhance_abundance_factor=0,\
                  new_temperature_filename=None,linelist=0,starfile=''):
@@ -136,10 +129,6 @@ class Molecule():
         
                                  (default: 0)
         @type n_impact_extra: int            
-        @keyword path_combocode: CC home folder
-          
-                                 (default: '/home/robinl/ComboCode')
-        @type path_combocode: string       
         @keyword itera: number of iterations in mline for molecule, LTE 
                         approximation if zero
           
@@ -279,34 +268,19 @@ class Molecule():
         self.nline = int(nline)
         self.n_impact = int(n_impact)
         self.n_impact_extra = int(n_impact_extra)
-        self.path_combocode = path_combocode
         self.molecule_index = DataIO.getInputData(keyword='TYPE_SHORT',\
-                                path=os.path.join(self.path_combocode,'usr'),\
-                                filename='Molecule.dat').index(self.molecule)
-        self.molecule_full = DataIO.getInputData(keyword='MOLEC_TYPE',\
-                                path=os.path.join(self.path_combocode,'usr'),\
-                                filename='Molecule.dat',make_float=0)\
-                             [self.molecule_index]
-        self.molecule_short = DataIO.getInputData(keyword='NAME_SHORT',\
-                                path=os.path.join(self.path_combocode,'usr'),\
-                                filename='Molecule.dat')[self.molecule_index]
-        self.molecule_plot = DataIO.getInputData(keyword='NAME_PLOT',\
-                                path=os.path.join(self.path_combocode,'usr'),\
-                                filename='Molecule.dat')[self.molecule_index]
-        self.spec_indices = DataIO.getInputData(keyword='SPEC_INDICES',\
-                                path=os.path.join(self.path_combocode,'usr'),\
-                                filename='Molecule.dat')[self.molecule_index]
-        self.use_indices_dat = DataIO.getInputData(keyword='USE_INDICES_DAT',\
-                                path=os.path.join(self.path_combocode,'usr'),\
-                                filename='Molecule.dat')[self.molecule_index]
-        if self.use_indices_dat and not linelist:
-             self.indices_index = DataIO.getInputData(start_index=4,\
-                                path=os.path.join(self.path_combocode,'usr'),\
-                                keyword='MOLECULE',filename='Indices.dat')\
-                                .index('_'.join([self.molecule,\
-                                                 str(self.ny_low),\
-                                                 str(self.ny_up),\
-                                                 str(self.nline)]))
+                                                  filename='Molecule.dat')\
+                                                 .index(self.molecule)
+        mdata = ['MOLEC_TYPE','NAME_SHORT','NAME_PLOT',\
+                 'SPEC_INDICES','USE_INDICES_DAT']
+        attrs = ['molecule_full','molecule_short','molecule_plot',\
+                 'spec_indices','use_indices_dat']
+        mfloat = [0,0,0,1,1]
+        for k,a,mf in zip(mdata,attrs,mfloat):
+            setattr(self,a,DataIO.getInputData(keyword=k,make_float=mf,\
+                                               filename='Molecule.dat',\
+                                               rindex=self.molecule_index,))
+        
         self.itera = int(itera)
         #- lte_request may be undefined, but then it would be faulty input, 
         #- where we do want the code to crash... 
@@ -328,16 +302,11 @@ class Molecule():
         self.opr = opr
         self.dust_to_gas_change_ml_sp = float(dust_to_gas_change_ml_sp)
         self.enhance_abundance_factor = float(enhance_abundance_factor)
-        if abundance_filename <> None:
-            self.abundance_filename = os.path.split(abundance_filename)[0] \
-                                        and abundance_filename \
-                                        or os.path.join(os.path.expanduser('~'),\
-                                                        'GASTRoNOoM',\
-                                                        'CustomAbundances',\
-                                                        abundance_filename)
-        #- Mainly for plotting purposes: The relative, multiplicative abundance 
-        #- factor with respect to main isotope is calculated for isotopologue
-        self.abun_factor = self.setAbunFactor() 
+        self.abundance_filename = abundance_filename
+        #-- Mainly for plotting purposes: The relative, multiplicative abundance 
+        #   factor with respect to main isotope (and OPR) is calculated
+        #   This does not take into account enhance_abundance_factor!
+        self.abun_factor = self.getAbunFactor() 
         self.outer_r_mode = outer_r_mode
         if self.outer_r_mode == 'MAMON': self.r_outer = 0
         else: self.r_outer = float(r_outer)
@@ -348,22 +317,24 @@ class Molecule():
         self.new_temperature_filename = new_temperature_filename
         self.__model_id = None
         if not linelist:
-            self.radiat = Radiat.Radiat(molecule=self,\
-                                    use_indices_dat=self.use_indices_dat)
+            if self.use_indices_dat:
+                tag = '_'.join([self.molecule,str(self.ny_low),\
+                                str(self.ny_up),str(self.nline)])
+                i = DataIO.getInputData(start_index=4,keyword='MOLECULE',\
+                                        filename='Indices.dat').index(tag)
+                self.indices_index = i
+            self.radiat = Radiat.Radiat(molecule=self)
             if self.spec_indices:
-                path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM','src',\
-                                    'data')
                 if self.use_indices_dat:
-                    f = DataIO.getInputData(path=os.path.join(self.path_combocode,\
-                                                            'usr'),\
-                                        keyword='INDICES',\
-                                        filename='Indices.dat',\
-                                        start_index=4)[self.indices_index]
-                    filename = os.path.join(path,'indices_backup',f)
+                    f = DataIO.getInputData(path=cc.path.usr,start_index=4,\
+                                            keyword='INDICES',rindex=i,\
+                                            filename='Indices.dat')
+                    filename = os.path.join(cc.path.gdata,'indices_backup',f)
                 else:
-                    filename = os.path.join(path,'%s_indices.dat'%self.molecule)
-                self.radiat_indices = [[int(i) for i in line] 
-                                     for line in DataIO.readFile(filename,' ')]
+                    filename = os.path.join(cc.path.gdata,\
+                                            '%s_indices.dat'%self.molecule)
+                rf = DataIO.readFile(filename,' ')
+                self.radiat_indices = [[int(i) for i in line] for line in rf]
         else:
             self.radiat = None
             self.radiat_indices = None
@@ -538,7 +509,7 @@ class Molecule():
     
 
 
-    def setAbunFactor(self):
+    def getAbunFactor(self):
         
         '''
         Return the abundance factor of the molecule, with respect to its main 
@@ -546,15 +517,14 @@ class Molecule():
         
         '''
         
+        raw_factors = DataIO.getInputData(keyword='ABUN_FACTOR',\
+                                          filename='Molecule.dat',\
+                                          rindex=self.molecule_index)
         factors = [factor == '1' and 1 or float(getattr(self,factor.lower())) 
-                   for factor in DataIO.getInputData(\
-                                        path=os.path.join(self.path_combocode,\
-                                                          'usr'),\
-                                        keyword='ABUN_FACTOR',\
-                                        filename='Molecule.dat')\
-                                 [self.molecule_index].split('*')]
-        if float(self.enhance_abundance_factor): 
-            factors.append(float(self.enhance_abundance_factor))
+                   for factor in raw_factors.split('*')]
+        #-- abun_factor should only take into account isotope/OPR factors
+        #if float(self.enhance_abundance_factor): 
+        #    factors.append(float(self.enhance_abundance_factor))
         total_factor = 1
         while factors:
             total_factor *= factors.pop()

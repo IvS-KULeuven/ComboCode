@@ -11,6 +11,7 @@ from scipy import array
 import scipy
 import os 
 
+import cc.path
 from cc.tools.io import DataIO
 
 
@@ -81,16 +82,15 @@ def waterFraction1StepProfiler(model_id,path_gastronoom,fraction,rfrac):
     
     rfrac = float(rfrac)
     fraction = float(fraction)
-    filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                            path_gastronoom,'models',model_id,\
-                            'coolfgr_all%s.dat'%model_id)
+    filename = os.path.join(cc.path.gastronoom,path_gastronoom,'models',\
+                            model_id,'coolfgr_all%s.dat'%model_id)
     rad = Gastronoom.getGastronoomOutput(filename=filename,keyword='RADIUS',\
                                          return_array=1)
     fraction_profile = scipy.ones(len(rad))
     step_index = scipy.argmin(abs(rad-rfrac))
     fraction_profile[step_index:] = fraction
-    output_filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                   path_gastronoom,'profiles',\
+    output_filename = os.path.join(cc.path.gastronoom,path_gastronoom,\
+                                   'profiles',\
                                    'water_fractions_%s_%.2f_r%.3e.dat'\
                                    %(model_id,fraction,rfrac))
     DataIO.writeCols(output_filename,[rad,fraction_profile])

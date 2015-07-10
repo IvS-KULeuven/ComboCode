@@ -12,6 +12,7 @@ from scipy.integrate import trapz
 from scipy import average, argmax
 import math
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.data import Data
 
@@ -83,8 +84,7 @@ class ColumnDensity(object):
         
         dens = self.star.getDustDensity()
         temp = self.star.getDustTemperature()
-        compf = os.path.join(os.path.expanduser('~'),'MCMax',\
-                             self.star.path_mcmax,'models',\
+        compf = os.path.join(cc.path.mcmax,self.star.path_mcmax,'models',\
                              self.star['LAST_MCMAX_MODEL'],'composition.dat')
         comp = DataIO.readCols(compf)
         self.rad = comp.pop(0)*self.au

@@ -12,6 +12,7 @@ Author: R. Lombaert
 
 import os 
 
+import cc.path
 from cc.tools.io import DataIO
 
 
@@ -23,9 +24,7 @@ class Radiat():
     
     '''
     
-    def __init__(self,molecule,use_indices_dat=0,\
-                 path=os.path.join(os.path.expanduser('~'),'GASTRoNOoM','src',\
-                                   'data')):
+    def __init__(self,molecule):
         
         '''
         Initializing an instance of the Radiat class.
@@ -34,31 +33,19 @@ class Radiat():
                          is loaded.
         @type molecule: Molecule()
         
-        @keyword use_indices_dat: If True, get the radiat filename from 
-                                  ~/ComboCode/usr/Indices.dat
-                                        
-                                  (default: 0)
-        @type use_indices_dat: bool
-        @keyword path: The path where the radiat file can be found. Uses 
-                       radiat_backup appended to the path in case 
-                       use_indices_dat is True.
-                            
-                       (default: ~/GASTRoNOoM/src/data/)
-        @type path: string
-        
         '''
         
         self.molecule = molecule
-        self.path = path
-        if use_indices_dat:
-            f = DataIO.getInputData(path=os.path.join(\
-                                        self.molecule.path_combocode,'usr'),\
-                                  keyword='RADIAT',filename='Indices.dat',\
-                                  start_index=4)[self.molecule.indices_index]
-            self.filename = os.path.join(self.path,'radiat_backup',f)
+        
+        if self.molecule.use_indices_dat:
+            fn = DataIO.getInputData(path=cc.path.usr,keyword='RADIAT',\
+                                     filename='Indices.dat',start_index=4,\
+                                     rindex=self.molecule.indices_index)
+            self.filename = os.path.join(cc.path.gdata,'radiat_backup',fn)
         else:
-            self.filename = os.path.join(self.path,\
+            self.filename = os.path.join(cc.path.gdata,\
                                         '%s_radiat.dat'%self.molecule.molecule)
+            
         self.c = 2.99792458e10          #in cm/s
         self.__read()
         

@@ -19,6 +19,7 @@ import types
 
 from ivs.sigproc import filtering
 
+import cc.path
 from cc.data import LPTools
 from cc.modeling.objects import Molecule 
 from cc.tools.io import Database, DataIO
@@ -246,8 +247,7 @@ def updateLineSpec(trans_list):
         if not ('HIFI' in telescope):
             print 'Warning! Telescope beam efficiencies for %s'%telescope + \
                   ' are added arbitrarily and thus are not the correct values.'
-        old_spec = DataIO.readFile(os.path.join(os.path.expanduser('~'),\
-                                  'GASTRoNOoM','src','data',telescope+'.spec'))
+        old_spec = DataIO.readFile(os.path.join(cc.path.gdata,telescope+'.spec'))
         line_spec_list = [line 
                           for line in old_spec 
                           if line.find('LINE_SPEC') >-1 and line[0] != '#']
@@ -288,27 +288,21 @@ def updateLineSpec(trans_list):
         except ValueError:
             new_spec = old_spec + new_lsl
 
-        DataIO.writeFile(os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                      'src','data',telescope+'.spec'),\
+        DataIO.writeFile(os.path.join(cc.path.gdata,telescope+'.spec'),\
                          new_spec+['\n######################################'])
-
-
-
  
 
-def makeTransition(trans,star=None,def_molecs=None,\
-                   path_combocode=os.path.join(os.path.expanduser('~'),\
-                                               'ComboCode')):
+def makeTransition(trans,star=None,def_molecs=None):
     
     '''
     Create a Transition instance based on a Star object and a standard CC input 
     line, with 12 entries in a list. This method assumes the Transition 
     definition has been screened by DataIO.checkEntryInfo. If the 12th entry is
-    not an integer, n_quad is taken from the Star()object if available, and 
+    not an integer, n_quad is taken from the Star() object if available, and 
     otherwise set to 100.
     
     If a star object is not given, the method creates Molecule() objects itself
-    For now only 12C16O, 1H1H16O and p1H1H16O are possible.
+    For now only 12C16O, 13C16O, 1H1H16O and p1H1H16O are possible.
     
     @param trans: the input line with 12 entries, the first being the molecule,
                   followed by all 11 CC input parameters for a transition. It 
@@ -329,33 +323,27 @@ def makeTransition(trans,star=None,def_molecs=None,\
                          
                          (default: None)
     @type def_molecs: dict(string: Molecule())
-    @keyword path_combocode: CC home folder
-          
-                             (default: '/home/robinl/ComboCode')
-    @type path_combocode: string       
-        
+
     @return: The transition object is returned with all info included
     @rtype: Transition()
     
     '''
     
+    #-- The GASTRoNOoM syntax, with long molecule name (always includes a '.')
     if trans[0].find('.') != -1:
-        path = os.path.join(path_combocode,'usr')
-        imolec = DataIO.getInputData(keyword='MOLEC_TYPE',path=path,\
+        imolec = DataIO.getInputData(keyword='MOLEC_TYPE',\
                                      filename='Molecule.dat',\
                                      make_float=0).index(trans[0])
-        molec_short = DataIO.getInputData(keyword='TYPE_SHORT',path=path,\
+        molec_short = DataIO.getInputData(keyword='TYPE_SHORT',\
                                           filename='Molecule.dat')[imolec]
     else:
         molec_short = trans[0]
 
     if star is None and def_molecs is None: 
-        def_molecs = {'12C16O':Molecule.Molecule('12C16O',61,61,240,\
-                                               path_combocode=path_combocode),\
-                      '1H1H16O':Molecule.Molecule('1H1H16O',39,90,1157,\
-                                               path_combocode=path_combocode),\
-                      'p1H1H16O':Molecule.Molecule('p1H1H16O',32,90,1029,\
-                                               path_combocode=path_combocode)}
+        def_molecs = {'12C16O':Molecule.Molecule('12C16O',61,61,240),\
+                      '13C16O':Molecule.Molecule('13C16O',61,61,240),\
+                      '1H1H16O':Molecule.Molecule('1H1H16O',39,90,1157),\
+                      'p1H1H16O':Molecule.Molecule('p1H1H16O',32,90,1029)}
         molec = def_molecs.get(molec_short,None)
         path_gastronoom = None
         umis = 0
@@ -366,7 +354,6 @@ def makeTransition(trans,star=None,def_molecs=None,\
     else:
         molec = star.getMolecule(molec_short)
         umis = star['USE_MASER_IN_SPHINX']
-        path_combocode = star.path_combocode
         path_gastronoom = star.path_gastronoom
     
     n_quad = None
@@ -388,70 +375,22 @@ def makeTransition(trans,star=None,def_molecs=None,\
                           kalow=int(trans[7]),kclow=int(trans[8]),\
                           telescope=trans[9],offset=float(trans[10]),\
                           n_quad=n_quad,use_maser_in_sphinx=umis,\
-                          path_combocode=path_combocode,\
                           path_gastronoom=path_gastronoom)
     else:
         return None    
 
 
 
-def makeTransitionsFromTransList(filename,star=None,\
-                                 path_combocode=os.path.join(os.path\
-                                            .expanduser('~'),'ComboCode')):
-    
-    '''
-    Make Transition objects for the transitions listed in a line list file,
-    used by CC. 
-    
-    The syntax is the same as the input Transition lines in a CC inputfile.
-    
-    @param filename: The filename to the linelist
-    @type filename: string
-    
-    @keyword star: The star object providing basic info. Not required, in which
-                   case assumptions concerning the Molecule() objects are made.
-    
-                   (default: None)
-    @type star: Star()
-    @keyword path_combocode: The CC home folder
-    
-                             (default: ~/ComboCode/)
-    @type path_combocode: string
-    
-    @return: The Transitions in the file are returned in object form.
-    @rtype: list[Transition]
-    
-    '''
-    
-    def_molecs = {'12C16O':Molecule.Molecule('12C16O',61,61,240,\
-                                             path_combocode=path_combocode),\
-                  '13C16O':Molecule.Molecule('13C16O',61,61,240,\
-                                             path_combocode=path_combocode),\
-                  '1H1H16O':Molecule.Molecule('1H1H16O',39,90,1157,\
-                                              path_combocode=path_combocode),\
-                  'p1H1H16O':Molecule.Molecule('p1H1H16O',32,90,1029,\
-                                               path_combocode=path_combocode)}
-    trl = DataIO.readDict(filename,multi_keys=['TRANSITION'])
-    n_entry = len(trl['TRANSITION'][0].split())
-    trl_sorted = DataIO.checkEntryInfo(trl['TRANSITION'],n_entry,'TRANSITION')
-    trans = [makeTransition(trans=t,def_molecs=def_molecs,star=star,\
-                            path_combocode=path_combocode) 
-             for t in trl_sorted]
-    return trans
-
-
 def getModelIds(filepath):
     
     '''
-    Return the modelids for a given model folder, as well as path_gastronoom
-    and the left-over part of the file path.
+    Return the modelids for a given model folder, as well as path_gastronoom.    
     
     @param filepath: The path to the model folder.
     @type filepath: str
     
-    @return: the 3 ids, the path_gastronoom and the left over filepath are 
-             returned
-    @rtype: (model_id,molec_id,trans_id,path_gastronoom,filepath)
+    @return: the 3 ids and the path_gastronoom are returned
+    @rtype: (model_id,molec_id,trans_id,path_gastronoom)
     
     '''
     
@@ -460,19 +399,18 @@ def getModelIds(filepath):
     #-- clip 'models'
     filepath = os.path.split(filepath)[0]
     #-- clip path_gastronoom and save it
-    filepath,path_gastronoom = os.path.split(filepath)
+    path_gastronoom = os.path.split(filepath)[1]
     
-    if os.path.isfile(os.path.join(filepath,path_gastronoom,'models',trans_id,\
-                                   'cooling_id.log')):
-        model_id = DataIO.readFile(os.path.join(filepath,path_gastronoom,\
-                                                'models',trans_id,\
-                                                'cooling_id.log'))[0]
+    #-- Convenience path
+    cc.path.gout = os.path.join(cc.path.gastronoom,path_gastronoom)
+    
+    cooling_log = os.path.join(cc.path.gout,'models',trans_id,'cooling_id.log')
+    if os.path.isfile(cooling_log):
+        model_id = DataIO.readFile(cooling_log)[0]
         #-- If an mline_id.log exists, a cooling_id.log will always exist also
-        if os.path.isfile(os.path.join(filepath,path_gastronoom,'models',\
-                                       trans_id,'mline_id.log')):
-            molec_id = DataIO.readFile(os.path.join(filepath,path_gastronoom,\
-                                                    'models',trans_id,\
-                                                    'mline_id.log'))[0]
+        mline_log = os.path.join(cc.path.gout,'models',trans_id,'mline_id.log')
+        if os.path.isfile(mline_log):
+            molec_id = DataIO.readFile(mline_log)[0]
         #-- ie trans id is the same as molec id, first trans calced for id
         else: 
             molec_id = trans_id
@@ -481,15 +419,12 @@ def getModelIds(filepath):
         model_id = trans_id
         molec_id = trans_id
     
-    return (model_id,molec_id,trans_id,path_gastronoom,filepath)
+    return (model_id,molec_id,trans_id,path_gastronoom)
 
 
 
-def makeTransitionFromSphinx(filename,\
-                             path_combocode=os.path.join(os.path\
-                                                .expanduser('~'),'ComboCode'),\
-                             use_maser_in_sphinx=0,pull_keys_from_sphdb=1,\
-                             mline_db=None):
+def makeTransitionFromSphinx(filename,use_maser_in_sphinx=0,\
+                             pull_keys_from_sphdb=1,mline_db=None):
     '''
     Make a Transition() based on the filename of a Sphinx file.
     
@@ -501,10 +436,6 @@ def makeTransitionFromSphinx(filename,\
     @param filename: The sphinx file name, including path
     @type filename: string
     
-    @keyword path_combocode: The CC home folder
-    
-                             (default: ~/ComboCode/)
-    @type path_combocode: string
     @keyword pull_keys_from_sphdb: Pull keywords from the sphinx database
     
                                    (default: 1)
@@ -539,7 +470,7 @@ def makeTransitionFromSphinx(filename,\
                       'filename, needed to determine the name of the ' + \
                       'database.')
     
-    model_id,molec_id,trans_id,path_gastronoom,filepath = getModelIds(filepath)
+    model_id,molec_id,trans_id,path_gastronoom = getModelIds(filepath)
     
     #-- Split the filename in bits that can be used as input for Transition()
     file_components = fn.rstrip('.dat').split('_')[2:]
@@ -548,7 +479,6 @@ def makeTransitionFromSphinx(filename,\
     #-- Make the molecule
     molec = Molecule.makeMoleculeFromDb(molecule=molec_name,molec_id=molec_id,\
                                         path_gastronoom=path_gastronoom,\
-                                        path_combocode=path_combocode,\
                                         mline_db=mline_db)
     
     #-- If no entry available in the mline database, return None
@@ -574,7 +504,6 @@ def makeTransitionFromSphinx(filename,\
         
     #-- Make the transition object
     trans = Transition(molecule=molec,telescope=telescope,\
-                       path_combocode=path_combocode,\
                        path_gastronoom=path_gastronoom,**numbers)
     
     #-- Set the model id and return
@@ -582,8 +511,9 @@ def makeTransitionFromSphinx(filename,\
     
     #-- If keys are required to be pulled from sph database, do that now
     if pull_keys_from_sphdb:
-        trans_db = Database.Database(os.path.join(filepath,path_gastronoom,\
-                                              'GASTRoNOoM_sphinx_models.db'))
+        trans_db = Database.Database(os.path.join(cc.path.gastronoom,\
+                                                  path_gastronoom,\
+                                                'GASTRoNOoM_sphinx_models.db'))
         trans_dict = trans_db[model_id][molec_id][trans_id][str(trans)].copy()
         [setattr(trans,k.lower(),v) for k,v in trans_dict.items()
                                     if k != 'TRANSITION']
@@ -614,11 +544,12 @@ def sphinxDbRecovery(path_gastronoom,use_maser_in_sphinx=0):
     
     '''
 
-    path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',path_gastronoom)
+    #-- Convenience path
+    cc.path.gout = os.path.join(cc.path.gastronoom,path_gastronoom)
     umis = int(use_maser_in_sphinx)
     
     #-- Make a backup of the existing sphinx db if it exists.
-    sph_db_path = os.path.join(path,'GASTRoNOoM_sphinx_models.db')
+    sph_db_path = os.path.join(cc.path.gout,'GASTRoNOoM_sphinx_models.db')
     if os.path.isfile(sph_db_path):
         i = 0
         backup_file =  '%s_backupSphDbRetrieval_%i'%(sph_db_path,i)
@@ -628,17 +559,19 @@ def sphinxDbRecovery(path_gastronoom,use_maser_in_sphinx=0):
         subprocess.call(['mv %s %s'%(sph_db_path,backup_file)],shell=True)
     
     #-- Make a list of all sph2 files that are present in path_gastronoom
-    all_sph2 = glob(os.path.join(path,'models','*','sph2*'))
+    all_sph2 = glob(os.path.join(cc.path.gout,'models','*','sph2*'))
     
     #-- Read the mline_db to decrease overhead
-    mline_db = Database.Database(os.path.join(path,'GASTRoNOoM_mline_models.db'))
-    trans_db = Database.Database(os.path.join(path,'GASTRoNOoM_sphinx_models.db'))
+    mline_db = Database.Database(os.path.join(cc.path.gout,\
+                                              'GASTRoNOoM_mline_models.db'))
+    trans_db = Database.Database(os.path.join(cc.path.gout,\
+                                              'GASTRoNOoM_sphinx_models.db'))
     #-- for all sph2 files, extract all id's, make a transition and add to db
     for i,sph2 in enumerate(all_sph2):
         if i%1000 == 0:
             print('Saving sphinx result %i, with filename %s.'%(i,sph2))
         fp,filename = os.path.split(sph2)
-        model_id,molec_id,trans_id,pg,fp = getModelIds(fp)
+        model_id,molec_id,trans_id,pg = getModelIds(fp)
         trans = makeTransitionFromSphinx(filename=sph2,\
                                          use_maser_in_sphinx=umis,\
                                          pull_keys_from_sphdb=0,\
@@ -668,7 +601,7 @@ def sphinxDbRecovery(path_gastronoom,use_maser_in_sphinx=0):
     
     
     
-def makeTransitionsFromRadiat(molec,telescope,ll_min,ll_max,ll_unit='GHz',\
+def makeTransitionsFromRadiat(molec,telescope,ls_min,ls_max,ls_unit='GHz',\
                               n_quad=100,offset=0.0,use_maser_in_sphinx=0,\
                               path_gastronoom=None,no_vib=0):
     
@@ -682,16 +615,16 @@ def makeTransitionsFromRadiat(molec,telescope,ll_min,ll_max,ll_unit='GHz',\
     @type molec: Molecule()
     @param telescope: The telescope for which the Transition() list is made.
     @type telescope: string
-    @param ll_min: The minimum allowed wavelength/frequency for the transitions
-    @type ll_min: float
-    @param ll_max: The maximum allowed wavelength/frequency for the transitions
-    @type ll_max: float
+    @param ls_min: The minimum allowed wavelength/frequency for the transitions
+    @type ls_min: float
+    @param ls_max: The maximum allowed wavelength/frequency for the transitions
+    @type ls_max: float
     
-    @keyword ll_unit: The unit of the wavelength/frequency range. Can be: GHz, 
+    @keyword ls_unit: The unit of the wavelength/frequency range. Can be: GHz, 
                       MHz, Hz, MICRON, MM, CM, M
     
                       (default: 'GHz')
-    @type ll_unit: string
+    @type ls_unit: string
     @keyword n_quad: The N_QUAD value for GASTRoNOoM sphinx calculations. 
     
                      (default: 100)
@@ -719,7 +652,7 @@ def makeTransitionsFromRadiat(molec,telescope,ll_min,ll_max,ll_unit='GHz',\
     '''
     
     radiat = molec.radiat
-    wave = radiat.getFrequency(unit=ll_unit)
+    wave = radiat.getFrequency(unit=ls_unit)
     low = radiat.getLowerStates()
     up = radiat.getUpperStates()
     if not molec.spec_indices:
@@ -737,16 +670,15 @@ def makeTransitionsFromRadiat(molec,telescope,ll_min,ll_max,ll_unit='GHz',\
                          jlow=int(indices[l-1][2]),\
                          offset=offset,n_quad=n_quad,\
                          use_maser_in_sphinx=use_maser_in_sphinx,\
-                         path_combocode=molec.path_combocode,\
                          path_gastronoom=path_gastronoom)
               for l,u,w in zip(low,up,wave)
-              if w > ll_min and w < ll_max]
+              if w > ls_min and w < ls_max]
     else:
         indices = molec.radiat_indices
         quantum = ['v','j','ka','kc']
         nl = [] 
         for l,u,w in zip(low,up,wave):
-            if w > ll_min and w < ll_max:
+            if w > ls_min and w < ls_max:
                 quantum_dict = dict()
                 #- some molecs only have 2 or 3 quantum numbers
                 for i in xrange(1,len(indices[0])):    
@@ -756,7 +688,6 @@ def makeTransitionsFromRadiat(molec,telescope,ll_min,ll_max,ll_unit='GHz',\
                                             int(indices[l-1][i])
                 nl.append(Transition(molecule=molec,n_quad=n_quad,\
                                      telescope=telescope,offset=offset,\
-                                     path_combocode=molec.path_combocode,\
                                      use_maser_in_sphinx=use_maser_in_sphinx,\
                                      path_gastronoom=path_gastronoom,\
                                      **quantum_dict))
@@ -808,9 +739,7 @@ class Transition():
                  nup=None,vlow=0,jlow=0,kalow=0,kclow=0,nlow=None,offset=0.0,\
                  frequency=None,exc_energy=None,int_intensity_log=None,\
                  n_quad=100,use_maser_in_sphinx=0,\
-                 vibrational='',path_gastronoom=None,datafiles=None,\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode')):
+                 vibrational='',path_gastronoom=None,datafiles=None):
         
         '''
         
@@ -874,10 +803,6 @@ class Transition():
                          
                          (default: 0.0)
         @type offset: float
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '~/ComboCode/')
-        @type path_combocode: string
         @keyword n_quad: Number of impact par. in quadrature int(Inu pdp).
                          Relevant for the ray-tracing of the line profiles
         
@@ -956,7 +881,6 @@ class Transition():
         self.kalow = int(kalow)
         self.kclow = int(kclow)
         self.offset = float(offset)
-        self.path_combocode = path_combocode
         self.n_quad = int(n_quad)
         self.use_maser_in_sphinx = int(use_maser_in_sphinx)
         self.__model_id = None
@@ -970,6 +894,8 @@ class Transition():
         self.vibrational = vibrational
         self.sphinx = None
         self.path_gastronoom = path_gastronoom
+        #-- Convenience path
+        cc.path.gout = os.path.join(cc.path.gastronoom,self.path_gastronoom)
         self.unresolved = 'PACS' in self.telescope or 'SPIRE' in self.telescope
         if self.unresolved:
             self.datafiles = None
@@ -1147,7 +1073,7 @@ class Transition():
         
         #- get telescope diameter in cm
         if 'PACS' in self.telescope.upper():
-            data = DataIO.readCols(os.path.join(self.path_combocode,'aux',\
+            data = DataIO.readCols(os.path.join(cc.path.aux,\
                                                 'Pacs_beamsize_v4.dat'))
             wav = data[0]/10000.
             beam = data[1]
@@ -1166,8 +1092,7 @@ class Transition():
                 else:
                     return Interpol.linInterpol(wav[-2:],beam[-2:],\
                                                 self.wavelength)
-        filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM','src',\
-                                'data',self.telescope+'.spec')
+        filename = os.path.join(cc.path.gdata,self.telescope+'.spec')
         telescope_diameter = [float(line.split('=')[1][0:line.split('=')[1]\
                                     .index('!')].strip())
                               for line in DataIO.readFile(filename)
@@ -1622,15 +1547,13 @@ class Transition():
          
         if self.sphinx is None and self.getModelId() <> None \
                 and self.getModelId() != '':
-            filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                    self.path_gastronoom,'models',\
-                                    self.getModelId(),\
+            filename = os.path.join(cc.path.gout,'models',self.getModelId(),\
                                     self.makeSphinxFilename())
             self.sphinx = SphinxReader.SphinxReader(filename)
      
      
      
-    def addDatafile(self,datafile,path=None):
+    def addDatafile(self,datafile):
         
         '''
         Add a datafile name/multiple filenames for this transition. 
@@ -1642,14 +1565,6 @@ class Transition():
         
         @param datafile: the full filename, or multiple filenames
         @type datafile: string/list
-        
-        @keyword path: The path to the data file. Only used if the path is 
-                       undefined in the filename. Typically this is the case, 
-                       but this keyword allows more elegant handling of the 
-                       radio data database.
-                       
-                       (default: None)
-        @type path: str
         
         '''
         
@@ -1665,16 +1580,11 @@ class Transition():
         if type(datafile) is types.StringType:
             datafile = [datafile]
             
-        #-- Check if the file path is defined in all cases. If not, add path 
-        #   keyword to it. If path keyword is not available, cancel adding 
-        #   data files: a path is required!
+        #-- Check if the file path is defined in all cases. If not, add radio
+        #   data folder to it
         for idf,df in enumerate(datafile): 
-            if path and not os.path.split(df)[0]:
-                datafile[idf] = os.path.join(path,df)
-            elif not os.path.split(df)[0]:
-                print('WARNING! No file path given for datafiles when adding'+\
-                      ' data to a Transition() object. Returning.')
-                return
+            if not os.path.split(df)[0]:
+                datafile[idf] = os.path.join(cc.path.dradio,df)
         
         #-- Add the datafiles to the Transition() object.
         if self.datafiles is None:
@@ -1700,13 +1610,10 @@ class Transition():
             self.lpdata = []
             if self.datafiles <> None:
                 for df in self.datafiles:
-                    info_path = os.path.join(self.path_combocode,'usr')
                     if df[-5:] == '.fits':
-                        lprof = FitsReader.FitsReader(filename=df,\
-                                                      info_path=info_path)
+                        lprof = FitsReader.FitsReader(filename=df)
                     else:
-                        lprof = TxtReader.TxtReader(filename=df,\
-                                                    info_path=info_path)
+                        lprof = TxtReader.TxtReader(filename=df)
                     self.lpdata.append(lprof)
             else:
                 print 'No data found for %s. Setting v_lsr to 0.0'%str(self)+\
@@ -1788,8 +1695,7 @@ class Transition():
         self.readData()
         if self.lpdata and self.fittedlprof is None:
             self.fittedlprof = \
-              LPTools.fitLP(lprof=self.lpdata[0],\
-                            info_path=os.path.join(self.path_combocode,'usr'))
+              LPTools.fitLP(lprof=self.lpdata[0])
             vexp = self.fittedlprof['vexp']
             self.lpdata[0].setNoise(vexp)
             
@@ -2137,11 +2043,9 @@ class Transition():
         if self.fittedlprof is None:
             return None
         
-        info_path = os.path.join(self.path_combocode,'usr')
         #-- Do not use the best vlsr for the data peak determination. This 
         #   should be model independent.
-        return LPTools.getPeakLPData(lprof=self.lpdata[0],\
-                                     info_path=info_path)
+        return LPTools.getPeakLPData(lprof=self.lpdata[0])
     
     
     

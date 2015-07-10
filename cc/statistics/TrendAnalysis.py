@@ -7,6 +7,7 @@ Author: R. Lombaert
 
 """
 
+import cc.path
 from cc.modeling.objects import Transition
 from cc.plotting import Plotting2
 import os
@@ -19,7 +20,7 @@ from matplotlib import pyplot as plt
 
 
 def makeDiagnosticPlot(sg,molec,scaling=[],escaling=[],combine_water=0,\
-                       edists=[]):
+                       edists=[],pfn_path=''):
     
     '''
     Make a diagnostic plot for a series of stars, where Imb for transitions of 
@@ -59,6 +60,11 @@ def makeDiagnosticPlot(sg,molec,scaling=[],escaling=[],combine_water=0,\
     
                        (default: [])
     @type escaling: list[list]
+    @keyword pfn_path: Output folder for diagnostic plots. Default if to be 
+                       stored locally.
+    
+                       (default: '')
+    @type pfn_path: str
     
     '''
     
@@ -140,9 +146,7 @@ def makeDiagnosticPlot(sg,molec,scaling=[],escaling=[],combine_water=0,\
     for tlist in [allints_co15,allints_co30,allerrs_co15,allwaves,\
                   allerrs_co30,allints,allerrors,allenergies,sg]:
         tlist = array(tlist)[isort]
-    
-    pfn_path = os.path.join(os.path.expanduser('~'),'Projects','Cstars_h2o',\
-                            'DiagnosticPlots')
+
     linestyles = ['o-','o-','o-','o-','o-','o-','o-',\
                   '--x','--x','--x','--x','--x','--x','--x',\
                   '-.s','-.s','-.s','-.s','-.s','-.s','-.s']
@@ -234,7 +238,7 @@ def makeDiagnosticPlot(sg,molec,scaling=[],escaling=[],combine_water=0,\
     
 def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                   emdot=[],exparlog=0,eyparlog=0,edists=[],mode='dint',\
-                  n_data=0,extra_mcon=[],extra_dcon=[],cfg='',\
+                  n_data=0,extra_mcon=[],extra_dcon=[],cfg='',pfn_path='',\
                   add_linear_fit=0,alf_xmin=None,alf_xmax=None,efcont63=[],\
                   **kwargs):
     
@@ -370,6 +374,11 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                              
                              (default: 0)
     @type add_linear_fit: bool
+    @keyword pfn_path: Output folder for diagnostic plots. Default if to be 
+                       stored locally.
+    
+                       (default: '')
+    @type pfn_path: str
     @keyword alf_xmin: The minimum x value for the linear fit plot, if 
                        requested. (This is not the cut off value for the 
                        fitting routine itself!) Has to be given if a linear fit
@@ -563,8 +572,6 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
     if type(ypar) is types.StringType:
         yratios = []
     ratios = [xratios,yratios]
-    pfn_path = os.path.join(os.path.expanduser('~'),'Projects','Cstars_h2o',\
-                            'DiagnosticPlots')
     sg_dists = array([s['DISTANCE'] for s in sg])
     sg_mdot = array([s['MDOT_GAS'] for s in sg])
         
@@ -787,6 +794,8 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
     
     #-- Set a number of parameters for the figures.
     cfg_dict = Plotting2.readCfg(cfg)
+    if cfg_dict.has_key('pfn_path'):
+        pfn_path = cfg_dict['pfn_path']
     extra_pars = dict()
     #-- Set the title, depending on if LS are requested vs pars.
     pt = ''

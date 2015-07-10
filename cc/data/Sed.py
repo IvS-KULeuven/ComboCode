@@ -20,16 +20,13 @@ import operator
 from ivs.sed import extinctionmodels as em 
 from ivs.sed import builder
 
+import cc.path
 from cc.tools.numerical import Interpol
 from cc.tools.io import DataIO
 from cc.plotting import Plotting2
 
 
-def buildPhotometry(star_name,fn='Photometric_IvS',psuffix='Raw/IvS_SEDTool/',\
-                    remove=[],\
-                    dp=os.path.join(os.path.expanduser('~'),'Data','SED'),\
-                    cc_path=os.path.join(os.path.expanduser('~'),'ComboCode',\
-                                         'usr')):
+def buildPhotometry(star_name,fn='Photometric_IvS',remove=[]):
     '''
     Retrieve the photometry of a star through the IvS repo's SED builder. 
     
@@ -43,37 +40,21 @@ def buildPhotometry(star_name,fn='Photometric_IvS',psuffix='Raw/IvS_SEDTool/',\
     
                  (default: 'Photometric_IvS')
     @type fn: str
-    @keyword psuffix: path suffix for dp where the Raw photometry as downloaded
-                      by the SED tool is saved. To re-download, delete the file
-                      associated with the star.                      
-                  
-                      (default: 'Raw/IvS_SEDTool/')
-    @type psuffix: str
     @keyword remove: Photometry to be removed from the output file. 
                      e.g. ['WISE','DENIS'] 
     
                      (default: [])
     @type remove: list[str]
     
-    @keyword dp: Location for saving the clean photometry file used as input
-                 for CC. 
-    
-                 (default: ~/Data/SED/)
-    @type dp: str
-    @keyword cc_path: path to the combocode folder
-        
-                      (default: ~/ComboCode/usr/)
-    @type cc_path: string
-    
     '''
     
     #-- Get the SIMBAD name of the star
-    si = DataIO.getInputData(cc_path,filename='Star.dat').index(star_name)
-    sn_sim = DataIO.getInputData(path=cc_path,keyword='STAR_NAME_PLOTS')[si]
+    si = DataIO.getInputData(filename='Star.dat').index(star_name)
+    sn_sim = DataIO.getInputData(keyword='STAR_NAME_PLOTS')[si]
     sn_sim = sn_sim.replace('$','').replace('\\','')
     
     #-- Define the outputfolder of the Raw data
-    ofn_raw = os.path.join(dp,psuffix,'_'.join([star_name,'phot.txt']))
+    ofn_raw = os.path.join(cc.path.dphot,'_'.join([star_name,'phot.txt']))
     
     ## Retrieve p = builder.SED()
     star = builder.SED(sn_sim,photfile=ofn_raw)
@@ -107,7 +88,7 @@ def buildPhotometry(star_name,fn='Photometric_IvS',psuffix='Raw/IvS_SEDTool/',\
     #-- Sort the data on wavelength
     data.sort()
     
-    ofn_final = os.path.join(dp,'_'.join([fn,star_name+'.dat']))
+    ofn_final = os.path.join(cc.path.dsed,'_'.join([fn,star_name+'.dat']))
     hdr = 'Photometry extracted with ivs.sed.builder. \nWave (micron) Flux '+\
           '(Jy) Error Flux (Jy) Photband Bibcode Comments'
     np.savetxt(ofn_final,data,fmt=['%.8e']*3+['%s']*3,header=hdr)
@@ -141,10 +122,8 @@ class Sed(object):
     
     '''
     
-    def __init__(self,star_name,path,distance=None,plot_extrapol_extinction=0,\
-                 remove=[],psuffix='Raw/IvS_SEDTool/',\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode')):
+    def __init__(self,star_name,distance=None,plot_extrapol_extinction=0,\
+                 remove=[]):
         
         ''' 
         Initializing an Sed instance. 
@@ -153,8 +132,6 @@ class Sed(object):
         
         @param star_name: The star name of the object
         @type star_name: string
-        @param path: The path to the folder containing the SED data
-        @type path: string
         
         @keyword distance: The distance to the star. If not None, the K-band
                            absorption coefficient is taken from the Marshall
@@ -167,15 +144,6 @@ class Sed(object):
     
                          (default: [])
         @type remove: list[str]
-        @keyword psuffix: path suffix for dp where the Raw photometry as downloaded
-                          by the SED tool is saved. 
-                  
-                          (default: 'Raw/IvS_SEDTool/')
-        @type psuffix: str
-        @keyword path_combocode: path to the combocode folder
-        
-                               (default: ~/ComboCode/)
-        @type path_combocode: string
         @keyword plot_extrapol_extinction: Plot and show the result of the 
                                            extrapolated interstellar extinction
                                            law by chiar and tielens (2006)
@@ -186,15 +154,13 @@ class Sed(object):
         '''
         
         self.star_name = star_name
-        self.path = path
         self.distance = distance 
-        self.path_combocode = path_combocode
         self.ak = None
         self.plot_extrapol_extinction = plot_extrapol_extinction
         self.data = dict()
         self.data_raw = dict()
         self.setStarPars()
-        self.setData(remove=remove,psuffix=psuffix)
+        self.setData(remove=remove)
         self.readData()
         self.dereddenData()
 
@@ -207,11 +173,9 @@ class Sed(object):
         
         """
         
-        cc_path = os.path.join(self.path_combocode,'usr')
-        si = DataIO.getInputData(cc_path).index(self.star_name)
-        self.star_index = si
-        ll = DataIO.getInputData(path=cc_path,keyword='LONG')[si]
-        bb = DataIO.getInputData(path=cc_path,keyword='LAT')[si]
+        self.star_index = DataIO.getInputData().index(self.star_name)
+        ll = DataIO.getInputData(keyword='LONG',rindex=self.star_index)
+        bb = DataIO.getInputData(keyword='LAT',rindex=self.star_index)
         if self.distance <> None:
             self.ak = em.findext_marshall(ll=ll,bb=bb,distance=self.distance,\
                                           norm='Ak')
@@ -219,10 +183,9 @@ class Sed(object):
                 self.ak = em.findext_drimmel(lng=ll,lat=bb,norm='Ak',\
                                              distance=self.distance)
         if self.ak is None:
-            self.ak = float(DataIO.getInputData(path=cc_path,\
-                                                keyword='A_K')[si])
-        snp = DataIO.getInputData(path=cc_path,keyword='STAR_NAME_PLOTS',\
-                                  remove_underscore=1)[si]
+            self.ak = DataIO.getInputData(keyword='A_K',rindex=self.star_index)
+        snp = DataIO.getInputData(keyword='STAR_NAME_PLOTS',\
+                                  remove_underscore=1,rindex=self.star_index)
         self.star_name_plots = snp    
         if (abs(ll) < 5.0 or ll > 355.0) and abs(bb) < 5.0:
             self.gal_position = 'GC'
@@ -245,19 +208,17 @@ class Sed(object):
         
         '''
         
-        cc_path = os.path.join(self.path_combocode,'usr')
-        data_types = DataIO.getInputData(path=cc_path,keyword='DATA_TYPES',\
+        data_types = DataIO.getInputData(keyword='DATA_TYPES',\
                                          filename='Sed.dat')
                     
         if 'Photometric_IvS' in data_types:
-            buildPhotometry(self.star_name,cc_path=cc_path,dp=self.path,\
-                            **kwargs)
+            buildPhotometry(self.star_name,**kwargs)
         
         self.data_types = []
         self.data_filenames = []
         for dt in data_types:
-            searchpath = os.path.join(self.path,'%s_*%s*.dat'\
-                                                 %(dt,self.star_name))
+            searchpath = os.path.join(cc.path.dsed,'%s_*%s*.dat'\
+                                                   %(dt,self.star_name))
             add_files = glob(searchpath)
             for ff in add_files: 
                 if ff not in self.data_filenames:
@@ -378,9 +339,7 @@ class Sed(object):
         
 
 def getExtinctionCurve(gal_position='ism',curve_type='chiar_tielens',\
-                       av_to_ak_conv=0.112,\
-                       path=os.path.join(os.path.expanduser('~'),'MCMax',\
-                                         'Extinction_Curves')):
+                       av_to_ak_conv=0.112):
     
     """
     Read extinction curve.
@@ -402,17 +361,14 @@ def getExtinctionCurve(gal_position='ism',curve_type='chiar_tielens',\
                             
                             (default: 0.112)
     @type av_to_ak_conv: float
-    @keyword path: path for extinction curve data
-    
-                   (default: '~/MCMax/Extinction_Curves/')
-    @type path: string
     
     @return: The wavelength grid and extinction curve values
     @rtype: (array,array)
     
     """
     
-    extcurve_input = DataIO.readFile(os.path.join(path,curve_type + '.dat'),\
+    extcurve_input = DataIO.readFile(os.path.join(cc.path.aux,\
+                                                  curve_type + '.dat'),\
                                      delimiter=' ')
     extcurve_x = [float(row[0]) for row in extcurve_input if row[0][0] != '#']
     if gal_position.lower() == 'ism' and curve_type.lower() == 'chiar_tielens':

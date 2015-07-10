@@ -12,6 +12,7 @@ from scipy import log10
 import subprocess
 from time import gmtime, sleep
 
+import cc.path
 from cc.tools.io import DataIO
 from cc.modeling.codes import Gastronoom
 
@@ -26,8 +27,6 @@ class Vic():
     """
     
     def __init__(self,account,path='code23-01-2010',credits_acc=None,\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode'),\
                  time_per_sphinx=30,recover_sphinxfiles=0):
         
         """ 
@@ -59,10 +58,6 @@ class Vic():
                                       
                                       (default: 0) 
         @type recover_sphinxfiles: bool
-        @keyword path_combocode: CC home folder
-        
-                                 (default: '~/ComboCode/')
-        @type path_combocode: string 
 
         """
 
@@ -75,7 +70,6 @@ class Vic():
         self.inputfiles = dict()
         self.trans_in_progress = [] 
         self.path = path
-        self.path_combocode = path_combocode
         self.account = account
         self.disk = account[3:6]
         self.uname = os.path.split(os.path.expanduser('~')+'/'.rstrip('/'))[-1]
@@ -86,6 +80,7 @@ class Vic():
             self.credits_acc = None
         else:
             self.credits_acc = credits_acc
+        
         main_vic_folder = os.path.join('/data','leuven',self.disk,\
                                        self.account,'COCode')
         subprocess.call('ssh %s@login.vic3.cc.kuleuven.be mkdir %s/output/'\
@@ -122,8 +117,7 @@ class Vic():
         
         '''
         
-        homespec = os.path.join(os.path.expanduser('~'),'GASTRoNOoM','src',\
-                                'data','*spec')
+        homespec = os.path.join(cc.path.gdata,'*spec')
         vicspec = os.path.join('/user','leuven',self.disk,self.account,\
                                'COCode','data','.')
         subprocess.call(['scp %s %s@login.vic3.cc.kuleuven.be:%s'\
@@ -292,8 +286,8 @@ class Vic():
             walltimestring = '%.2i:00:00'%(int(time_per_job/60)+1)
             
             #- Create job file
-            jobfile = DataIO.readFile(os.path.join(os.path.expanduser('~'),\
-                                      'GASTRoNOoM','vic_job_example.sh'))
+            jobfile = DataIO.readFile(os.path.join(cc.path.gastronoom,\
+                                                   'vic_job_example.sh'))
             new_jobfile = []
             for line in jobfile:
                 #if line.find('#PBS -l nodes=1:ppn=8') != -1:
@@ -319,7 +313,7 @@ class Vic():
                 new_jobfile.append(new_line)
                 
             #- Save job file, change permission and copy to VIC
-            local_folder = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+            local_folder = os.path.join(cc.path.gastronoom,\
                                         self.path,'models',model_id_sphinx)
             jobfilename_vic = '/user/leuven/'+self.disk+'/' + self.account + \
                               '/COCode/vic_job_' + model_id_sphinx + '.sh'
@@ -357,8 +351,8 @@ class Vic():
                             %(job_number*7, models_in_job,model_id_sphinx))
         
         #- Create the run-jobs file.
-        runjobsfile = DataIO.readFile(os.path.join(os.path.expanduser('~'),\
-                                      'GASTRoNOoM','vic_run_jobs_example.sh'))
+        runjobsfile = DataIO.readFile(os.path.join(cc.path.gastronoom,\
+                                                   'vic_run_jobs_example.sh'))
         new_runjobsfile = []
         for i,job in enumerate(jobfiles):
             for line in runjobsfile:
@@ -386,9 +380,8 @@ class Vic():
                 new_runjobsfile.append(new_line)
         
         #- Run-jobs file: Write, change permission and copy to VIC
-        runjobsfilename_local = os.path.join(os.path.expanduser('~'),\
-                                             'GASTRoNOoM',self.path,'models',\
-                                             model_id,'vic_input',\
+        runjobsfilename_local = os.path.join(cc.path.gastronoom,self.path,\
+                                             'models',model_id,'vic_input',\
                                              'vic_run_jobs_%s_%s.sh'\
                                              %(model_id,\
                                                str(self.current_model)))
@@ -481,10 +474,10 @@ class Vic():
                                        ['####'])
                 infile = '_'.join(['gastronoom',trans.getModelId(),\
                                    '%i.inp'%(i+1)])
-                DataIO.writeFile(os.path.join(os.path.expanduser('~'),\
-                                              'GASTRoNOoM',self.path,'models',\
-                                              model_id,'vic_input',\
-                                              infile),commandfile)
+                DataIO.writeFile(os.path.join(cc.path.gastronoom,self.path,\
+                                              'models',model_id,'vic_input',\
+                                              infile),\
+                                 commandfile)
                 self.inputfiles[self.current_model]\
                     .append(os.path.join('/data','leuven',self.disk,\
                                          self.account,'COCode','%s_%i'\
@@ -510,8 +503,7 @@ class Vic():
                              for f in set(opacity_files)
                              if f != 'temdust.kappa']
             for filename in opacity_files:
-                full_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                         'src','data',filename)
+                full_path = os.path.join(cc.path.gdata,filename)
                 full_path_vic = '/user/leuven/'+self.disk+'/'+self.account + \
                                 '/COCode/data/.'
                 subprocess.call(['scp ' + full_path + ' ' + self.account + \
@@ -531,9 +523,8 @@ class Vic():
                 subprocess.call(['scp %s %s@login.vic3.cc.kuleuven.be:%s'\
                                  %(homefile,self.account,vicfile)],\
                                 shell=True)
-            homeinput = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                     self.path,'models',model_id,'vic_input',\
-                                     'gastronoom_*.inp')
+            homeinput = os.path.join(cc.data.gastronoom,self.path,'models',\
+                                     model_id,'vic_input','gastronoom_*.inp')
             vicinput = os.path.join('/data','leuven',self.disk,self.account,\
                                     'COCode',\
                                     '%s_%i/.'%(model_id,self.current_model))
@@ -555,7 +546,7 @@ class Vic():
         '''
         
         for trans in self.trans_in_progress:
-            filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
+            filename = os.path.join(cc.path.gastronoom,\
                                     self.path,'models',trans.getModelId(),\
                                     trans.makeSphinxFilename(2))
             if not os.path.isfile(filename):              
@@ -573,8 +564,7 @@ class Vic():
                     + [self.models[current_model] 
                        for current_model in self.models.keys() 
                        if current_model in self.failed.keys()]
-            DataIO.writeFile(os.path.join(os.path.expanduser('~'),\
-                                          'GASTRoNOoM',self.path,\
+            DataIO.writeFile(os.path.join(cc.path.gastronoom,self.path,\
                                           'vic_results','log_' + time_stamp),\
                              results)
             for current_model,model_id in self.models.items():
@@ -585,14 +575,12 @@ class Vic():
                      'logfiles for these transitions):'] + \
                     ['Sphinx %s: %s' %(trans.getModelId(),str(trans)) 
                      for trans in self.failed[current_model]]
-                DataIO.writeFile(os.path.join(os.path.expanduser('~'), \
-                                              'GASTRoNOoM',self.path,\
+                DataIO.writeFile(os.path.join(cc.path.gastronoom,self.path,\
                                               'vic_results','log_results%s_%i'\
                                               %(time_stamp,current_model)),\
                                  model_results)
                 for this_id in self.sphinx_model_ids[current_model]:
-                    sphinx_files = os.path.join(os.path.expanduser('~'),\
-                                                'GASTRoNOoM',self.path,\
+                    sphinx_files = os.path.join(cc.path.gastronoom,self.path,\
                                                 'models',this_id,'sph*')
                     subprocess.call(['chmod a+r %s'%sphinx_files],shell=True)
         
@@ -650,8 +638,7 @@ class Vic():
                                      for trans in self.transitions\
                                                         [current_model]
                                      if trans.getModelId() == model_id_sphinx]
-                    heresph = os.path.join(os.path.expanduser('~'),\
-                                           'GASTRoNOoM',self.path,\
+                    heresph = os.path.join(cc.path.gastronoom,self.path,\
                                            'models',model_id_sphinx)
                     for trans_string in trans_strings:
                         vicsph = '/data/leuven/%s/%s/COCode/output/%s/%s'\
@@ -668,7 +655,6 @@ class Vic():
                                     '%s/log_vic_jobs'%(heresph),\
                                     shell=True,stdout=subprocess.PIPE)
                     gas_session = Gastronoom.Gastronoom(\
-                                        path_combocode=self.path_combocode,\
                                         path_gastronoom=self.path,\
                                         sph_db=self.sph_db)
                     gas_session.model_id = model_id

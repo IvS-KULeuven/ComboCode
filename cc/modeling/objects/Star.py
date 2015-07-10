@@ -19,6 +19,7 @@ from scipy.interpolate import interp1d
 import operator
 from numpy import savetxt
 
+import cc.path
 from cc.data import Data
 from cc.tools.io import Database
 from cc.tools.io import DataIO, Atmosphere
@@ -59,9 +60,7 @@ def getStar(star_grid,modelid,idtype='GASTRONOOM'):
     
     
     
-def makeStars(models,id_type,path,code,\
-              path_combocode=os.path.join(os.path.expanduser('~'),\
-                                          'ComboCode')):
+def makeStars(models,id_type,path,code):
     
     '''
     Make a list of dummy Star() objects.
@@ -75,11 +74,7 @@ def makeStars(models,id_type,path,code,\
     @param code: The code (which is not necessarily equal to id_type, such as 
                  for id_type == PACS)
     @type code: string
-    @param path_combocode: CC home folder
-                           
-                           (default: '~/ComboCode/')
-    @type path_combocode: string
-    
+
     @return: The parameter sets, mostly still empty!
     @rtype: list[Star()]
     
@@ -87,7 +82,7 @@ def makeStars(models,id_type,path,code,\
     
     extra_pars = dict([('path_'+code.lower(),path)])
     star_grid = [Star(example_star={'LAST_%s_MODEL'%id_type.upper():model},\
-                      path_combocode=path_combocode,**extra_pars) 
+                      **extra_pars) 
                  for model in models]
     return star_grid
       
@@ -105,8 +100,6 @@ class Star(dict):
 
 
     def __init__(self,path_gastronoom=None,path_mcmax=None,extra_input=None,\
-                 path_combocode=os.path.join(os.path.expanduser('~'),\
-                                             'ComboCode'),
                  example_star=dict()):
         
         """
@@ -120,10 +113,6 @@ class Star(dict):
         
                              (default: None)
         @type path_mcmax: string
-        @keyword path_combocode: full path to ComboCode
-        
-                                 (default: '/home/robinl/ComboCode')
-        @type path_combocode: string
         @keyword example_star: if not None the STAR object is exact duplicate 
                                of example_star. Can be a normal dictionary as 
                                well. Paths are not copied and need to be given 
@@ -160,9 +149,12 @@ class Star(dict):
         self.mh = 1.672661e-24           #in g, mass hydrogen atom
         self.G = 6.674e-8               # in cm^3 g^-1 s^-2
         
-        self.path_combocode = path_combocode
         self.path_gastronoom = path_gastronoom        
         self.path_mcmax = path_mcmax
+        
+        #-- Convenience paths
+        cc.path.mout = os.path.join(cc.path.mcmax,self.path_mcmax)
+        cc.path.gout = os.path.join(cc.path.gastronoom,self.path_gastronoom)
         
         self.dust_list = None
         
@@ -267,13 +259,11 @@ class Star(dict):
         if self.dust_list <> None: return
     
         #-- Read the info
-        dust_path = os.path.join(self.path_combocode,'usr')
         dust_info = dict()
         for k,s in zip(['SPECIES_SHORT','SPEC_DENS','MOLAR_WEIGHT','T_DES',\
                         'T_DESA','T_DESB','PART_FILE'],\
                         ['species','sd','molar','tdes','tdesa','tdesb','fn']):
-            dust_info[s] = DataIO.getInputData(path=dust_path,keyword=k,\
-                                               filename='Dust.dat')
+            dust_info[s] = DataIO.getInputData(keyword=k,filename='Dust.dat')
         
         #-- Check which dust species are requested and exist in Dust.dat
         dust_list = [species 
@@ -332,8 +322,7 @@ class Star(dict):
         
         '''
         
-        cooling_path = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                    self.path_gastronoom,\
+        cooling_path = os.path.join(cc.path.gout,\
                                     'GASTRoNOoM_cooling_models.db')
         cool_db = Database.Database(cooling_path)
         cooling_dict = cool_db[self['LAST_GASTRONOOM_MODEL']].copy()
@@ -359,14 +348,13 @@ class Star(dict):
         if mcmid:    
             rad = self.getDustRad(unit='rstar')
             dens = self.getDustDensity()
-            fn = os.path.join(os.path.expanduser('~'),'MCMax',self.path_mcmax,\
-                              'models',mcmid,'density_profile_%s.dat'%mcmid)
+            fn = os.path.join(cc.path.mout,'models',mcmid,\
+                              'density_profile_%s.dat'%mcmid)
             DataIO.writeCols(fn,[rad,dens])
         if gasid:
             rad = self.getGasRad(unit='rstar')
             nh2 = self.getGasNumberDensity()
-            fn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                              self.path_gastronoom,'models',gasid,\
+            fn = os.path.join(cc.path.gout,'models',gasid,\
                               'nh2_density_profile_%s.dat'%gasid)
             DataIO.writeCols(fn,[rad,nh2])
 
@@ -378,8 +366,7 @@ class Star(dict):
     
         '''
         
-        opas = DataIO.readCols(os.path.join(os.path.expanduser('~'),'MCMax',\
-                                            self.path_mcmax,'models',\
+        opas = DataIO.readCols(os.path.join(cc.path.mout,'models',\
                                             self['LAST_MCMAX_MODEL'],\
                                             'kappas.dat'))
         return opas.pop(0),opas
@@ -552,36 +539,42 @@ class Star(dict):
         """
         
         gas_list = []
-        if type(self['LL_TELESCOPE']) is types.StringType:
-            self['LL_TELESCOPE'] = [self['LL_TELESCOPE']]
-        if not self['LL_NO_VIB']:
-            self['LL_NO_VIB'] = []
-        elif type(self['LL_NO_VIB']) is types.StringType:
-            self['LL_NO_VIB'] = [self['LL_NO_VIB']]
+        if type(self['LS_TELESCOPE']) is types.StringType:
+            self['LS_TELESCOPE'] = [self['LS_TELESCOPE']]
+        if not self['LS_NO_VIB']:
+            self['LS_NO_VIB'] = []
+        elif type(self['LS_NO_VIB']) is types.StringType:
+            self['LS_NO_VIB'] = [self['LS_NO_VIB']]
         for molec in self['GAS_LIST']:
-            for telescope in self['LL_TELESCOPE']:
+            for telescope in self['LS_TELESCOPE']:
+                if telescope == 'PACS':
+                    ls_min = 50
+                    ls_max = 200
+                elif telescope == 'SPIRE':
+                    ls_min = 180
+                    ls_max = 700
                 nl = Transition.makeTransitionsFromRadiat(molec=molec,\
-                            telescope=telescope,ll_min=self['LL_MIN'],\
-                            ll_max=self['LL_MAX'],ll_unit=self['LL_UNIT'],\
-                            n_quad=self['N_QUAD'],offset=self['LL_OFFSET'],\
+                            telescope=telescope,ls_min=ls_min,ls_max=ls_max,\
+                            n_quad=self['N_QUAD'],offset=self['LS_OFFSET'],\
                             use_maser_in_sphinx=self['USE_MASER_IN_SPHINX'],\
                             path_gastronoom=self.path_gastronoom,\
-                            no_vib=molec.molecule in self['LL_NO_VIB'])
-            gas_list.extend(nl)
+                            ls_unit='micron',\
+                            no_vib=molec.molecule in self['LS_NO_VIB'])
+                gas_list.extend(nl)
         self['GAS_LINES'].extend(gas_list)
 
 
     
-    def calcLL_NO_VIB(self):
+    def calcLS_NO_VIB(self):
         
         """
-        Set the default value of LL_NO_VIB (remove vibrational states from the
+        Set the default value of LS_NO_VIB (remove vibrational states from the
         calculation and plots) to zero.        
         
         """
         
-        if not self.has_key('LL_NO_VIB'):
-            self['LL_NO_VIB'] = []
+        if not self.has_key('LS_NO_VIB'):
+            self['LS_NO_VIB'] = []
         else:
             pass
     
@@ -603,17 +596,17 @@ class Star(dict):
     
     
     
-    def calcLL_OFFSET(self):
+    def calcLS_OFFSET(self):
         
         """
-        Set the default value of LL_OFFSET to 0.0. 
+        Set the default value of LS_OFFSET to 0.0. 
         
         Only used when auto selecting transitions based on a wavelength range.
         
         """
         
-        if not self.has_key('LL_OFFSET'):
-            self['LL_OFFSET'] = 0.0
+        if not self.has_key('LS_OFFSET'):
+            self['LS_OFFSET'] = 0.0
         else:
             pass
     
@@ -822,8 +815,7 @@ class Star(dict):
         
         '''
         
-        fp = os.path.join(os.path.expanduser('~'),'MCMax',self.path_mcmax,\
-                            'models',self['LAST_MCMAX_MODEL'])
+        fp = os.path.join(cc.path.mout,'models',self['LAST_MCMAX_MODEL'])
         
         #- if T_CONTACT: no specific species denstemp files, 
         #- so denstemp.dat is taken
@@ -1131,8 +1123,7 @@ class Star(dict):
             mstr = ''
         if mstr:
             mstr = '_' + mstr
-        fn = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                          self.path_gastronoom,'models',modelid,\
+        fn = os.path.join(cc.path.gout,'models',modelid,\
                           'cool%s%s%s.dat'%(ftype,modelid,mstr))
         return fn
         
@@ -1177,12 +1168,10 @@ class Star(dict):
         if not self.has_key('LL_GAS_LIST'):
             if type(self['LL_MOLECULES']) is types.StringType:
                 self['LL_GAS_LIST'] = [Molecule.Molecule(linelist=1,\
-                                            molecule=self['LL_MOLECULES'],\
-                                            path_combocode=self.path_combocode)]
+                                                molecule=self['LL_MOLECULES'])]
             else:
                 self['LL_GAS_LIST'] = [Molecule.Molecule(molecule=molec,
-                                            linelist=1,\
-                                            path_combocode=self.path_combocode) 
+                                                         linelist=1) 
                                        for molec in self['LL_MOLECULES']]
         else:
             pass
@@ -1265,8 +1254,7 @@ class Star(dict):
         
         if not self.has_key('F_CONT_63'):
             if self['LAST_MCMAX_MODEL']: 
-                dpath = os.path.join(os.path.expanduser('~'),'MCMax',\
-                                     self.path_mcmax,'models',\
+                dpath = os.path.join(cc.path.mout,'models',\
                                      self['LAST_MCMAX_MODEL'])
                 w,f = MCMax.readModelSpectrum(dpath,rt_sed=1)
                 fi = f[argmin(abs(w-6.3))]
@@ -2217,8 +2205,7 @@ class Star(dict):
                 exstr = '_var'
             else:
                 exstr = ''
-            filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                    self.path_gastronoom,'data_for_mcmax',\
+            filename = os.path.join(cc.path.gout,'data_for_mcmax',\
                                     '_'.join(['dens',\
                                               self['LAST_GASTRONOOM_MODEL'],\
                                     'mdotd%s%.2e.dat'%(exstr,\
@@ -2515,25 +2502,19 @@ class Star(dict):
                 #- the short names, since if len() is 2, it comes from 
                 #- PlottingSession.setPacsFromDb
                 molec_indices \
-                    = [DataIO.getInputData(path=os.path.join(self.path_combocode,\
-                                                      'usr'),\
-                                    keyword='MOLEC_TYPE',\
-                                    filename='Molecule.dat',make_float=0)\
-                                   .index(molec[0]) 
+                    = [DataIO.getInputData(keyword='MOLEC_TYPE',make_float=0,\
+                                           filename='Molecule.dat')\
+                                          .index(molec[0]) 
                        for molec in self['MOLECULE']]
                 molecules_long = [molec[0] for molec in self['MOLECULE']]
                 self['MOLECULE'] \
-                    = [[DataIO.getInputData(path=os.path.join(self.path_combocode,\
-                                                       'usr'),\
-                                     keyword='TYPE_SHORT',\
-                                     filename='Molecule.dat')[index]] \
+                    = [[DataIO.getInputData(keyword='TYPE_SHORT',\
+                                            filename='Molecule.dat')[index]] \
                         + [molec[1]] 
                        for molec,index in zip(self['MOLECULE'],molec_indices)]
                 self['TRANSITION'] \
-                    = [[DataIO.getInputData(path=os.path.join(self.path_combocode,\
-                                                       'usr'),\
-                                     keyword='TYPE_SHORT',\
-                                     filename='Molecule.dat')\
+                    = [[DataIO.getInputData(keyword='TYPE_SHORT',\
+                                            filename='Molecule.dat')\
                             [molec_indices[molecules_long.index(trans[0])]]] \
                         + trans[1:]
                        for trans in self['TRANSITION']]
@@ -2541,7 +2522,6 @@ class Star(dict):
                 self['GAS_LIST'] = []
                 for molec,model_id in self['MOLECULE']:
                     self['GAS_LIST'].append(Molecule.makeMoleculeFromDb(\
-                                        path_combocode=self.path_combocode,\
                                         model_id=model_id,molecule=molec,\
                                         path_gastronoom=self.path_gastronoom))
             else:
@@ -2578,7 +2558,7 @@ class Star(dict):
                         use_collis_radiat_switch=int(molec[12]),\
                         abundance_filename=molec[14],\
                         enhance_abundance_factor=float(molec[15]),\
-                        path_combocode=self.path_combocode,opr=self['OPR'],\
+                        opr=self['OPR'],\
                         ratio_12c_to_13c=self['RATIO_12C_TO_13C'],\
                         ratio_16o_to_18o=self['RATIO_16O_TO_18O'],\
                         ratio_16o_to_17o=self['RATIO_16O_TO_17O'],\
@@ -2719,8 +2699,7 @@ class Star(dict):
         
         '''
         
-        filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                self.path_gastronoom,'models',\
+        filename = os.path.join(cc.path.gout,'models',\
                                 self['LAST_GASTRONOOM_MODEL'],\
                                 'input%s.dat'%self['LAST_GASTRONOOM_MODEL'])
         
@@ -2787,15 +2766,13 @@ class Star(dict):
         
         if not self.has_key('DUST_TEMPERATURE_FILENAME'):
             filename = self['RID_TEST'] != 'R_STAR' \
-                            and os.path.join(os.path.expanduser('~'),'MCMax',\
-                                             self.path_mcmax,\
+                            and os.path.join(cc.path.mout,\
                                              'data_for_gastronoom',\
                                              '_'.join(['Td',\
                                                      self['LAST_MCMAX_MODEL'],\
                                                      self['RID_TEST']\
                                                       +'.dat']))\
-                            or os.path.join(os.path.expanduser('~'),'MCMax',\
-                                            self.path_mcmax,\
+                            or os.path.join(cc.path.mout,\
                                             'data_for_gastronoom',\
                                             '_'.join(['Td',\
                                                       self['LAST_MCMAX_MODEL']\
@@ -2860,28 +2837,27 @@ class Star(dict):
                                       if trans[0] in [molec[0] 
                                                       for molec in self\
                                                                  ['MOLECULE']]]
-                new_lines = [Transition.makeTransition(star=self,trans=trans) 
-                             for trans in self['TRANSITION']]
-                new_lines = [trans for trans in new_lines if trans]
-                self['GAS_LINES'].extend(new_lines)
+                nl = [Transition.makeTransition(star=self,trans=trans) 
+                      for trans in self['TRANSITION']]
+                nl = [trans for trans in nl if trans]
+                self['GAS_LINES'].extend(nl)
                 
             #- Check if molecular line catalogues have to be browsed to create 
             #- line lists in addition to the data
-            if self['LINE_LISTS']:
-                if self['LINE_LISTS'] == 1: 
+            if self['LINE_SELECT']:
+                if self['LINE_SELECT'] == 1: 
                     self.__addLineList()
-                elif self['LINE_LISTS'] == 2: 
-                    ll_path = os.path.split(self['LL_FILE'].strip())[0]
-                    if not ll_path:
-                        ll_path = os.path.join(os.path.expanduser('~'),\
-                                               'GASTRoNOoM','LineLists')
-                    ll_file = os.path.split(self['LL_FILE'].strip())[1]
-                    llf = os.path.join(ll_path,ll_file)
-                    nt = Transition.makeTransitionsFromTransList(filename=llf,\
-                                                                 star=self) 
-                    nt = [trans for trans in nt if trans]
-                    self['GAS_LINES'].extend(nt)
-            
+                elif self['LINE_SELECT'] == 2: 
+                    trl = DataIO.readDict(self['LS_FILE'],\
+                                          multi_keys=['TRANSITION'])
+                    ne = len(trl['TRANSITION'][0].split())
+                    trl_sorted = DataIO.checkEntryInfo(trl['TRANSITION'],ne,\
+                                                       'TRANSITION')
+                    nl = [Transition.makeTransition(trans=trans,star=self) 
+                          for trans in trl_sorted]
+                    nl = [trans for trans in nl if trans]
+                    self['GAS_LINES'].extend(nl)    
+    
             #-- Sort the transitions.
             self['GAS_LINES'] = sorted(list(self['GAS_LINES']),\
                                        key=lambda x: str(x))
@@ -2945,14 +2921,12 @@ class Star(dict):
                         continue
                 if modeltype is None: 
                     raise IOError('Atmosphere model type is unknown.')
-                path = os.path.join(os.path.expanduser('~'),\
-                                    self.path_combocode,'StarFiles')
-                DataIO.testFolderExistence(path)
+                DataIO.testFolderExistence(cc.path.starf)
                 atmfile = self['ATM_FILENAME']
                 atmos = Atmosphere.Atmosphere(modeltype,filename=atmfile)
                 atmosmodel = atmos.getModel(teff=self['T_STAR'],\
                                             logg=self['LOGG'])
-                starfile = os.path.join(path,'%s_teff%s_logg%s.dat'\
+                starfile = os.path.join(cc.path.starf,'%s_teff%s_logg%s.dat'\
                                         %(os.path.splitext(atmos.filename)[0],\
                                         str(atmos.teff_actual),\
                                         str(atmos.logg_actual)))
@@ -2963,9 +2937,7 @@ class Star(dict):
                 self['STARFILE'] = starfile
             elif self['STARTYPE'] == 'TABLE':
                 if not os.path.split(self['STARTABLE'])[0]:
-                    self['STARFILE'] = os.path.join(os.path.expanduser('~'),\
-                                                    self.path_combocode,\
-                                                    'StarFiles',\
+                    self['STARFILE'] = os.path.join(cc.path.starf,\
                                                     self['STARTABLE'])
                 else:
                     self['STARFILE'] = self['STARTABLE']
@@ -2976,15 +2948,15 @@ class Star(dict):
 
 
 
-    def calcLINE_LISTS(self):
+    def calcLINE_SELECT(self):
         
         ''' 
-        If the LINE LISTS keyword is not present, set to False.
+        If the LINE_SELECT keyword is not present, set to False.
         
         '''
         
-        if not self.has_key('LINE_LISTS'):
-            self['LINE_LISTS'] = 0
+        if not self.has_key('LINE_SELECT'):
+            self['LINE_SELECT'] = 0
         else:
             pass
 
@@ -3030,8 +3002,7 @@ class Star(dict):
         
         if not self.has_key('DUST_TO_GAS_ITERATED'):
             try:
-                filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                        self.path_gastronoom,'models',\
+                filename = os.path.join(cc.path.gout,'models',\
                                         self['LAST_GASTRONOOM_MODEL'],\
                                         'input%s.dat'\
                                         %self['LAST_GASTRONOOM_MODEL'])
@@ -3217,8 +3188,7 @@ class Star(dict):
                 #- wavelength opacity points
                 raise IOError('NLAM > 2000 not supported due to GASTRoNOoM '+\
                               'opacities!')    
-            filename = os.path.join(os.path.expanduser('~'),'GASTRoNOoM',\
-                                    'src','data','temdust_%s.dat'\
+            filename = os.path.join(cc.path.gdata,'temdust_%s.dat'\
                                     %self['LAST_MCMAX_MODEL'])
             if not int(self['USE_NEW_DUST_KAPPA_FILES']) \
                     or not self['LAST_MCMAX_MODEL']:
