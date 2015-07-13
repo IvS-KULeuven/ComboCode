@@ -163,7 +163,7 @@ class ResoStats(Statistics):
             print 'WARNING! No sample transitions given for Statistics ' +\
                     'module with instrument == FREQ_RESO. No stats will ' + \
                     'be calculated.'
-        [t.fitLP() for t in sample_transitions]
+        [t.readData() for t in sample_transitions]
         self.sample_trans = sample_transitions    
 
         
@@ -205,8 +205,7 @@ class ResoStats(Statistics):
         #- for both data and model. 
         for ist,st in enumerate(self.translist):
             #-- make sure the noise value is set in the data object.
-            vexp = st.lpdata[0].getVexp()
-            noise = st.lpdata[0].getNoise(vexp)
+            noise = st.getNoise()
             
             #-- Check which default uncertainty is needed for this transition
             for k,v in self.tele_uncertainties.items(): 
@@ -353,7 +352,7 @@ class ResoStats(Statistics):
         for ist,st in enumerate(self.translist):
             #-- No need for the vexp value here, we know the noise is already
             #   set.
-            noise = st.lpdata[0].getNoise()
+            noise = st.getNoise()
             print '*******************************************************'
             print 'Statistics for %i: %s:'%(ist,str(st))
             print '-------------------------------------'

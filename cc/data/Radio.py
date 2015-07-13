@@ -13,6 +13,7 @@ from glob import glob
 import cc.path
 from cc.tools.io import DataIO
 from cc.tools.io.Database import Database
+from cc.data import LPTools
 
 
 class Radio(Database):
@@ -61,15 +62,23 @@ class Radio(Database):
         TRANSITION references.
 
         The database is structured per star_name and per transition definition.
-        So for instance, you will find the file whya_co32_APEX.fits in a list 
+        So for instance, you will find the file whya_co32_APEX.fits in a dict 
         under
         db['whya']['TRANSITION=12C16O 0 3 0 0 0 2 0 0 APEX 0.0']
         where you will find
-        ['whya_co32_APEX.fits']
+        dict([('whya_co32_APEX.fits',None)])
+        
+        The None refers to the value of the dictionary entry for that file. 
+        This is replaced by the fit results of the line when 
+        >>> db.fitLP(filename='whya_co32_Maercker_new_JCMT.fits')
+        is ran. The method redoes the fit by default, regardless of there being
+        an entry for it already. Any required fitting parameters can be passed
+        along to the function (see LPTools.fitLP()). CC loads fit results from
+        the database.
 
         If multiple data files are available for the same star, the same 
         transition and the same telescope, the multiple data files will also be
-        contained in this list. Note that the transition definition is quite 
+        contained in this dict. Note that the transition definition is quite 
         specific: 1 space between entries, and 11 entries total. It is 
         identical to the input in your combocode inputfile (excluding the final
         number n_quad, which is model input and has nothing to do with your 
@@ -237,7 +246,7 @@ class Radio(Database):
         '''
         Add a new file to the database with given transition definition. If the 
         transition is already present in the database for this particular star, the
-        filename is added to the list for that transition.
+        filename is added to the dictionary for that transition.
         
         A single transition for a star can thus have multiple filenames associated
         with it!
@@ -249,6 +258,9 @@ class Radio(Database):
         The transition definition is checked for correctness: single spaces between
         entries in the defintion, and a total of 11 entries: 1 molecule (shorthand)
         8 quantum numbers, 1 offset 
+        
+        The fit is not done here. Instead the filename key is added to the 
+        transition's dictionary with value None.
         
         @param star_name: The name of the star for which to add the data.
         @type star_name: str
@@ -281,11 +293,11 @@ class Radio(Database):
             return
         
         if self[star_name].has_key(trans):
-            if filename not in self[star_name][trans]:
-                self[star_name][trans].append(filename)
+            if filename not in self[star_name][trans].keys():
+                self[star_name][trans][filename] = None
                 self.addChangedKey(star_name)
         else:
-            self[star_name][trans] = [filename]
+            self[star_name][trans] = dict([(filename,None)])
             self.addChangedKey(star_name)
             
 
@@ -328,8 +340,8 @@ class Radio(Database):
         
         if filename: 
             for k,v in self[star_name].items():
-                if filename in v:
-                    self[star_name][k] = [ff for ff in v if ff != filename]
+                if filename in v.keys():
+                    del self[star_name][k][filename]
                     self.addChangedKey(star_name)
                     break
         else:
@@ -360,4 +372,121 @@ class Radio(Database):
         for ff in ggf:
             if ff not in dbfiles: 
                 print(ff)
+        
+    
+    def convertOldDb(self):
+        
+        '''
+        Convert an existing Radio database from the old format:
+        db[star][trans] = list
+        to the new format:
+        db[trans][trans][filename] = fit dict
+        
+        '''
+        
+        for ss in self.keys():
+            for tt in self[ss].keys():
+                nd = dict()
+                for ff in self[ss][tt]:
+                    nd[ff] = None
+                self[ss][tt] = nd
+            self.addChangedKey(ss)
+        
+    
+    def fitLP(self,star_name='',filename='',trans='',**kwargs):
+        
+        '''
+        Fit the data line profiles with a soft parabola or a Gaussian according
+        to LPTools.fitLP() (see that method for further details).
+        
+        Input keywords require one of these:
+            - no keys: all lines in db are fitted
+            - star_name: All lines for star are fitted
+            - star_name, trans: all lines for transition of star are fitted
+            - star_name, filename: only this filename is fitted
+        
+        The fit is redone by default, regardless of there being an entry in the
+        db already. 
+        
+        Note that this method does NOT automatically sync (ie save changes to 
+        the hard disk) the database. That must be done through an additional 
+        flag to avoid excess overhead. 
+        
+        @keyword star_name: The name of the star for which to add the data. If
+                            not given, all files in db are fitted.
+                            
+                            (default: '')
+        @type star_name: str
+        @keyword filename: The filename of the radio data to be fitted. Must be 
+                           in the db folder! Only the filename is used. Any 
+                           folder path is cut. 
+
+                           (default: '')
+        @type filename: str
+        @keyword trans: The transition definition. Must be in the correct 
+                        format!
+        
+                        (default: '')
+        @type trans: str
+        @keyword kwargs: Any additional keywords that are passed on to 
+                         LPTools.fitLP()
+        @type kwargs: dict
+                         
+        '''
+        
+        def __fitLP(self,ss,tt,ff):
+            
+            '''
+            Helper method giving star_name, transition, and filename for the 
+            fitter to do and then remember to save when sync() is ran.
+            
+            Accessed only by Radio().fitLP().
+            
+            '''
+            
+            fn = os.path.join(self.folder,ff)
+            try:
+                fitr = LPTools.fitLP(filename=fn,**kwargs)
+            except ValueError:
+                fitr = None
+            self[ss][tt][ff] = fitr
+            self.addChangedKey(ss)
+            
+            
+        if star_name and not self.has_key(star_name):
+            print 'Star not found.'
+            return
+        
+        #-- No star_name given, so run through all stars, transitions and files
+        if not star_name:
+            for ss in self.keys():
+                for tt in self[ss].keys():
+                    for ff in self[ss][tt].keys():
+                        __fitLP(self,ss,tt,ff)
+        
+        #-- star_name given. If trans is given, run through all its filenames 
+        elif trans:
+            if trans not in self[star_name].keys():
+                print 'Transition not found.'
+                return
+            for ff in self[star_name][trans].keys():
+                __fitLP(self,star_name,trans,ff)
+            
+        #-- star_name given. If trans is not given, but filename is, fit it. 
+        elif filename: 
+            filename = os.path.split(filename)[1]
+            for k,v in self[star_name].items():
+                if filename in v.keys():
+                    trans = k
+                    break
+            if not trans: 
+                print 'Filename not found.'
+                return
+            __fitLP(self,star_name,trans,filename)
+        
+        #-- star_name given. No trans/filename given. Fit everything for star
+        else:
+            for tt in self[star_name].keys():
+                for ff in self[star_name][tt].keys():
+                    __fitLP(self,star_name,tt,ff)
         
