@@ -395,7 +395,7 @@ class ComboCode(object):
         if molecules: 
             molecules = DataIO.checkEntryInfo(molecules,20,'MOLECULE')
             if type(molecules) is types.ListType:
-                self.multiplicative_grid['MOLECULE'] = molecules
+                self.additive_grid['MOLECULE'] = molecules
             else:
                 self.processed_input['MOLECULE'] = molecules
         if r_points_mass_loss: 
@@ -408,7 +408,7 @@ class ComboCode(object):
         if transitions: 
             transitions = DataIO.checkEntryInfo(transitions,12,'TRANSITION')
             if type(transitions) is types.ListType:
-                self.multiplicative_grid['TRANSITION'] = transitions
+                self.additive_grid['TRANSITION'] = transitions
             else:
                 self.processed_input['TRANSITION'] = transitions
             
