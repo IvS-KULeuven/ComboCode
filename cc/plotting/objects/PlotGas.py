@@ -212,7 +212,8 @@ class PlotGas(PlottingSession):
             valid_sg = [star 
                         for star in star_grid 
                         if star['LAST_GASTRONOOM_MODEL']]
-            radii = [star.getGasRad(unit='rstar') for star in valid_sg]
+            radii_rstar = [star.getGasRad(unit='rstar') for star in valid_sg]
+            radii = [star.getGasRad(unit='cm') for star in valid_sg]
             temps = [star.getGasTemperature() for star in valid_sg]
 
             if temps:    
