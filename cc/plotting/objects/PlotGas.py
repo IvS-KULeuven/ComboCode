@@ -392,7 +392,8 @@ class PlotGas(PlottingSession):
                          for trans in star['GAS_LINES']]))
                        for star in star_grid]
             unreso_keytags = list(keytags)
-            if not no_data : keytags.append('Data')
+            if not no_data : 
+                keytags.append('Data')
         #-- Check how many resolved transitions there are (whether they have 
         #   data or not.
         trans_list = Transition.extractTransFromStars(star_grid,sort_freq,\

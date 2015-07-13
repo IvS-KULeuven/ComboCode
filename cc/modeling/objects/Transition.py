@@ -1717,6 +1717,7 @@ class Transition():
         
         '''
         
+        self.readData()
         if self.lpdata:
             return self.lpdata[index].getNoise(vexp=self.getVexp(index=index))
         else:
@@ -1742,7 +1743,7 @@ class Transition():
         
         '''
         
-        if self.lpdata:
+        if self.fittedlprof:
             return self.fittedlprof[index]['vexp']
         else:
             return None
