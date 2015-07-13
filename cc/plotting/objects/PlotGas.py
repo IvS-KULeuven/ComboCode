@@ -213,9 +213,9 @@ class PlotGas(PlottingSession):
                         for star in star_grid 
                         if star['LAST_GASTRONOOM_MODEL']]
             radii = [star.getGasRad(unit='rstar') for star in valid_sg]
-            temps = [star.getGasTemperature() for star in valid_sg]
+            temp = [star.getGasTemperature() for star in valid_sg]
 
-            if temps:    
+            if temp:    
                 keytags = star_grid[0].has_key('LAST_PACS_MODEL') \
                             and ['%s,    %s,    Mdot = %.2e'\
                                  %(star['LAST_GASTRONOOM_MODEL']\
@@ -228,7 +228,7 @@ class PlotGas(PlottingSession):
                                 for star in valid_sg]
                 pfn = os.path.join(self.pplot,'temperature_profiles')
                 pfn_rstar=os.path.join(self.pplot,'temperature_profiles_rstar')
-                pfn_rstar = Plotting2.plotCols(x=radii_rstar,y=temp,\
+                pfn_rstar = Plotting2.plotCols(x=radii,y=temp,\
                             cfg=cfg,xaxis='R (R$_*$)',\
                             filename=pfn_rstar,yaxis='T (K)',\
                             xlogscale=1,ylogscale=1,keytags=keytags)
@@ -241,8 +241,8 @@ class PlotGas(PlottingSession):
                         key_location=(0.05,0.05),xlogscale=1,ylogscale=1,\
                         keytags=keys_cm,fontsize_axis=26,fontsize_key=26)
                 print '** Plots can be found at:'
-                print plot_filename
-                print plot_filename_rstar
+                print pfn
+                print pfn_rstar
                 print '***********************************'
             else:
                 print '** No GASTRoNOoM models were calculated successfully.'+\
