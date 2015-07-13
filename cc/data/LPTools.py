@@ -630,6 +630,7 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
         evexp = abs(finalfit.get_parameters()[1][2])*(2.*sqrt(2.*log(2.)))/2.
         fvlsr = finalfit.get_parameters()[0][1]
         fevlsr = finalfit.get_parameters()[1][1]
+        gamma, egamma = None,None
         window = 3.
         print 'Improved fit, using a gaussian instead of soft parabola:'
         print finalfit.param2str(accuracy=5)
@@ -640,21 +641,22 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
     keep = np.abs(vel-vlsr)<=(0.6*window*vexp)
     velsel = vel[keep]
     flux_first = firstguess.evaluate(velsel)
-    flux_fg = finalfit.evaluate(velsel)
+    flux_final = finalfit.evaluate(velsel)
     dimb = trapz(y=flux[keep],x=velsel)
-    fifg = trapz(y=flux_fg,x=velsel)
+    fi_final = trapz(y=flux_final,x=velsel)
     print('I_mb (emission line data): %f'\
           %dimb)
     print('I_mb (SP -- initial guess): %f'\
           %trapz(y=flux_first,x=velsel))
-    print('I_mb (SP -- improved guess): %f'\
-          %fifg)
+    print('I_mb (SP -- final guess): %f'\
+          %fi_final)
     if include_gauss <> None:
         fitted_flux = mymodel.evaluate(velsel)
         print('I_mb (SP + Gauss fit): %f'\
               %trapz(y=fitted_flux,x=velsel))
     print('Final v_exp guess: %.4f +/- %.4f km/s'%(vexp,evexp))
-    print('Final gamma guess: %.4f +/- %.4f'%(gamma,egamma))
+    if gamma <> None:
+        print('Final gamma guess: %.4f +/- %.4f'%(gamma,egamma))
     print('Final vlsr guess: %.4f +/- %.4f'%(fvlsr,fevlsr))
     fwhm = getLPDataFWHM(lprof)
     print('The FWHM is %.2f km/s.'%(fwhm))
@@ -666,7 +668,7 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
         keep = np.abs(vel-vlsr)<=(1.5*window*vexp)
         velsel,fluxsel = vel[keep],flux[keep]
         vel_highres = np.linspace(velsel[0],velsel[-1],10000)
-        flux_fg_highres = finalfit.evaluate(vel_highres)
+        flux_final_highres = finalfit.evaluate(vel_highres)
         flux_first_highres = firstguess.evaluate(vel_highres)    
         if include_gauss <> None:
             flux_full_highres = mymodel.evaluate(vel_highres)
@@ -675,7 +677,7 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
                      label='Observed profile')
             plt.plot(vel_highres,flux_first_highres,'b-',lw=3,\
                      label='First guess')
-            plt.plot(vel_highres,flux_fg_highres,'g--',lw=3,\
+            plt.plot(vel_highres,flux_final_highres,'g--',lw=3,\
                      label='Improved guess')
             if include_gauss <> None:
                 plt.plot(vel_highres,flux_full_highres,'g-',lw=2,\
@@ -689,7 +691,7 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
             keytags = ['Observed profile','Improved guess']
             line_types = ['-r','-b',]
             x = [velsel,vel_highres]
-            y = [fluxsel,flux_fg_highres]
+            y = [fluxsel,flux_final_highres]
             if include_gauss <> None:
                 line_types.append('g--')
                 x.append(vel_highres)
@@ -703,20 +705,31 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
             print 'Your figure can be found at %s .'%pf
     #-- Collecting all relevant results and returning.
     results = dict()
+    #-- If a Gaussian was used for the main profile fit
     results['do_gauss'] = do_gauss
-    results['fvlsr'] = fvlsr
-    results['fevlsr'] = fevlsr
+    #-- Fitted parameters and errors
+    results['vlsr'] = fvlsr
+    results['evlsr'] = fevlsr
     results['vexp'] = vexp
     results['evexp'] = evexp
+    results['fwhm'] = fwhm
+    #-- Gamma is None if no soft parabola was fitted
     results['gamma'] = gamma
     results['egamma'] = egamma
-    results['fitprof'] = finalfit 
-    results['fitgauss'] = not include_gauss is None and gaussian or None
-    results['fgintint'] = fifg
+    
+    #-- Integrated line strengths: main line fit, data themselves, fit window
+    results['fgintint'] = fi_final
     results['dintint'] = dimb
     results['intwindow'] = window*0.6
-    results['fwhm'] = fwhm
-    #-- The full model, includes gaussian if applicable, otherwise == finalfit
-    results['fullfit'] = not include_gauss is None and mymodel or finalfit
+    
+    #-- Saving parameters for later evaluation. Full fit is accessible by 
+    #   making the functions separately and setting pars, then using fit.Model
+    results['fitprof'] = (do_gauss and 'gauss' or 'soft_parabola',\
+                          list(finalfit.get_parameters()[0]))
+    if include_gauss <> None:
+        results['fitabs'] = ('gauss',list(gaussian.get_parameters()[0]))
+    else:
+        results['fitabs'] = None
+
     return results
 
