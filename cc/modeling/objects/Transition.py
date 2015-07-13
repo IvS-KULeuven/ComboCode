@@ -17,10 +17,9 @@ from scipy.interpolate import interp1d
 from scipy.integrate import trapz
 import types
 
-from ivs.sigproc import filtering
+from ivs.sigproc import filtering,funclib
 
 import cc.path
-from cc.data import LPTools
 from cc.modeling.objects import Molecule 
 from cc.tools.io import Database, DataIO
 from cc.tools.io import SphinxReader
@@ -723,7 +722,8 @@ def checkUniqueness(trans_list):
         if trans not in merged: 
             merged.append(trans)
         else:
-            merged[merged.index(trans)].addDatafile(trans.datafiles)
+            ddict = dict(zip(trans.datafiles,trans.fittedlprof))
+            merged[merged.index(trans)].addDatafile(ddict)
     return merged
     
     
@@ -738,8 +738,8 @@ class Transition():
     def __init__(self,molecule,telescope=None,vup=0,jup=0,kaup=0,kcup=0,\
                  nup=None,vlow=0,jlow=0,kalow=0,kclow=0,nlow=None,offset=0.0,\
                  frequency=None,exc_energy=None,int_intensity_log=None,\
-                 n_quad=100,use_maser_in_sphinx=0,\
-                 vibrational='',path_gastronoom=None,datafiles=None):
+                 n_quad=100,use_maser_in_sphinx=0,vibrational='',\
+                 path_gastronoom=None):
         
         '''
         
@@ -845,15 +845,7 @@ class Transition():
         
                                   (default: None)
         @type path_gastronoom: string
-        @keyword datafiles: (multiple) filename(s) and path(s) to a datafile 
-                            for transition, specific for the telescope used for 
-                            this dataset. Only applicable for single transition 
-                            files, such as ground-based data. None if no files 
-                            available.
-                                    
-                            (default: None)
-        @type datafiles: string/list
-        
+
         '''
         
         self.molecule = molecule
@@ -897,14 +889,9 @@ class Transition():
         #-- Convenience path
         cc.path.gout = os.path.join(cc.path.gastronoom,self.path_gastronoom)
         self.unresolved = 'PACS' in self.telescope or 'SPIRE' in self.telescope
-        if self.unresolved:
-            self.datafiles = None
-        else:
-            if type(datafiles) is types.StringType:
-                self.datafiles = [datafiles]
-            else:
-                self.datafiles = datafiles
+        self.datafiles = None
         self.lpdata = None 
+        self.fittedlprof = None
         self.radiat_trans = None
         if frequency is None:
              #-- sets frequency from GASTRoNOoM input in s^-1
@@ -919,7 +906,6 @@ class Transition():
         #   Spire or Pacs)
         self.vlsr = None
         self.best_vlsr = None
-        self.fittedlprof = None
         self.best_mfilter = None
         #-- PACS and SPIRE spectra are handled differently (setIntIntUnresolved)
         if self.unresolved: 
@@ -1553,49 +1539,71 @@ class Transition():
      
      
      
-    def addDatafile(self,datafile):
+    def addDatafile(self,datadict):
         
         '''
-        Add a datafile name/multiple filenames for this transition. 
+        Add a datadict for this transition. Includes filenames as keys, and 
+        fit results as values (can be None, in which case the filename is 
+        excluded)
         
-        If datafile has been given a valid value, the self.lpdata list is set
+        The filenames are saved in self.datafiles, the fitresults in 
+        self.fittedlprof.
+        
+        If datadict has been given a valid value, the self.lpdata list is set
         back to None, so the datafiles can all be read again. 
         
         When called for a SPIRE or PACS transition, no datafiles are added.
         
-        @param datafile: the full filename, or multiple filenames
-        @type datafile: string/list
+        The fit results include: 
+        The gas terminal velocity, its error, the soft parabola function and 
+        possibly the extra gaussian will be set. It is possible the SP is a 
+        gaussian instead, if a soft parabola did not work well (the no gamma
+        parameter is included in the dictionary). 
+        
+        The fit results are taken from the radio database which has the option 
+        to (re-)run the LPTools.fitLP method. If no fit results are available
+        there, no data can be used for this instance of Transition().
+        
+        Typically, the entry db[star_name][transition] is what is given here.
+        
+        @param datadict: the filenames and associated fit results
+        @type datafile: dict()
         
         '''
         
-        #-- If datafile is None or '', no data available, so leave things as is 
-        if not datafile:
+        #-- If datafile is nto a dict or an empty dict(), no data available, so
+        #    leave things as is 
+        if not type(datadict) is types.DictType or not datadict:
             return
         
-        #-- PACS and SPIRE spectra are handled differently (setIntIntUnresolved)
+        #-- PACS and SPIRE spectra handled differently (setIntIntUnresolved)
         if self.unresolved: 
             return
         
-        #-- In case a single filename is passed, put it in a list. 
-        if type(datafile) is types.StringType:
-            datafile = [datafile]
-            
-        #-- Check if the file path is defined in all cases. If not, add radio
-        #   data folder to it
-        for idf,df in enumerate(datafile): 
-            if not os.path.split(df)[0]:
-                datafile[idf] = os.path.join(cc.path.dradio,df)
-        
-        #-- Add the datafiles to the Transition() object.
+        #-- Check if fit results are available for the file. If not, remove it. 
+        #   Check if the file path is defined in all cases. If not, add radio
+        #   data folder to it. Save filenames in datafiles.
         if self.datafiles is None:
-            self.datafiles = datafile
-        else: 
-            self.datafiles.extend(datafile)
-        
-        #-- Datafiles have been updated, so reset the lpdata object property.
-        #   Data will be read anew when next they are requested.
-        self.lpdata = None
+            self.datafiles = []
+            self.fittedlprof = []
             
+        for k in sorted(datadict.keys()):
+            if datadict[k] <> None:
+                if not os.path.split(k)[0]: 
+                    self.datafiles.append(os.path.join(cc.path.dradio,k))
+                else: 
+                    self.datafiles.append(k)
+                self.fittedlprof.append(datadict[k])
+        
+        #-- If lists are empty, not valid data were found. 
+        if not self.datafiles:
+            self.datafiles, self.fittedlprof = None,None 
+            
+        #-- Datafiles have been updated, so reset the lpdata and fittedlprof 
+        #   properties. Data will be read anew when next they are requested.
+        self.lpdata = None
+        
+        
 
     def readData(self):
          
@@ -1607,13 +1615,14 @@ class Transition():
         if self.unresolved:
             return
         if self.lpdata is None:
-            self.lpdata = []
             if self.datafiles <> None:
-                for df in self.datafiles:
+                self.lpdata = []
+                for idf,df in enumerate(self.datafiles):
                     if df[-5:] == '.fits':
                         lprof = FitsReader.FitsReader(filename=df)
                     else:
                         lprof = TxtReader.TxtReader(filename=df)
+                    lprof.setNoise(self.getVexp(idf))
                     self.lpdata.append(lprof)
             else:
                 print 'No data found for %s. Setting v_lsr to 0.0'%str(self)+\
@@ -1633,7 +1642,8 @@ class Transition():
         
         Avoids too much overhead when reading data from files. 
         
-        The same is done for the fitresults from LPTools.fitLP().
+        The same is done for the fitresults from LPTools.fitLP() taken out of 
+        the Radio database.
         
         @param trans: The other Transition() object, assumes the transition 
                       is the same, but possibly different sphinx models.
@@ -1641,13 +1651,15 @@ class Transition():
         
         """
         
-        if self.lpdata is None and self == trans: 
-            self.lpdata = trans.lpdata
-        if self.fittedlprof is None and self == trans: 
-            self.fittedlprof = trans.fittedlprof
+        if self == trans: 
+            if self.datafiles is None: 
+                self.datafiles = trans.datafiles
+                self.fittedlprof = trans.fittedlprof
+                self.lpdata = trans.lpdata
+        
+        
     
-    
-    def getVlsr(self):
+    def getVlsr(self,index=0):
         
         """
         Return the vlsr read from the fits file of a resolved-data object, or 
@@ -1655,10 +1667,18 @@ class Transition():
         resolved data may also return vlsr from Star.dat if the vlsr in the 
         data file is significantly different from the value in Star.dat.
         
+        This is taken from the first lpdata object available by default, but 
+        can be chosen through the index keyword..
+        
         Returns 0.0 if not an unresolved line, and there are no data available.
         
         This is different from the getBestVlsr() method, which determines the 
         best matching vlsr between data and sphinx, if both are available. 
+        
+        @keyword index: The data list index of the requested noise value
+        
+                        (default: 0)
+        @type index: int
         
         @return: the source velocity taken from the fits file OR Star.dat. 0
                  if data are not available. In km/s!
@@ -1668,47 +1688,29 @@ class Transition():
         
         self.readData()
         if self.lpdata: 
-            return self.lpdata[0].getVlsr()
+            return self.lpdata[index].getVlsr()
         elif not self.unresolved and not self.lpdata:
             return 0.0
         else:
             return self.vlsr
             
-    
-    def fitLP(self):
-        
-        '''
-        Run the autofit routine for line profiles. 
-        
-        The gas terminal velocity, its error, the soft parabola function and 
-        possibly the extra gaussian will be set. It is possible the SP is a 
-        gaussian instead, if a soft parabola did not work well. 
-        
-        The method makes sure the data have been read. The fitting routine is 
-        only done for the first dataset in the list!
-        
-        Lastly, this method makes sure the noise is calculated for the first
-        data object in this class.
-        
-        '''
-        
-        self.readData()
-        if self.lpdata and self.fittedlprof is None:
-            self.fittedlprof = \
-              LPTools.fitLP(lprof=self.lpdata[0])
-            vexp = self.fittedlprof['vexp']
-            self.lpdata[0].setNoise(vexp)
             
     
-    
-    def getNoise(self):
+    def getNoise(self,index=0):
         
         '''
         Return the noise value of the FIRST data object in this transition, if
         available. 
         
-        Note that None is returned if fitLP has not yet been ran, or if no data
-        are available.
+        Note that None is returned if no data are available.
+        
+        A different index than the default allows access to the other data 
+        objects.
+        
+        @keyword index: The data list index of the requested noise value
+        
+                        (default: 0)
+        @type index: int
         
         @return: The noise value
         @rtype: float
@@ -1716,18 +1718,24 @@ class Transition():
         '''
         
         if self.lpdata:
-            if self.lpdata[0].getNoise() is None:
-                self.fitLP()
-            return self.lpdata[0].getNoise()
+            return self.lpdata[index].getNoise()
         else:
             return None
             
 
-    def getVexp(self):
+
+    def getVexp(self,index=0):
         
         '''
         Get the gas terminal velocity as estimated from a line profile fitting
-        routine. 
+        routine for the FIRST data object. 
+        A different index than the default allows access to the other data 
+        objects.
+        
+        @keyword index: The data list index of the requested noise value
+        
+                        (default: 0)
+        @type index: int
         
         @return: vexp
         @rtype: float
@@ -1735,15 +1743,12 @@ class Transition():
         '''
         
         if self.lpdata:
-            if self.lpdata[0].getNoise() is None:
-                self.fitLP()
-            return self.fittedlprof['vexp']
+            return self.fittedlprof[index]['vexp']
         else:
-
             return None
   
             
-    def getBestVlsr(self):
+    def getBestVlsr(self,index=0):
         
         """ 
         If self.best_vlsr is None, the best source velocity will be guessed by
@@ -1752,11 +1757,13 @@ class Transition():
         May be different from input value vlsr, the original expected 
         source velocity (from Star.dat)!
         
-        Based on the first dataset in self.lpdata. Note that multiple datasets
-        might be included, but the scaling will be done for only the first one. 
-        Since different datasets are for the same telescope, the same line
-        and (usually) the same conditions, the source velocity is not expected
-        to be different for the different datasets anyway. 
+        By default, based on the first dataset in self.lpdata. Note that
+        multiple datasets might be included. If so, a different index can be 
+        given to do the scaling based on a different data object. Scaling is 
+        done for only one datase. Since different datasets are for the same 
+        telescope, the same line and (usually) the same conditions, the source 
+        velocity is not expected to be different for the different datasets 
+        anyway. 
         
         Method will attempt to call self.readData and readSphinx if either are 
         not available. If data are still not available, the initial guess is 
@@ -1764,6 +1771,11 @@ class Transition():
         files is returned, and the initial guess is returned in case of txt 
         files.
        
+        @keyword index: The data list index of the requested noise value
+        
+                        (default: 0)
+        @type index: int
+        
         @return: the best guess vlsr, or the initial guess if no sphinx or data
                  are available [will return vlsr included in fitsfiles if 
                  available].
@@ -1782,17 +1794,17 @@ class Transition():
         #   Then, return the vlsr from Star.dat
         self.readSphinx()
         if self.unresolved or not self.lpdata or not self.sphinx:
-            return self.getVlsr()
+            return self.getVlsr(index=index)
         
-        #-- Auto fit the line profile with a soft parabola and/or gaussian.
+        #-- Read the data.
         #   This will set the vexp, evexp, soft parabola and gaussian profiles
-        self.fitLP()
-        vexp = self.getVexp()
+        self.readData()
+        vexp = self.getVexp(index=index)
         
         #-- get all the profiles and noise values
-        noise = self.lpdata[0].getNoise()
-        dvel = self.lpdata[0].getVelocity()
-        dtmb = self.lpdata[0].getFlux()
+        noise = self.getNoise()
+        dvel = self.lpdata[index].getVelocity()
+        dtmb = self.lpdata[index].getFlux()
         mvel = self.sphinx.getVelocity()
         mtmb = self.sphinx.getLPTmb()
         
@@ -1803,8 +1815,8 @@ class Transition():
         #      equial to the data bin size if there is a better match between
         #      model and data. This gives the 'best_vlsr'
         res = dvel[1]-dvel[0]
-        mtmb_filter = filtering.filter_signal(x=mvel+self.getVlsr(),y=mtmb,\
-                                              ftype='box',\
+        mtmb_filter = filtering.filter_signal(x=mvel+self.getVlsr(index=index),
+                                              y=mtmb,ftype='box',\
                                               x_template=dvel,window_width=res)
         #-- Number of values tested is int(0.5*vexp/res+1),0.5*vexp on one side 
         #   and on the other side
@@ -1846,7 +1858,7 @@ class Transition():
         best_step = (imin-1)/2+1
         #-- Determining whether to add or subtract best_step*res from the vlsr
         modifier = imin%2 == 0 and 1 or -1
-        self.best_vlsr = self.getVlsr() + modifier*best_step*res
+        self.best_vlsr = self.getVlsr(index=index) + modifier*best_step*res
         #-- Note that the velocity grid of best_mfilter is the data velocity
         self.best_mfilter = mtmb_grid[imin]
         
@@ -1982,45 +1994,53 @@ class Transition():
          
     
     
-    def getIntTmbData(self):
+    def getIntTmbData(self,index=0):
         
         """
         Calculate the integrated Tmb of the data line profile over velocity.
         
-        Note that only the first of data profiles is used for this, if there 
-        are multiple profiles available for this transition. (i.e. multiple
-        observations of the same transition with the same telescope)
+        Note that by default only the first of data profiles is used for this, 
+        if there are multiple profiles available for this transition. (i.e. 
+        multiple observations of the same transition with the same telescope)
         
-        Makes use of the results from the fitLP method. If no extra gaussian is
-        used, the integrated data profile is returned. Otherwise, the soft 
-        parabola fit is integrated instead to avoid taking into account an 
-        absorption feature in the profile.
+        A different index than the default allows access to the other data 
+        objects.
+        
+        Makes use of the results from the LPTools.fitLP method taken from the 
+        Radio database upon adding datafiles. If no extra 
+        gaussian is used, the integrated data profile is returned. Otherwise, 
+        the soft parabola fit is integrated instead to avoid taking into 
+        account an absorption feature in the profile.
         
         Returns None if no data are available. 
         
         This does not work for PACS or SPIRE data.
+        
+        @keyword index: The data list index of the requested noise value
+        
+                        (default: 0)
+        @type index: int
         
         @return: The integrated data Tmb in K km/s
         @rtype: float
         
         """
         
-        if self.fittedlprof is None:
-            self.fitLP()
+        self.readData()
         if self.fittedlprof is None:
             return
-        if self.fittedlprof['fitgauss'] <> None:
+        if self.fittedlprof[index]['fitabs'] <> None:
             #-- Integrating the fitted SoftPar, rather than data
             #   due to detected absorption component in the line profile.
-            return self.fittedlprof['fgintint']
+            return self.fittedlprof[index]['fgintint']
         else:
             #-- Using broader integration window for data
             #   due to a Gaussian-like profile, rather than a SP.
-            return self.fittedlprof['dintint']
+            return self.fittedlprof[index]['dintint']
         
         
     
-    def getPeakTmbData(self):
+    def getPeakTmbData(self,index=0):
     
         """
         Get the peak Tmb of the data line profile. 
@@ -2031,21 +2051,32 @@ class Transition():
         center of the sphinx profile (ie in the same velocity bin as 
         getPeakTmbSphinx). Makes use of the best_vlsr, so that is ran first.
         
+        Note that by default only the first of data profiles is used for this, 
+        if there are multiple profiles available for this transition. (i.e. 
+        multiple observations of the same transition with the same telescope)
+        
+        A different index than the default allows access to the other data 
+        objects.
+        
         This does not work for PACS or SPIRE data.
-
+        
+        @keyword index: The data list index of the requested noise value
+        
+                        (default: 0)
+        @type index: int
+        
         @return: The peak Tmb of the sphinx line profile
         @rtype: float        
         
         """
-
-        if self.fittedlprof is None:
-            self.fitLP()
+        
+        self.readData()
         if self.fittedlprof is None:
             return None
         
         #-- Do not use the best vlsr for the data peak determination. This 
         #   should be model independent.
-        return LPTools.getPeakLPData(lprof=self.lpdata[0])
+        return LPTools.getPeakLPData(lprof=self.lpdata[index])
     
     
     
@@ -2143,13 +2174,20 @@ class Transition():
         
     
     
-    def getLoglikelihood(self,use_bestvlsr=1):
+    def getLoglikelihood(self,use_bestvlsr=1,index=0):
         
         """
         Calculate the loglikelihood of comparison between sphinx and dataset.
         
         Gives a measure for the goodness of the fit of the SHAPE of the 
         profiles.
+        
+        Note that by default only the first of data profiles is used for this, 
+        if there are multiple profiles available for this transition. (i.e. 
+        multiple observations of the same transition with the same telescope)
+        
+        A different index than the default allows access to the other data 
+        objects.
         
         Done only for the first dataset! Makes use of the filtered sphinx 
         profile for the best vlsr, see self.getBestVlsr() if use_bestvlsr is 
@@ -2168,36 +2206,45 @@ class Transition():
                                
                                (default: 1)
         @type use_bestvlsr: bool
-
+       
+        @keyword index: The data list index of the requested noise value
+        
+                        (default: 0)
+        @type index: int
+        
         @return: The loglikelihood
         @rtype: float
         
         """
         
         if use_bestvlsr and self.best_vlsr is None:
-            self.getBestVlsr()
+            self.getBestVlsr(index=index)
         if use_bestvlsr and self.best_vlsr is None:
             print 'Using standard v_lsr from Star.dat or fits file for LLL.'
             use_bestvlsr = 0
             
-        vel = self.lpdata[0].getVelocity()
-        noise = self.lpdata[0].getNoise()
-        window = self.fittedlprof['intwindow']
-        vexp = self.fittedlprof['vexp']
-        vlsr = self.getVlsr()
-        if self.fittedlprof['fitgauss'] <> None:
-            dsel = self.fittedlprof['fitprof'].evaluate(vel)
+        vel = self.lpdata[index].getVelocity()
+        noise = self.getNoise(index=index)
+        window = self.fittedlprof[index]['intwindow']
+        vexp = self.getVexp(index=index)
+        vlsr = self.getVlsr(index=index)
+        if self.fittedlprof[index]['fitabs'] <> None:
+            pars = array(self.fittedlprof[index]['fitprof'][1])
+            functype = self.fittedlprof[index]['fitprof'][0]
+            dsel = funclib.evaluate(functype,vel,pars)
             dsel = dsel[abs(vel-vlsr)<=window*vexp]
         else:
-            dsel = self.lpdata[0].getFlux()[abs(vel-vlsr)<=window*vexp]
-        if self.getPeakTmbData() <= 5.*self.getNoise():
+            dsel = self.lpdata[index].getFlux()[abs(vel-vlsr)<=window*vexp]
+        if self.getPeakTmbData(index=index) <= 5.*self.getNoise(index=index):
             #-- If the data are very noisy, use the fitted line profile to 
             #   determine the shift_factor, instead of the data themself.
-            shift_factor = self.fittedlprof['fgintint']/self.getIntTmbSphinx()
+            num = self.fittedlprof[index]['fgintint']
+            shift_factor = num/self.getIntTmbSphinx()
         else:
             #-- Note that even if data are not noisy, the fitted lprof is still
             #   used here, in case an absorption is detected. 
-            shift_factor = self.getIntTmbData()/self.getIntTmbSphinx()
+            num = self.getIntTmbData(index=index)
+            shift_factor = num/self.getIntTmbSphinx()
         
         if use_bestvlsr:
             msel = self.best_mfilter[abs(vel-vlsr)<=window*vexp]

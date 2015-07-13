@@ -228,21 +228,21 @@ class PlotGas(PlottingSession):
                                 for star in valid_sg]
                 pfn = os.path.join(self.pplot,'temperature_profiles')
                 pfn_rstar=os.path.join(self.pplot,'temperature_profiles_rstar')
-                pfn_rstar = Plotting2.plotCols(x=radii_rstar,y=temp,\
+                pfn_rstar = Plotting2.plotCols(x=radii_rstar,y=temps,\
                             cfg=cfg,xaxis='R (R$_*$)',\
                             filename=pfn_rstar,yaxis='T (K)',\
                             xlogscale=1,ylogscale=1,keytags=keytags)
                 keys_cm = ['Model %i'%(i+1)
                            for i in xrange(len(star_grid))]
-                pfn = Plotting2.plotCols(x=radii,y=temp,cfg=cfg,\
+                pfn = Plotting2.plotCols(x=radii,y=temps,cfg=cfg,\
                         filename=pfn,xaxis='$r$ (cm)',\
                         yaxis='$T_\mathrm{g}$ (K)',\
                         figsize=(12.5,8),fontsize_ticklabels=26,\
                         key_location=(0.05,0.05),xlogscale=1,ylogscale=1,\
                         keytags=keys_cm,fontsize_axis=26,fontsize_key=26)
                 print '** Plots can be found at:'
-                print plot_filename
-                print plot_filename_rstar
+                print pfn
+                print pfn_rstar
                 print '***********************************'
             else:
                 print '** No GASTRoNOoM models were calculated successfully.'+\
@@ -496,9 +496,9 @@ class PlotGas(PlottingSession):
                                    for star in star_grid]
                     if None in current_sub: 
                          missing_trans += 1
-                    #-- Just fit the line profile. The data will be read as well
+                    #-- Read the data profiles, and set them for all models.
                     if not no_data:
-                        current_trans.fitLP()
+                        current_trans.readData()
                         vlsr = current_trans.getVlsr()
                         noise = current_trans.getNoise()
                     else:
