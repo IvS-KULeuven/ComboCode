@@ -1718,7 +1718,7 @@ class Transition():
         '''
         
         if self.lpdata:
-            return self.lpdata[index].getNoise()
+            return self.lpdata[index].getNoise(vexp=self.getVexp(index=index))
         else:
             return None
             
@@ -1802,7 +1802,7 @@ class Transition():
         vexp = self.getVexp(index=index)
         
         #-- get all the profiles and noise values
-        noise = self.getNoise()
+        noise = self.getNoise(index=index)
         dvel = self.lpdata[index].getVelocity()
         dtmb = self.lpdata[index].getFlux()
         mvel = self.sphinx.getVelocity()
