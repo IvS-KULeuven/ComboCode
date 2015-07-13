@@ -252,7 +252,7 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 # Sequence for input is (not formatted)
 #       Molecule_name NY_LOW NY_UP N_IMPACT N_IMPACT_EXTRA ABUN_MOLEC ABUN_MOLEC_RINNER ABUN_MOLEC_RE RMAX_MOLEC ITERA USE_COLLIS_RADIAT_SWITCH R_OUTER ABUNDANCE_FILENAME ENHANCE_ABUNDANCE_FACTOR CHANGE_FRACTION_FILENAME SET_KEYWORD_CHANGE_ABUNDANCE NEW_TEMPERATURE_FILENAME SET_KEYWORD_CHANGE_TEMPERATURE
 # Note that the same molecule can be passed twice, then a model grid will be created
-# taking one of the two for one model, and the other for the second model
+# taking one of the two for one model, and the other for the second model. The gridding is done additively (such as with ':')
 ## Molecule_name = short hand molecule notation
 ## NY_LOW = number of levels in ground-state of molecule
 ## NY_UP = number of levels in first-vibrational state of molecule
