@@ -168,7 +168,10 @@ class Radio(Database):
         stars = [ff[0] for ff in fsplit]
         molec_trans = [(ff[1][0] == 'v' and len(ff[1]) == 2) and ff[2] or ff[1] 
                        for ff in fsplit]
-        vibs = [(ff[1][0] == 'v' and len(ff[1]) == 2) and ff[1][1] or 0
+        #-- Convention: vibrational states != 0 in second place in filename.
+        #   Vibrational states v1 are added automatically. Others are not, for 
+        #   now.
+        vibs = [(ff[1][0] == 'v' and len(ff[1]) == 2) and ff[1][1] or '0'
                for ff in fsplit]
         telescopes = [os.path.splitext(ff[-1])[0] for ff in fsplit]
         
@@ -179,6 +182,8 @@ class Radio(Database):
         defspec_indices = DataIO.getInputData(keyword='SPEC_INDICES',\
                                               filename='Molecule.dat')
         for ff,s,mt,tel,vib in zip(ggf,stars,molec_trans,telescopes,vibs):
+            if vib not in ['1','0']:
+                continue
             this_dm,this_dms,this_dsi = None, None, None
             for dm,dms,dsi in zip(defmolecs,defmolecs_short,defspec_indices):
                 if mt[:len(dms)] == dms:
@@ -348,6 +353,12 @@ class Radio(Database):
                     del self[star_name][k][filename]
                     self.addChangedKey(star_name)
                     break
+                #-- Remove the transition if no filenames are associated 
+                #   with it anymore, i.e. the dict is empty.
+                if not self[star_name][k]:
+                    del self[star_name][k]
+                    self.addChangedKey(star_name)
+                    
         else:
             if self[star_name].has_key(trans):
                 del self[star_name][trans]
