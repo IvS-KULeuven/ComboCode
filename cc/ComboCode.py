@@ -67,6 +67,7 @@ class ComboCode(object):
         self.readInput()
         self.setGlobalPars()
         self.setOutputFolders()
+        self.setStarName()
         self.setPacs()
         self.setSpire()
         self.setSed()
@@ -148,7 +149,23 @@ class ComboCode(object):
             raise IOError('Please define PATH_GASTRONOOM in your inputfile.')
                 
                 
-                
+    
+    def setStarName(self):
+        
+        '''
+        Set star_name for the ComboCode object. 
+        
+        Typically this is only one name for a standard modelling session, but 
+        can be made multiple names as well for a statistical study. 
+        
+        The ComboCode object keeps track of all the data in lists.
+        
+        '''
+        
+        pass
+        
+        
+    
     def setPacs(self):
         
         '''
@@ -217,7 +234,7 @@ class ComboCode(object):
         elif type(remove) is types.StringType: remove = [remove]
         else: remove = list(remove)
         
-        if cc.path.dsed:
+        if cc.path.dsed and not self.star_name == 'model':
             self.sed = Sed.Sed(star_name=self.star_name,remove=remove)
         else: 
             self.sed = None

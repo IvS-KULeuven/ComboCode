@@ -58,6 +58,7 @@ def buildPhotometry(star_name,fn='Photometric_IvS',remove=[]):
     
     ## Retrieve p = builder.SED()
     star = builder.SED(sn_sim,photfile=ofn_raw)
+    print 'Doing star %s'%star_name
     star.get_photometry()
     
     ## Read in photometric data
