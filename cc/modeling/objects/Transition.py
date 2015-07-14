@@ -26,7 +26,7 @@ from cc.tools.io import SphinxReader
 from cc.tools.io import FitsReader, TxtReader
 from cc.tools.numerical import Interpol
 from cc.statistics import BasicStats as bs
-
+from cc.data import LPTools
 
 def getLineStrengths(trl,mode='dint',nans=1,n_data=0):
     
