@@ -9,21 +9,35 @@ def __readPaths():
     '''
     Read the relevant paths from the usr/Path.dat file.
     
+    Default values typically return an expected location for model related 
+    folders, and an empty string for data locations (in which case no data are
+    used).
+    
     @return: The pathnames with associated path are returned.
     @rtype: dict
     
     '''
     
+    dd = dict([('gdata','GASTRoNOoM/src/data'),('gastronoom','GASTRoNOoM'),\
+               ('mcmax','MCMax'),('mobs','MCMax/Observation_Files'),\
+               ('mopac','MCMax/Opacities'),('data',''),('dradio',''),\
+               ('dpacs',''),('dspire',''),('dsed',''),('dphot',''),\
+               ('dcflux',''),('ll','LineLists'),('atm',''),\
+               ('starf','ComboCode/StarFiles')])
     filename = os.path.join(usr,'Path.dat')
     FILE = open(filename,'r')
     lines = FILE.readlines()
     FILE.close()
     lines = [line.strip('\n').strip() for line in lines if line.strip('\n')]
-    dd = dict([line.split('=') for line in lines if line[0] != '#'])
+    dd.update(dict([line.split('=') for line in lines if line[0] != '#']))
     for k,v in dd.items():
-        if not v[0] == '/':
+        if not v:
+            dd[k] = ''
+        elif not v[0] == '/':
             dd[k] = os.path.join(os.path.expanduser('~'),v)
     return dd
+
+
 
 #-- Define the home, usr and aux paths for ComboCode
 home = os.path.dirname(__file__).replace('cc/path','')

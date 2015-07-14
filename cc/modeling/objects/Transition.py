@@ -1790,17 +1790,16 @@ class Transition():
         if self.best_vlsr <> None:
             return self.best_vlsr
 
+        #-- Read the data.
+        #   This will set the vexp, soft parabola and gaussian profiles
+        self.readData()
+        
         #-- Cannot be done for unresolved lines. 
         #   Cannot be done if sphinx has not been calculated.
         #   Then, return the vlsr from Star.dat
         self.readSphinx()
         if self.unresolved or not self.lpdata or not self.sphinx:
             return self.getVlsr(index=index)
-        
-        #-- Read the data.
-        #   This will set the vexp, evexp, soft parabola and gaussian profiles
-        self.readData()
-        vexp = self.getVexp(index=index)
         
         #-- get all the profiles and noise values
         noise = self.getNoise(index=index)
@@ -1821,7 +1820,7 @@ class Transition():
                                               x_template=dvel,window_width=res)
         #-- Number of values tested is int(0.5*vexp/res+1),0.5*vexp on one side 
         #   and on the other side
-        nstep = int(0.5*vexp/res+1)
+        nstep = int(0.5*self.getVexp(index=index)/res+1)
         
         #-- Check if there are enough zeroes in the model flux grid
         #   ie if either of the following 2 statements evaluate to True, a non-
