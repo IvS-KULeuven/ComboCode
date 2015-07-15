@@ -1595,10 +1595,11 @@ class Transition():
                     self.datafiles.append(k)
                 self.fittedlprof.append(datadict[k])
         
-        #-- If lists are empty, not valid data were found. 
+        #-- If lists are empty, no valid data were found. 
         if not self.datafiles:
             self.datafiles, self.fittedlprof = None,None 
-            
+            print 'No data found for %s. If there should be data: '%str(self)+\
+                  'Did you run fitLP() in the Radio db?'
         #-- Datafiles have been updated, so reset the lpdata and fittedlprof 
         #   properties. Data will be read anew when next they are requested.
         self.lpdata = None
@@ -1623,10 +1624,7 @@ class Transition():
                     else:
                         lprof = TxtReader.TxtReader(filename=df)
                     lprof.setNoise(self.getVexp(idf))
-                    self.lpdata.append(lprof)
-            else:
-                print 'No data found for %s. Setting v_lsr to 0.0'%str(self)+\
-                      ' and cannot estimate noise or vexp values.'
+                    self.lpdata.append(lprof)            
                     
     
     
