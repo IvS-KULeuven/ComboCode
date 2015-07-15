@@ -29,7 +29,7 @@ class ResoStats(Statistics):
     
     """
         
-    def __init__(self,star_name,code='GASTRoNOoM',path_code='codeSep2010',\
+    def __init__(self,star_name,code='GASTRoNOoM',path_code='codeJun2013',\
                  lll_p=None):        
         
         """ 
@@ -435,9 +435,12 @@ class ResoStats(Statistics):
         
         if self.no_stats: return
         print 'Selecting best fit models in <%s> mode.'%mode
-        stars = array([s 
-                       for s in self.star_grid 
-                       if s['LAST_GASTRONOOM_MODEL']])
+        
+        #stars = array([s 
+                       #for s in self.star_grid 
+                       #if s['LAST_GASTRONOOM_MODEL']])
+        stars = array([s['LAST_GASTRONOOM_MODEL'] for s in self.star_grid])
+
         bfbools = ones(len(stars),dtype='bool')
         for ist,st in enumerate(self.translist):
             if ist in self.includedtrans:
