@@ -164,9 +164,16 @@ class Radio(Database):
         ggf = [os.path.split(ff)[1] for ff in ggf]
         ggf = [ff for ff in ggf if '_' in ff]
         ggf = [ff for ff in ggf if ff[0] != '_']
-        stars = [ff.split('_')[0] for ff in ggf]
-        molec_trans = [ff.split('_')[1] for ff in ggf]
-        telescopes = [os.path.splitext(ff)[0].split('_')[-1] for ff in ggf]
+        fsplit = [ff.split('_') for ff in ggf]
+        stars = [ff[0] for ff in fsplit]
+        molec_trans = [(ff[1][0] == 'v' and len(ff[1]) == 2) and ff[2] or ff[1] 
+                       for ff in fsplit]
+        #-- Convention: vibrational states != 0 in second place in filename.
+        #   Vibrational states v1 are added automatically. Others are not, for 
+        #   now.
+        vibs = [(ff[1][0] == 'v' and len(ff[1]) == 2) and ff[1][1] or '0'
+               for ff in fsplit]
+        telescopes = [os.path.splitext(ff[-1])[0] for ff in fsplit]
         
         defmolecs = DataIO.getInputData(keyword='TYPE_SHORT',\
                                         filename='Molecule.dat')
@@ -174,7 +181,9 @@ class Radio(Database):
                                               filename='Molecule.dat')
         defspec_indices = DataIO.getInputData(keyword='SPEC_INDICES',\
                                               filename='Molecule.dat')
-        for ff,s,mt,tel in zip(ggf,stars,molec_trans,telescopes):
+        for ff,s,mt,tel,vib in zip(ggf,stars,molec_trans,telescopes,vibs):
+            if vib not in ['1','0']:
+                continue
             this_dm,this_dms,this_dsi = None, None, None
             for dm,dms,dsi in zip(defmolecs,defmolecs_short,defspec_indices):
                 if mt[:len(dms)] == dms:
@@ -186,31 +195,31 @@ class Radio(Database):
                     'cn','hcn','h13cn','hco+']
             if this_dm == None or this_dms in evil:
                 continue
-            trans_raw = mt.replace(this_dms,'',1)
+            traw = mt.replace(this_dms,'',1)
             if this_dsi == 2:
-                if len(trans_raw) == 4:
-                    trans = 'TRANSITION=%s 0 %s %s 0 0 %s %s 0 %s 0.0'\
-                            %(this_dm,trans_raw[0],trans_raw[1],\
-                            trans_raw[2],trans_raw[3],tel)
+                if len(traw) == 4:
+                    trans = 'TRANSITION=%s %s %s %s 0 %s %s %s 0 %s 0.0'\
+                            %(this_dm,vib,traw[0],traw[1],\
+                              vib,traw[2],traw[3],tel)
                 else:
                     continue
             elif this_dsi == 0:
-                if len(trans_raw) == 4:
-                    trans = 'TRANSITION=%s 0 %s 0 0 0 %s 0 0 %s 0.0'\
-                            %(this_dm,trans_raw[0:2],trans_raw[2:4],tel)
-                elif len(trans_raw) == 3:
-                    trans = 'TRANSITION=%s 0 %s 0 0 0 %s 0 0 %s 0.0'\
-                            %(this_dm,trans_raw[0:2],trans_raw[2],tel)
-                elif len(trans_raw) == 2:
-                    trans = 'TRANSITION=%s 0 %s 0 0 0 %s 0 0 %s 0.0'\
-                            %(this_dm,trans_raw[0],trans_raw[1],tel)
+                if len(traw) == 4:
+                    trans = 'TRANSITION=%s %s %s 0 0 %s %s 0 0 %s 0.0'\
+                            %(this_dm,vib,traw[0:2],vib,traw[2:4],tel)
+                elif len(traw) == 3:
+                    trans = 'TRANSITION=%s %s %s 0 0 %s %s 0 0 %s 0.0'\
+                            %(this_dm,vib,traw[0:2],vib,traw[2],tel)
+                elif len(traw) == 2:
+                    trans = 'TRANSITION=%s %s %s 0 0 %s %s 0 0 %s 0.0'\
+                            %(this_dm,vib,traw[0],vib,traw[1],tel)
                 else:
                     continue
             elif this_dsi == 1:
-                if len(trans_raw) == 6:
-                    trans = 'TRANSITION=%s 0 %s %s %s 0 %s %s %s %s 0.0'\
-                            %(this_dm,trans_raw[0],trans_raw[1],trans_raw[2],\
-                            trans_raw[3],trans_raw[4],trans_raw[5],tel)
+                if len(traw) == 6:
+                    trans = 'TRANSITION=%s %s %s %s %s %s %s %s %s %s 0.0'\
+                            %(this_dm,vib,traw[0],traw[1],traw[2],\
+                              vib,traw[3],traw[4],traw[5],tel)
                 else:
                     continue
             else:
@@ -344,6 +353,12 @@ class Radio(Database):
                     del self[star_name][k][filename]
                     self.addChangedKey(star_name)
                     break
+                #-- Remove the transition if no filenames are associated 
+                #   with it anymore, i.e. the dict is empty.
+                if not self[star_name][k]:
+                    del self[star_name][k]
+                    self.addChangedKey(star_name)
+                    
         else:
             if self[star_name].has_key(trans):
                 del self[star_name][trans]
@@ -391,7 +406,53 @@ class Radio(Database):
                     nd[ff] = None
                 self[ss][tt] = nd
             self.addChangedKey(ss)
+    
+    
+    def filterContents(self,star_name=''):
         
+        '''
+        Filter out the fit results from the contents of the database, eg for
+        printing purposes. 
+        
+        If star_name is given, only the star will be printed. Otherwise the 
+        full database is printed. 
+        
+        @keyword star_name: The requested star. Default is to print all of them
+        
+                            (default: '')
+        @type star_name: str
+        
+        @return: The dictionary with just the relevant contents (trans and file
+                 names)
+        @rtype: dict
+        
+        ''' 
+        
+        def __removeFits(self,ss):
+            
+            '''
+            Helper method to retrieve only the filenames for every transition
+            of given star. 
+            
+            '''
+            
+            fdd = dict()
+            for tt in self[ss].keys():
+                fdd[tt] = [ff for ff in sorted(self[ss][tt].keys())]
+            return fdd
+         
+         
+        pdd = dict()
+        if star_name: 
+            pdd[star_name] = __removeFits(self,star_name)
+        else:
+            for ss in self.keys():
+                pdd[ss] = __removeFits(self,ss)
+        
+        return pdd
+        
+        
+    
     
     def fitLP(self,star_name='',filename='',trans='',**kwargs):
         

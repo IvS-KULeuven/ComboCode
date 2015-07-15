@@ -384,6 +384,7 @@ class PlotGas(PlottingSession):
             keytags = cfg_dict['keytags']
             unreso_keytags = keytags
         else:
+            #-- Note that Data keytags are added in the helper method
             keytags = [',\\ '.join(set(\
                         [trans.getModelId() != '' \
                             and str(trans.getModelId())\
@@ -392,8 +393,6 @@ class PlotGas(PlottingSession):
                          for trans in star['GAS_LINES']]))
                        for star in star_grid]
             unreso_keytags = list(keytags)
-            if not no_data : 
-                keytags.append('Data')
         #-- Check how many resolved transitions there are (whether they have 
         #   data or not.
         trans_list = Transition.extractTransFromStars(star_grid,sort_freq,\
@@ -492,6 +491,8 @@ class PlotGas(PlottingSession):
             while trans_list:
                 i += 1             
                 data = []
+                #-- Remember the maximum number of datasets included per tile
+                ndata = 0
                 for j in xrange(n_subplots):
                     current_trans = trans_list.pop(0)
                     current_sub = [star.getTransition(current_trans) 
@@ -547,9 +548,9 @@ class PlotGas(PlottingSession):
                     else:
                         ddict['x'], ddict['y'] = [], []
                     
-                    #- Add data, but only if the data filename is known. This 
-                    #- will be Tmb, in K. In case of intrinsic==1, you dont 
-                    #- even want to check this.
+                    #-- Add data, but only if the data filename is known. This 
+                    #   will be Tmb, in K. In case of intrinsic==1, you dont 
+                    #   even want to check this.
                     if current_trans.lpdata and not no_data:
                         ddict['histoplot'] = []
                         n_models = len(ddict['x'])
@@ -557,7 +558,8 @@ class PlotGas(PlottingSession):
                             ddict['x'].append(lp.getVelocity())
                             ddict['y'].append(lp.getFlux())
                             ddict['histoplot'].append(n_models+ilp)
-                        
+                            if ilp == ndata:
+                                ndata += 1
                     ddict['labels'] = \
                         [('%s'%(current_trans.molecule.molecule_plot),0.05,0.87),\
                          ('%s'%(current_trans.makeLabel()),0.05,0.76)]
@@ -611,8 +613,10 @@ class PlotGas(PlottingSession):
                     if not trans_list:
                         break
                 cfg['filename'] = filename + '_trl%i'%(i)
+                #-- Copy the keytags list to append Data keys.
+                these_tags = list(keytags) + ['Data']*ndata
                 plot_filenames.append(Plotting2.plotTiles(extension='pdf',\
-                     data=data,filename=filename,keytags=keytags,\
+                     data=data,filename=filename,keytags=these_tags,\
                      xaxis=r'$v$ (km s$^{-1}$)',fontsize_axis=16,cfg=cfg,\
                      yaxis=intrinsic \
                             and r'$F_\nu$ (Jy)' \
@@ -645,7 +649,6 @@ class PlotGas(PlottingSession):
                     subgrid.append(star_grid[i+j])
                     if keytags: subkeys.append(keytags[i+j])
                     i += 1
-                if keytags and not no_data: subkeys.append(keytags[-1])
                 #- Copying the list so that the destructive loop does not mess
                 #- up multiple tile plot runs if n_models > n_max_models
                 createTilePlots(trans_list=list(trans_list),\
