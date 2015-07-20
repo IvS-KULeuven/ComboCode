@@ -569,16 +569,16 @@ class Radio(Database):
             self[ss][tt][ff] = fitr
             self.addChangedKey(ss)
             
-            
-        if star_name and not self.has_key(star_name):
-            print 'Star not found.'
-            return
         
         if filename and not star_name:
             star_name = os.path.split(filename)[1].split('_')[0]
         
         if trans and not star_name:
             print 'Define star_name to continue.'
+            return
+
+        if star_name and not self.has_key(star_name):
+            print 'Star not found.'
             return
         
         #-- No star_name given, so run through all stars, transitions and files
