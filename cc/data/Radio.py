@@ -7,7 +7,7 @@ Author: R. Lombaert
 
 """
 
-import os, pyfits
+import os, pyfits, re
 from glob import glob
 
 import cc.path
@@ -147,11 +147,12 @@ class Radio(Database):
             - SiO and its isotopologues
             - SiS and its isotopologues
             - H2O and pH2O
+            - SO2
             - CS
             - PO and PN
         
         Particularly excludes: (because no naming convention/too complex)
-            - SO and SO2
+            - SO 
             - H2O and pH2O isotopologues
             - H2CO
             - CN
@@ -165,15 +166,21 @@ class Radio(Database):
         ggf = [ff for ff in ggf if '_' in ff]
         ggf = [ff for ff in ggf if ff[0] != '_']
         fsplit = [ff.split('_') for ff in ggf]
-        stars = [ff[0] for ff in fsplit]
-        molec_trans = [(ff[1][0] == 'v' and len(ff[1]) == 2) and ff[2] or ff[1] 
-                       for ff in fsplit]
+        
+        #-- Convention: star names come first
+        stars = [ff.pop(0) for ff in fsplit]
+        
+        #-- Convention: telescope names are at end of filename before extension
+        telescopes = [os.path.splitext(ff.pop(-1))[0] for ff in fsplit]
+        
         #-- Convention: vibrational states != 0 in second place in filename.
         #   Vibrational states v1 are added automatically. Others are not, for 
         #   now.
-        vibs = [(ff[1][0] == 'v' and len(ff[1]) == 2) and ff[1][1] or '0'
+        vibs = [(ff[0][0] == 'v' and len(ff[0]) == 2) and ff.pop(0)[1] or '0'
                for ff in fsplit]
-        telescopes = [os.path.splitext(ff[-1])[0] for ff in fsplit]
+        
+        #-- Convention: molecule names always first in the molecule tag
+        molec_trans = ['_'.join(ff) for ff in fsplit]
         
         defmolecs = DataIO.getInputData(keyword='TYPE_SHORT',\
                                         filename='Molecule.dat')
@@ -191,39 +198,87 @@ class Radio(Database):
                     this_dms = dms
                     this_dsi = dsi
                     break
-            evil = ['so','so2','h217o','h218o','ph217o','ph218o',\
-                    'cn','hcn','h13cn','hco+']
-            if this_dm == None or this_dms in evil:
+            
+            #-- Don't bother with these molecules: not clear how they are used
+            #   as input for GASTRoNOoM.
+            #-- Note that the parser can already detect decimal quantum numbers
+            #   as required by CN
+            evil = ['cn','hcn','h13cn','hco+']
+            
+            #-- If molecule is not found, or is an evil molecule, or is not of 
+            #   spectral index type 0, 1, or 2, then skip the entry.
+            if this_dm == None or this_dms in evil or this_dsi not in [0,1,2]:
                 continue
-            traw = mt.replace(this_dms,'',1)
-            if this_dsi == 2:
-                if len(traw) == 4:
-                    trans = 'TRANSITION=%s %s %s %s 0 %s %s %s 0 %s 0.0'\
-                            %(this_dm,vib,traw[0],traw[1],\
-                              vib,traw[2],traw[3],tel)
+            
+            mt = mt.replace(this_dms,'',1)
+            
+            #-- Create the regular expression for the filename convention
+            #   Allows co32, h2o123132, h2o-1_2_3-1_3_2
+            p = re.compile('\d{2,}|-[\d\.?\d_?]+-[\d\.?\d_?]+')
+            parsed = p.match(mt).group().rstrip('_').split('-')
+            
+            #-- if parsed contains one element, several options are possible
+            if len(parsed) == 1: 
+                #-- dsi == 1 can only take 6 quantum numbers, 3 per level
+                if len(parsed[0]) == 6 and this_dsi == 1:
+                    tupper = parsed[0][0:3]
+                    tlower = parsed[0][3:6]
+                #-- dsi == 2 can only take 4 quantum numbers, 2 per level
+                elif len(parsed[0]) == 4 and this_dsi == 2:
+                    tupper = parsed[0][0:2]
+                    tlower = parsed[0][2:4]
+                #-- dsi == 0 can only take 2 quantum numbers, 1 per level
+                #   several combinations are possible for multiple digit levels
+                elif len(parsed[0]) == 6 and this_dsi == 0:
+                    tupper = [parsed[0][0:3]]
+                    tlower = [parsed[0][3:6]]
+                elif len(parsed[0]) == 5 and this_dsi == 0:
+                    tupper = [parsed[0][0:3]]
+                    tlower = [parsed[0][3:5]]
+                elif len(parsed[0]) == 4 and this_dsi == 0:
+                    tupper = [parsed[0][0:2]]
+                    tlower = [parsed[0][2:4]]
+                elif len(parsed[0]) == 3 and this_dsi == 0:
+                    tupper = [parsed[0][0:2]]
+                    tlower = [parsed[0][2:3]]
+                elif len(parsed[0]) == 2 and this_dsi == 0:
+                    tupper = [parsed[0][0]]
+                    tlower = [parsed[0][1]]
+                #-- Any other combinations are not possible, and must be 
+                #   separated with '_', '-' in the filename
                 else:
                     continue
-            elif this_dsi == 0:
-                if len(traw) == 4:
-                    trans = 'TRANSITION=%s %s %s 0 0 %s %s 0 0 %s 0.0'\
-                            %(this_dm,vib,traw[0:2],vib,traw[2:4],tel)
-                elif len(traw) == 3:
-                    trans = 'TRANSITION=%s %s %s 0 0 %s %s 0 0 %s 0.0'\
-                            %(this_dm,vib,traw[0:2],vib,traw[2],tel)
-                elif len(traw) == 2:
-                    trans = 'TRANSITION=%s %s %s 0 0 %s %s 0 0 %s 0.0'\
-                            %(this_dm,vib,traw[0],vib,traw[1],tel)
-                else:
-                    continue
-            elif this_dsi == 1:
-                if len(traw) == 6:
-                    trans = 'TRANSITION=%s %s %s %s %s %s %s %s %s %s 0.0'\
-                            %(this_dm,vib,traw[0],traw[1],traw[2],\
-                              vib,traw[3],traw[4],traw[5],tel)
-                else:
-                    continue
+            
+            #-- If there are three elements, the second and  third give the 
+            #   upper and lower level respectively, each quantum number 
+            #   separated by '_'
+            elif len(parsed) == 3: 
+                #-- parsed[0] is just an empty string
+                tupper = parsed[1].split('_')
+                tlower = parsed[2].split('_')
+                #-- Double check if the correct amount of quantum numbers are
+                #   given for each type
+                if (this_dsi == 0 and len(tupper) != 1) or \
+                   (this_dsi == 1 and len(tupper) != 3) or \
+                   (this_dsi == 2 and len(tupper) != 2):
+                   continue    
+            
+            #-- If neither, continue without adding anything to the db
             else:
                 continue
+            
+            if this_dsi == 2:
+                trans = 'TRANSITION=%s %s %s %s 0 %s %s %s 0 %s 0.0'\
+                        %(this_dm,vib,tupper[0],tupper[1],\
+                          vib,tlower[0],tlower[1],tel)
+            elif this_dsi == 1:
+                trans = 'TRANSITION=%s 0.0'\
+                        %(' '.join([this_dm,vib,tupper[0],tupper[1],tupper[2],\
+                                    vib,tlower[0],tlower[1],tlower[2],tel]))
+            elif this_dsi == 0:
+                trans = 'TRANSITION=%s %s %s 0 0 %s %s 0 0 %s 0.0'\
+                        %(this_dm,vib,tupper[0],vib,tlower[0],tel)
+                
             self.addData(star_name=s,trans=trans,filename=ff)
             
 
@@ -352,12 +407,13 @@ class Radio(Database):
                 if filename in v.keys():
                     del self[star_name][k][filename]
                     self.addChangedKey(star_name)
+
+                    #-- Remove the transition if no filenames are associated 
+                    #   with it anymore, i.e. the dict is empty.
+                    if not self[star_name][k]:
+                        del self[star_name][k]
+                        self.addChangedKey(star_name)
                     break
-                #-- Remove the transition if no filenames are associated 
-                #   with it anymore, i.e. the dict is empty.
-                if not self[star_name][k]:
-                    del self[star_name][k]
-                    self.addChangedKey(star_name)
                     
         else:
             if self[star_name].has_key(trans):
@@ -516,6 +572,13 @@ class Radio(Database):
             
         if star_name and not self.has_key(star_name):
             print 'Star not found.'
+            return
+        
+        if filename and not star_name:
+            star_name = os.path.split(filename)[1].split('_')[0]
+        
+        if trans and not star_name:
+            print 'Define star_name to continue.'
             return
         
         #-- No star_name given, so run through all stars, transitions and files
