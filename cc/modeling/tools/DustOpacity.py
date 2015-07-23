@@ -337,7 +337,7 @@ class CustomOpacity():
         
         """
 
-        spec_dens = DataIO.getInputData(keyword='SPEC_DENS',rindex=self.index\
+        spec_dens = DataIO.getInputData(keyword='SPEC_DENS',rindex=self.index,\
                                         filename='Dust.dat')
         opa_cst = q_cst/4.0*3.0/spec_dens/(a_mod*10**(-4))      
         for line in self.input_data:
@@ -383,7 +383,7 @@ class CustomOpacity():
         
         """
         
-        spec_dens = DataIO.getInputData(keyword='SPEC_DENS',rindex=self.index\
+        spec_dens = DataIO.getInputData(keyword='SPEC_DENS',rindex=self.index,\
                                         filename='Dust.dat')
         wl1 = metallic and pi*a_mod or 2*pi*a_mod
         opa_cst = q_cst/4.0*3.0/spec_dens/(a_mod*10**(-4))

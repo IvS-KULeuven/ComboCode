@@ -48,18 +48,17 @@ class Radio(Database):
         specific to radio data management.
         
         Examples:
-        For data located in /home/robinl/Data/Molecular/
+        For data located in dradio in Path.dat
         >>> from cc.data import Radio
-        >>> db = Radio.Radio('/home/robinl/Data/Molecular/',auto_parse=1)
+        >>> db = Radio.Radio(auto_parse=1)
         >>> db.sync()
 
         This will create a database, automatically search your data folder for 
         data files that the script can recognize, and save them in the 
         database. The final command ( .sync() ) will then save the database to
         your hard disk in the same folder, under 'radio_data.db'. Later when 
-        you run Radio.Radio('/home/robinl/Data/Molecular/') again, it will load
-        that same database that still contains all those datafiles and 
-        TRANSITION references.
+        you run Radio.Radio() again, it will load that same database that still
+        contains all those datafiles and TRANSITION references.
 
         The database is structured per star_name and per transition definition.
         So for instance, you will find the file whya_co32_APEX.fits in a dict 
@@ -85,7 +84,8 @@ class Radio(Database):
         data).
 
         Lastly, you can do multiple things with this database.
-        >>> db.addData(star_name='whya',trans='TRANSITION=12C16O 0 3 0 0 0 2 0 0 JCMT 0.0',\
+        >>> db.addData(star_name='whya',\
+                       trans='TRANSITION=12C16O 0 3 0 0 0 2 0 0 JCMT 0.0',\
                        filename='whya_co32_Maercker_new_JCMT.fits')
         will add a new entry to the database if it is not there. This is useful
         for those molecules/filenames which have not been automatically found 
@@ -93,10 +93,12 @@ class Radio(Database):
         naming convention in my folder (do ls *so2* in my data folder), because
         with this method you can still add them whichever way you want.
 
-        >>> db.removeData(star_name='whya',trans='TRANSITION=12C16O 0 3 0 0 0 2 0 0 JCMT 0.0')
+        >>> db.removeData(star_name='whya',\
+                          trans='TRANSITION=12C16O 0 3 0 0 0 2 0 0 JCMT 0.0')
         removes a whole transition from the database. Alternatively
 
-        >>> db.removeData(star_name='whya',filename='whya_co32_Maercker_new_JCMT.fits')
+        >>> db.removeData(star_name='whya',\
+                          filename='whya_co32_Maercker_new_JCMT.fits')
         removes a single filename from the database. (does not delete the file)
 
         And if you want to know which datafiles in your data folder are not yet
@@ -112,12 +114,8 @@ class Radio(Database):
         As long as you don't do this, the hard disk version of the datafile 
         will remain unchanged. 
         
-        @param path: Path to the database excluding db name. This is the folder
-                     where the radio data are located.
-        @type path: string
-        
-        @keyword auto_parse: Automatically parse the target folder for data to be 
-                             included in the database. 
+        @keyword auto_parse: Automatically parse the target folder for data to 
+                             be included in the database. 
                          
                              (default: 0)
         @type auto_parse: bool
@@ -146,15 +144,13 @@ class Radio(Database):
             - CO and its isotopologues
             - SiO and its isotopologues
             - SiS and its isotopologues
-            - H2O and pH2O
-            - SO2
+            - H2O and pH2O, and their isotopologues
+            - SO2 and SO
             - CS
             - PO and PN
+            - H2CO
         
         Particularly excludes: (because no naming convention/too complex)
-            - SO 
-            - H2O and pH2O isotopologues
-            - H2CO
             - CN
             - HCN and its isotopologues
             - HCO+

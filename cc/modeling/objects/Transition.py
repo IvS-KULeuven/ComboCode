@@ -1567,7 +1567,7 @@ class Transition():
         Typically, the entry db[star_name][transition] is what is given here.
         
         @param datadict: the filenames and associated fit results
-        @type datafile: dict()
+        @type datadict: dict()
         
         '''
         
