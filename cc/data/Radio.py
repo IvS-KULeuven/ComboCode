@@ -23,7 +23,7 @@ class Radio(Database):
 
     """
 
-    def __init__(self,auto_parse=0,db_name='radio_data.db'):
+    def __init__(self,db_name='radio_data.db'):
 
         """
         Initializing an instance of Radio.
@@ -50,7 +50,7 @@ class Radio(Database):
         Examples:
         For data located in dradio in Path.dat
         >>> from cc.data import Radio
-        >>> db = Radio.Radio(auto_parse=1)
+        >>> db = Radio.Radio()
         >>> db.sync()
 
         This will create a database, automatically search your data folder for
@@ -89,8 +89,7 @@ class Radio(Database):
                        filename='whya_co32_Maercker_new_JCMT.fits')
         will add a new entry to the database if it is not there. This is useful
         for those molecules/filenames which have not been automatically found
-        by the auto_parse (for instance SO2 data files do not stick to the file
-        naming convention in my folder (do ls *so2* in my data folder), because
+        by the parseFolder method, because
         with this method you can still add them whichever way you want.
 
         >>> db.removeData(star_name='whya',\
@@ -114,11 +113,6 @@ class Radio(Database):
         As long as you don't do this, the hard disk version of the datafile
         will remain unchanged.
 
-        @keyword auto_parse: Automatically parse the target folder for data to
-                             be included in the database.
-
-                             (default: 0)
-        @type auto_parse: bool
         @keyword db_name: The name of the database. The default only is used by
                           ComboCode.
 
@@ -129,9 +123,6 @@ class Radio(Database):
 
         db_path = os.path.join(cc.path.dradio,db_name)
         super(Radio,self).__init__(db_path=db_path)
-
-        if auto_parse:
-            self.parseFolder()
 
 
 

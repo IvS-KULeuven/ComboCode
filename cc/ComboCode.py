@@ -259,9 +259,8 @@ class ComboCode(object):
 
         self.radio = None
         self.radio_autosearch = self.processed_input.pop('RADIO_AUTOSEARCH',0)
-        radio_autoparse = self.processed_input.pop('RADIO_AUTOPARSE',0)
         if cc.path.dradio:
-            radio_db = Radio.Radio(auto_parse=radio_autoparse)
+            radio_db = Radio.Radio()
             if radio_db.has_key(self.star_name):
                 self.radio = radio_db[self.star_name]
 
