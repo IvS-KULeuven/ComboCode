@@ -92,12 +92,14 @@ class ResoStats(Statistics):
         self.loglikelihood = dict()
         self.ratiopeak = dict()
         self.ratioint = dict()
-    
+        self.ratiocombo = dict()
+        self.stats = dict([('peak',self.ratiopeak),('int',self.ratioint),\
+                           ('combo',self.ratiocombo)])
+        
         #-- Only set to True if something failed somewhere. Likely not yet 
         #   implemented/resolved issues.
         self.no_stats = False
-        self.stats = dict([('peak',self.ratiopeak),('int',self.ratioint),\
-                           ('combo',zip(self.ratiopeak,self.ratioint))])
+        
         #-- The default uncertainties were taken from the manuals of the 
         #   respective telescopes, and give a safe estimate based on the given
         #   values. 
@@ -264,6 +266,7 @@ class ResoStats(Statistics):
             #-- Calculate the ratios for integrated and peak Tmbs (model/data)
             self.ratioint[st] = self.minttmb[st]/self.dinttmb[st]
             self.ratiopeak[st] = self.mpeaktmb[st]/self.dpeaktmb[st]
+            self.ratiocombo[st] = zip(self.ratiopeak[st],self.ratioint[st])
         
         self.calcLoglikelihoodThreshold()
     
