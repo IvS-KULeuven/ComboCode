@@ -1489,18 +1489,18 @@ class Star(dict):
                 self['R_INNER_DUST'] = self['R_INNER_DUST_AU']*self.au\
                                                 /self['R_STAR']/self.Rsun
             else:
-                try:
-                    rad = self.getDustRad()
-                    dens = self.getDustDensity()
-                    if self['R_INNER_DUST_MODE'] == 'MAX':
-                        ri_cm = rad[argmax(dens)]
-                    elif self['R_INNER_DUST_MODE'] == 'ABSOLUTE':
-                        ri_cm = rad[dens>10**(-30)][0]
-                    else:
-                        ri_cm = rad[dens>0.01*max(dens)][0]
-                    self['R_INNER_DUST'] = ri_cm/self.Rsun/self['R_STAR']
-                except IOError:
+                rad = self.getDustRad()
+                if rad.size == 0: 
                     self['R_INNER_DUST'] = 1.0
+                    return
+                dens = self.getDustDensity()
+                if self['R_INNER_DUST_MODE'] == 'MAX':
+                    ri_cm = rad[argmax(dens)]
+                elif self['R_INNER_DUST_MODE'] == 'ABSOLUTE':
+                    ri_cm = rad[dens>10**(-30)][0]
+                else:
+                    ri_cm = rad[dens>0.01*max(dens)][0]
+                self['R_INNER_DUST'] = ri_cm/self.Rsun/self['R_STAR']
         else:
             pass
 
