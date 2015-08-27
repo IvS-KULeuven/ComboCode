@@ -28,7 +28,81 @@ from cc.tools.numerical import Interpol
 from cc.statistics import BasicStats as bs
 from cc.data import LPTools
 
-def getLineStrengths(trl,mode='dint',nans=1,n_data=0):
+def getJup(trl):
+    '''
+    Get all upper rotational levels from a transition list.
+    @param trl: The Transition() objects.
+    @type trl: list[Transition()]    
+    
+    @return: All upper rotational levels from a transition list
+    @rtype: list
+    '''
+    jup = [trl[i].jup for i in range(len(trl))] 
+    return jup
+       
+def getVup(trl):
+    '''
+    Get all upper vibrational levels from a transition list.
+    @param trl: The Transition() objects.
+    @type trl: list[Transition()]    
+    
+    @return: All upper vibrational levels from a transition list
+    @rtype: list    
+    '''
+    vup = [trl[i].vup for i in range(len(trl))]
+    return vup
+
+def getTelescope(trl):
+    '''
+    Get all telescopes from a transition list.
+    @param trl: The Transition() objects.
+    @type trl: list[Transition()] 
+    
+    @return: All telescoped from a transition list
+    @rtype: list    
+    '''
+    telescope = [trl[i].telescope for i in range(len(trl))]
+    return telescope
+
+
+def splitLineStrengthsPerTelescope(trl, mode = 'dtmb', scale = 0):
+    '''
+    For PlotGas.plotIntTmb()
+    Creates sublists which contain jup, int. main beam temp. and its error
+    of a molecular line, each sublist belonging to a different telescope.
+    
+    @param trl: The Transition() objects.
+    @type trl: list[Transition()] 
+    @param mode: mode used in getLineStrengths()
+                 (default: 'dtmb')
+    @type mode: string
+    @param scale: Scale data to antenna of 1 m**2, necesarry if comparing data
+                  from different telescopes
+                  (default: 0)
+    @type scale: bool
+    
+    @return: Three lists: jup, data, error. Each list contains a number of sublists,
+             the number corresponding to the number of telescopes.
+    @rtype: list[list[float]], list[list[float]], list[list[float]]
+    '''
+    dtmb = getLineStrengths(trl, mode = mode, scale = scale) 
+    jup = getJup(trl)    
+    telescope = getTelescope(trl)
+    tele = list(set(telescope))
+       
+    data = []
+    error = []
+    jup_split = []
+    for ii in range(len(tele)):
+        index = [x for x in range(len(telescope)) if telescope[x] == tele[ii]]
+        data.append([dtmb[0][x] for x in index])
+        error.append([dtmb[1][x] for x in index])
+        jup_split.append([jup[x] for x in index])
+    
+    return jup_split, data, error
+
+
+def getLineStrengths(trl,mode='dint',nans=1,n_data=0, scale = 0):
     
     '''
     Get the line strengths from Transition() objects, either from data or from
@@ -69,6 +143,10 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0):
                      
                      (default: 0)
     @type n_data: int
+    @param scale: Scale data to antenna of 1 m**2, necesarry if comparing data
+                  from different telescopes
+                  (default: 0)
+    @type scale: bool
     
     @return: The requested line strengths in W/m2, or K*km/s, as well as errors
              if applicable. If a combo mode is requested, errors are given when
@@ -77,6 +155,7 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0):
     @rtype: (list[float],list[float])
     
     '''
+    scaling = {'APEX': 12**2, 'SEST': 15**2, 'HIFI':3.5**2}
     
     modes = {'dint': 'getIntIntUnresolved',\
              'mint': 'getIntIntIntSphinx',\
@@ -103,7 +182,11 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0):
         if t is None:
             allints.append(nans and float('nan') or None)
             continue
+        if t.telescope not in scaling.keys():
+            print 'Add telescope diameter to scaling dictionary in Transition.getLineStrengths!'
+            return
         nls = getattr(t,modes[mode])()
+
         if mode == 'dint':
             if nls[0] == 'inblend':
                 for tb in nls[2]:
@@ -115,9 +198,23 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0):
             nerr = (nans and nls[0] is None) and float('nan') or nls[1]
             allints.append(nint)
             allerrs.append(nerr)
+            
+        elif mode == 'dtmb':
+            if scale == 1:
+                allints.append(((nans and nls is None) and float('nan') or nls)/scaling[t.telescope])
+                allerrs.append(((nans and nls is None) and float('nan') or nls)*0.2/scaling[t.telescope])
+            else:
+                allints.append((nans and nls is None) and float('nan') or nls)
+                allerrs.append(((nans and nls is None) and float('nan') or nls)*0.2)
+            
         else:
-            allints.append((nans and nls is None) and float('nan') or nls)
-            allerrs.append((nans and nls is None) and float('nan') or nls)
+            if scale == 1:
+                allints.append(((nans and nls is None) and float('nan') or nls)/scaling[t.telescope])
+                allerrs.append(((nans and nls is None) and float('nan') or nls)/scaling[t.telescope])                           
+            else:    
+                allints.append((nans and nls is None) and float('nan') or nls)
+                allerrs.append((nans and nls is None) and float('nan') or nls)            
+    
     
     allints, allerrs = array(allints), array(allerrs)
     return (allints,allerrs)
@@ -916,6 +1013,9 @@ class Transition():
             self.unreso = None
             self.unreso_err = None
             self.unreso_blends = None
+        #
+        self.scaling = {'APEX': 12, 'SEST': 15, 'HIFI':3.5}
+        #
 
 
         
