@@ -12,8 +12,10 @@ import os
 import scipy
 from scipy import argmin,ones
 from scipy import array
+from scipy import sum
 import operator
 import types
+import numpy as np
 
 import cc.path
 from cc.tools.io import DataIO
@@ -92,12 +94,12 @@ class ResoStats(Statistics):
         self.loglikelihood = dict()
         self.ratiopeak = dict()
         self.ratioint = dict()
-    
+        self.ratiocombo = dict()
         #-- Only set to True if something failed somewhere. Likely not yet 
         #   implemented/resolved issues.
         self.no_stats = False
         self.stats = dict([('peak',self.ratiopeak),('int',self.ratioint),\
-                           ('combo',zip(self.ratiopeak,self.ratioint))])
+                           ('combo',self.ratiocombo)])
         #-- The default uncertainties were taken from the manuals of the 
         #   respective telescopes, and give a safe estimate based on the given
         #   values. 
@@ -264,7 +266,8 @@ class ResoStats(Statistics):
             #-- Calculate the ratios for integrated and peak Tmbs (model/data)
             self.ratioint[st] = self.minttmb[st]/self.dinttmb[st]
             self.ratiopeak[st] = self.mpeaktmb[st]/self.dpeaktmb[st]
-        
+            self.ratiocombo[st] = zip(self.ratiopeak[st],self.ratioint[st])
+            
         self.calcLoglikelihoodThreshold()
     
     
@@ -335,7 +338,8 @@ class ResoStats(Statistics):
             
             
     def printStats(self,bfms=[]):
-        
+          
+
         '''
         Print the statistics for all transitions and models. 
         
@@ -350,46 +354,48 @@ class ResoStats(Statistics):
         bfms = list(bfms)
         if self.no_stats: return
         for ist,st in enumerate(self.translist):
-            #-- No need for the vexp value here, we know the noise is already
-            #   set.
-            noise = st.getNoise()
-            print '*******************************************************'
-            print 'Statistics for %i: %s:'%(ist,str(st))
-            print '-------------------------------------'
-            print 'Data intensities [integrated --- peak --- STD (noise)]:'
-            print '%f K km/s \t---\t %f K \t---\t %f K'\
-                    %(self.dinttmb[st],self.dpeaktmb[st],noise)
-            print '-------------------------------------'
-            print 'Model/Data intensities [integrated --- peak --- lll]:'
-            lines = ['- %s: \t %.3f \t---\t %.3f \t---\t %.2e\
-                        '%(str(tr.getModelId()),ri,rp,lll)
-                    for tr,ri,rp,lll,s in zip(self.trans_models[st],\
-                                              self.ratioint[st],\
-                                              self.ratiopeak[st],\
-                                              self.loglikelihood[st],\
-                                              self.star_selection[st])
-                    if (not bfms or s in bfms)]
-            print '\n'.join(lines)
-            if not bfms:
-                print 'The max LLL for this model is : %.2e.'\
-                      %max(self.loglikelihood[st])
-                if self.lll_p <> None: 
-                    print 'This leads to a threshold of %.2e with %i free parameters.'\
+            if ist in self.includedtrans:
+            
+                #-- No need for the vexp value here, we know the noise is already
+                #   set.
+                noise = st.getNoise()
+                print '*******************************************************'
+                print 'Statistics for %i: %s:'%(ist,str(st))
+                print '-------------------------------------'
+                print 'Data intensities [integrated --- peak --- STD (noise)]:'
+                print '%f K km/s \t---\t %f K \t---\t %f K'\
+                        %(self.dinttmb[st],self.dpeaktmb[st],noise)
+                print '-------------------------------------'
+                print 'Model/Data intensities [integrated --- peak --- lll]:'
+                lines = ['- %s: \t %.3f \t---\t %.3f \t---\t %.2e\
+                            '%(str(tr.getModelId()),ri,rp,lll)
+                        for tr,ri,rp,lll,s in zip(self.trans_models[st],\
+                                                self.ratioint[st],\
+                                                self.ratiopeak[st],\
+                                                self.loglikelihood[st],\
+                                                self.star_selection[st])
+                        if (not bfms or s in bfms)]
+                print '\n'.join(lines)
+                if not bfms:
+                    print 'The max LLL for this model is : %.2e.'\
+                        %max(self.loglikelihood[st])
+                    if self.lll_p <> None: 
+                        print 'This leads to a threshold of %.2e with %i free parameters.'\
                           %(self.lll_threshold[ist],self.lll_p)            
-            else:
-                if self.lll_p <> None:
-                    maxlll, lll_thr = self.calcLoglikelihoodThreshold(bfms,ist)
-                    print 'The max LLL for this subselection of models is: ' +\
-                          '%.2e.' %maxlll
-                    print 'This leads to a threshold of %.2e with %i free ' \
-                          %(lll_thr,self.lll_p) + 'parameters.'
                 else:
-                    maxlll = max([lll
-                                 for lll,smodel in zip(self.loglikelihood[st],\
-                                                       self.star_selection[st]) 
-                                 if smodel in bfms])
-                    print 'The max LLL for this subselection of models is: ' +\
-                          '%.2e.' %maxlll
+                    if self.lll_p <> None:
+                        maxlll, lll_thr = self.calcLoglikelihoodThreshold(bfms,ist)
+                        print 'The max LLL for this subselection of models is: ' +\
+                            '%.2e.' %maxlll
+                        print 'This leads to a threshold of %.2e with %i free ' \
+                            %(lll_thr,self.lll_p) + 'parameters.'
+                    else:
+                        maxlll = max([lll
+                                    for lll,smodel in zip(self.loglikelihood[st],\
+                                                        self.star_selection[st]) 
+                                    if smodel in bfms])
+                        print 'The max LLL for this subselection of models is: ' +\
+                            '%.2e.' %maxlll
                 
             
         
@@ -436,11 +442,17 @@ class ResoStats(Statistics):
         if self.no_stats: return
         print 'Selecting best fit models in <%s> mode.'%mode
         
-        #stars = array([s 
-                       #for s in self.star_grid 
-                       #if s['LAST_GASTRONOOM_MODEL']])
-        stars = array([s['LAST_GASTRONOOM_MODEL'] for s in self.star_grid])
-
+        #self.modellist = list(set([t.getModelId() for x in range(len(self.translist)) \
+              #for t in self.trans_models[self.translist[x]]]))
+        #stars = array(self.modellist)
+        
+        
+        self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId() \
+            for ii in range(len(self.star_grid))]
+        stars = array(self.modellist)
+        
+        
+        
         bfbools = ones(len(stars),dtype='bool')
         for ist,st in enumerate(self.translist):
             if ist in self.includedtrans:
@@ -463,13 +475,256 @@ class ResoStats(Statistics):
                         this_bool = rat < 1.+err and rat > 1.-err
                         if not this_bool: 
                             bfbools[i] = False
-                    #-- Loglikelihood is maximized by best fitting model
+                            
+                    ##-- Loglikelihood is maximized by best fitting model
                     if lll_thresh <> None and not self.noisy[ist] \
                             and use_lll and lll < lll_thresh:
                         bfbools[i] = False
-        self.bfm = stars[bfbools]                
+                        
+        self.bfm = stars[bfbools]
+        self.bfm = list(self.bfm)
         return self.bfm
+        
+    
+    
+    def selectBestFitModelsLLL(self):
+        '''
+        Same function as selectBestFitModels, but uses only the 
+        loglikelihood statistic.
+        
+        @return: The 'best fitting' Star() models according to the 
+                 loglikelihood statistic. 
+        @rtype: list[Star()]        
+        '''
+        if self.no_stats: return
+        print 'Selecting best fit models, only based on loglikelihood statistic.'    
+        
+        self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId() \
+            for ii in range(len(self.star_grid))]
+        stars = array(self.modellist)
+
+        bfbools = ones(len(stars),dtype='bool')
+        for ist,st in enumerate(self.translist):
+            if ist in self.includedtrans:
+                lll_thresh = self.lll_threshold[ist]
+                for i,lll in enumerate(self.loglikelihood[st]):
+                    ##-- Loglikelihood is maximized by best fitting model
+                    if lll_thresh <> None and not self.noisy[ist] \
+                            and lll < lll_thresh:
+                        bfbools[i] = False
+        self.bfmlll = stars[bfbools]      
+        self.bfmlll = list(self.bfmlll)
+        
+        return self.bfmlll    
+
+
+
+    def selectBestFitperLine(self, use_lll = 1, excludevib = 1):
+        '''
+        Checks which lines are fitted by which models, using all four selection
+        criteria. For every criterion, a list 'ocurrences_bfmxxx' is made. This 
+        list contains a sublist for each model, len(list) = # models. Every sublist
+        contains a one or zero, indicating wether a line is fitted by the model 
+        according to the criterion, len(sublist) = # lines.
+        
+        The lists fittedLines_bfmxxx contain how often a line was modelled according
+        to the criterion, len(list) = # lines.
+        
+        The lists fittedModels_bfmxxx contain the number of lines each model fitted
+        according to the criterion, len(list) = # models.
+        
+        '''
+        if self.no_stats: return
+        print "Checking which model occurs most as a best fit per line..."
+        
+        trans = self.translist
+        T = len(trans)
+        orig_included = self.includedtrans
+              
+        #-- Excluded vibrational transitions, if necessary      
+        if excludevib:
+            self.excludeTrans([i for i in range(T) if str(trans[i]).split()[1] != '0'])
+        
+        #-- Perform selection routine for every line separately
+        self.all_bfmint = []
+        self.all_bfmpeak = []
+        self.all_bfmcombo = []
+        self.all_bfmlll = []
+        for ii in orig_included:
+            self.excludeTrans([i for i in range(T)])
+            self.includeTrans(ii)
+            self.all_bfmint.append(self.selectBestFitModels('int', use_lll))
+            self.all_bfmpeak.append(self.selectBestFitModels('peak', use_lll))
+            self.all_bfmcombo.append(self.selectBestFitModels('combo', use_lll))
+            self.all_bfmlll.append(self.selectBestFitModelsLLL())
+        
+        #-- Make the main list
+        self.occurences_bfmint = [[self.all_bfmint[x].count(self.modellist[i]) \
+            for x in range(len(self.all_bfmint))] \
+            for i in range(len(self.modellist))]
+        
+        self.occurences_bfmpeak = [[self.all_bfmpeak[x].count(self.modellist[i]) \
+            for x in range(len(self.all_bfmpeak))] \
+            for i in range(len(self.modellist))]    
+        
+        self.occurences_bfmcombo = [[self.all_bfmcombo[x].count(self.modellist[i]) \
+            for x in range(len(self.all_bfmcombo))] \
+            for i in range(len(self.modellist))] 
+        
+        self.occurences_bfmlll = [[self.all_bfmlll[x].count(self.modellist[i]) \
+            for x in range(len(self.all_bfmlll))] \
+            for i in range(len(self.modellist))]
+
+        #-- Set included_trans back to original state
+        self.includedtrans = orig_included
+        
+        #-- Initialise arrays
+        self.occurences_bfmint = array(self.occurences_bfmint)
+        self.occurences_bfmpeak = array(self.occurences_bfmpeak)
+        self.occurences_bfmcombo = array(self.occurences_bfmcombo)
+        self.occurences_bfmlll = array(self.occurences_bfmlll)
+        
+        #-- How often is a line fitted by a model?
+        self.fittedLines_bfmint = sum(self.occurences_bfmint, axis = 0)
+        self.fittedLines_bfmpeak = sum(self.occurences_bfmpeak, axis = 0)
+        self.fittedLines_bfmcombo = sum(self.occurences_bfmcombo, axis = 0)
+        self.fittedLines_bfmlll = sum(self.occurences_bfmlll, axis = 0)
+        
+        #-- How many lines did a model fit?
+        self.fittedModels_bfmint = sum(self.occurences_bfmint, axis = 1)
+        self.fittedModels_bfmpeak = sum(self.occurences_bfmpeak, axis = 1)
+        self.fittedModels_bfmcombo = sum(self.occurences_bfmcombo, axis = 1)
+        self.fittedModels_bfmlll = sum(self.occurences_bfmlll, axis = 1)        
+    
+    
+    def findBestModel(self):
+        '''
+        Find which models fit the largest number of lines using mode = 'int' and
+        mode = 'peak'.
+        
+        @return: Indices of the models in self.modellist
+        @rtype: list[int]
+        '''
+        maxint = np.where(self.fittedModels_bfmint == max(self.fittedModels_bfmint))[0]
+        maxpeak = np.where(self.fittedModels_bfmpeak == max(self.fittedModels_bfmpeak))[0]
+        maxlll = np.where(self.fittedModels_bfmlll == max(self.fittedModels_bfmlll))[0]
+        self.bestModel_index = np.intersect1d(maxint,maxpeak)
+        
+        return self.bestModel_index
+    
+    
+    def listCorrespondingAbundance(self, to_print):
+        '''
+        List the input abundances for model(s) of self.modellist.
+        
+        @keyword to_print: Indices of the models in self.modellist
+        @type to_print: list[int]
+        '''
+        for ii in to_print:
+            print self.modellist[ii], self.star_grid[ii]['MOLECULE'][0][6:14]
+        
+
+    def printBestFitperLine(self, bfm_int = 1, bfm_peak = 1, bfm_combo = 1, bfm_lll = 0):
+        '''
+        Print output of selectBestFitperLine(), using fittedLines_bfmxxx.
+        '''
+        calcTrans = [str(self.translist[x]) for x in self.includedtrans]
+
+        if bfm_int == 1:
+            print '-------------------------------------------------------------------'
+            print 'How often was a line modeled according to selectBestFitModels?'
+            print 'Mode  = int'
+            print '-------------------------------------------------------------------'
+            print 'Number of models calculated = ' + str(len(self.modellist))
+            print ''
+            print 'Transition                  -                 Fitted by # models'
+            for ii in range(len(calcTrans)):
+                print calcTrans[ii] + "\t" + str(self.fittedLines_bfmint[ii])
+        
+        if bfm_peak == 1:
+            print '-------------------------------------------------------------------'
+            print 'How often was a line modeled according to selectBestFitModels?'
+            print 'Mode  = peak'
+            print '-------------------------------------------------------------------'
+            print 'Number of models calculated = ' + str(len(self.modellist))
+            print ''
+            print 'Transition                  -                 Fitted by # models'
+            for ii in range(len(calcTrans)):
+                print calcTrans[ii] + "\t" + str(self.fittedLines_bfmpeak[ii])
+
+        if bfm_combo == 1:
+            print '-------------------------------------------------------------------'
+            print 'How often was a line modeled according to selectBestFitModels?'
+            print 'Mode  = combo'
+            print '-------------------------------------------------------------------'
+            print 'Number of models calculated = ' + str(len(self.modellist))
+            print ''
+            print 'Transition                  -                 Fitted by # models'
+            for ii in range(len(calcTrans)):
+                print calcTrans[ii] + "\t" + str(self.fittedLines_bfmcombo[ii])
             
+        if bfm_lll == 1:
+            print '----------------------------------------------------------------------'
+            print 'How often was a line modeled according to selectBestFitModelsLLL?'
+            print '----------------------------------------------------------------------'
+            print 'Number of models calculated = ' + str(len(self.modellist))
+            print ''
+            print 'Transition                  -                 Fitted by # models'
+            for ii in range(len(calcTrans)):
+                print calcTrans[ii] + "\t" + str(self.fittedLines_bfmlll[ii])            
+            
+            
+    def printBestFitperModel(self, bfm_int = 1, bfm_peak = 1, bfm_combo = 1, bfm_lll = 0):
+        '''
+        Print output of selectBestFitperLine(), using fittedModels_bfmxxx.
+        '''
+        if bfm_int == 1:
+            print '---------------------------------------------------------------------'
+            print 'Which model modelled the most lines according to selectBestFitModels?'
+            print 'Mode = int'
+            print '---------------------------------------------------------------------'
+            print 'Number of lines included = ' + str(len(self.includedtrans))
+            print ''
+            print 'Model          -         # lines fitted '
+            for ii in range(len(self.modellist)):
+                print self.modellist[ii] + "\t" + str(self.fittedModels_bfmint[ii])
+            print ''
+
+        if bfm_peak == 1:
+            print '---------------------------------------------------------------------'
+            print 'Which model modelled the most lines according to selectBestFitModels?'
+            print 'Mode = peak'
+            print '---------------------------------------------------------------------'
+            print 'Number of lines included = ' + str(len(self.includedtrans))
+            print ''
+            print 'Model          -         # lines fitted '
+            for ii in range(len(self.modellist)):
+                print self.modellist[ii] + "\t" + str(self.fittedModels_bfmpeak[ii])
+            print ''
+            
+        if bfm_combo == 1:
+            print '---------------------------------------------------------------------'
+            print 'Which model modelled the most lines according to selectBestFitModels?'
+            print 'Mode = combo'
+            print '---------------------------------------------------------------------'
+            print 'Number of lines included = ' + str(len(self.includedtrans))
+            print ''
+            print 'Model          -         # lines fitted '
+            for ii in range(len(self.modellist)):
+                print self.modellist[ii] + "\t" + str(self.fittedModels_bfmcombo[ii])
+            print ''
+            
+        if bfm_lll == 1:
+            print '-----------------------------------------------------------------------'
+            print 'Which model modelled the most lines according to selectBestFitModelsLLL?'
+            print '-----------------------------------------------------------------------'
+            print 'Number of lines included = ' + str(len(self.includedtrans))
+            print ''
+            print 'Model          -         # lines fitted '
+            for ii in range(len(self.modellist)):
+                print self.modellist[ii] + "\t" + str(self.fittedModels_bfmlll[ii])
+            print ''
+   
     
     
     def setNoisy(self,ist,isnoisy):
@@ -625,4 +880,5 @@ class ResoStats(Statistics):
         '''
         
         self.setLoglikelihoodThreshold(ist,value)
+        
         
