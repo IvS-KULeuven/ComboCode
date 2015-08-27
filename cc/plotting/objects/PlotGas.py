@@ -32,7 +32,7 @@ class PlotGas(PlottingSession):
     
     """    
     
-    def __init__(self,star_name,path_gastronoom='codeJun2013',\
+    def __init__(self,star_name,path_gastronoom='Output2014',\
                  inputfilename=None,pacs=None,spire=None):
         
         """ 
@@ -1891,3 +1891,94 @@ class PlotGas(PlottingSession):
             print '\n'.join(plot_filenames)
             print '***********************************'
 
+    
+    def plotIntTmb(self, star_grid = [], scale = 1, cfg = ''):
+        '''
+        Plot of the integrated main beam temperature of the molecular data
+        and that obtained from model(s). Jup vs K.
+        
+        @keyword star_grid: star models to be included in
+                            (default: [])
+        @type star_grid: list[Star()]
+        
+        @keyword scale: scale int. Tmb to an antenna of 1 m**2,
+                        necesarry to compare data from different telescope_string
+                        (default = 1)
+        @type scale: bool
+        
+        @keyword cfg: path to the Plotting2.plotCols config file. If default,
+                      the hard-coded default plotting options are used.
+                      (default: '')
+        @type cfg: string
+        
+        '''
+    
+        S = len(star_grid)
+        
+        ### Data
+        #-- Get the int. mean beam temp. for the data
+        trans = star_grid[0]['GAS_LINES']
+        jup_split, data, error = Transition.splitLineStrengthsPerTelescope(trans,mode='dtmb',scale=scale)
+        #-- Initialise labels and types for plotting
+        types_data = ['ro','gs','bp']
+        tele = list(set(Transition.getTelescope(trans)))
+        
+        ### Models
+        #-- Get int. main beam temp. of model(s) and initialise plotting
+        data_model = []
+        label_model = []
+        types_model = []
+        colors = ['k', 'm', '0.50', 'c', 'y', 'r', 'g','b']
+        C = len(colors)
+        for ii in range(S):
+            trans = star_grid[ii]['GAS_LINES']
+            data_model.append(Transition.getLineStrengths(trans,mode='mtmb',scale=scale)[0])
+            label_model.append(trans[0].getModelId().replace('_','\_'))
+            types_model.append("".join([colors[ii%C], '--x']))
+        
+        ##- Get jup, and sort data in order of increasing jup
+        jup = Transition.getJup(trans)
+        indices = np.argsort(jup)
+        jup.sort()
+        data_model = [list(data_model[x][indices]) for x in range(len(data_model))]
+
+
+        ### Plotting
+        #-- Initialise x, y, yerr, line types and labels
+        x_toplot = jup_split + [jup]*S 
+        y_toplot = data + data_model
+        yerr_toplot = error + [None]*S
+        types = types_data + types_model
+        labels = tele + label_model
+
+        #-- Folder and filename
+        DataIO.testFolderExistence(os.path.join(self.pplot,'intTmb'))
+        pfn = os.path.join(self.pplot,'intTmb_%s'\
+                               %(s[0]['LAST_GASTRONOOM_MODEL']))
+        
+        #-- Cfg and specific plotting settings
+        cfg_dict = Plotting2.readCfg(cfg)
+        extra_pars = dict()
+        extra_pars['xmin'] = min(jup)-0.5
+        extra_pars['xmax'] = max(jup)+0.5
+        extra_pars['figsize'] = (15,9)
+        extra_pars['filename'] = pfn
+        #extra_pars[] = 
+        
+        #-- Plot
+        pfn = Plotting2.plotCols(x=x_toplot, y=y_toplot,\
+            yerr = yerr_toplot, keytags = labels, line_types = types,\
+            xaxis = '$J_{up}$',yaxis = '$\int T_\mathrm{mb}\ (\mathrm{K\ km/s})$',\
+            cfg=cfg_dict,**extra_pars)
+        
+        print '***********************************'   
+        print '** Plot of integrated main beam temperatures can be found at:'
+        print pfn
+        print '***********************************'                            
+
+        
+        
+        
+    
+    
+    
