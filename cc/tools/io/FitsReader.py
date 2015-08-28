@@ -17,7 +17,7 @@ from cc.tools.io import DataIO
 
 
 
-def fixFits(fn)
+def fixFits(fn):
 
     '''
     Fix fits files in case opening them with FitsReader complains about trailing
