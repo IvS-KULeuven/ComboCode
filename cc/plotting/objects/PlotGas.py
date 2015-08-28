@@ -1954,7 +1954,7 @@ class PlotGas(PlottingSession):
         #-- Folder and filename
         DataIO.testFolderExistence(os.path.join(self.pplot,'intTmb'))
         pfn = os.path.join(self.pplot,'intTmb_%s'\
-                               %(s[0]['LAST_GASTRONOOM_MODEL']))
+                               %(star_grid[0]['LAST_GASTRONOOM_MODEL']))
         
         #-- Cfg and specific plotting settings
         cfg_dict = Plotting2.readCfg(cfg)
