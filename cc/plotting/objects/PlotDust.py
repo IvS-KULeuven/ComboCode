@@ -200,14 +200,10 @@ class PlotDust(PlottingSession):
         line_types += [0]*len(star_grid)
         keytags = [tag.replace('#','') for tag in keytags]
         extra_pars = dict()
-        try:
-            extra_pars['ymax'] = 1.3*max([max(dy) for dy in data_y])
-        except ValueError:
-            pass
-        try:    
-            extra_pars['ymin'] = 0.5*min([min(dy) for dy in data_y])
-        except ValueError:
-            pass        
+        extra_pars['ymax'] = 1.3*max([max(dy[np.isfinite(dy)]) 
+                                      for dy in data_y])
+        extra_pars['ymin'] = 0.5*min([min(dy[np.isfinite(dy)]) 
+                                      for dy in data_y])
         filename = Plotting2.plotCols(x=data_x,y=data_y,yerr=data_err,\
                                       filename=fn_plt,\
                                       figsize=(20,10),number_subplots=1,\
