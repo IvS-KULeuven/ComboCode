@@ -770,7 +770,7 @@ class PlotDust(PlottingSession):
             
 
 
-    def plotOpacities(self,star_grid=[],scaling=1,species=['AMC'],\
+    def plotOpacities(self,star_grid=[],scaling=0,species=['AMC'],\
                       cfg='',index=0,*args,**kwargs):
         
         """ 
@@ -791,7 +791,7 @@ class PlotDust(PlottingSession):
         @type star_grid: list(Star())
         @keyword scaling: allow species abundance scaling of opacities
                                 
-                          (default: 1)
+                          (default: 0)
         @type scaling: bool
         @keyword species: If no star_grid or model list are given, this gives 
                           the species requested to be plotted from Dust.dat
@@ -857,10 +857,10 @@ class PlotDust(PlottingSession):
                 except IOError:
                     continue
                 opacities = [(opacities[i]+opacities[i+len(star.getDustList())]) 
-                             for i,species in enumerate(star.getDustList())]
+                             for i in range(len(star.getDustList()))]
                 if scaling:
-                    opacities = [opa*star['A_%s'%sp]
-                                 for opa,sp in zip(opacities,species)]
+                    opacities = [op*star['A_%s'%sp]
+                                 for op,sp in zip(opacities,star.getDustList())]
                 fn_mplt = '_'.join(fn_plt,star['LAST_MCMAX_MODEL'])
                 title = 'Dust Opacities in %s (%s)' \
                         %(self.star_name_plots,\
