@@ -861,11 +861,7 @@ class PlotDust(PlottingSession):
                 if scaling:
                     opacities = [op*star['A_%s'%sp]
                                  for op,sp in zip(opacities,star.getDustList())]
-<<<<<<< HEAD
                 fn_mplt = '_'.join([fn_plt,star['LAST_MCMAX_MODEL']])
-=======
-                fn_mplt = '_'.join(fn_plt,star['LAST_MCMAX_MODEL'])
->>>>>>> 71cfb1c98cd1d528bd6f2647d52f8181289443c7
                 title = 'Dust Opacities in %s (%s)' \
                         %(self.star_name_plots,\
                           star['LAST_MCMAX_MODEL'].replace('_','\_'))
