@@ -410,7 +410,18 @@ class UnresoStats(Statistics):
     def plotRatioWav(self,inputfilename,no_peak=False):
         
         '''
-        Plot peak ratios as a function of their central wavelength.
+        Plot ratios as a function of their central wavelength.
+        
+        In blue and green, the peak-to-peak ratios are plotted. Blue for normal
+        peak-to-peak ratios, green for ratios that involve a data point that is
+        in the noise. Plotting peak-to-peak ratios can be turned off with the 
+        no_peak keyword.
+        
+        In red and magenta, the integrated line strengths are plotted. Red for
+        isolated lines that are not tagged as a blend, magenta for lines that 
+        are tagged as a blend due to 1) too wide lines with respect to the PACS
+        resolution, or 2) multiple sample transitions in the width of an 
+        observed line. 
         
         @param inputfilename: the input filename for the grid, which will be 
                               attached to the final plot filename
