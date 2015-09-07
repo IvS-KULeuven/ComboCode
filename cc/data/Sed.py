@@ -237,7 +237,7 @@ class Sed(object):
         for dt,fn in zip(self.data_types,self.data_filenames):
             data = DataIO.readCols(fn,nans=1)
             #-- Currently, error bars only available for these types of data.
-            if dt == 'Photometric_IvS' or 'MIDI' in dt or 'Sacha' in dt: 
+            if 'Photometric' in dt or 'MIDI' in dt or 'Sacha' in dt: 
                 #-- Sort MIDI data
                 if 'MIDI' in dt: 
                     cdat = [dd[(data[0]<=13.)*(data[0]>=8.)] for dd in data]
