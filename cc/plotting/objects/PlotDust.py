@@ -601,7 +601,6 @@ class PlotDust(PlottingSession):
         ppars['xaxis'] = '$R\ \mathrm{(cm)}$'
         ppars['xlogscale'] = 1
         ppars['ylogscale'] = 1
-        ppars['keytags'] = keys
         filename = Plotting2.plotCols(x=rads,y=denss,filename=fn_plt,\
                                       keytags=keys,cfg=cfg_dict,**ppars)
         print '** Your plot can be found at:'
