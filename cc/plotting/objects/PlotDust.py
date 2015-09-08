@@ -592,7 +592,7 @@ class PlotDust(PlottingSession):
             fn_plt = cfg_dict['filename']
             del cfg_dict['filename']    
         else:
-            fn_plt = os.path.join(self.pplot,'Td_avg')
+            fn_plt = os.path.join(self.pplot,'dens')
         rads = [s.getDustRad() for s in star_grid]
         denss = [s.getDustDensity() for s in star_grid]
         keys = [s['LAST_MCMAX_MODEL'].replace('_','\_') for s in star_grid]
