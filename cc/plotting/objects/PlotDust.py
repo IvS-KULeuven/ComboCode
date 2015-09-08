@@ -554,8 +554,63 @@ class PlotDust(PlottingSession):
         print '***********************************'
 
                                    
+
+    def plotDens(self,star_grid=[],models=[],cfg=''):
+        
+        """ 
+        Plotting the temperature stratification of the dust.
+        
+        All models are shown in one plot.
+        
+        @keyword star_grid: parameter sets, if [], the parameter
+                            sets are determined from the model ids
+        
+                            (default: [])
+        @type star_grid: list[Star()]
+        @keyword models: The model_ids, if [], the parameter sets are expected
+                         in star_grid
+                         
+                         (default: [])
+        @type models: list[string]
+        @keyword cfg: path to the Plotting2.plotCols config file. If default,
+                      the hard-coded default plotting options are used.
+                          
+                      (default: '')
+        @type cfg: string
+        
+        """
+        
+        print '***********************************'
+        print '** Starting to plot the dust density profile.'
+        if not star_grid and not models:
+            print 'Input is undefined. Aborting.'
+            return        
+        elif not star_grid and models:
+            star_grid = self.makeMCMaxStars(models=models)
+        cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg_dict['filename']
+            del cfg_dict['filename']    
+        else:
+            fn_plt = os.path.join(self.pplot,'Td_avg')
+        rads = [star.getDustRad() for s in star_grid]
+        denss = [star.getDustDensity() for s in star_grid]
+        keys = [star['LAST_MCMAX_MODEL'].replace('_','\_') for s in star_grid]
+        ppars = dict()
+        ppars['yaxis'] = '$\rho_\mathrm{d}\ \mathrm{(g cm}^{-3}\mathrm{)}$'
+        ppars['xaxis'] = '$R\ \mathrm{(cm)}$'
+        ppars['xlogscale'] = 1
+        ppars['ylogscale'] = 1
+        ppars['keytags'] = keys
+        filename = Plotting2.plotCols(x=rads,y=denss,filename=fn_plt,\
+                                      keytags=keys,cfg=cfg_dict,**ppars)
+        print '** Your plot can be found at:'
+        print filename
+        print '***********************************'
+            
+
                                     
-    def plotTemp(self,star_grid=[],models=[],power=[1],fn_plt='',cfg=''):
+    def plotTemp(self,star_grid=[],models=[],power=[1],cfg=''):
         
         """ 
         Plotting the temperature stratification of the dust.
@@ -581,10 +636,6 @@ class PlotDust(PlottingSession):
                 
                         (default: [1])
         @type power: list        
-        @keyword fn_plt: A plot filename for the tiled plot.
-                         
-                         (default: '')
-        @type fn_plt: string
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                           
@@ -645,7 +696,7 @@ class PlotDust(PlottingSession):
 
 
     def plotTempSpecies(self,star_grid=[],models=[],include_total=1,\
-                        power=[1],fn_plt='',cfg=''):
+                        power=[1],cfg=''):
         
         """ 
         Plotting the temperature stratification of the dust for the species 
@@ -675,10 +726,6 @@ class PlotDust(PlottingSession):
                 
                         (default: [1])
         @type power: list        
-        @keyword fn_plt: A plot filename for the tiled plot.
-                         
-                         (default: '')
-        @type fn_plt: string
         @keyword cfg: path to the Plotting2.plotCols config file. If default, 
                       the hard-coded default plotting options are used.
                           
