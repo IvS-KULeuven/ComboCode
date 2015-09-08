@@ -386,6 +386,9 @@ CFG_DUST_SED=
 PLOT_DUST_CORRFLUX=0                # Plot correlated fluxes for data available in CORRFLUX_PATH
 CFG_DUST_CORRFLUX=                  
 
+PLOT_DUST_DENS=0                    # Plot the dust density profile.
+CFG_DUST_DENS=
+
 PLOT_DUST_TEMP=0                    # Plot the dust temperature profile, as well as the standard power law for dust temperature
 CFG_DUST_TEMP=
 
