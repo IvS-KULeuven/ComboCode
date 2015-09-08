@@ -593,9 +593,9 @@ class PlotDust(PlottingSession):
             del cfg_dict['filename']    
         else:
             fn_plt = os.path.join(self.pplot,'Td_avg')
-        rads = [star.getDustRad() for s in star_grid]
-        denss = [star.getDustDensity() for s in star_grid]
-        keys = [star['LAST_MCMAX_MODEL'].replace('_','\_') for s in star_grid]
+        rads = [s.getDustRad() for s in star_grid]
+        denss = [s.getDustDensity() for s in star_grid]
+        keys = [s['LAST_MCMAX_MODEL'].replace('_','\_') for s in star_grid]
         ppars = dict()
         ppars['yaxis'] = '$\rho_\mathrm{d}\ \mathrm{(g cm}^{-3}\mathrm{)}$'
         ppars['xaxis'] = '$R\ \mathrm{(cm)}$'
