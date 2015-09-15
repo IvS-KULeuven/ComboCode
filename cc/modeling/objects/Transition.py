@@ -17,7 +17,7 @@ from scipy.interpolate import interp1d
 from scipy.integrate import trapz
 import types
 
-from ivs.sigproc import filtering,funclib
+from ivs.sigproc import funclib
 
 import cc.path
 from cc.modeling.objects import Molecule 
@@ -906,7 +906,7 @@ class Transition():
         #   Spire or Pacs)
         self.vlsr = None
         self.best_vlsr = None
-        self.best_mfilter = None
+        self.best_mtmb = None
         #-- PACS and SPIRE spectra are handled differently (setIntIntUnresolved)
         if self.unresolved: 
             self.unreso = dict()
@@ -1807,62 +1807,43 @@ class Transition():
         mtmb = self.sphinx.getLPTmb()
         
         #-- Finding the best vlsr:
-        #   1) filter the sphinx model onto the data grid, after rescaling the
-        #      sphinx velocity grid to the given vlsr of the data.
+        #   1) interpolate the sphinx model, after rescaling
+        #      the sphinx velocity grid to the given vlsr of the data. The flux 
+        #      is assumed to be 0.0 outside the sphinx profile. 
+        interpolator = interp1d(x=mvel+self.getVlsr(index=index),\
+                               y=mtmb,fill_value=0.0,bounds_error=False)
+
         #   2) Check in the interval [vlsr-0.5vexp:vlsr+0.5*vexp] with steps 
-        #      equial to the data bin size if there is a better match between
+        #      equal to the data bin size if there is a better match between
         #      model and data. This gives the 'best_vlsr'
-        res = dvel[1]-dvel[0]
-        mtmb_filter = filtering.filter_signal(x=mvel+self.getVlsr(index=index),
-                                              y=mtmb,ftype='box',\
-                                              x_template=dvel,window_width=res)
         #-- Number of values tested is int(0.5*vexp/res+1),0.5*vexp on one side 
         #   and on the other side
+        res = dvel[1]-dvel[0]
         nstep = int(0.5*self.getVexp(index=index)/res+1)
         
-        #-- Check if there are enough zeroes in the model flux grid
-        #   ie if either of the following 2 statements evaluate to True, a non-
-        #   zero element is found, and the technique used here for matching 
-        #   different vlsr cannot be used
-        if mtmb_filter[1][:nstep].any() or mtmb_filter[1][-nstep:].any():
-            raise ValueError('Warning! Not enough zeroes in the grid! ' + \
-                             'Talk to Robin!')
-        #-- Since usually the data velocity grid extends far beyond what's 
-        #   given by the sphinx velocity grid, we can just shift by adding and
-        #   removing elements at the start and end of the list.
-        mtmb_grid = [mtmb_filter[1]]
+        #-- Use the interpolation for the nstep*2+1 shifted velocity grids
+        mtmb_grid = [interpolator(dvel+i*res) for i in range(-nstep,nstep+1)]
         
-        for i in range(1,nstep):
-            mtmbi_left = mtmb_filter[1][i:]
-            while len(mtmbi_left) < len(dtmb):
-                mtmbi_left = scipy.append(mtmbi_left,0)
-            mtmbi_right = mtmb_filter[1][:-i]
-            while len(mtmbi_right) < len(dtmb):
-                mtmbi_right = scipy.insert(mtmbi_right,0,0)
-            mtmb_grid.extend([mtmbi_left,mtmbi_right])
-            
-        #-- Calculate the chi squared for every filtered model
+        #-- Note that we shift the data velocity grid, while we should be 
+        #   shifting the model velocity grid instead with several vlsr values. 
+        #   Therefore perform the inverse operation to determine the actual vlsr
+        vlsr_grid = [self.getVlsr(index)-i*res for i in range(-nstep,nstep+1)]
+
+        #-- Calculate the chi squared for every shifted model
         chisquared = [bs.calcChiSquared(data=dtmb[dtmb>=-3*noise],\
                                         model=mtmbi[dtmb>=-3*noise],\
                                         noise=noise)
                       for mtmbi in mtmb_grid]
                       
         #-- Get the minimum chi squared, set the best_vlsr and set the best 
-        #   filtered model profile
-        self.chi2_best_vlsr = min(chisquared)
-        #-- Tracing back the step associated with the index (uses int division)
-        #   0 gives 0 again. 1 gives 1, 2 gives 1. 3 gives 2, 4 gives 2. etc.
+        #   shifted model profile
         imin = argmin(chisquared)
-        best_step = (imin-1)/2+1
-        #-- Determining whether to add or subtract best_step*res from the vlsr
-        modifier = imin%2 == 0 and 1 or -1
-        self.best_vlsr = self.getVlsr(index=index) + modifier*best_step*res
-        #-- Note that the velocity grid of best_mfilter is the data velocity
-        self.best_mfilter = mtmb_grid[imin]
+        self.chi2_best_vlsr = chisquared[imin]
+        self.best_vlsr = vlsr_grid[imin]
+
+        #-- Note that the velocity grid of best_mtmb is the data velocity
+        self.best_mtmb = mtmb_grid[imin]
         
-        #print "Best V_lsr: %f km/s, "%self.best_vlsr + \
-              #"original V_lsr: %f km/s for transition %s, %s."\
-              #%(vlsr,str(self),self.getModelId())
         return self.best_vlsr
     
     
@@ -2187,10 +2168,10 @@ class Transition():
         A different index than the default allows access to the other data 
         objects.
         
-        Done only for the first dataset! Makes use of the filtered sphinx 
-        profile for the best vlsr, see self.getBestVlsr() if use_bestvlsr is 
-        True. If this keyword is False, filters the sphinx model for the vlsr 
-        from Star.dat or the fits file.
+        Done for the dataset with given index! Makes use of the interpolated 
+        sphinx profile for the best vlsr, see self.getBestVlsr() if use_bestvlsr 
+        is True. If this keyword is False, interpolates the sphinx model for the
+        vlsr from Star.dat or the fits file.
         
         Returns None if sphinx or data profile are not available. 
         
@@ -2245,16 +2226,15 @@ class Transition():
             shift_factor = num/self.getIntTmbSphinx()
         
         if use_bestvlsr:
-            msel = self.best_mfilter[abs(vel-vlsr)<=window*vexp]
+            msel = self.best_mtmb[abs(vel-vlsr)<=window*vexp]
             msel = msel*shift_factor
         else:
             mvel = self.sphinx.getVelocity()
             mtmb = self.sphinx.getLPTmb()
-            res = vel[1]-vel[0]
-            mtmb_filter = filtering.filter_signal(x=mvel+vlsr,y=mtmb,\
-                                                  ftype='box',x_template=vel,\
-                                                  window_width=res)
-            msel = mtmb_filter[1][abs(vel-vlsr)<=window*vexp]
+            interpolator = interp1d(x=mvel+self.getVlsr(index=index),y=mtmb,\
+                                    fill_value=0.0,bounds_error=False)
+            mtmb_interp = interpolator(vel)
+            msel = mtmb_interp[abs(vel-vlsr)<=window*vexp]
             msel = msel*shift_factor
 
         return bs.calcLoglikelihood(data=dsel,model=msel,noise=noise)
