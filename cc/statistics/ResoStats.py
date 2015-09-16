@@ -674,7 +674,26 @@ class ResoStats(Statistics):
         
         return self.bfmlll    
 
-
+    
+    def findLLLMaximizer(self):
+        
+        self.difflll = [[] for _ in range(len(self.modellist))]
+        
+        #self.dlll = dict()
+        
+        for ist,st in enumerate(self.translist):
+            lll_thresh = self.lll_threshold[ist]
+            for i,lll in enumerate(self.loglikelihood[st]):
+                if lll_thresh <> None and not self.noisy[ist]:
+                    self.difflll[i].append(lll-lll_thresh) 
+                    #self.dlll[st].append(lll-lll_thresh)
+                else:
+                    self.difflll[i].append(0)
+                    #self.dlll[st].append(None)
+        
+        
+    
+    
 
     def selectBestFitperLine(self, use_lll = 1, excludevib = 1):
         '''
