@@ -39,7 +39,6 @@ SPIRE_LINEFIT=                      # folder name in $SPIRE_PATH$/$STAR_NAME$/ o
 
 #-- RADIO data selection (including autosearch) and plotting (typically resolved lines in K vs km/s). Location given in cc.path.home/usr/Path.dat
 RADIO_AUTOSEARCH=0                  # Put to 1 if TRANSITION objects are to be made automatically based on the available data.
-RADIO_AUTOPARSE=0                   # Put to 1 to automatically parse the target radio data folder for data before selecting candidate transitions. 
 
 #-- SED/Correlated Fluxes data selection and plotting. Location givens in cc.path.home/usr/Path.dat
 SED_PHOT_REMOVE=                    # If any photometric sources (such as WISE or DENIS) are to be removed for whatever reason, include them here separated with ampersand (e.g. WISE&DENIS )  
@@ -386,6 +385,9 @@ CFG_DUST_SED=
 
 PLOT_DUST_CORRFLUX=0                # Plot correlated fluxes for data available in CORRFLUX_PATH
 CFG_DUST_CORRFLUX=                  
+
+PLOT_DUST_DENS=0                    # Plot the dust density profile.
+CFG_DUST_DENS=
 
 PLOT_DUST_TEMP=0                    # Plot the dust temperature profile, as well as the standard power law for dust temperature
 CFG_DUST_TEMP=

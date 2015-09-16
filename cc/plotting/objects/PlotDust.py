@@ -200,14 +200,10 @@ class PlotDust(PlottingSession):
         line_types += [0]*len(star_grid)
         keytags = [tag.replace('#','') for tag in keytags]
         extra_pars = dict()
-        try:
-            extra_pars['ymax'] = 1.3*max([max(dy) for dy in data_y])
-        except ValueError:
-            pass
-        try:    
-            extra_pars['ymin'] = 0.5*min([min(dy) for dy in data_y])
-        except ValueError:
-            pass        
+        extra_pars['ymax'] = 1.3*max([max(dy[np.isfinite(dy)]) 
+                                      for dy in data_y])
+        extra_pars['ymin'] = 0.5*min([min(dy[np.isfinite(dy)]) 
+                                      for dy in data_y])
         filename = Plotting2.plotCols(x=data_x,y=data_y,yerr=data_err,\
                                       filename=fn_plt,\
                                       figsize=(20,10),number_subplots=1,\
@@ -558,8 +554,62 @@ class PlotDust(PlottingSession):
         print '***********************************'
 
                                    
+
+    def plotDens(self,star_grid=[],models=[],cfg=''):
+        
+        """ 
+        Plotting the temperature stratification of the dust.
+        
+        All models are shown in one plot.
+        
+        @keyword star_grid: parameter sets, if [], the parameter
+                            sets are determined from the model ids
+        
+                            (default: [])
+        @type star_grid: list[Star()]
+        @keyword models: The model_ids, if [], the parameter sets are expected
+                         in star_grid
+                         
+                         (default: [])
+        @type models: list[string]
+        @keyword cfg: path to the Plotting2.plotCols config file. If default,
+                      the hard-coded default plotting options are used.
+                          
+                      (default: '')
+        @type cfg: string
+        
+        """
+        
+        print '***********************************'
+        print '** Starting to plot the dust density profile.'
+        if not star_grid and not models:
+            print 'Input is undefined. Aborting.'
+            return        
+        elif not star_grid and models:
+            star_grid = self.makeMCMaxStars(models=models)
+        cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg_dict['filename']
+            del cfg_dict['filename']    
+        else:
+            fn_plt = os.path.join(self.pplot,'dens')
+        rads = [s.getDustRad() for s in star_grid]
+        denss = [s.getDustDensity() for s in star_grid]
+        keys = [s['LAST_MCMAX_MODEL'].replace('_','\_') for s in star_grid]
+        ppars = dict()
+        ppars['yaxis'] = '$\rho_\mathrm{d}\ \mathrm{(g cm}^{-3}\mathrm{)}$'
+        ppars['xaxis'] = '$R\ \mathrm{(cm)}$'
+        ppars['xlogscale'] = 1
+        ppars['ylogscale'] = 1
+        filename = Plotting2.plotCols(x=rads,y=denss,filename=fn_plt,\
+                                      keytags=keys,cfg=cfg_dict,**ppars)
+        print '** Your plot can be found at:'
+        print filename
+        print '***********************************'
+            
+
                                     
-    def plotTemp(self,star_grid=[],models=[],power=[1],fn_plt='',cfg=''):
+    def plotTemp(self,star_grid=[],models=[],power=[1],cfg=''):
         
         """ 
         Plotting the temperature stratification of the dust.
@@ -585,10 +635,6 @@ class PlotDust(PlottingSession):
                 
                         (default: [1])
         @type power: list        
-        @keyword fn_plt: A plot filename for the tiled plot.
-                         
-                         (default: '')
-        @type fn_plt: string
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                           
@@ -649,7 +695,7 @@ class PlotDust(PlottingSession):
 
 
     def plotTempSpecies(self,star_grid=[],models=[],include_total=1,\
-                        power=[1],fn_plt='',cfg=''):
+                        power=[1],cfg=''):
         
         """ 
         Plotting the temperature stratification of the dust for the species 
@@ -679,10 +725,6 @@ class PlotDust(PlottingSession):
                 
                         (default: [1])
         @type power: list        
-        @keyword fn_plt: A plot filename for the tiled plot.
-                         
-                         (default: '')
-        @type fn_plt: string
         @keyword cfg: path to the Plotting2.plotCols config file. If default, 
                       the hard-coded default plotting options are used.
                           
@@ -774,7 +816,7 @@ class PlotDust(PlottingSession):
             
 
 
-    def plotOpacities(self,star_grid=[],scaling=1,species=['AMC'],\
+    def plotOpacities(self,star_grid=[],scaling=0,species=['AMC'],\
                       cfg='',index=0,*args,**kwargs):
         
         """ 
@@ -795,7 +837,7 @@ class PlotDust(PlottingSession):
         @type star_grid: list(Star())
         @keyword scaling: allow species abundance scaling of opacities
                                 
-                          (default: 1)
+                          (default: 0)
         @type scaling: bool
         @keyword species: If no star_grid or model list are given, this gives 
                           the species requested to be plotted from Dust.dat
@@ -861,11 +903,11 @@ class PlotDust(PlottingSession):
                 except IOError:
                     continue
                 opacities = [(opacities[i]+opacities[i+len(star.getDustList())]) 
-                             for i,species in enumerate(star.getDustList())]
+                             for i in range(len(star.getDustList()))]
                 if scaling:
-                    opacities = [opa*star['A_%s'%sp]
-                                 for opa,sp in zip(opacities,species)]
-                fn_mplt = '_'.join(fn_plt,star['LAST_MCMAX_MODEL'])
+                    opacities = [op*star['A_%s'%sp]
+                                 for op,sp in zip(opacities,star.getDustList())]
+                fn_mplt = '_'.join([fn_plt,star['LAST_MCMAX_MODEL']])
                 title = 'Dust Opacities in %s (%s)' \
                         %(self.star_name_plots,\
                           star['LAST_MCMAX_MODEL'].replace('_','\_'))

@@ -23,46 +23,45 @@ from cc.modeling.objects import Star
 from cc.modeling.objects import Transition
 from cc.statistics import UnresoStats
 from cc.statistics import ResoStats
-from cc.statistics import Statistics
 from cc.data.instruments import Pacs
 from cc.data.instruments import Spire
 from cc.data import Sed, Radio
 from cc.modeling.tools import ColumnDensity, ContinuumDivision
 
 class ComboCode(object):
-    
+
     '''
     The interface with which to run the ComboCode package.
-    
+
     '''
 
     def __init__(self,inputfilename):
-        
+
         '''
-        Initializing a ComboCode instance. 
-        
-        Once this is done, you only need to run startSession(). Then all 
+        Initializing a ComboCode instance.
+
+        Once this is done, you only need to run startSession(). Then all
         methods in this class will be called according to your inputfile. Only
         run separate methods of the class if you know what you are doing!
-        
-        Input is read and parsed, and the parameter objects (Star()) are set 
-        
+
+        Input is read and parsed, and the parameter objects (Star()) are set
+
         The instrument and data objects, and the plotting manager are set.
-        
+
         The .spec file is updated here, if requested.
-        
-        The inputfile can be given on the command line as: 
+
+        The inputfile can be given on the command line as:
         python ComboCode.py inputComboCode.dat
-        
+
         In the python or ipython shell you can do:
         >>> import ComboCode
         >>> cc = ComboCode.ComboCode('/home/robinl/ComboCode/input/inputComboCode.dat')
-        
-        @param inputfilename: The name of the inputfile. 
+
+        @param inputfilename: The name of the inputfile.
         @type inputfilename: string
-        
+
         '''
-        
+
         self.inputfilename = inputfilename
         self.readInput()
         self.setGlobalPars()
@@ -78,29 +77,29 @@ class ComboCode(object):
         self.addRadioData()
         #- Only the extra transition pars will differ across the grid, so grab
         #- the transition list from one of the Star() objects
-        if self.update_spec: 
+        if self.update_spec:
             Transition.updateLineSpec(self.star_grid[0]['GAS_LINES'])
         self.finished = False
-        
+
 
     def startSession(self):
-         
+
         '''
         Start a ComboCode session, based on the input read upon initialisation.
-        
+
         The supercomputer and model managers are set and ran.
-        
-        The plot manager, statistics module, fitter modules are ran if 
+
+        The plot manager, statistics module, fitter modules are ran if
         requested.
-        
+
         The session ends by printing some info about the Star() objects.
-        
+
         Once started, the ComboCode object cannot be started again. You will
-        have to re-initialize. This will change in the future. 
-        
+        have to re-initialize. This will change in the future.
+
         '''
-        
-        if not self.finished:    
+
+        if not self.finished:
             self.setVicManager()
             self.setModelManager()
             self.finished = True
@@ -109,22 +108,22 @@ class ComboCode(object):
             self.runPlotManager()
             self.runStatistics()
             self.doContDiv()
-            #self.appendResults() 
+            #self.appendResults()
             if self.write_dust_density:
                 [star.writeDensity() for star in self.star_grid]
             self.printStarInfo()
         else:
             print 'This CC session is already finished. Please, create a new one.'
-                
-                
+
+
 
     def setGlobalPars(self):
-         
+
         '''
         Set the global parameters for this CC session.
-        
+
         '''
-        
+
         default_global = [('mcmax',1),('gastronoom',1),('sphinx',1),('vic',0),\
                           ('iterations',2),('plot_iterative',0),\
                           ('vic_account','vsc30226'),('statistics',0),\
@@ -138,42 +137,42 @@ class ComboCode(object):
                           ('recover_sphinxfiles',0),('stat_print',0),\
                           ('stat_lll_p',None),('stat_method','clipping'),\
                           ('star_name','model')]
-        global_pars = dict([(k,self.processed_input.pop(k.upper(),v)) 
+        global_pars = dict([(k,self.processed_input.pop(k.upper(),v))
                             for k,v in default_global])
         self.__dict__.update(global_pars)
         self.vic = 0
-        if not self.gastronoom or not self.mcmax: self.iterations = 1 
+        if not self.gastronoom or not self.mcmax: self.iterations = 1
         if (not self.path_mcmax and self.mcmax):
             raise IOError('Please define PATH_MCMAX in your inputfile.')
-        if (not self.path_gastronoom and self.gastronoom): 
+        if (not self.path_gastronoom and self.gastronoom):
             raise IOError('Please define PATH_GASTRONOOM in your inputfile.')
-                
-                
-    
+
+
+
     def setStarName(self):
-        
+
         '''
-        Set star_name for the ComboCode object. 
-        
-        Typically this is only one name for a standard modelling session, but 
-        can be made multiple names as well for a statistical study. 
-        
+        Set star_name for the ComboCode object.
+
+        Typically this is only one name for a standard modelling session, but
+        can be made multiple names as well for a statistical study.
+
         The ComboCode object keeps track of all the data in lists.
-        
+
         '''
-        
+
         pass
-        
-        
-    
+
+
+
     def setPacs(self):
-        
+
         '''
         Collect the PACS relevant parameters from the inputfile and set the
         PACS object.
-        
+
         '''
-        
+
         redo_convolution = self.processed_input.pop('PACS_REDO_CONVOLUTION',0)
         searchstring = self.processed_input.pop('PACS_SEARCHSTRING','')
         oversampling = self.processed_input.pop('PACS_OVERSAMPLING','')
@@ -191,17 +190,17 @@ class ComboCode(object):
             self.pacs.setData(searchstring=searchstring)
         else:
             self.pacs = None
-            
-            
-            
+
+
+
     def setSpire(self):
-        
+
         '''
         Collect the SPIRE relevant parameters from the inputfile and set the SPIRE
         object.
-        
+
         '''
-        
+
         searchstring = self.processed_input.pop('SPIRE_SEARCHSTRING','')
         resolution = self.processed_input.pop('SPIRE_RESOLUTION',0)
         intrinsic = self.processed_input.pop('SPIRE_INTRINSIC',1)
@@ -223,77 +222,76 @@ class ComboCode(object):
 
 
     def setSed(self):
-        
+
         '''
         Collect the SED data and create an Sed() object.
-        
+
         '''
-        
+
         remove = self.processed_input.pop('SED_PHOT_REMOVE','')
         if not remove: remove = []
         elif type(remove) is types.StringType: remove = [remove]
         else: remove = list(remove)
-        
+
         if cc.path.dsed and not self.star_name == 'model':
             self.sed = Sed.Sed(star_name=self.star_name,remove=remove)
-        else: 
+        else:
             self.sed = None
-        
-        
-    
+
+
+
     def setRadio(self):
-        
-        '''
-        Collect the relevant radio data for the requested star. Only done if 
-        the pathname to the data is given.
-        
-        If a database is not present, it is created. 
-        
-        If the auto_parse is requested, the data folder will be parsed for new 
-        data. 
-        
-        The data are associated with requested transitions later. Only if also 
-        RADIO_AUTOSEARCH is on, these transitions will be automatically added
-        to the requested transitions list. 
 
         '''
-        
+        Collect the relevant radio data for the requested star. Only done if
+        the pathname to the data is given.
+
+        If a database is not present, it is created.
+
+        If the auto_parse is requested, the data folder will be parsed for new
+        data.
+
+        The data are associated with requested transitions later. Only if also
+        RADIO_AUTOSEARCH is on, these transitions will be automatically added
+        to the requested transitions list.
+
+        '''
+
         self.radio = None
         self.radio_autosearch = self.processed_input.pop('RADIO_AUTOSEARCH',0)
-        radio_autoparse = self.processed_input.pop('RADIO_AUTOPARSE',0)
         if cc.path.dradio:
-            radio_db = Radio.Radio(auto_parse=radio_autoparse)
+            radio_db = Radio.Radio()
             if radio_db.has_key(self.star_name):
-                self.radio = radio_db[self.star_name]            
-            
-            
-        
+                self.radio = radio_db[self.star_name]
+
+
+
     def addRadioData(self):
-        
+
         '''
         Add radio data to Transition() objects in all Star() objects.
-        
-        Only done if RADIO_PATH is given and if a file named radio_data.db is 
+
+        Only done if RADIO_PATH is given and if a file named radio_data.db is
         present in the given folder.
-        
-        If the radio_autosearch flag is on, transitions are automatically 
+
+        If the radio_autosearch flag is on, transitions are automatically
         generated based on the available data. Note that in this case, N_QUAD
-        from Star() is taken. 
-        
+        from Star() is taken.
+
         '''
-        
+
         if self.radio:
-            #-- Get the transition definitions (are in the correct format 
-            #   automatically, due to the methods in Radio.py) and make sure 
+            #-- Get the transition definitions (are in the correct format
+            #   automatically, due to the methods in Radio.py) and make sure
             #   they are all unique.
-            radio_trans = sorted(['%s 100'%tr.replace('TRANSITION=','',1) 
+            radio_trans = sorted(['%s 100'%tr.replace('TRANSITION=','',1)
                                   for tr in self.radio.keys()])
             radio_trans = DataIO.checkEntryInfo(radio_trans,12,'TRANSITION')
             for star in self.star_grid:
                 molecules = [m.molecule for m in star['GAS_LIST']]
                 if self.radio_autosearch:
                     n_quad = star['N_QUAD']
-                    add_trans = [tr[:-1] + [n_quad] 
+                    add_trans = [tr[:-1] + [n_quad]
                                  for tr in radio_trans
                                  if tr[0] in molecules]
                     if star.has_key('TRANSITION'):
@@ -307,30 +305,30 @@ class ComboCode(object):
                         if trstr in self.radio.keys():
                             trans.addDatafile(self.radio[trstr])
 
-        
+
 
     def setVarPars(self):
-        
+
         '''
         Define the list of variable parameters in this CC session.
-        
+
         '''
-        
+
         self.var_pars = [k for k in self.multiplicative_grid.keys() + \
-                                    self.additive_grid.keys() 
+                                    self.additive_grid.keys()
                            if k[:5] != 'T_MAX']
 
 
     def readInput(self):
-        
+
         '''
         Read input for ComboCode and return list.
-        
+
         The MOLECULE, TRANSITION and R_POINTS_MASS_LOSS parameter formats are
         checked for errors in this method. If erroneous, an IOError is raised.
-        
+
         '''
-        
+
         multi_keys = ['MOLECULE','TRANSITION','R_POINTS_MASS_LOSS']
         input_dict = DataIO.readDict(self.inputfilename,convert_floats=1,\
                                      convert_ints=1,multi_keys=multi_keys)
@@ -340,122 +338,122 @@ class ComboCode(object):
         self.additive_grid = dict()
         molecules = input_dict.pop('MOLECULE',[])
         transitions = input_dict.pop('TRANSITION',[])
-        r_points_mass_loss = input_dict.pop('R_POINTS_MASS_LOSS',[])      
+        r_points_mass_loss = input_dict.pop('R_POINTS_MASS_LOSS',[])
         for k,v in input_dict.items():
             #-- Fortran input is not case sensitive. Note: use the dict
             #   value v, not input_dict[k] because of this transformation.
             k = k.upper()
-            #-- Determine delimiter        
+            #-- Determine delimiter
             try:
-                if v.find('&') != -1: delimiter = '&'                         
+                if v.find('&') != -1: delimiter = '&'
                 elif v.find(';') != -1: delimiter = ';'
                 elif v.find(',') != -1: delimiter = ','
                 elif v.find(':') != -1: delimiter = ':'
                 #-- * while no ; or , or : means multiple values for ONE model
-                #   Only * star for multiplicative grid makes no sense (just 
+                #   Only * star for multiplicative grid makes no sense (just
                 #   give the value without delimiter)
                 elif v.find('*') != -1: delimiter = '&'
-                else: delimiter = ' '                                                        
-            except AttributeError: 
+                else: delimiter = ' '
+            except AttributeError:
                 #-- v is already a float, so can't use .find on it => no grids
                 #-- no need to check the rest, continue on with the next k/v pair
                 self.processed_input[k] = v
                 continue
-            #-- Expanding '*' entries: Assumes the value is first, the count 
+            #-- Expanding '*' entries: Assumes the value is first, the count
             #   second. Can't be made flexible, because in some cases the value
             #   cannot be discerned from the count (because both are low-value
             #   integers)
             newv = delimiter.join(\
-                        [len(value.split('*')) > 1 
+                        [len(value.split('*')) > 1
                                   and delimiter.join([value.split('*')[0]]*\
-                                                      int(value.split('*')[1])) 
-                                  or value 
+                                                      int(value.split('*')[1]))
+                                  or value
                          for value in v.split(delimiter)])
             #-- Add entries to processed_input, the multiplicative grid or the
             #-- additive grid, depending on the type of delimiter.
             if delimiter == ' ':
-                self.processed_input[k] = v 
+                self.processed_input[k] = v
             elif delimiter == ',':
-                newv = [float(value) 
+                newv = [float(value)
                         for value in newv.split(',')]
                 newv = Gridding.makeGrid(*newv)
                 self.multiplicative_grid[k] = newv
             else:
                 try:
                     if delimiter == '&':
-                        newv = tuple([float(value.rstrip()) 
+                        newv = tuple([float(value.rstrip())
                                       for value in newv.split('&')])
                         self.processed_input[k] = newv
                     elif delimiter == ';':
-                        newv = [value.rstrip() == '%' and '%' or float(value.rstrip()) 
+                        newv = [value.rstrip() == '%' and '%' or float(value.rstrip())
                                 for value in newv.split(';')]
                         self.multiplicative_grid[k] = newv
                     elif delimiter == ':':
-                        newv = [value.rstrip() == '%' and '%' or float(value.rstrip()) 
+                        newv = [value.rstrip() == '%' and '%' or float(value.rstrip())
                                 for value in newv.split(':')]
                         self.additive_grid[k] = newv
                 except ValueError:
                     if delimiter == '&':
-                        newv = tuple([value.rstrip() 
+                        newv = tuple([value.rstrip()
                                       for value in newv.split('&')])
                         self.processed_input[k] = newv
                     elif delimiter == ';':
-                        newv = [value.rstrip() 
+                        newv = [value.rstrip()
                                 for value in newv.split(';')]
                         self.multiplicative_grid[k] = newv
                     elif delimiter == ':':
-                        newv = [value.rstrip() 
+                        newv = [value.rstrip()
                                 for value in newv.split(':')]
                         self.additive_grid[k] = newv
-        #-- Make sure R_POINTS_MASS_LOSS, Molecule and Transition input makes 
+        #-- Make sure R_POINTS_MASS_LOSS, Molecule and Transition input makes
         #-- sense and is correct
-        if molecules: 
+        if molecules:
             molecules = DataIO.checkEntryInfo(molecules,20,'MOLECULE')
             if type(molecules) is types.ListType:
                 self.additive_grid['MOLECULE'] = molecules
             else:
                 self.processed_input['MOLECULE'] = molecules
-        if r_points_mass_loss: 
+        if r_points_mass_loss:
             r_points_mass_loss = DataIO.checkEntryInfo(r_points_mass_loss,4,\
                                                        'R_POINTS_MASS_LOSS')
             if type(r_points_mass_loss) is types.ListType:
                 self.additive_grid['R_POINTS_MASS_LOSS'] = r_points_mass_loss
             else:
                 self.processed_input['R_POINTS_MASS_LOSS'] = r_points_mass_loss
-        if transitions: 
+        if transitions:
             transitions = DataIO.checkEntryInfo(transitions,12,'TRANSITION')
             if type(transitions) is types.ListType:
                 self.additive_grid['TRANSITION'] = transitions
             else:
                 self.processed_input['TRANSITION'] = transitions
-            
-            
-    
+
+
+
     def getStars(self):
-         
+
         '''
         Return the list of Star() objects for this ComboCode session.
-        
+
         @return: The parameter Star() objects are returned.
         @rtype: list[Star()]
-                  
+
         '''
-         
+
         return self.star_grid
-            
-            
-            
+
+
+
     def createStarGrid(self):
-         
+
         '''
         Create a list of Star() objects based on the inputfile that has been
         parsed with cc.readInput().
-        
+
         The list of Star() objects is saved in self.star_grid, and is accessed
         through cc.getStarGrid().
-        
+
         '''
-        
+
         base_star = Star.Star(example_star=self.processed_input,\
                               path_gastronoom=self.path_gastronoom,\
                               path_mcmax=self.path_mcmax)
@@ -465,8 +463,8 @@ class ComboCode(object):
                 raise IOError('The explicit parameter declaration using <:> '+\
                               'has a variable amount of options (including ' +\
                               'the R_GRID_MASS_LOSS definition). Aborting...')
-            else: 
-                additive_dicts = [dict([(key,grid[index]) 
+            else:
+                additive_dicts = [dict([(key,grid[index])
                                         for key,grid in self.additive_grid.items()])
                                   for index in xrange(grid_lengths[0])]
                 self.star_grid = [Star.Star(example_star=base_star,\
@@ -481,7 +479,7 @@ class ComboCode(object):
                                         path_mcmax=self.path_mcmax,\
                                         example_star=star,\
                                         extra_input=dict([(key,value)]))
-                              for star in self.star_grid 
+                              for star in self.star_grid
                               for value in grid]
         for star in self.star_grid:
             star.normalizeDustAbundances()
@@ -489,63 +487,63 @@ class ComboCode(object):
             del self.processed_input['LAST_MCMAX_MODEL']
         if self.processed_input.has_key('LAST_GASTRONOOM_MODEL'):
             del self.processed_input['LAST_GASTRONOOM_MODEL']
-        #-- Dust abundance is deleted as it is not changed during the session. 
-        #   Hence, it does not need to be re-updated after mutable input is 
+        #-- Dust abundance is deleted as it is not changed during the session.
+        #   Hence, it does not need to be re-updated after mutable input is
         #   removed. The keys need to be deleted to avoid inconsistencies in the
         #   star.normalizeDustAbundances() method. Some A_*** values may not be
-        #   variable, while others are. Yet if any of them are variable, and 
+        #   variable, while others are. Yet if any of them are variable, and
         #   have to be rescaled, then in principle they are ALL variable. This
-        #   can create a mess, and therefore it is safer to just remove them 
+        #   can create a mess, and therefore it is safer to just remove them
         #   from the input dictionary.
         for akey in [k for k in self.processed_input.keys() if k[0:2] == 'A_']:
             del self.processed_input[akey]
-            
-        
-    
+
+
+
     def setOutputFolders(self):
-        
+
         '''
         Set the output folders.
-        
+
         If the folders do not already exist, they are created.
-        
+
         The locations are saved in cc.path for later use, but this is generally
         only done inside a ComboCode session. Each module sets these themselves
-        
+
         '''
-        
+
         cc.path.gout = os.path.join(cc.path.gastronoom,self.path_gastronoom)
         cc.path.mout = os.path.join(cc.path.mcmax,self.path_mcmax)
         DataIO.testFolderExistence(cc.path.gout)
         DataIO.testFolderExistence(cc.path.mout)
-        
-        
+
+
     def setVicManager(self):
-        
+
         '''
         Set up the VIC manager.
-        
+
         '''
-        
-        if self.vic and self.gastronoom and self.sphinx : 
+
+        if self.vic and self.gastronoom and self.sphinx :
             self.vic_manager = Vic.Vic(path=self.path_gastronoom,\
                                        account=self.vic_account,\
                                        time_per_sphinx=self.vic_time_per_sphinx,\
                                        credits_acc=self.vic_credits,\
                                        recover_sphinxfiles=self.recover_sphinxfiles)
-            if self.update_spec: 
+            if self.update_spec:
                 self.vic_manager.updateLineSpec()
-        else: 
+        else:
             self.vic_manager = None
-        
-        
+
+
     def setModelManager(self):
-        
+
         '''
         Set up the model manager.
-        
-        '''    
-        
+
+        '''
+
         self.model_manager = ModelingManager.ModelingManager(\
                                        iterations=self.iterations,\
                                        processed_input=self.processed_input,\
@@ -561,15 +559,15 @@ class ComboCode(object):
                                        path_mcmax=self.path_mcmax,\
                                        skip_cooling=self.skip_cooling,\
                                        recover_sphinxfiles=self.recover_sphinxfiles)
-    
-    
-    def setPlotManager(self):    
-        
+
+
+    def setPlotManager(self):
+
         '''
         Set up the plot manager.
-        
+
         '''
-        
+
         plot_pars = dict([(k,self.processed_input.pop(k))
                           for k,v in self.processed_input.items()
                           if k[0:5] == 'PLOT_' or k[0:4] == 'CFG_'])
@@ -584,16 +582,16 @@ class ComboCode(object):
                                          spire=self.spire,\
                                          sed=self.sed,\
                                          plot_pars=plot_pars)
-        
-        
-        
+
+
+
     def runModelManager(self):
-        
+
         '''
         Start up the modeling.
-        
-        '''    
-        
+
+        '''
+
         if self.gastronoom or self.mcmax:
             print '***********************************'
             print '** Starting grid calculation.'
@@ -604,13 +602,13 @@ class ComboCode(object):
                       %(star_index+1,len(self.star_grid))
                 print '***********************************'
                 self.model_manager.startModeling(star,star_index)
-                #-- mline_done is True if in previous model an mline calculation 
-                #-- was done: Only then do a progress check, because a lot of time 
+                #-- mline_done is True if in previous model an mline calculation
+                #-- was done: Only then do a progress check, because a lot of time
                 #-- has passed, but then a wait time is used to make sure the newly
                 #-- queued sphinx models after the mline model are properly queued.
                 if self.vic_manager \
                         and self.vic_manager.getQueue() \
-                        and self.model_manager.mline_done_list[-1]:    
+                        and self.model_manager.mline_done_list[-1]:
                     print '***********************************'
                     print '** Current VIC queue:'
                     print self.vic_manager.getQueue()
@@ -619,12 +617,12 @@ class ComboCode(object):
 
 
     def finalizeVic(self):
-        
+
         '''
         At the end of a modeling session, allow Vic to be finalized and clean up.
-        
+
         '''
-        
+
         if self.vic_manager <> None:
             #vic_running = vic_manager.checkProgress()
             if self.vic_manager.getQueue():
@@ -634,9 +632,9 @@ class ComboCode(object):
             while vic_running:
                 print 'VIC is not yet finished. Waiting 5 minutes before checking again.'
                 print self.vic_manager.getQueue()
-                try: 
+                try:
                     time.sleep(300)
-                except KeyboardInterrupt: 
+                except KeyboardInterrupt:
                     print 'Ending wait time, continuing with progress check immediately.'
                 vic_running = self.vic_manager.checkProgress()
             self.vic_manager.finalizeVic()
@@ -644,18 +642,18 @@ class ComboCode(object):
 
 
     def runPlotManager(self):
-        
+
         '''
         Run the plotting manager.
-        
+
         '''
-        
-        if self.plot_iterative: 
+
+        if self.plot_iterative:
             print '************************************************'
             print '****** Plotting results for each iterative step of the SED.'
             print '************************************************'
-            #- star_grid_old remembers all old models if iterative is on, 
-            #- meaning that every list in star_grid_old consists of Star models 
+            #- star_grid_old remembers all old models if iterative is on,
+            #- meaning that every list in star_grid_old consists of Star models
             #- associated with one level of iteration. Following line plots all
             #- iterative steps for one star immutable parameter set
             [self.plot_manager.startPlotting(self.model_manager.star_grid_old[i],\
@@ -664,20 +662,20 @@ class ComboCode(object):
         print '************************************************'
         print '****** Plotting final results.'
         print '************************************************'
-        self.plot_manager.startPlotting(self.star_grid)    
-        
-        
-        
-    def appendResults(self):    
-        
+        self.plot_manager.startPlotting(self.star_grid)
+
+
+
+    def appendResults(self):
+
         '''
         Append results at the end of the inputfile.
-        
+
         '''
-        
+
         print '** Appending results to inputfile and copying to output folders.'
         print '***********************************'
-        #-- Check if the transition was intended to be calculated, and if it was 
+        #-- Check if the transition was intended to be calculated, and if it was
         #-- successful (ie don't add if it had already been done)
         timestring = '%.4i-%.2i-%.2ih%.2i-%.2i-%.2i'\
                       %(time.gmtime()[0],time.gmtime()[1],time.gmtime()[2],\
@@ -687,34 +685,34 @@ class ComboCode(object):
             model_ids_list = [list(set([(trans.molecule.molecule,\
                                          trans.getModelId())
                                         for boolean,trans in zip(trans_bool,\
-                                                             star['GAS_LINES']) 
+                                                             star['GAS_LINES'])
                                         if trans.getModelId() \
                                             and (not trans_bool \
                                             or self.append_results)]))
                               for star,trans_bool in zip(self.star_grid,\
                                            self.model_manager.trans_bool_list)]
             #-- all unique molecules over all stars
-            molec_list = list(set([molec 
-                                   for model_ids in model_ids_list 
-                                   for molec,model_id in model_ids 
+            molec_list = list(set([molec
+                                   for model_ids in model_ids_list
+                                   for molec,model_id in model_ids
                                    if model_ids]))
             #-- all unique modelids for every star separately
-            model_id_unique = [list(set([model_id 
-                                         for molec,model_id in model_ids])) 
-                               for model_ids in model_ids_list]    
+            model_id_unique = [list(set([model_id
+                                         for molec,model_id in model_ids]))
+                               for model_ids in model_ids_list]
             if [modelids for modelids in model_ids_list if modelids] != []:
                 appendage += \
                       ['#########################################',\
                        '## Successfully calculated transition model_ids on %s:'\
                        %timestring]
-                appendage.extend(['## molecule %s'%molec 
+                appendage.extend(['## molecule %s'%molec
                                   for molec in molec_list])
                 for i,(star,model_ids) in enumerate(zip(self.star_grid,\
                                                         model_ids_list)):
                     if model_ids:
                         appendage += ['## For Model %i : cooling id %s'\
                                       %(i+1,star['LAST_GASTRONOOM_MODEL'])] + \
-                                     ['#molecule %s #%s' %(molecule,model_id) 
+                                     ['#molecule %s #%s' %(molecule,model_id)
                                       for molecule,model_id in model_ids] + \
                                      ['########']
                 for star,model_ids in zip(self.star_grid,model_id_unique):
@@ -734,9 +732,9 @@ class ComboCode(object):
                                         os.path.split(self.inputfilename)[1]+\
                                         '_%s_%i'%(model_id,i)))],shell=True)
         if self.model_manager.mcmax_done_list:
-            model_ids = [star['LAST_MCMAX_MODEL'] 
+            model_ids = [star['LAST_MCMAX_MODEL']
                          for star,boolean in zip(self.star_grid,\
-                                            self.model_manager.mcmax_done_list) 
+                                            self.model_manager.mcmax_done_list)
                          if boolean or self.append_results]
             if model_ids:
                 appendage += ['#########################################',\
@@ -759,16 +757,16 @@ class ComboCode(object):
                                     '_%s_%i'%(model_id,i)))],shell=True)
         if appendage: DataIO.writeFile(filename=self.inputfilename,\
                                        input_lines=appendage+['\n'],mode='a')
-        
-        
-        
+
+
+
     def runStatistics(self):
-        
+
         '''
         Run the statistics module.
-        
+
         '''
-        
+
         self.pacsstats = None
         self.spirestats = None
         self.resostats = None
@@ -816,19 +814,19 @@ class ComboCode(object):
                 self.resostats.printStats()
             #bfms = self.resostats.selectBestFitModels(mode='int')
             #self.plot_manager.plotTransitions(star_grid=bfms,fn_suffix='BFM',force=1)
-            
-    
-    
+
+
+
     def doContDiv(self):
-         
+
         '''
         Run the Continuum Division class for this CC session.
-         
+
         '''
-        
+
         if type(self.contdiv_features) is types.StringType:
             self.contdiv_features = [self.contdiv_features]
-        for k in self.contdiv_features: 
+        for k in self.contdiv_features:
             features = ['MGS','H2O3.1']
             if k in features:
                 print '** Plotting continuum division for the %s feature.'%k
@@ -855,17 +853,17 @@ class ComboCode(object):
                     model_id = star['LAST_MCMAX_MODEL']
                     print 'Equivalent width for %s in %s: %f'\
                           %(k,model_id,self.contdiv.eq_width[model_id])
-    
-    
-    
+
+
+
     def printStarInfo(self):
-    
+
         '''
         Print extra Star() info to the shell.
-        
+
         '''
-        
-        if len(self.star_grid)<20 and self.print_model_info:    
+
+        if len(self.star_grid)<20 and self.print_model_info:
             print '************************************************'
             for star in self.star_grid:
                 if star['LAST_MCMAX_MODEL']:
@@ -879,8 +877,8 @@ class ComboCode(object):
 
                     if not int(star['MRN_DUST']):
                         cdcalc = ColumnDensity.ColumnDensity(star)
-                        dlist = [sp 
-                                 for sp in star.getDustList() 
+                        dlist = [sp
+                                 for sp in star.getDustList()
                                  if 'H2O' not in sp]
                         print 'Dust FULL column densities (if available):'
                         for species in dlist:
@@ -930,11 +928,11 @@ class ComboCode(object):
                     print '%s = %f'%('DUST_TO_GAS_INITIAL',star['DUST_TO_GAS_INITIAL'])
                     print '%s = %f'%('DUST_TO_GAS_ITERATED',star['DUST_TO_GAS_ITERATED'])
                     print '%s (semi-empirical) = %f'%('DUST_TO_GAS',star['DUST_TO_GAS'])
-                    if star['DUST_TO_GAS_CHANGE_ML_SP']: 
+                    if star['DUST_TO_GAS_CHANGE_ML_SP']:
                         print '%s = %s'%('DUST_TO_GAS_CHANGE_ML_SP',star['DUST_TO_GAS_CHANGE_ML_SP'])
                     print '%s = %f'%('[N_H2O/N_H2]',star['F_H2O'])
                     print '%s = %.2f R_STAR = %.2e cm'%('R_OH1612_NETZER',star['R_OH1612_NETZER'],star['R_OH1612_NETZER']*star.Rsun*star['R_STAR'])
-                    if star['R_OH1612_AS']: 
+                    if star['R_OH1612_AS']:
                         print '%s = %.2f R_STAR = %.2e cm'%('R_OH1612_OBS',star['R_OH1612'],star['R_OH1612']*star.Rsun*star['R_STAR'])
                     print '-----------------------------------'
                     #if star.has_key('R_DES_H2O') or star.has_key('R_DES_CH2O') or star.has_key('R_DES_AH2O'):
@@ -951,18 +949,18 @@ class ComboCode(object):
                         #print '%.3e'%(nh2o_ice/nh2)
                         #print 'Ice/vapour fraction in ice shell:'
                         #print '%.2f'%(nh2o_ice/nh2o)
-                        #print 
+                        #print
                         #print 'FULL shell water VAPOUR column density [cm-2]:'
                         #print '%.3e'%nh2o_full
                         #print 'Total water vapour abundance (ortho + para) wrt H2:'
                         #print '%.3e'%(nh2o_full/nh2_full)
-                        #print 
+                        #print
                         #if not int(star['MRN_DUST'):
 
                     #else:
                         #print 'No water ice present in dust model.'
                 print '************************************************'
-        
+
 
 
 if __name__ == "__main__":
@@ -972,5 +970,5 @@ if __name__ == "__main__":
         raise IOError('Please provide an inputfilename. (syntax in the ' + \
                       'command shell: python ComboCode.py ' + \
                       '/home/robinl/inputComboCode.dat)')
-    cc = ComboCode(inputfilename)
-    cc.startSession()
+    c1m = ComboCode(inputfilename)
+    c1m.startSession()

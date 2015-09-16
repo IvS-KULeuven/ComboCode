@@ -37,11 +37,13 @@ have to contact the authors of the codes.</li>
 ## Requirements
 Currently the code has been tested to run on Unix-based systems, more specifically Fedora and Mac OS X. In principle, any operating systems that fulfills the requirements listed below should be able to run ComboCode. The code runs ons machines with an internal memory of 8 GB, but less is likely fine as well. The memory requirements are primarily set by the numerical codes included in ComboCode.
 
-First and foremost, you require a Python distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. If you have the Anaconda distribution installed, you only require the pyfits package to be installed in addition. 
+First and foremost, you require a Python distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. If you have the Anaconda distribution installed, you only require the pyfits, PyPDF2 and ephem packages to be installed in addition to the Anaconda basic package. (e.g., run "pip install ephem" in the shell after Anaconda installation)
 
 Secondly, we are using git for the version control of the repository. Follow the instructions given <a href="https://help.github.com/articles/set-up-git/"> here</a> to set up git on your local machine, after you have created a user account at GitHub.
 
-Thirdly, you need the IvS repository, which can be installed as described <a href="https://github.com/JorisDeRidder/IvSPythonRepository"> here</a>. Make sure the IvS repository is included in the PYTHON\_PATH in your ~/.bash_profile. 
+Thirdly, you require a recent installation of the gfortran compiler. 
+
+Fourthly, you need the IvS repository, which can be installed as described in the readme.txt file located <a href="https://github.com/robinlombaert/IvSPythonRepository"> here</a>. With the IvS repository comes data that are used by the package. The bare minimum required to run ComboCode is available <a href="http://ster.kuleuven.be/~robinl/cc/ivsdata.tar.gz"> here</a>. Make sure to update the config.py file with the location of the unpacked ivsdata upon installation of the IvS repository. 
 
 Lastly, ComboCode can be used to its fullest potential when working in tandem with the radiative-transfer codes GASTRoNOoM and MCMax. To use these codes, permission is required from the owners listed above. You can contact them directly, or through me (robinlombaert on GitHub). Once installed, make sure the executables of each code are linked in your Bin folder, and you will be able to run the codes through ComboCode.
 
@@ -83,7 +85,7 @@ If you want to make changes to ComboCode, you should fork the repository to your
     - $ cd ~/ComboCode/
     - $ git remote add --track master upstream https://github.com/IvS-KULeuven/ComboCode.git
 
-* Copy the contents of the usr.dist/ folder to the usr/ folder. 
+* Copy the contents of the usr.dist/ folder to the usr/ folder. Note especially usr/Path.dat which contains all the relevant folders for ComboCode.
     - $ cd ~/ComboCode/
     - $ mkdir usr/
     - $ cp usr.dist/* usr/.

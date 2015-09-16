@@ -269,7 +269,7 @@ class ResoStats(Statistics):
             self.ratioint[st] = self.minttmb[st]/self.dinttmb[st]
             self.ratiopeak[st] = self.mpeaktmb[st]/self.dpeaktmb[st]
             self.ratiocombo[st] = zip(self.ratiopeak[st],self.ratioint[st])
-            
+
         self.calcLoglikelihoodThreshold()
     
     

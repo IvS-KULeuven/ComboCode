@@ -11,6 +11,7 @@ import os
 import subprocess
 from glob import glob
 from scipy import array,zeros
+from PyPDF2 import PdfFileMerger
 import types
 from matplotlib import mlab
 
@@ -877,7 +878,11 @@ def joinPdf(old,new,del_old=1):
     
     '''
     
-    subprocess.call([' '.join(['pdfunite']+old+[new])],shell=True)
+    pp = PdfFileMerger()
+    for ofn in old:
+        pp.append(ofn)
+    pp.write(new)
+    pp.close()
     if bool(del_old):
         subprocess.call([' '.join(['rm']+old)],shell=True)
 

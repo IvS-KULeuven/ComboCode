@@ -255,7 +255,7 @@ class PlotGas(PlottingSession):
     def plotTransitions(self,star_grid,cfg='',no_data=0,vg_factor=3,\
                         telescope_label=1,sort_freq=0,sort_molec=0,\
                         no_models=0,limited_axis_labels=0,date_tag=1,\
-                        n_max_models=10,fn_suffix='',mfiltered=0,\
+                        n_max_models=10,fn_suffix='',fit_vlsr=1,\
                         plot_intrinsic=0,plot_unresolved=0,cont_subtract=1):
         
         """ 
@@ -312,11 +312,11 @@ class PlotGas(PlottingSession):
                             
                             (default: '')
         @type fn_suffix: string
-        @keyword mfiltered: Show the models after filtering and scaled with
-                            the best_vlsr value, instead of the sphinx output
+        @keyword fit_vlsr: Show the models after shifting based on
+                           the best_vlsr value, instead of the sphinx output
                             
-                            (default: 0)
-        @type mfiltered: bool
+                           (default: 1)
+        @type fit_vlsr: bool
         @keyword plot_intrinsic: Plot the intrinsic profiles instead of the 
                                  beam-convolved profiles (for instance when
                                  comparing GASTRoNOoM models to LIME models)
@@ -372,8 +372,8 @@ class PlotGas(PlottingSession):
             plot_intrinsic = int(cfg_dict['plot_intrinsic'])
         if cfg_dict.has_key('plot_unresolved'):
             plot_unresolved = int(cfg_dict['plot_unresolved'])
-        if cfg_dict.has_key('mfiltered'):
-            mfiltered = int(cfg_dict['mfiltered'])
+        if cfg_dict.has_key('fit_vlsr'):
+            fit_vlsr = int(cfg_dict['fit_vlsr'])
         if cfg_dict.has_key('cont_subtract'):
             cont_subtract = int(cfg_dict['cont_subtract'])
         if fn_suffix: 
@@ -412,7 +412,7 @@ class PlotGas(PlottingSession):
         def createTilePlots(trans_list,x_dim,y_dim,no_data,intrinsic,\
                             vg_factor,keytags,telescope_label,no_models,cfg,\
                             star_grid,limited_axis_labels,date_tag,indexi,\
-                            indexf,mfiltered,cont_subtract):
+                            indexf,fit_vlsr,cont_subtract):
             
             '''
             Create a tiled plot for a transition list.
@@ -463,9 +463,9 @@ class PlotGas(PlottingSession):
             @type indexi: int
             @param indexf: The end index of the models in the star_grid
             @type indexf: int
-            @param mfiltered: Show the models after filtering and scaled with
-                              the best_vlsr value, instead of the sphinx output
-            @type mfiltered: bool
+            @param fit_vlsr: Show the models after shifting based on
+                             the best_vlsr value, instead of the sphinx output
+            @type fit_vlsr: bool
             @param cont_subtract: Subtract the continuum value outside the line
                                   from the whole line profile. 
             @type cont_subtract: bool
@@ -516,37 +516,31 @@ class PlotGas(PlottingSession):
                             #   Same with the profile fit results
                             trans.setData(current_trans)
                     ddict = dict()
+                    ddict['x'] = []
+                    ddict['y'] = []
                     if not no_models:
-                        if intrinsic:
-                            ddict['x'] = \
-                                [(trans <> None and trans.sphinx <> None) \
-                                      and list(trans.sphinx.getVelocityIntrinsic())\
-                                      or []                          
-                                 for trans in current_sub]
-                            ddict['y'] = \
-                                [(trans <> None and trans.sphinx <> None) \
-                                     and list(trans.sphinx.getLPIntrinsic(cont_subtract=cont_subtract)*10**(23))\
-                                     or []
-                                 for trans in current_sub]
-                        else:
-                            ddict['x'] = []
-                            ddict['y'] = []
-                            for trans in current_sub:
-                                bvlsr = trans.getBestVlsr()
-                                if mfiltered and trans <> None \
-                                        and trans.best_mfilter <> None:
-                                    ddict['x'].append(trans.lpdata[0]\
-                                                        .getVelocity())
-                                    ddict['y'].append(trans.best_mfilter)
-                                elif trans <> None and trans.sphinx <> None:
-                                    ddict['x'].append(trans.sphinx\
-                                                        .getVelocity() + bvlsr)
-                                    ddict['y'].append(trans.sphinx.getLPTmb(cont_subtract=cont_subtract))
-                                else:
-                                    ddict['x'].append([])
-                                    ddict['y'].append([])
-                    else:
-                        ddict['x'], ddict['y'] = [], []
+                        for trans in current_sub: 
+                            if trans is None or trans.sphinx is None: 
+                                ddict['x'].append([])
+                                ddict['y'].append([])
+                                continue
+                            
+                            if intrinsic:
+                                mvel = trans.sphinx.getVelocityIntrinsic()
+                                mlp = trans.sphinx.getLPIntrinsic(cont_subtract\
+                                                                 =cont_subtract)
+                                mlp = mlp*10**(23)
+                            else:
+                                #-- Either use fitted vlsr or default value. If
+                                #   something is lacking to determine the best 
+                                #   vlsr, the default value is used anyway and 
+                                #   given by getBestVlsr.
+                                bvlsr = fit_vlsr and trans.getBestVlsr() or vlsr
+                                mvel = trans.sphinx.getVelocity() + bvlsr
+                                mlp = trans.sphinx.getLPTmb(cont_subtract=\
+                                                            cont_subtract)
+                            ddict['x'].append(mvel)
+                            ddict['y'].append(mlp)
                     
                     #-- Add data, but only if the data filename is known. This 
                     #   will be Tmb, in K. In case of intrinsic==1, you dont 
@@ -659,7 +653,7 @@ class PlotGas(PlottingSession):
                                 telescope_label=telescope_label,\
                                 limited_axis_labels=limited_axis_labels,\
                                 date_tag=date_tag,indexi=j,indexf=j+i-1,\
-                                mfiltered=mfiltered,\
+                                fit_vlsr=fit_vlsr,\
                                 cont_subtract=cont_subtract)
                 j += i
         if unreso_list: 
@@ -679,7 +673,7 @@ class PlotGas(PlottingSession):
                                 x_dim=x_dim,y_dim=y_dim,date_tag=date_tag,\
                                 telescope_label=telescope_label,no_models=0,\
                                 limited_axis_labels=limited_axis_labels,\
-                                indexi=j,indexf=j+i-1,mfiltered=mfiltered,\
+                                indexi=j,indexf=j+i-1,fit_vlsr=fit_vlsr,\
                                 cont_subtract=cont_subtract)
                 j += i            
                 
