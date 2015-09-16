@@ -1898,30 +1898,44 @@ class PlotGas(PlottingSession):
         and that obtained from model(s). Jup vs K.
         
         @keyword star_grid: star models to be included in
+        
                             (default: [])
         @type star_grid: list[Star()]
         
-        @keyword scale: scale int. Tmb to an antenna of 1 m**2,
+        @param scale: scale int. Tmb to an antenna of 1 m**2,
                         necesarry to compare data from different telescope_string
+                        
                         (default = 1)
         @type scale: bool
         
-        @keyword cfg: path to the Plotting2.plotCols config file. If default,
+        @param cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
+                      
                       (default: '')
         @type cfg: string
         
         '''
     
         S = len(star_grid)
-        
+
         ### Data
-        #-- Get the int. mean beam temp. for the data
+        #-- Get the int. mean beam temp. and its error for the data, 
+        #-- split up according to telescope
         trans = star_grid[0]['GAS_LINES']
-        jup_split, data, error = Transition.splitLineStrengthsPerTelescope(trans,mode='dtmb',scale=scale)
+        tele = list(set([t.telescope for t in trans]))
+        jup_split = []
+        data = []
+        error = []
+        for ii in range(len(tele)):
+            tr = [t for t in trans if t.telescope == tele[ii]]
+            jup_split.append([t.jup for t in tr])
+            data.append(Transition.getLineStrengths(tr,mode='dtmb',scale=scale)[0])
+            error.append(Transition.getLineStrengths(tr,mode='dtmb',scale=scale)[1])
         #-- Initialise labels and types for plotting
         types_data = ['ro','gs','bp']
-        tele = list(set(Transition.getTelescope(trans)))
+        if len(jup_split)%3 != 0:
+            types_data = types_data + types_data[0:(len(jup_split)%3)]    
+        
         
         ### Models
         #-- Get int. main beam temp. of model(s) and initialise plotting
@@ -1935,9 +1949,8 @@ class PlotGas(PlottingSession):
             data_model.append(Transition.getLineStrengths(trans,mode='mtmb',scale=scale)[0])
             label_model.append(trans[0].getModelId().replace('_','\_'))
             types_model.append("".join([colors[ii%C], '--x']))
-        
         ##- Get jup, and sort data in order of increasing jup
-        jup = Transition.getJup(trans)
+        jup = [t.jup for t in trans]
         indices = np.argsort(jup)
         jup.sort()
         data_model = [list(data_model[x][indices]) for x in range(len(data_model))]
@@ -1950,12 +1963,10 @@ class PlotGas(PlottingSession):
         yerr_toplot = error + [None]*S
         types = types_data + types_model
         labels = tele + label_model
-
         #-- Folder and filename
         DataIO.testFolderExistence(os.path.join(self.pplot,'intTmb'))
         pfn = os.path.join(self.pplot,'intTmb_%s'\
                                %(star_grid[0]['LAST_GASTRONOOM_MODEL']))
-        
         #-- Cfg and specific plotting settings
         cfg_dict = Plotting2.readCfg(cfg)
         extra_pars = dict()
@@ -1963,8 +1974,6 @@ class PlotGas(PlottingSession):
         extra_pars['xmax'] = max(jup)+0.5
         extra_pars['figsize'] = (15,9)
         extra_pars['filename'] = pfn
-        #extra_pars[] = 
-        
         #-- Plot
         pfn = Plotting2.plotCols(x=x_toplot, y=y_toplot,\
             yerr = yerr_toplot, keytags = labels, line_types = types,\

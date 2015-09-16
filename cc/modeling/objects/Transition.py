@@ -28,80 +28,6 @@ from cc.tools.numerical import Interpol
 from cc.statistics import BasicStats as bs
 from cc.data import LPTools
 
-def getJup(trl):
-    '''
-    Get all upper rotational levels from a transition list.
-    @param trl: The Transition() objects.
-    @type trl: list[Transition()]    
-    
-    @return: All upper rotational levels from a transition list
-    @rtype: list
-    '''
-    jup = [trl[i].jup for i in range(len(trl))] 
-    return jup
-       
-def getVup(trl):
-    '''
-    Get all upper vibrational levels from a transition list.
-    @param trl: The Transition() objects.
-    @type trl: list[Transition()]    
-    
-    @return: All upper vibrational levels from a transition list
-    @rtype: list    
-    '''
-    vup = [trl[i].vup for i in range(len(trl))]
-    return vup
-
-def getTelescope(trl):
-    '''
-    Get all telescopes from a transition list.
-    @param trl: The Transition() objects.
-    @type trl: list[Transition()] 
-    
-    @return: All telescoped from a transition list
-    @rtype: list    
-    '''
-    telescope = [trl[i].telescope for i in range(len(trl))]
-    return telescope
-
-
-def splitLineStrengthsPerTelescope(trl, mode = 'dtmb', scale = 0):
-    '''
-    For PlotGas.plotIntTmb()
-    Creates sublists which contain jup, int. main beam temp. and its error
-    of a molecular line, each sublist belonging to a different telescope.
-    
-    @param trl: The Transition() objects.
-    @type trl: list[Transition()] 
-    @param mode: mode used in getLineStrengths()
-                 (default: 'dtmb')
-    @type mode: string
-    @param scale: Scale data to antenna of 1 m**2, necesarry if comparing data
-                  from different telescopes
-                  (default: 0)
-    @type scale: bool
-    
-    @return: Three lists: jup, data, error. Each list contains a number of sublists,
-             the number corresponding to the number of telescopes.
-    @rtype: list[list[float]], list[list[float]], list[list[float]]
-    '''
-    dtmb = getLineStrengths(trl, mode = mode, scale = scale) 
-    jup = getJup(trl)    
-    telescope = getTelescope(trl)
-    tele = list(set(telescope))
-       
-    data = []
-    error = []
-    jup_split = []
-    for ii in range(len(tele)):
-        index = [x for x in range(len(telescope)) if telescope[x] == tele[ii]]
-        data.append([dtmb[0][x] for x in index])
-        error.append([dtmb[1][x] for x in index])
-        jup_split.append([jup[x] for x in index])
-    
-    return jup_split, data, error
-
-
 def getLineStrengths(trl,mode='dint',nans=1,n_data=0, scale = 0):
     
     '''
@@ -155,7 +81,7 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0, scale = 0):
     @rtype: (list[float],list[float])
     
     '''
-    scaling = {'APEX': 12**2, 'SEST': 15**2, 'HIFI':3.5**2}
+    scaling = {'APEX': 12**2, 'SEST': 15**2, 'HIFI':3.5**2, 'PACS':3.5**2, 'SPIRE':3.5**2}
     
     modes = {'dint': 'getIntIntUnresolved',\
              'mint': 'getIntIntIntSphinx',\
