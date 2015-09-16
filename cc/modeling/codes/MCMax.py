@@ -482,6 +482,9 @@ class MCMax(ModelingSession):
                                         *float(star['R_STAR'])\
                                         *star.Rsun/star.au
         
+        star['SCATTYPE'] = star['SCATTYPE'].strip('"').strip("'")
+        self.command_list['scattype'] = "'%s'"%star['SCATTYPE']
+                
         self.command_list['denstype'] = "'%s'"%star['DENSTYPE']
         if star['DENSTYPE'] == 'MASSLOSS':
             self.command_list['Mdot'] = float(star['MDOT_DUST'])*100.
