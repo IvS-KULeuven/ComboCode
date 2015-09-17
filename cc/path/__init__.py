@@ -23,7 +23,7 @@ def __readPaths():
                ('mopac','MCMax/Opacities'),('data',''),('dradio',''),\
                ('dpacs',''),('dspire',''),('dsed',''),('dphot',''),\
                ('dcflux',''),('ll','LineLists'),('atm',''),\
-               ('starf','ComboCode/StarFiles')])
+               ('starf',''),('densf','')])
     filename = os.path.join(usr,'Path.dat')
     FILE = open(filename,'r')
     lines = FILE.readlines()

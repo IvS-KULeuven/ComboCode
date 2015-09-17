@@ -2936,6 +2936,7 @@ class Star(dict):
                 print starfile
                 self['STARFILE'] = starfile
             elif self['STARTYPE'] == 'TABLE':
+                star['STARTABLE'] = star['STARTABLE'].strip('"').strip("'")
                 if not os.path.split(self['STARTABLE'])[0]:
                     self['STARFILE'] = os.path.join(cc.path.starf,\
                                                     self['STARTABLE'])
