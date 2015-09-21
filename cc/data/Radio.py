@@ -23,7 +23,7 @@ class Radio(Database):
 
     """
 
-    def __init__(self,db_name='radio_data.db'):
+    def __init__(self,db_name='radio_data.db',db_path=None):
 
         """
         Initializing an instance of Radio.
@@ -118,11 +118,20 @@ class Radio(Database):
 
                           (default: radio_data.db)
         @type db_name: str
+        @keyword db_path: The path to the db if not the default dradio in 
+                          Path.dat
+        
+                          (default: None)
+        @type db_path: str
+        
 
         """
-
-        db_path = os.path.join(cc.path.dradio,db_name)
-        super(Radio,self).__init__(db_path=db_path)
+        
+        if db_path is None:
+            fn = os.path.join(cc.path.dradio,db_name)
+        else:
+            fn = os.path.join(db_path,db_name)
+        super(Radio,self).__init__(db_path=fn)
 
 
 
