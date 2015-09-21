@@ -555,7 +555,7 @@ class PlotDust(PlottingSession):
 
                                    
 
-    def plotDens(self,star_grid=[],models=[],cfg=''):
+    def plotDens(self,star_grid=[],models=[],unit='cm',cfg=''):
         
         """ 
         Plotting the temperature stratification of the dust.
@@ -572,6 +572,11 @@ class PlotDust(PlottingSession):
                          
                          (default: [])
         @type models: list[string]
+        @keyword unit: The unit of the plotted radial grid. Can be 'cm','rstar',
+                       'au', 'm'
+        
+                       (default: 'cm')
+        @type unit: str      
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                           
@@ -588,19 +593,26 @@ class PlotDust(PlottingSession):
         elif not star_grid and models:
             star_grid = self.makeMCMaxStars(models=models)
         cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('unit'):
+            unit = cfg_dict['unit']
         if cfg_dict.has_key('filename'):
             fn_plt = cfg_dict['filename']
             del cfg_dict['filename']    
         else:
             fn_plt = os.path.join(self.pplot,'dens')
-        rads = [s.getDustRad() for s in star_grid]
+        rads = [s.getDustRad(unit=unit) for s in star_grid]
         denss = [s.getDustDensity() for s in star_grid]
         keys = [s['LAST_MCMAX_MODEL'].replace('_','\_') for s in star_grid]
+        
         ppars = dict()
-        ppars['yaxis'] = '$\rho_\mathrm{d}\ \mathrm{(g cm}^{-3}\mathrm{)}$'
-        ppars['xaxis'] = '$R\ \mathrm{(cm)}$'
+        ppars['yaxis'] = r'$\rho_\mathrm{d}\ \mathrm{(g cm}^{-3}\mathrm{)}$'
+        if unit == 'rstar': ppars['xaxis'] = '$r\ \mathrm{(R}_\star\mathrm{)}$'
+        elif unit =='au': ppars['xaxis'] = '$r\ \mathrm{(AU)}$'
+        elif unit == 'm': ppars['xaxis'] = '$r\ \mathrm{(m)}$'
+        else: ppars['xaxis'] = '$r\ \mathrm{(cm)}$'
         ppars['xlogscale'] = 1
         ppars['ylogscale'] = 1
+
         filename = Plotting2.plotCols(x=rads,y=denss,filename=fn_plt,\
                                       keytags=keys,cfg=cfg_dict,**ppars)
         print '** Your plot can be found at:'
@@ -609,7 +621,7 @@ class PlotDust(PlottingSession):
             
 
                                     
-    def plotTemp(self,star_grid=[],models=[],power=[1],cfg=''):
+    def plotTemp(self,star_grid=[],models=[],power=[],unit='cm',cfg=''):
         
         """ 
         Plotting the temperature stratification of the dust.
@@ -631,10 +643,16 @@ class PlotDust(PlottingSession):
                         star_grid[0].
                                 
                         See Thesis p32, where power is s in 
-                        T(r) = T_eff*(2*r/R_STAR)**(-2/(4+s)).
+                        T(r) = T_eff*(2*r/R_STAR)**(-2/(4+s)). This value is 
+                        typically 1. 
                 
-                        (default: [1])
-        @type power: list        
+                        (default: [])
+        @type power: list
+        @keyword unit: The unit of the plotted radial grid. Can be 'cm','rstar',
+                       'au', 'm'
+        
+                       (default: 'cm')
+        @type unit: str        
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                           
@@ -653,6 +671,8 @@ class PlotDust(PlottingSession):
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('power'):
             power = cfg_dict['power']
+        if cfg_dict.has_key('unit'):
+            unit = cfg_dict['unit']
         if cfg_dict.has_key('filename'):
             fn_plt = cfg_dict['filename']
             del cfg_dict['filename']    
@@ -662,7 +682,7 @@ class PlotDust(PlottingSession):
         temps = []
         keytags = []
         for star in star_grid:
-            rad = star.getDustRad()
+            rad = star.getDustRad(unit=unit)
             temp,key = star.getDustTemperature(add_key=1) 
             rads.append(rad)
             temps.append(temp)
@@ -670,32 +690,37 @@ class PlotDust(PlottingSession):
         
         #-- Add power laws if requested
         for s in power:
-            rad = star_grid[0].getDustRad(unit='rstar')
+            rad_rstar = star_grid[0].getDustRad(unit='rstar')
+            rad = star_grid[0].getDustRad(unit=unit)
             tstar = star_grid[0]['T_STAR']
-            temp,key = Profiler.dustTemperaturePowerLaw(rad=rad,add_key=1,\
+            temp,key = Profiler.dustTemperaturePowerLaw(rad=rad_rstar,\
+                                                        add_key=1,\
                                                         tstar=tstar,s=s)
             rads.append(rad)
             temps.append(temp)
             keytags.append(key)
-            
-        title = 'Average Dust Temperature Stratification for %s'\
-                %(self.star_name_plots)
+        
+        ppars = dict()
+        ppars['yaxis'] = '$T_\mathrm{d}$ (K)'
+        if unit == 'rstar': ppars['xaxis'] = '$r\ \mathrm{(R}_\star\mathrm{)}$'
+        elif unit =='au': ppars['xaxis'] = '$r\ \mathrm{(AU)}$'
+        elif unit == 'm': ppars['xaxis'] = '$r\ \mathrm{(m)}$'
+        else: ppars['xaxis'] = '$r\ \mathrm{(cm)}$'
+        ppars['plot_title'] = 'Average Dust Temperature Stratification for %s'\
+                              %(self.star_name_plots)
+        
         filename = Plotting2.plotCols(x=rads,y=temps,filename=fn_plt,\
-                                      yaxis='$T_\mathrm{d}$ (K)',\
-                                      plot_title=title,xaxis='$R$ (cm)',\
                                       key_location=(0.05,0.05),cfg=cfg_dict,\
-                                      xlogscale=1,ylogscale=1,fontsize_key=20,\
-                                      keytags=keytags,fontsize_axis=26,\
-                                      figsize=(12.5,8),linewidth=3,\
-                                      fontsize_ticklabels=26,)
+                                      xlogscale=1,ylogscale=1,\
+                                      keytags=keytags,**ppars)
         print '** Your plots can be found at:'
         print filename
         print '***********************************'
             
 
 
-    def plotTempSpecies(self,star_grid=[],models=[],include_total=1,\
-                        power=[1],cfg=''):
+    def plotTempSpecies(self,star_grid=[],models=[],include_total=1,unit='cm',\
+                        power=[],cfg=''):
         
         """ 
         Plotting the temperature stratification of the dust for the species 
@@ -716,14 +741,20 @@ class PlotDust(PlottingSession):
                                         
                                 (default: 0)
         @type include_total: bool
+        @keyword unit: The unit of the plotted radial grid. Can be 'cm','rstar',
+                       'au', 'm'
+        
+                       (default: 'cm')
+        @type unit: str      
         @keyword power: A list of values for s in below formula. If [] no power
-                        law is included. Power law parameters  are taken from 
+                        law is included. Power law parameters are taken from 
                         star_grid[0].
                                 
                         See Thesis p32, where power is s in 
-                        T(r) = T_eff*(2*r/R_STAR)**(-2/(4+s)).
+                        T(r) = T_eff*(2*r/R_STAR)**(-2/(4+s)). This value is 
+                        typically 1. 
                 
-                        (default: [1])
+                        (default: [])
         @type power: list        
         @keyword cfg: path to the Plotting2.plotCols config file. If default, 
                       the hard-coded default plotting options are used.
@@ -747,6 +778,8 @@ class PlotDust(PlottingSession):
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('power'):
             power = cfg_dict['power']
+        if cfg_dict.has_key('unit'):
+            unit = cfg_dict['unit']
         if cfg_dict.has_key('filename'):
             fn_plt = cfg_dict['filename']
             del cfg_dict['filename']    
@@ -755,7 +788,7 @@ class PlotDust(PlottingSession):
         plot_filenames = []
         for star in star_grid:
             if not int(star['T_CONTACT']):
-                rads = [star.getDustRad(species=species)
+                rads = [star.getDustRad(species=species,unit=unit)
                         for species in star.getDustList()]
                 temps = [star.getDustTemperature(species=species)
                          for species in star.getDustList()]
@@ -772,7 +805,7 @@ class PlotDust(PlottingSession):
                 rads, temps, keytags = [], [], []
             
             if include_total:
-                rad = star.getDustRad()
+                rad = star.getDustRad(unit=unit)
                 temp, key = star.getDustTemperature(add_key=1)
                 rads.append(rad[rad>star['R_INNER_DUST']\
                                  *star.Rsun*star['R_STAR']])
@@ -782,25 +815,28 @@ class PlotDust(PlottingSession):
         
             #-- Add power laws if requested
             for s in power:
-                rad = star_grid[0].getDustRad(unit='rstar')
+                rad_rstar = star_grid[0].getDustRad(unit='rstar')
+                rad  = star_grid[0].getDustRad(unit=unit)
                 tstar = star_grid[0]['T_STAR']
-                temp,key = Profiler.dustTemperaturePowerLaw(rad=rad,add_key=1,\
+                temp,key = Profiler.dustTemperaturePowerLaw(rad=rad_rstar,\
+                                                            add_key=1,\
                                                             tstar=tstar,s=s)
                 rads.append(rad)
                 temps.append(temp)
                 keytags.append(key)
-                
+            
+            ppars = dict()
+            ppars['yaxis'] = '$T_\mathrm{d}$ (K)'
+            if unit == 'rstar': ppars['xaxis'] = '$r\ \mathrm{(R}_\star\mathrm{)}$'
+            elif unit =='au': ppars['xaxis'] = '$r\ \mathrm{(AU)}$'
+            elif unit == 'm': ppars['xaxis'] = '$r\ \mathrm{(m)}$'
+            else: ppars['xaxis'] = '$r\ \mathrm{(cm)}$'
+            
             filename = '_'.join([fn_plt,star['LAST_MCMAX_MODEL']])
             plot_filenames.append(Plotting2.plotCols(x=rads,y=temps,\
-                        cfg=cfg_dict,filename=filename,xaxis='$r$ (cm)',\
-                        yaxis='$T_\mathrm{d}$ (K)',keytags=keytags,\
-                        xmax=star['R_OUTER_DUST']*star.Rsun*star['R_STAR'],\
-                        xmin=star['R_STAR']*star.Rsun,fontsize_axis=26,\
-                        xlogscale=1,ylogscale=1,fontsize_key=16,\
-                        figsize=(12.5,8),transparent=0,linewidth=3,\
-                        fontsize_ticklabels=26,\
-                        vert_lines=[star['R_INNER_DUST']\
-                                        *star.Rsun*star['R_STAR']]))
+                                  cfg=cfg_dict,filename=filename,\
+                                  keytags=keytags,xlogscale=1,ylogscale=1,\
+                                  fontsize_key=16,**ppars))
         if len(plot_filenames) != len(star_grid):
             print 'At least one of the models does not yet have a MCMax model.'        
         if plot_filenames[0][-4:] == '.pdf':
@@ -878,7 +914,6 @@ class PlotDust(PlottingSession):
         #-- Set some plot parameters
         ppars['xaxis'] = '$\lambda$ ($\mu \mathrm{m}$)'
         ppars['yaxis'] = '$\kappa_\lambda$ ($\mathrm{cm}^2\mathrm{/g}$)'
-        ppars['fontsize_key'] = 20
         ppars['xlogscale'] = 1
         ppars['ylogscale'] = 1
         ppars['key_location'] = (0.05,0.05)

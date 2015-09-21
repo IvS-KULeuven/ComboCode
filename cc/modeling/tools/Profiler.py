@@ -51,8 +51,8 @@ def dustTemperaturePowerLaw(rad,tstar,s=1,add_key=0):
     temp = tstar*(2.*rad)**(-2./(4+s))
         
     if add_key:
-        key = '$T_\mathrm{d}(r) = %i \\left(\\frac{2r}{\mathrm{R}_\star}'%s +\
-              '\\right)^{\\frac{2}{4+%i}}$'%int(tstar)
+        key = '$T_\mathrm{d}(r) = %i \\left(\\frac{2r}'%int(tstar) + \
+              '{\mathrm{R}_\star}\\right)^{\\frac{2}{4+%i}}$'%int(s)
         return temp, key
     else: 
         return temp
