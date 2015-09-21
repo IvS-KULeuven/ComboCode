@@ -668,7 +668,7 @@ class Database(dict):
         
         '''
         
-        self.__changed.append(key)
+        if key not in self.__changed: self.__changed.append(key)
     
     
     
