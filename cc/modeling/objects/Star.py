@@ -2880,7 +2880,9 @@ class Star(dict):
                                  if trans_strings.count(str(trans))>1])
                 raise IOError('Multiple parameter sets for a single ' + \
                               'transition requested. This is impossible! '+ \
-                              'Check code/contact Robin.')
+                              'Check if N_QUAD and TRANSITION definitions ' + \
+                              'have the same value in your inputfile.' + \
+                              'If yes, check code/contact Robin.')
         else:
             pass
     
@@ -2936,7 +2938,7 @@ class Star(dict):
                 print starfile
                 self['STARFILE'] = starfile
             elif self['STARTYPE'] == 'TABLE':
-                star['STARTABLE'] = star['STARTABLE'].strip('"').strip("'")
+                self['STARTABLE'] = self['STARTABLE'].strip('"').strip("'")
                 if not os.path.split(self['STARTABLE'])[0]:
                     self['STARFILE'] = os.path.join(cc.path.starf,\
                                                     self['STARTABLE'])

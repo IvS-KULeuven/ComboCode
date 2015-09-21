@@ -908,14 +908,10 @@ class PlotDust(PlottingSession):
                     opacities = [op*star['A_%s'%sp]
                                  for op,sp in zip(opacities,star.getDustList())]
                 fn_mplt = '_'.join([fn_plt,star['LAST_MCMAX_MODEL']])
-                title = 'Dust Opacities in %s (%s)' \
-                        %(self.star_name_plots,\
-                          star['LAST_MCMAX_MODEL'].replace('_','\_'))
                 keys = ['%s with $A$ = %s and $T_{des} = %i$ K'\
                          %(sp,str(star['A_%s'%sp]),int(star['T_DES_%s'%sp])) 
                         for sp in star.getDustList()]
                 fns.append(Plotting2.plotCols(x=wave,y=opacities,keytags=keys,\
-                                              plot_title=title,\
                                               filename=fn_mplt,*args,**ppars))
             if len(fns) != len(star_grid):
                 print 'At least one of the models requested does not yet ' + \
