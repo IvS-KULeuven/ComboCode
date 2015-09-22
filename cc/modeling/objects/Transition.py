@@ -716,14 +716,17 @@ def checkUniqueness(trans_list):
     @rtype: tuple[Transition()]
     
     '''
-    
+
     merged = []
     for trans in trans_list:
+        print trans, trans.datafiles, trans.fittedlprof, trans.n_quad
         if trans not in merged: 
             merged.append(trans)
         else:
-            ddict = dict(zip(trans.datafiles,trans.fittedlprof))
-            merged[merged.index(trans)].addDatafile(ddict)
+            #-- Only add data files if there are any to begin with.
+            if trans.datafiles <> None:
+                ddict = dict(zip(trans.datafiles,trans.fittedlprof))
+                merged[merged.index(trans)].addDatafile(ddict)
     return merged
     
     
