@@ -23,7 +23,7 @@ class Radio(Database):
 
     """
 
-    def __init__(self,db_name='radio_data.db'):
+    def __init__(self,db_name='radio_data.db',db_path=None):
 
         """
         Initializing an instance of Radio.
@@ -118,11 +118,20 @@ class Radio(Database):
 
                           (default: radio_data.db)
         @type db_name: str
+        @keyword db_path: The path to the db if not the default dradio in 
+                          Path.dat
+        
+                          (default: None)
+        @type db_path: str
+        
 
         """
-
-        db_path = os.path.join(cc.path.dradio,db_name)
-        super(Radio,self).__init__(db_path=db_path)
+        
+        if db_path is None:
+            fn = os.path.join(cc.path.dradio,db_name)
+        else:
+            fn = os.path.join(db_path,db_name)
+        super(Radio,self).__init__(db_path=fn)
 
 
 
@@ -190,7 +199,7 @@ class Radio(Database):
             #   as input for GASTRoNOoM.
             #-- Note that the parser can already detect decimal quantum numbers
             #   as required by CN
-            evil = ['cn','hcn','h13cn','hco+']
+            evil = ['cn','hcn','h13cn','hco+','oh']
 
             #-- If molecule is not found, or is an evil molecule, or is not of
             #   spectral index type 0, 1, or 2, then skip the entry.
@@ -198,11 +207,14 @@ class Radio(Database):
                 continue
 
             mt = mt.replace(this_dms,'',1)
-
+            
             #-- Create the regular expression for the filename convention
             #   Allows co32, h2o123132, h2o-1_2_3-1_3_2
-            p = re.compile('\d{2,}|-[\d\.?\d_?]+-[\d\.?\d_?]+')
+            p = re.compile('\d{2,}|-[\d\.?\d_?]+-[\d\.?\d_?]+')            
             parsed = p.match(mt).group().rstrip('_').split('-')
+            #-- Note that if a NoneType AttributeError occurs, it's probably 
+            #   because the molecule has not been added to the convention list 
+            #   yet, and is therefore considered evil. Added it to the evil list
 
             #-- if parsed contains one element, several options are possible
             if len(parsed) == 1:
@@ -497,7 +509,7 @@ class Radio(Database):
 
 
 
-    def fitLP(self,star_name='',filename='',trans='',**kwargs):
+    def fitLP(self,star_name='',filename='',trans='',replace=0,**kwargs):
 
         '''
         Fit the data line profiles with a soft parabola or a Gaussian according
@@ -532,13 +544,19 @@ class Radio(Database):
 
                         (default: '')
         @type trans: str
+        @keyword replace: Replace existing fits with a new one. If off, only 
+                          lines that have not been fitted yet are added. 
+                          
+                          (default: 0)
+        @type replace: bool
         @keyword kwargs: Any additional keywords that are passed on to
                          LPTools.fitLP()
         @type kwargs: dict
+        
 
         '''
 
-        def __fitLP(self,ss,tt,ff):
+        def __fitLP(self,ss,tt,ff,replace):
 
             '''
             Helper method giving star_name, transition, and filename for the
@@ -547,11 +565,13 @@ class Radio(Database):
             Accessed only by Radio().fitLP().
 
             '''
-
+            
+            if not replace and self[ss][tt][ff]: return
             fn = os.path.join(self.folder,ff)
             try:
                 fitr = LPTools.fitLP(filename=fn,**kwargs)
             except ValueError:
+                print 'Line profile fit in %s failed.'%ff
                 fitr = None
             self[ss][tt][ff] = fitr
             self.addChangedKey(ss)
@@ -573,7 +593,7 @@ class Radio(Database):
             for ss in self.keys():
                 for tt in self[ss].keys():
                     for ff in self[ss][tt].keys():
-                        __fitLP(self,ss,tt,ff)
+                        __fitLP(self,ss,tt,ff,replace)
 
         #-- star_name given. If trans is given, run through all its filenames
         elif trans:
@@ -581,7 +601,7 @@ class Radio(Database):
                 print 'Transition not found.'
                 return
             for ff in self[star_name][trans].keys():
-                __fitLP(self,star_name,trans,ff)
+                __fitLP(self,star_name,trans,ff,replace)
 
         #-- star_name given. If trans is not given, but filename is, fit it.
         elif filename:
@@ -593,10 +613,10 @@ class Radio(Database):
             if not trans:
                 print 'Filename not found.'
                 return
-            __fitLP(self,star_name,trans,filename)
+            __fitLP(self,star_name,trans,filename,replace)
 
         #-- star_name given. No trans/filename given. Fit everything for star
         else:
             for tt in self[star_name].keys():
                 for ff in self[star_name][tt].keys():
-                    __fitLP(self,star_name,tt,ff)
+                    __fitLP(self,star_name,tt,ff,replace)

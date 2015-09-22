@@ -454,6 +454,8 @@ class MCMax(ModelingSession):
         self.command_list = dict()
         self.command_list['photon_count'] = star['PHOTON_COUNT']
         if star['STARFILE']:
+            #-- Apostrophes do not have to be removed. STARFILE is always made
+            #   by Star.py
             self.command_list['startype'] = "'FILE'"
             self.command_list['Lstar'] = star['L_STAR']
             self.command_list['Rstar'] = star['R_STAR']
@@ -482,11 +484,18 @@ class MCMax(ModelingSession):
                                         *float(star['R_STAR'])\
                                         *star.Rsun/star.au
         
+        star['SCATTYPE'] = star['SCATTYPE'].strip('"').strip("'")
+        self.command_list['scattype'] = "'%s'"%star['SCATTYPE']
+                
+        star['DENSTYPE'] = star['DENSTYPE'].strip('"').strip("'")
         self.command_list['denstype'] = "'%s'"%star['DENSTYPE']
         if star['DENSTYPE'] == 'MASSLOSS':
             self.command_list['Mdot'] = float(star['MDOT_DUST'])*100.
             self.command_list['vexp'] = float(star['V_EXP_DUST'])
         elif star['DENSTYPE'] == 'SHELLFILE' or star['DENSTYPE'] == 'FILE':
+            star['DENSFILE'] = star['DENSFILE'].strip('"').strip("'")
+            if not os.path.split(star['DENSFILE'])[0]:
+                star['DENSFILE'] = os.path.join(cc.path.densf,star['DENSFILE'])
             self.command_list['densfile'] = "'%s'"%star['DENSFILE']
         elif star['DENSTYPE'] == 'POW':
             self.command_list['denspow'] = star['DENSPOW']

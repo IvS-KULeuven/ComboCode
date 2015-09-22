@@ -44,10 +44,17 @@ dphot=Data/SED/Raw/IvS_SEDTool
 #-- Correlated fluxes data folder (fits files with visibilities/flux) Data taken from $dcflux$/$star_name$/. 
 dcflux=Data/CorrFlux
 
+#-- Folder for model atmospheres. 
+atm=dev/ivsdata/sedtables/modelgrids
+
 #-- Folder for CDMS, JPL, LAMDA downloaded line lists.
 ll=LineLists
 
-#-- Folder for model atmospheres
-atm=/STER/pieterd/IVSDATA/sedtables/modelgrids
-#-- Folder for processed model atmospheres used in ComboCode
+#-- Optional folders: If defined, they are used as default locations for several
+#   types of inputfiles. The default path is appended to the filename in the 
+#   input if no path is given there.
+#-- Folder for processed model atmospheres. ICC key STARTABLE. In case stellar
+#   atmospheres are used, the prepared spectrum is put here as well.
 starf=ComboCode/StarFiles
+#-- Folder for processed density profiles. ICC key DENSFILE. 
+densf=ComboCode/DensFiles

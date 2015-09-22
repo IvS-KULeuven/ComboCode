@@ -706,9 +706,10 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                               
                               (default: 1)
     @type number_subplots: int
-    @keyword figsize: the size of the figure, default is A4 page ratio
+    @keyword figsize: the size of the figure, A4 page ratio is 
+                      (20.*math.sqrt(2.), 20.). Default is other ratio.
                       
-                      (default: (20.*math.sqrt(2.), 20.) )
+                      (default: (12.5,8) )
     @type figsize: tuple(float,float)
     @keyword show_plot: show fig before saving (hit enter to continue to save)
                    
@@ -741,11 +742,11 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     @type plot_title: string
     @keyword fontsize_key: fontsize of the keys
                            
-                           (default: 16)
+                           (default: 20)
     @type fontsize_key: int
     @keyword fontsize_axis: fontsize axis labels
                             
-                            (default: 24)
+                            (default: 26)
     @type fontsize_axis: int
     @keyword fontsize_title: fontsize title
                             
@@ -753,15 +754,15 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     @type fontsize_title: int
     @keyword fontsize_label: fontsize of the labels
                              
-                             (default: 12)
+                             (default: 18)
     @type fontsize_label: int
     @keyword fontsize_localized_label: fontsize of the localized labels
                              
-                             (default: 12)
+                             (default: 18)
     @type fontsize_localized_label: int
     @keyword fontsize_ticklabels: fontsize of axis tick labels
                                   
-                                  (default: 20)
+                                  (default: 26)
     @type fontsize_ticklabels: int
     @keyword bold_ticklabels: boldface axis tick labels
                               
@@ -852,7 +853,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     @type line_label_dashedvib: bool
     @keyword linewidth: width of all the lines in the plot
                         
-                        (default: 1)
+                        (default: 3)
     @type linewidth: int
     @keyword markeredgewidth: Increase the linewidth of marker edges (eg black 
                               circles around colored points) or the thickness 
@@ -1047,7 +1048,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     filename=kwargs.get('filename',None)
     extension=kwargs.get('extension',None)
     number_subplots=int(kwargs.get('number_subplots',1))
-    figsize=kwargs.get('figsize',(20.*math.sqrt(2.), 20.))
+    figsize=kwargs.get('figsize',(12.5,8.))
     show_plot=kwargs.get('show_plot',0)
     twiny_x = kwargs.get('twiny_x',[])
     twiny_y = kwargs.get('twiny_y',[])
@@ -1055,11 +1056,11 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     yaxis=kwargs.get('yaxis',r'$F_\nu$ ($Jy$)')
     twinyaxis=kwargs.get('twinyaxis',None)
     plot_title=kwargs.get('plot_title','')
-    fontsize_key=kwargs.get('fontsize_key',16)
-    fontsize_axis=kwargs.get('fontsize_axis',24)
+    fontsize_key=kwargs.get('fontsize_key',20)
+    fontsize_axis=kwargs.get('fontsize_axis',26)
     fontsize_title=kwargs.get('fontsize_title',26)
-    fontsize_label=kwargs.get('fontsize_label',12)
-    fontsize_localized_label=kwargs.get('fontsize_localized_label',12)
+    fontsize_label=kwargs.get('fontsize_label',18)
+    fontsize_localized_label=kwargs.get('fontsize_localized_label',18)
     fontsize_ticklabels=kwargs.get('fontsize_ticklabels',20)
     bold_ticklabels=kwargs.get('bold_ticklabels',0)
     size_ticklines=kwargs.get('size_ticklines',10)
@@ -1068,7 +1069,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     twiny_keytags=kwargs.get('twiny_keytags',[])
     labels=kwargs.get('labels',[])
     localized_labels=kwargs.get('localized_labels',[])
-    linewidth=kwargs.get('linewidth',1)
+    linewidth=kwargs.get('linewidth',3)
     markeredgewidth=kwargs.get('markeredgewidth',1)
     err_linewidth=kwargs.get('err_linewdth',1)
     key_location=kwargs.get('key_location','best')
