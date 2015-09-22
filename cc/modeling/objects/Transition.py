@@ -719,7 +719,6 @@ def checkUniqueness(trans_list):
 
     merged = []
     for trans in trans_list:
-        print trans, trans.datafiles, trans.fittedlprof, trans.n_quad
         if trans not in merged: 
             merged.append(trans)
         else:
