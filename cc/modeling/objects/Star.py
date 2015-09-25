@@ -99,7 +99,7 @@ class Star(dict):
 
 
 
-    def __init__(self,path_gastronoom=None,path_mcmax=None,extra_input=None,\
+    def __init__(self,path_gastronoom='',path_mcmax='',extra_input=None,\
                  example_star=dict()):
         
         """
@@ -545,6 +545,7 @@ class Star(dict):
             self['LS_NO_VIB'] = []
         elif type(self['LS_NO_VIB']) is types.StringType:
             self['LS_NO_VIB'] = [self['LS_NO_VIB']]
+        ctrl = [tr.getInputString(include_nquad=0) for tr in self['GAS_LINES']]
         for molec in self['GAS_LIST']:
             for telescope in self['LS_TELESCOPE']:
                 if telescope == 'PACS':
@@ -560,6 +561,13 @@ class Star(dict):
                             path_gastronoom=self.path_gastronoom,\
                             ls_unit='micron',\
                             no_vib=molec.molecule in self['LS_NO_VIB'])
+                #-- exclude transitions if they are already included. 
+                #   This is to avoid adding a double with a different n_quad, in 
+                #   case it was included manually. Can use GAS_LINES key, as it 
+                #   contains both manual and other lines, but the latter are 
+                #   also assigned self['N_QUAD'] anyway
+                nl = [tr for tr in nl
+                         if tr.getInputString(include_nquad=0) not in ctrl]
                 gas_list.extend(nl)
         self['GAS_LINES'].extend(gas_list)
 
@@ -2832,11 +2840,23 @@ class Star(dict):
             #   Note that these include autosearch transitions if requested
             #   (See ComboCode.py)
             if self.has_key('TRANSITION'):
+                #-- Keep if molecule is available in this model
+                molecules = [m.molecule for m in self['GAS_LIST']]
                 self['TRANSITION'] = [trans 
                                       for trans in self['TRANSITION'] 
-                                      if trans[0] in [molec[0] 
-                                                      for molec in self\
-                                                                 ['MOLECULE']]]
+                                      if trans[0] in molecules]
+                
+                #-- Check if identical transitions both with and without n_quad 
+                #   are requested: Only keep the one with. (ie in the case of 
+                #   radio_autosearch returns a manually requested transition)
+                trl_ras = [tr for tr in self['TRANSITION'] if len(tr) == 11]
+                trl_man = [tr for tr in self['TRANSITION'] if len(tr) == 12]
+                trl_filt = [tr for tr in trl_ras 
+                               if tr not in [tt[:-1] for tt in trl_man]]
+                self['TRANSITION'] = trl_man + trl_filt
+                
+                #-- transitions taken from radio db have only 11 keys, and thus 
+                #   have no n_quad. This is added from the Star() object. 
                 nl = [Transition.makeTransition(star=self,trans=trans) 
                       for trans in self['TRANSITION']]
                 nl = [trans for trans in nl if trans]
@@ -2850,18 +2870,26 @@ class Star(dict):
                 elif self['LINE_SELECT'] == 2: 
                     trl = DataIO.readDict(self['LS_FILE'],\
                                           multi_keys=['TRANSITION'])
-                    ne = len(trl['TRANSITION'][0].split())
-                    trl_sorted = DataIO.checkEntryInfo(trl['TRANSITION'],ne,\
+                    trl_sorted = DataIO.checkEntryInfo(trl['TRANSITION'],11,\
                                                        'TRANSITION')
                     nl = [Transition.makeTransition(trans=trans,star=self) 
                           for trans in trl_sorted]
                     nl = [trans for trans in nl if trans]
+                    
+                    #-- Kick out those transitions that were requested manually
+                    #   Can use GAS_LINES key, as it contains both manual and 
+                    #   other lines, but the latter are also assigned 
+                    #   self['N_QUAD'] anyway
+                    ctrl = [tr.getInputString(include_nquad=0) 
+                            for tr in self['GAS_LINES']]
+                    nl = [tr for tr in nl
+                             if tr.getInputString(include_nquad=0) not in ctrl]
                     self['GAS_LINES'].extend(nl)    
     
             #-- Sort the transitions.
             self['GAS_LINES'] = sorted(list(self['GAS_LINES']),\
                                        key=lambda x: str(x))
-            #-- Check uniqueness.
+            #-- Check uniqueness. Same N_QUAD double transitions can still occur
             self['GAS_LINES'] = Transition.checkUniqueness(self['GAS_LINES'])
             
             #-- Is this still needed? 

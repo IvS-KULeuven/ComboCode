@@ -295,20 +295,21 @@ def makeTransition(trans,star=None,def_molecs=None):
     
     '''
     Create a Transition instance based on a Star object and a standard CC input 
-    line, with 12 entries in a list. This method assumes the Transition 
+    line, with 11 or 12 entries in a list. This method assumes the Transition 
     definition has been screened by DataIO.checkEntryInfo. If the 12th entry is
-    not an integer, n_quad is taken from the Star() object if available, and 
-    otherwise set to 100.
+    not present, n_quad is taken from the Star() object. It is set to 100 if no
+    Star() object is given.
     
     If a star object is not given, the method creates Molecule() objects itself
     For now only 12C16O, 13C16O, 1H1H16O and p1H1H16O are possible.
     
-    @param trans: the input line with 12 entries, the first being the molecule,
-                  followed by all 11 CC input parameters for a transition. It 
-                  is possible also to give the GASTRoNOoM syntax for a 
-                  transition, without n_quad in the end. In that case, n_quad 
-                  is equal to 100. Any parameters given after the 11th, 
-                  respectively the 10th, parameter are ignored.                 
+    @param trans: the input line with 11 or 12 entries, the first being the 
+                  molecule, followed by all 10 or 11 CC input parameters for a 
+                  transition. It is possible also to give the GASTRoNOoM syntax 
+                  for a transition, without n_quad in the end. In that case, 
+                  n_quad is taken from Star() or equal to 100. Any parameters 
+                  given after the 11th, respectively the 10th, parameter are 
+                  ignored.
     @type trans: list[string]
     
     @keyword star: The star object providing basic info
@@ -338,33 +339,34 @@ def makeTransition(trans,star=None,def_molecs=None):
     else:
         molec_short = trans[0]
 
+    #-- If not Star() or default molecules given, define a few:
     if star is None and def_molecs is None: 
         def_molecs = {'12C16O':Molecule.Molecule('12C16O',61,61,240),\
                       '13C16O':Molecule.Molecule('13C16O',61,61,240),\
                       '1H1H16O':Molecule.Molecule('1H1H16O',39,90,1157),\
                       'p1H1H16O':Molecule.Molecule('p1H1H16O',32,90,1029)}
+    
+    #-- Put in default info if Star() is not given, otherwise take from Star()
+    if star is None:
         molec = def_molecs.get(molec_short,None)
         path_gastronoom = None
         umis = 0
-    elif star is None:
-        molec = def_molecs.get(molec_short,None)
-        path_gastronoom = None
-        umis = 0
+        n_quad = 100
     else:
         molec = star.getMolecule(molec_short)
         umis = star['USE_MASER_IN_SPHINX']
+        n_quad = star['N_QUAD']
         path_gastronoom = star.path_gastronoom
     
-    n_quad = None
+    #-- If more than 11 entries are present, n_quad may be given. Try it!
+    #   This means manual definitions of n_quad may be different for transitions
+    #   in the same Star() object (and sphinx id). Typically not the case, but 
+    #   can help in case a single transition fails numerically.
     if len(trans) > 11:
         try:
             n_quad = int(trans[11])
         except ValueError:
             pass
-    if n_quad is None and star <> None:
-        n_quad = star['N_QUAD']
-    elif n_quad is None:
-        n_quad = 100
     
     if molec <> None:
         return Transition(molecule=molec,\
