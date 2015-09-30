@@ -248,13 +248,10 @@ class ComboCode(object):
 
         If a database is not present, it is created.
 
-        If the auto_parse is requested, the data folder will be parsed for new
-        data.
-
-        The data are associated with requested transitions later. Only if also
-        RADIO_AUTOSEARCH is on, these transitions will be automatically added
-        to the requested transitions list.
-
+        If the radio_autosearch flag is on, transitions are automatically
+        generated based on the available data. Note that in this case, N_QUAD
+        from Star() is taken.
+        
         '''
 
         self.radio = None
@@ -263,6 +260,30 @@ class ComboCode(object):
             radio_db = Radio.Radio()
             if radio_db.has_key(self.star_name):
                 self.radio = radio_db[self.star_name]
+        
+        if self.radio and self.radio_autosearch:        
+            #-- Get the transition definitions (are in the correct format
+            #   automatically, due to the methods in Radio.py). Check entry info
+            #   is still ran, eg to get rid of bad 0 offset type sets.
+            #-- 11 entries, n_quad is added in the Star() object (to allow for
+            #   proper n_quad gridding). N_quad specification through manual
+            #   TRANSITION definition is still possible, but then overrides the 
+            #   default N_QUAD value.
+            radio_trans = sorted([tr.replace('TRANSITION=','',1)
+                                  for tr in self.radio.keys()])
+            radio_trans = DataIO.checkEntryInfo(radio_trans,11,'TRANSITION')
+            
+            #-- Doubles of transitions not possible from db. radio_trans always
+            #   a tuple.
+            #-- In case doubles after merge: they will be filtered out by Star()
+            if self.additive_grid.has_key('TRANSITION'):
+                otrl = self.additive_grid['TRANSITION'] 
+                ntrl = [tl + radio_trans for tl in otrl]
+                self.additive_grid['TRANSITION'] = ntrl
+            elif self.processed_input.has_key('TRANSITION'):
+                self.processed_input['TRANSITION'] += radio_trans
+            else:
+                self.processed_input['TRANSITION'] = radio_trans
 
 
 
@@ -274,31 +295,10 @@ class ComboCode(object):
         Only done if RADIO_PATH is given and if a file named radio_data.db is
         present in the given folder.
 
-        If the radio_autosearch flag is on, transitions are automatically
-        generated based on the available data. Note that in this case, N_QUAD
-        from Star() is taken.
-
         '''
 
         if self.radio:
-            #-- Get the transition definitions (are in the correct format
-            #   automatically, due to the methods in Radio.py) and make sure
-            #   they are all unique.
-            radio_trans = sorted(['%s 100'%tr.replace('TRANSITION=','',1)
-                                  for tr in self.radio.keys()])
-            radio_trans = DataIO.checkEntryInfo(radio_trans,12,'TRANSITION')
             for star in self.star_grid:
-                molecules = [m.molecule for m in star['GAS_LIST']]
-                if self.radio_autosearch:
-                    n_quad = star['N_QUAD']
-                    add_trans = [tr[:-1] + [n_quad]
-                                 for tr in radio_trans
-                                 if tr[0] in molecules]
-                    if star.has_key('TRANSITION'):
-                        star['TRANSITION'] = list(star['TRANSITION'])
-                        star['TRANSITION'].extend(add_trans)
-                    else:
-                        star['TRANSITION'] = add_trans
                 for trans in star['GAS_LINES']:
                     if trans:
                         trstr = trans.getInputString(include_nquad=0)
@@ -421,8 +421,19 @@ class ComboCode(object):
             else:
                 self.processed_input['R_POINTS_MASS_LOSS'] = r_points_mass_loss
         if transitions:
-            transitions = DataIO.checkEntryInfo(transitions,12,'TRANSITION')
-            if type(transitions) is types.ListType:
+            nk = 12
+            
+            #-- Check if N_QUAD is a grid parameter: remove any manual N_QUAD
+            #   definitions to allow gridding to work. N_QUAD is taken from 
+            #   Star() by default in this case.
+            gkeys = self.multiplicative_grid.keys() + self.additive_grid.keys()
+            if 'N_QUAD' in gkeys: 
+                transitions = [' '.join(tr.split()[:-1]) for tr in transitions]
+                nk = 11
+            
+            #-- If N_QUAD is a gridding key, transitions will always be a tuple.
+            transitions = DataIO.checkEntryInfo(transitions,nk,'TRANSITION')
+            if isinstance(transitions,list):
                 self.additive_grid['TRANSITION'] = transitions
             else:
                 self.processed_input['TRANSITION'] = transitions

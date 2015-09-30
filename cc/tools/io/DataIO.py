@@ -964,21 +964,32 @@ def checkEntryInfo(input_list,number_of_keys,info_type):
         raise KeyError('The info_type keyword is unknown. Should be ' + \
                        'MOLECULE, TRANSITION or R_POINTS_MASS_LOSS.')
     input_list = [line.split() for line in input_list]
+
+    #-- Make sure identical transitions don't get confused if offset 0 is 
+    #   given in different ways, such as more significant numbers. Offset is
+    #   always the entry with index 10. 
+    def checkOffset(line):
+        if float(line[10]) == 0.0:
+            line[10] = '0.0'
+        return line
+    if info_type == 'TRANSITION':
+        input_list = [checkOffset(line) for line in input_list]
+
     if set([len(line) for line in input_list]) != set([number_of_keys]):
         print 'Number of keys should be: %i'%number_of_keys
         print '\n'.join(['%i  for  %s'%(len(line),line) for line in input_list])
         raise IOError('Input for one of the %s lines has wrong '%info_type + \
                       'number of values. Double check, and abort.')
     else:
-        #- if MOLECULE: only molecule string, 
-        #- if R_POINTS_MASS_LOSS: only grid id number, 
-        #- if TRANSITION: everything except last entry (n_quad)
+        #-- if MOLECULE: only molecule string, 
+        #   if R_POINTS_MASS_LOSS: only grid id number, 
+        #   if TRANSITION: everything except last entry (n_quad)
         entries = [info_type in ('MOLECULE','R_POINTS_MASS_LOSS') \
                         and line[0] or ' '.join(line[0:-1]) 
                    for line in input_list]  
         unique_entries = set(entries)
-        #- ie the defining parameter is never multiply defined ! 
-        #- Hence, only a single set of parameters is used here.
+        #-- ie the defining parameter is never multiply defined ! 
+        #   Hence, only a single set of parameters is used here.
         if len(unique_entries) == len(entries):        
             if info_type == 'R_POINTS_MASS_LOSS':
                 input_list = ['  '.join(il[1:]) for il in input_list]
@@ -994,8 +1005,8 @@ def checkEntryInfo(input_list,number_of_keys,info_type):
                     print 'At index %i:  %s' %(i,entries[i])
                 raw_input('Abort if identical transitions are not expected. Press enter otherwise.')
             if info_type == 'R_POINTS_MASS_LOSS':
-                #- This will be a list of R_POINTS_MASS_LOSS sets, where each 
-                #- set is defined as a list of radial grid point parameters
+                #-- This will be a list of R_POINTS_MASS_LOSS sets, where each 
+                #   set is defined as a list of radial grid point parameters
                 final = []  
                 while input_list:
                     if int(input_list[0][0]) != 1:
@@ -1006,8 +1017,8 @@ def checkEntryInfo(input_list,number_of_keys,info_type):
                     final.append([input_list.pop(0)])
                     while input_list and int(input_list[0][0]) != 1:
                         final[-1].append(input_list.pop(0))
-                #- Remove the grid point ID numbers, not relevant anymore
-                #- put the rest back into a string
+                #-- Remove the grid point ID numbers, not relevant anymore
+                #   put the rest back into a string
                 final = [tuple(['  '.join([num 
                                            for i,num in enumerate(this_point) 
                                            if i != 0]) 

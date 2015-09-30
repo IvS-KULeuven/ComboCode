@@ -306,6 +306,8 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 #   1) Specify TRANSITION definitions explicitly
 #      Syntax - TRANSITION=MOLECULE(short) vup jup kaup kcup vlow jlow kalow kclow telescope offset n_quad
 #      In case of PACS, use PACS-H2O for water lines, use PACS for all other lines
+#      This is the only way to explicitly define n_quad. All other ways take n_quad equal to the N_QUAD key defined in this inputfile.
+#      n_quad given in TRANSITION definitions is ignored if a grid over the N_QUAD keyword is requested.
 #   2) Autosearch for radio data in your radio folder (requires RADIO_AUTOSEARCH in general input section above)
 #   3) LINE_SELECT = 1: lines are selected for requested MOLECULEs in the wavelength range of an instrument (requires LS_TELESCOPE/_OFFSET/_NO_VIB)
 #   4) LINE_SELECT = 2: lines are selected from a file, which contains the TRANSITION definitions (requires LS_FILE) 
@@ -317,8 +319,8 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 
 #-- Sphinx keywords
 N_QUAD=100                  # Number of impact par. in quadrature int(Inu pdp)         
-                            # N_QUAD is always the same for all lines requested if LINE_LISTS=1 or if an auto-search for data is done
-                            # n_quad is otherwise included in TRANSITION input lines or in the input files if LINE_LISTS=2 
+                            # N_QUAD is always the same for all lines requested, unless they are defined explicitly in this inputfile
+                            # If a grid over N_QUAD is requested, the n_quad in explicit definitions is overridden.
 USE_MASER_IN_SPHINX=0       # Use correct masering opacities in Sphinx
 
 
