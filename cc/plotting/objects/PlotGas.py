@@ -569,7 +569,7 @@ class PlotGas(PlottingSession):
                                 %current_trans.telescope.replace('-H2O','')\
                                                         .replace('-CORRB','')
                         ddict['labels'].append((telescope_string,0.73,0.85))
-                    if not no_data and date_tag:
+                    if current_trans.lpdata and not no_data and date_tag:
                         ddict['labels'].append(\
                             ('; '.join([lp.getDateObs() \
                                         for lp in current_trans.lpdata]),\
