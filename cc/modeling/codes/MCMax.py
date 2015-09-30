@@ -582,7 +582,7 @@ class MCMax(ModelingSession):
                 #   .particle files exist in the same location
                 elif star['SCATTYPE'] == 'FULL':
                     partfile = os.path.splitext(speciesfile)[0] + '.particle'
-                    if os.isfile(os.path.join(cc.path.mopac,partfile)):
+                    if os.path.isfile(os.path.join(cc.path.mopac,partfile)):
                         ftype = 'part'
                         speciesfile = partfile
                     else:
