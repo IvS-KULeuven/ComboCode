@@ -173,7 +173,7 @@ class Sed(object):
         self.setStarPars()
         self.setData(remove=remove)
         self.readData()
-        #self.readPhotInfo()
+        self.readPhotInfo()
         self.ak = dict()
 
 
