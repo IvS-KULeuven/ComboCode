@@ -1,5 +1,5 @@
 ### Molecule Data
-### Spec Indices: 0 = auto, 1 = indices list, 2 = indices list (SO-type), 3 = indices list (HCN type)
+### Spec Indices: 0 = auto, 1 = indices list, 2 = indices list (SO-type), 3 = indices list (HCN type), 4 = unknown
 ### Indices relevant for addLineList in Star, and for Transition in 3 methods
 ### Abun factor is the factor wrt the main isotope/ortho type molecule, use * for multiple factors (either 1 or a ratio parameter)
 ###################################################################################################
@@ -34,12 +34,15 @@ si34s    1416.028034             28Si34S        Si^{34}S      0             1   
 cs       0616.012032             12C32S         CS              0             1                    0
 so2      160808.032016016        32S16O16O      SO_2          1             1                    0
 so       1608.032016             32S16O         SO              2             1                    0
-po       1508.030016             30P16O         PO              2             1                    0 
+34so     1608.034016             34S16O         ^{34}SO         2             1                     0 
+po       1508.030016             30P16O         PO              1             1                    0 
 pn       1507.030014             30P14N         PN              0             1                    0
 mgs      1216.024032             24Mg32S        MgS             0             1                    0
-sicc     140606.028012012        28Si12C12C     SiC_2         0             1                    0
-sic      1406.028012             28Si12C        SiC             0             1                    0 
-cchh     06060101.012012001001   12C12C1H1H     C_2H_2      1             1                    0
-cch      060601.012012001        12C12C1H       C_2H          1             1                    0
-ch3cn 060101010607.012001001001012014 12C1H1H1H12C14N CH_3CN  1             1                    0
-hno      010708.001014016        1H14N16O       HNO             1             1                    0
+nh3      07010101.014001001001   14N1H1H1H      NH_3            2             1                     0
+tio2     220808.048016016        48Ti16O16O     TiO_2           1           1                       0
+sicc     140606.028012012        28Si12C12C     SiC_2         4             1                    0
+sic      1406.028012             28Si12C        SiC             4             1                    0 
+cchh     06060101.012012001001   12C12C1H1H     C_2H_2      4             1                    0
+cch      060601.012012001        12C12C1H       C_2H          4            1                    0
+ch3cn 060101010607.012001001001012014 12C1H1H1H12C14N CH_3CN  4             1                    0
+hno      010708.001014016        1H14N16O       HNO             4             1                    0

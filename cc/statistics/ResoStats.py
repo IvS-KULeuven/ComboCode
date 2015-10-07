@@ -33,7 +33,7 @@ class ResoStats(Statistics):
                  lll_p=None):        
         
         """ 
-        Initializing an instance of IntIntStats.
+        Initializing an instance of ResoStats.
         
         Then run setInstrument, setModels and setIntensities. The rest of the 
         class works interactively.

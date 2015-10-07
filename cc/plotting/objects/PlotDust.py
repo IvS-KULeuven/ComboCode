@@ -16,14 +16,16 @@ from scipy import array
 import numpy as np
 
 import cc.path
+from cc.data import Sed
 from cc.plotting.PlottingSession import PlottingSession
 from cc.plotting import Plotting2
 from cc.tools.io import DataIO, KappaReader
 from cc.modeling.objects import Star
 from cc.modeling.codes import MCMax
-from cc.modeling.tools import Profiler
+from cc.modeling.tools import Profiler,Reddening 
 
-
+from ivs.sed.model import synthetic_flux
+from ivs.units import conversions 
 
 class PlotDust(PlottingSession):
     
@@ -157,7 +159,8 @@ class PlotDust(PlottingSession):
         keytags = []
         data_x = []
         data_y = []
-        data_err = []
+        data_xerr = []
+        data_yerr = []
         line_types = []
         for (dt,fn),tdata in sorted([dset
                                      for dset in self.sed.data.items()
@@ -167,7 +170,8 @@ class PlotDust(PlottingSession):
              data_y.append(tdata[1])
              #data_err.append(tdata[2])
              #-- For now, no error bars for spectra. 
-             data_err.append(None)
+             data_xerr.append(None)
+             data_yerr.append(None)
              line_types.append(data_labels[dt][1])
         
         for (dt,fn),(w,f,err) in sorted([dset
@@ -175,45 +179,75 @@ class PlotDust(PlottingSession):
                                          if 'PHOT' in dset[0][0].upper()]):
              keytags.append(data_labels[dt][0])
              data_x.append(w)
+             data_xerr.append(None)
              data_y.append(f)
-             data_err.append(err)
+             data_yerr.append(err)
              line_types.append(data_labels[dt][1])
+        
+        #-- Set line types manually, so the photometry can be plotted with the 
+        #   right colors.
+        elp = Plotting2.getLineTypes()
+        elp = [lp for lp in elp if lp not in line_types]
         
         #- Collect model data as well as keytags and set line types
         model_ids_mcm = [s['LAST_MCMAX_MODEL'] 
                          for s in star_grid
                          if s['LAST_MCMAX_MODEL']]
+        distances = [s['DISTANCE'] for s in star_grid if s['LAST_MCMAX_MODEL']]
+        
         #- Only if the model_ids list is not empty, MCMax models are available
         #- Otherwise the ray tracing keyword is unnecessary.
         if no_models:
             model_ids_mcm = []
+            distances = []
         if model_ids_mcm: 
             rt_sed = star_grid[0]['RT_SED']
-        for model_id in model_ids_mcm:
+        
+        wmodels = []
+        fmodels = []
+        for model_id,d in zip(model_ids_mcm,distances):
             dpath = os.path.join(cc.path.mout,'models',model_id)
             w,f = MCMax.readModelSpectrum(dpath,rt_sed)
+            f = Reddening.redden(w,f,self.sed.getAk(d))
+            wmodels.append(w)
+            fmodels.append(f)
+        
+        for i,(w,f,model_id) in enumerate(zip(wmodels,fmodels,model_ids_mcm)):
             data_x.append(w)
             data_y.append(f)
-            data_err.append(None)
+            data_xerr.append(None)
+            data_yerr.append(None)
             keytags.append(model_id.replace('_','\_'))
+            line_types.append(elp[i])
+        
+        if self.sed.photbands.size:
+            filts = self.sed.filter_info  
+            for i,(w,f) in enumerate(zip(wmodels,fmodels)):
+                mphot = Sed.calcPhotometry(w,f,self.sed.photbands)
+                data_x.append(filts.eff_wave)
+                data_y.append(mphot)
+                data_xerr.append([filts.wlower,filts.wupper])
+                data_yerr.append(None)
+                line_types.append('o%s'%Plotting2.splitLineType(elp[i])[1])
 
-        line_types += [0]*len(star_grid)
         keytags = [tag.replace('#','') for tag in keytags]
         extra_pars = dict()
+        extra_pars['line_types'] = line_types
+        extra_pars['keytags'] = keytags
         extra_pars['ymax'] = 1.3*max([max(dy[np.isfinite(dy)]) 
                                       for dy in data_y])
         extra_pars['ymin'] = 0.5*min([min(dy[np.isfinite(dy)]) 
                                       for dy in data_y])
-        filename = Plotting2.plotCols(x=data_x,y=data_y,yerr=data_err,\
-                                      filename=fn_plt,\
-                                      figsize=(20,10),number_subplots=1,\
-                                      plot_title=plot_title,fontsize_axis=20,\
-                                      keytags=keytags,fontsize_title=24,\
-                                      linewidth=3,key_location=(0.0,0.75),\
-                                      xlogscale=1,transparent=0,cfg=cfg_dict,\
-                                      line_types=line_types,ylogscale=0,\
-                                      fontsize_ticklabels=20,fontsize_key=18,\
-                                      xmin=2,xmax=200,extension='.pdf',\
+        extra_pars['xmin'] = 2
+        extra_pars['xmax'] = 200
+        extra_pars['fontsize_key'] = 16
+        extra_pars['xlogscale'] = 1
+        extra_pars['ylogscale'] = 0
+        extra_pars['xerr_capsize'] = 0
+        extra_pars['xerr_linewidth'] = 4
+        extra_pars.update(cfg_dict)
+        filename = Plotting2.plotCols(x=data_x,y=data_y,xerr=data_xerr,\
+                                      yerr=data_yerr,filename=fn_plt,\
                                       **extra_pars)
         print '** Your SED plots can be found at:'
         print filename
@@ -952,7 +986,7 @@ class PlotDust(PlottingSession):
                 print 'At least one of the models requested does not yet ' + \
                       'have a MCMax model.'
             print '** Your plots can be found at:'
-            if fns[-1][-4] == '.pdf':
+            if fns and fns[-1][-4] == '.pdf':
                 fn_plt = fn_plt+'.pdf'
                 DataIO.joinPdf(old=fns,new=fn_plt)
                 print fn_plt

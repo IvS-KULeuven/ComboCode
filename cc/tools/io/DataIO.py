@@ -12,7 +12,6 @@ import subprocess
 from glob import glob
 from scipy import array,zeros
 from PyPDF2 import PdfFileMerger
-import types
 from matplotlib import mlab
 
 import cc.path
@@ -318,7 +317,7 @@ def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
                         for k,v in newdict.items()])
     if convert_lists:
         for k,v in newdict.items():
-            if type(v) is types.StringType and v.find('[') != -1:
+            if isinstance(v,str) and v.find('[') != -1:
                 v = v.strip('[').strip(']')
                 newv = []
                 while v.find('(') != -1:
@@ -333,7 +332,7 @@ def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
                 if convert_floats:
                     converted = []
                     for newvi in newv:
-                        if type(newvi) is types.TupleType:
+                        if isinstance(newvi,tuple):
                             converted.append(tuple([convertFloat(tui,\
                                                       convert_int=convert_ints) 
                                                     for tui in newvi]))
@@ -720,7 +719,7 @@ def writeCols(filename,cols,mode='w',delimiter='\t'):
         testFolderExistence(os.path.split(filename)[0])
     FILE = open(filename,mode)
     FILE.write('\n'.join([delimiter.join(\
-                            [type(col[i]) is types.StringType and '%s'%col[i] \
+                            [isinstance(col[i],str) and '%s'%col[i] \
                                 or '%.3e'%col[i]  
                              for col in cols])
                           for i in xrange(len(cols[0]))]))

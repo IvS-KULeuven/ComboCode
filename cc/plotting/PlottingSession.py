@@ -54,12 +54,12 @@ class PlottingSession(object):
         
         self.inputfilename = inputfilename
         self.star_name = star_name
-        self.star_index = DataIO.getInputData(path=cc.path.usr)\
-                                            .index(self.star_name)
+        self.star_index = DataIO.getInputData(path=cc.path.usr).index(star_name)
         self.star_name_plots = DataIO.getInputData(path=cc.path.usr,
                                                    keyword='STAR_NAME_PLOTS',\
                                                    remove_underscore=1,\
                                                    rindex=self.star_index)
+        
         #-- Can't use convenience paths here through cc.path, because the 
         #   module is not code specific. Within a single pything session, there
         #   may be multiple instances of PlottingSession

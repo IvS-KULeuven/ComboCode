@@ -12,11 +12,11 @@ import scipy
 from scipy import array,sqrt,log,pi
 
 
-def calcChiSquared(data,model,noise):
+def calcChiSquared(data,model,noise,ndf=0):
     
     """
-    Calculate the chi-squared value of a data array minus a model array, taking 
-    into account the noise in the data array.
+    Calculate the reduced chi-squared value of a data array minus a model array,
+    taking into account the noise in the data array.
     
     @param data: The data set. Must have same dimensions as model!
     @type data: array
@@ -26,6 +26,13 @@ def calcChiSquared(data,model,noise):
                   or individual values for every entry in data/model. 
     @type noise: float/array
 
+    @keyword ndf: Number of degrees of freedom. Default in case of calculating
+                  for one single model. Typically the number of variable grid
+                  parameters in a grid calculation.
+                  
+                  (default: 0) 
+    @type ndf: int
+    
     @return: The chi squared value
     @rtype: float
     
@@ -34,7 +41,7 @@ def calcChiSquared(data,model,noise):
     if type(data) not in [types.ListType,scipy.ndarray]:
         data = [data]
     data, model, noise = array(data), array(model), array(noise) 
-    return sqrt(((data - model)**2./noise**2.).sum())/len(data)
+    return sqrt(((data - model)**2./noise**2.).sum())/(len(data)-ndf-1)
     
     
 

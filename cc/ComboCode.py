@@ -9,22 +9,16 @@ Author: R. Lombaert
 
 import sys
 import os
-import types
 import subprocess
 import time
 
 import cc.path
 from cc.tools.io import DataIO
 from cc.tools.numerical import Gridding
-from cc.managers import ModelingManager
-from cc.managers import PlottingManager
-from cc.managers import Vic
-from cc.modeling.objects import Star
-from cc.modeling.objects import Transition
-from cc.statistics import UnresoStats
-from cc.statistics import ResoStats
-from cc.data.instruments import Pacs
-from cc.data.instruments import Spire
+from cc.managers import ModelingManager, PlottingManager, Vic
+from cc.modeling.objects import Star, Transition
+from cc.statistics import UnresoStats, ResoStats, SedStats
+from cc.data.instruments import Pacs, Spire
 from cc.data import Sed, Radio
 from cc.modeling.tools import ColumnDensity, ContinuumDivision
 
@@ -172,24 +166,30 @@ class ComboCode(object):
         PACS object.
 
         '''
-
+        
+        pacs = self.processed_input.pop('PACS',0)
         redo_convolution = self.processed_input.pop('PACS_REDO_CONVOLUTION',0)
         searchstring = self.processed_input.pop('PACS_SEARCHSTRING','')
         oversampling = self.processed_input.pop('PACS_OVERSAMPLING','')
         intrinsic = self.processed_input.pop('PACS_INTRINSIC',1)
         linefit = self.processed_input.pop('PACS_LINEFIT','')
         absflux_err = self.processed_input.pop('PACS_ABSFLUX_ERR',0.2)
-        if cc.path.dpacs:
-            self.pacs = Pacs.Pacs(star_name=self.star_name,\
-                                  path=self.path_gastronoom,\
-                                  redo_convolution=redo_convolution,\
-                                  oversampling=oversampling,\
-                                  intrinsic=intrinsic,\
-                                  path_linefit=linefit,\
-                                  absflux_err=absflux_err)
-            self.pacs.setData(searchstring=searchstring)
-        else:
+        
+        #-- If PACS is not requested, put self.spire to None. Still popping the
+        #   PACS specific keywords to avoid clutter in the Star() objects.
+        #   In case of a pure model, no data are available anyway.
+        if not pacs or self.star_name == 'model':
             self.pacs = None
+            return
+        
+        self.pacs = Pacs.Pacs(star_name=self.star_name,\
+                              path=self.path_gastronoom,\
+                              redo_convolution=redo_convolution,\
+                              oversampling=oversampling,\
+                              intrinsic=intrinsic,\
+                              path_linefit=linefit,\
+                              absflux_err=absflux_err)
+        self.pacs.setData(searchstring=searchstring)
 
 
 
@@ -200,24 +200,30 @@ class ComboCode(object):
         object.
 
         '''
-
+        
+        spire = self.processed_input.pop('SPIRE',0)
         searchstring = self.processed_input.pop('SPIRE_SEARCHSTRING','')
         resolution = self.processed_input.pop('SPIRE_RESOLUTION',0)
         intrinsic = self.processed_input.pop('SPIRE_INTRINSIC',1)
         oversampling = self.processed_input.pop('SPIRE_OVERSAMPLING',0)
         linefit = self.processed_input.pop('SPIRE_LINEFIT','')
         absflux_err = self.processed_input.pop('SPIRE_ABSFLUX_ERR',0.2)
-        if cc.path.dspire:
-            self.spire = Spire.Spire(star_name=self.star_name,\
-                                     path=self.path_gastronoom,\
-                                     resolution=resolution,\
-                                     intrinsic=intrinsic,\
-                                     oversampling=oversampling,\
-                                     path_linefit=linefit,\
-                                     absflux_err=absflux_err)
-            self.spire.setData(searchstring=searchstring)
-        else:
+        
+        #-- If SPIRE is not requested, put self.spire to None. Still popping the
+        #   SPIRE specific keywords to avoid clutter in the Star() objects.
+        #   In case of a pure model, no data are available anyway.
+        if not spire or self.star_name == 'model':
             self.spire = None
+            return
+
+        self.spire = Spire.Spire(star_name=self.star_name,\
+                                 path=self.path_gastronoom,\
+                                 resolution=resolution,\
+                                 intrinsic=intrinsic,\
+                                 oversampling=oversampling,\
+                                 path_linefit=linefit,\
+                                 absflux_err=absflux_err)
+        self.spire.setData(searchstring=searchstring)
 
 
 
@@ -227,16 +233,22 @@ class ComboCode(object):
         Collect the SED data and create an Sed() object.
 
         '''
-
+        
+        sed = self.processed_input.pop('SED',0)
         remove = self.processed_input.pop('SED_PHOT_REMOVE','')
+        
+        #-- If SED is not requested, put self.spire to None. Still popping the
+        #   SED specific keywords to avoid clutter in the Star() objects.
+        #   In case of a pure model, no data are available anyway.
+        if not sed or self.star_name == 'model':
+            self.sed = None
+            return
+            
         if not remove: remove = []
-        elif type(remove) is types.StringType: remove = [remove]
+        elif isinstance(remove,str): remove = [remove]
         else: remove = list(remove)
 
-        if cc.path.dsed and not self.star_name == 'model':
-            self.sed = Sed.Sed(star_name=self.star_name,remove=remove)
-        else:
-            self.sed = None
+        self.sed = Sed.Sed(star_name=self.star_name,remove=remove)
 
 
 
@@ -253,15 +265,22 @@ class ComboCode(object):
         from Star() is taken.
         
         '''
-
-        self.radio = None
-        self.radio_autosearch = self.processed_input.pop('RADIO_AUTOSEARCH',0)
-        if cc.path.dradio:
-            radio_db = Radio.Radio()
-            if radio_db.has_key(self.star_name):
-                self.radio = radio_db[self.star_name]
         
-        if self.radio and self.radio_autosearch:        
+        radio = self.processed_input.pop('RADIO',0)
+        radio_autosearch = self.processed_input.pop('RADIO_AUTOSEARCH',0)
+    
+        #-- If RADIO is not requested, put self.spire to None. Still popping the
+        #   RADIO specific keywords to avoid clutter in the Star() objects.
+        #   In case of a pure model, the radio db doesn't have an entry anyway.
+        radio_db = Radio.Radio()
+        if not radio or not radio_db.has_key(self.star_name):
+            self.radio = None
+            return
+            
+        self.radio = radio_db[self.star_name]
+        
+        #-- Still check self.radio as bool, in case the dict is empty.
+        if self.radio and radio_autosearch:        
             #-- Get the transition definitions (are in the correct format
             #   automatically, due to the methods in Radio.py). Check entry info
             #   is still ran, eg to get rid of bad 0 offset type sets.
@@ -409,14 +428,14 @@ class ComboCode(object):
         #-- sense and is correct
         if molecules:
             molecules = DataIO.checkEntryInfo(molecules,20,'MOLECULE')
-            if type(molecules) is types.ListType:
+            if isinstance(molecules,list):
                 self.additive_grid['MOLECULE'] = molecules
             else:
                 self.processed_input['MOLECULE'] = molecules
         if r_points_mass_loss:
             r_points_mass_loss = DataIO.checkEntryInfo(r_points_mass_loss,4,\
                                                        'R_POINTS_MASS_LOSS')
-            if type(r_points_mass_loss) is types.ListType:
+            if isinstance(r_points_mass_loss,list):
                 self.additive_grid['R_POINTS_MASS_LOSS'] = r_points_mass_loss
             else:
                 self.processed_input['R_POINTS_MASS_LOSS'] = r_points_mass_loss
@@ -781,6 +800,7 @@ class ComboCode(object):
         self.pacsstats = None
         self.spirestats = None
         self.resostats = None
+        self.sedstats = None
         if self.statistics and self.pacs <> None:
             print '************************************************'
             print '**** Doing PACS statistics for %s.'%self.star_name
@@ -793,6 +813,7 @@ class ComboCode(object):
             self.pacsstats.setModels(star_grid=self.star_grid)
             self.pacsstats.setRatios(chi2_type=self.stat_chi2)
             self.pacsstats.plotRatioWav(inputfilename=self.inputfilename)
+        
         if self.statistics and self.spire <> None:
             print '************************************************'
             print '**** Doing SPIRE statistics for %s.'%self.star_name
@@ -805,7 +826,18 @@ class ComboCode(object):
             self.spirestats.setModels(star_grid=self.star_grid)
             self.spirestats.setRatios(chi2_type=self.stat_chi2)
             self.spirestats.plotRatioWav(inputfilename=self.inputfilename)
-        if self.statistics:
+        
+        if self.statistics and self.sed <> None:
+            print '************************************************'
+            print '**** Doing SED statistics for %s.'%self.star_name
+            print '************************************************'
+            self.sedstats = SedStats.SedStats(star_name=self.star_name,\
+                                              path_code=self.path_mcmax)
+            self.sedstats.setInstrument(sed=self.sed)
+            self.sedstats.setModels(star_grid=self.star_grid)
+            self.sedstats.setModelPhotometry()
+        
+        if self.statistics and self.radio:
             trans_sel = Transition.extractTransFromStars(self.star_grid,\
                                                          dtype='resolved')
             if not trans_sel:
@@ -835,7 +867,7 @@ class ComboCode(object):
 
         '''
 
-        if type(self.contdiv_features) is types.StringType:
+        if isinstance(self.contdiv_features,str):
             self.contdiv_features = [self.contdiv_features]
         for k in self.contdiv_features:
             features = ['MGS','H2O3.1']

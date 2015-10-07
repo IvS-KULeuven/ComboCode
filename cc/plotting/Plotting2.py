@@ -456,14 +456,7 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
     if transparent: 
         fig.patch.set_alpha(0.5)
     if not line_types:
-        linestyles = ['-','-','-','-','-','-','-',\
-                    '--','--','--','--','--','--','--',\
-                    '.-','.-','.-','.-','.-','.-','.-',\
-                    '.','.','.','.','.','.','.',\
-                    'x','x','x','x','x','x','x',\
-                    'o','o','o','o','o','o','o']
-        colors = ['r','b','k','g','m','y','c']
-        line_types = [ls + col for ls,col in zip(linestyles,6*colors)]
+        line_types = getLineTypes()
     for ddict,itile in zip(data,xrange(xdim*ydim)):
         sub = pl.subplot(ydim,xdim,itile+1)
         these_data = []
@@ -472,7 +465,7 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                                              ddict['xerr'],ddict['yerr'])
              if list(yi) and yi <> None]
         for index,(xi,yi,lp,xerri,yerri) in enumerate(these_data):
-            ls,col = splitLineStyle(lp)
+            ls,col = splitLineType(lp)
             if index in ddict['histoplot']:
                 leg = sub.step(xi,yi,ls,where='mid',color=col,\
                         linewidth=(thick_lw_data and linewidth*2 or linewidth))
@@ -851,26 +844,46 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                              
                                    (default: 0)
     @type line_label_dashedvib: bool
-    @keyword linewidth: width of all the lines in the plot
-                        
-                        (default: 3)
-    @type linewidth: int
     @keyword markeredgewidth: Increase the linewidth of marker edges (eg black 
                               circles around colored points) or the thickness 
-                              of crosses, dots, etc... Also used for the size 
-                              of error bar caps.
+                              of crosses, dots, etc... 
                               
                               (default: 1)
     @type markeredgewidth: int
+    @keyword xerr_markeredgewidth: The linewidth of the caps of x error bars.  
+                              
+                                   (default: 1)
+    @type xerr_markeredgewidth: int
+    @keyword yerr_markeredgewidth: The linewidth of the caps of y error bars.  
+                              
+                                   (default: 1)
+    @type yerr_markeredgewidth: int
+    @keyword xerr_capsize: The size or length of the caps on the x error bars.
+    
+                           (default: 5)
+    @type xerr_capsize: int
+    @keyword yerr_capsize: The size or length of the caps on the y error bars.
+    
+                           (default: 5)
+    @type yerr_capsize: int
+     
     @keyword thick_lw_data: Use twice the linewidth for data points (through
                             histoplot keyword).
                             
                             (default: 0)
     @type thick_lw_data: bool
-    @keyword err_linewidth: width of all the errorbars in the plot
+    @keyword linewidth: width of the non-symbol line types
+                        
+                        (default: 3)
+    @type linewidth: int
+    @keyword xerr_linewidth: width of the x error bars
                             
-                            (default: 1)
-    @type err_linewidth: int    
+                             (default: linewidth/2.)
+    @type xerr_linewidth: int    
+    @keyword yerr_linewidth: width of the y error bars 
+                            
+                             (default: linewidth/2.)
+    @type yerr_linewidth: int    
     @keyword key_location: location of the key in the plot in figure coords.
                            Can be 'best' as well to allow python to figure out
                            the best location
@@ -1070,8 +1083,13 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     labels=kwargs.get('labels',[])
     localized_labels=kwargs.get('localized_labels',[])
     linewidth=kwargs.get('linewidth',3)
+    xerr_linewidth=kwargs.get('xerr_linewidth',linewidth/2.)
+    yerr_linewidth=kwargs.get('yerr_linewidth',linewidth/2.)
     markeredgewidth=kwargs.get('markeredgewidth',1)
-    err_linewidth=kwargs.get('err_linewdth',1)
+    xerr_markeredgewidth=kwargs.get('xerr_markeredgewidth',1)
+    yerr_markeredgewidth=kwargs.get('yerr_markeredgewidth',1)
+    xerr_capsize=kwargs.get('xerr_capsize',5)
+    yerr_capsize=kwargs.get('yerr_capsize',5)
     key_location=kwargs.get('key_location','best')
     xlogscale=kwargs.get('xlogscale',0)
     ylogscale=kwargs.get('ylogscale',0)
@@ -1195,30 +1213,15 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
         fig.patch.set_alpha(0.7)
     # Tunes the subplot layout 
     #fig.subplots_adjust(**adjustprops)                                                                            
-    linestyles = ['-','-','-','-','-','-','-',\
-                  '--','--','--','--','--','--','--',\
-                  ':',':',':',':',':',':',':',\
-                  'x','x','x','x','x','x','x',\
-                  'o','o','o','o','o','o','o',\
-                  ':',':',':',':',':',':',':',\
-                  's','s','s','s','s','s','s',\
-                  '.','.','.','.','.','.','.',\
-                  '-.','-.','-.','-.','-.','-.','-.',\
-                  '+','+','+','+','+','+','+',\
-                  'h','h','h','h','h','h','h',\
-                  'd','d','d','d','d','d','d',\
-                  '|','|','|','|','|','|','|',\
-                  'p','p','p','p','p','p','p',\
-                  '2','2','2','2','2','2','2']
-    colors = ['r','b','k','g','m','y','c']
-    extra_line_types = [ls + col for ls,col in zip(linestyles,6*colors)]
-    line_types,extra_line_types = setLineTypes(x,line_types,extra_line_types)
+    extra_line_types = getLineTypes()
+    line_types,extra_line_types = setLineTypes(len(x),line_types,\
+                                               extra_line_types)
     if number_subplots != 1: 
         twinyaxis = None
         xmin = None
         xmax = None
     if twinyaxis <> None:
-        twiny_line_types,extra_line_types = setLineTypes(twiny_x,\
+        twiny_line_types,extra_line_types = setLineTypes(len(twiny_x),\
                                                          twiny_line_types,\
                                                          extra_line_types)
     if type(markersize) is types.ListType and len(markersize) != len(x):
@@ -1270,7 +1273,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
         no_err = []
         legends = []
         for index,(xi,yi,lp,ms,zo,alph,xerri,yerri) in enumerate(these_data):
-            ls,col = splitLineStyle(lp)
+            ls,col = splitLineType(lp)
             if index in histoplot:
                 leg, = sub.step(xi,yi,ls,where='mid',ms=ms,\
                                linewidth=(thick_lw_data and linewidth*2. \
@@ -1304,9 +1307,9 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                                      lolims=ll==0,\
                                      uplims=ul==0,\
                                      fmt=None,\
-                                     capsize=5,\
-                                     markeredgewidth=markeredgewidth,\
-                                     elinewidth=linewidth/2.,\
+                                     capsize=xerr_capsize,\
+                                     markeredgewidth=xerr_markeredgewidth,\
+                                     elinewidth=xerr_linewidth,\
                                      barsabove=True,zorder=zo,alpha=alph)
             if yerri <> None:
                 try:
@@ -1326,9 +1329,9 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                                      lolims=ll==0,\
                                      uplims=ul==0,\
                                      fmt=None,\
-                                     capsize=5,\
-                                     markeredgewidth=markeredgewidth,\
-                                     elinewidth=linewidth/2.,\
+                                     capsize=yerr_capsize,\
+                                     markeredgewidth=yerr_markeredgewidth,\
+                                     elinewidth=yerr_linewidth,\
                                      barsabove=False,zorder=zo,alpha=alph)
         sub.autoscale_view(tight=True,scaley=False)
         if xlogscale:
@@ -1497,7 +1500,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     
 
 
-def setLineTypes(x,line_types,extra_line_types):
+def setLineTypes(n,line_types,extra_line_types=None):
     
     '''
     Set the line types for this plot. 
@@ -1508,12 +1511,15 @@ def setLineTypes(x,line_types,extra_line_types):
     
     Zeroes in the input are also replaced by defaults.
     
-    @param x: The datasets to be plotted
-    @type x: list[array]
+    @param n: Number of line types requested in toyal
+    @type n: list[array]
     @param line_types: The input value for the line_types
     @type line_types: list[string]
     @param extra_line_types: The pool of extra line_types, which is destroyed
-                             as defaults are used.
+                             as defaults are used. If None, they are auto 
+                             generated at first.
+                             
+                             (default: None)
     @type extra_line_types: list[string]
     
     @return: The set line types and default pool of line types (possibly 
@@ -1522,16 +1528,19 @@ def setLineTypes(x,line_types,extra_line_types):
     
     '''
     
+    if not extra_line_types:
+        extra_line_types = getLineTypes()
     if type(line_types) is types.StringType:
         line_types=[line_types]
     elif not type(line_types) is types.ListType:
         line_types=[]
     if len(line_types) == 1:
-        line_types *= len(x)
-    elif not line_types or len(line_types) != len(x):
-        if len(x) > len(extra_line_types):
-            raise IOError('Too many datasets for plotting requested with respect to the amount of extra line types available.')
-        line_types = [lp for xi,lp in zip(x,extra_line_types)]
+        line_types *= n
+    elif not line_types or len(line_types) != n:
+        if n > len(extra_line_types):
+            raise IOError('Too many datasets for plotting requested with resp'+\
+                          'ect to the amount of extra line types available.')
+        line_types = extra_line_types[:n]
     extra_line_types = [extra  for extra in extra_line_types 
                                if extra not in line_types]
     line_types = [lp and str(lp) or extra_line_types.pop(0) 
@@ -1586,21 +1595,12 @@ def setLineLabels(line_labels,line_label_spectrum,fontsize_label,y_pos,\
         
     ''' 
     
-    if line_label_color:
-        colors = ['r','b','k','g','m','c','y']
-    else:
-        colors = ['k']*7
-    linestyles = ['-','-','-','-','-','-','-',\
-                  '--','--','--','--','--','--','--',\
-                  '.-','.-','.-','.-','.-','.-','.-',\
-                  '.','.','.','.','.','.','.',\
-                  'x','x','x','x','x','x','x',\
-                  'o','o','o','o','o','o','o']
+    extra_ls = getLineTypes(black=not line_label_color)
     ltd = dict()
     all_indices = list(set([index for label,x_pos,index,vib in line_labels]))
     for ii,this_i in enumerate(all_indices): 
         if len(all_indices) != len(line_label_types):
-            ltd[this_i] = '%s%s'%(linestyles[ii],colors[ii%7])
+            ltd[this_i] = extra_ls[ii]
         else:
             ltd[this_i] = line_label_types[ii]
     
@@ -1614,7 +1614,7 @@ def setLineLabels(line_labels,line_label_spectrum,fontsize_label,y_pos,\
                         ha=line_label_lines and 'right' or 'center',\
                         rotation='vertical',\
                         fontsize=fontsize_label,\
-                        color=splitLineStyle(ltd[index])[1])
+                        color=splitLineType(ltd[index])[1])
             elif line_label_spectrum:
                 pl.text(x_pos,l%2==0 and pl.axis()[3] or pl.axis()[2],label,\
                         va=baseline_line_labels \
@@ -1623,7 +1623,7 @@ def setLineLabels(line_labels,line_label_spectrum,fontsize_label,y_pos,\
                         ha=line_label_lines and 'right' or 'center',\
                         rotation='vertical',\
                         fontsize=fontsize_label,\
-                        color=splitLineStyle(ltd[index])[1])
+                        color=splitLineType(ltd[index])[1])
             else:
                 pl.text(x_pos,l%2==0 and pl.axis()[2] or y_pos,label,\
                         va=baseline_line_labels \
@@ -1632,22 +1632,42 @@ def setLineLabels(line_labels,line_label_spectrum,fontsize_label,y_pos,\
                         ha=line_label_lines and 'right' or 'center',\
                         rotation='vertical',\
                         fontsize=fontsize_label,\
-                        color=splitLineStyle(ltd[index])[1])
+                        color=splitLineType(ltd[index])[1])
     if line_label_lines:
         for label,x_pos,index,vib in allowed_labels:
             if line_label_dashedvib and vib \
-                    and splitLineStyle(ltd[index])[0] == '-':
+                    and splitLineType(ltd[index])[0] == '-':
                 ls = '--'
             else: 
-                ls = splitLineStyle(ltd[index])[0]
+                ls = splitLineType(ltd[index])[0]
             pl.axvline(x=x_pos,\
                        ymin=short_label_lines and 0.7 or 0,ls=ls,\
-                       c=splitLineStyle(ltd[index])[1],\
+                       c=splitLineType(ltd[index])[1],\
                        linewidth=linewidth,zorder=-100)
                        
     
+def getLineTypes(black=0):
+
+    '''
+    Make linetypes from a list of colors and line types. 
     
-def splitLineStyle(lp):
+    @keyword black: Return only black colors
+    
+                    (Default: 0)
+    @type black: bool
+    
+    @return: The linetypes
+    @rtype: list(str)    
+    
+    '''    
+    
+    linestyles = ['-','--',':','x','o',':','s','.','-.','+','h','d','|','p','2']
+    colors = ['k'] if black else ['r','b','k','g','m','y','c']
+    return [ls + col for ls in linestyles for col in colors ]
+    
+    
+    
+def splitLineType(lp):
     
     '''
     Split a line style string in its color and line type components.
