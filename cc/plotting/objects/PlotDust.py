@@ -75,7 +75,7 @@ class PlotDust(PlottingSession):
 
 
     def plotSed(self,star_grid=[],cfg='',iterative=0,no_models=0,\
-                fn_add_star=0):
+                fn_add_star=0,show_phot_filter=1):
         
         """ 
         Creating an SED with 0, 1 or more models and data. 
@@ -107,6 +107,11 @@ class PlotDust(PlottingSession):
         
                               (default: 1)
         @type fn_add_star: bool
+        @keyword show_phot_filter: Show the wavelength band of the photometric
+                                   filters as an x error bar on the model phot
+                                   
+                                   (default: 1)
+        @type show_phot_filter: bool
         
         """
         
@@ -121,6 +126,8 @@ class PlotDust(PlottingSession):
             no_models = cfg_dict['no_models']
         if cfg_dict.has_key('fn_add_star'):
             fn_add_star = bool(cfg_dict['fn_add_star'])
+        if cfg_dict.has_key('show_phot_filter'):
+            show_phot_filter = bool(cfg_dict['show_phot_filter'])
         if cfg_dict.has_key('filename'):
             fn_plt = cfg_dict['filename']
             del cfg_dict['filename']
@@ -226,7 +233,10 @@ class PlotDust(PlottingSession):
                 mphot = Sed.calcPhotometry(w,f,self.sed.photbands)
                 data_x.append(filts.eff_wave)
                 data_y.append(mphot)
-                data_xerr.append([filts.wlower,filts.wupper])
+                if show_phot_filter:
+                    data_xerr.append([filts.wlower,filts.wupper])
+                else:
+                    data_xerr.append(None)
                 data_yerr.append(None)
                 line_types.append('o%s'%Plotting2.splitLineType(elp[i])[1])
 
