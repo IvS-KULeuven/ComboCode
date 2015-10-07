@@ -1511,7 +1511,7 @@ def setLineTypes(n,line_types,extra_line_types=None):
     
     Zeroes in the input are also replaced by defaults.
     
-    @param n: Number of line types requested in toyal
+    @param n: Number of line types requested in total
     @type n: list[array]
     @param line_types: The input value for the line_types
     @type line_types: list[string]
