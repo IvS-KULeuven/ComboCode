@@ -28,23 +28,41 @@ class SedStats(Statistics):
     """
     Environment with several tools to perform statistics on SED photometry.
     
+    Then run several methods to set data, and models. e.g. (requires a 
+    star_grid to be defined):
+    
+    >>> sed = Sed.Sed('rscl')
+    >>> sedstats = SedStats.SedStats(star_name='rscl',path_code='codeSep2015')
+    >>> sedstats.setInstrument(sed=sed)
+    >>> sedstats.setModels(star_grid=star_grid)
+    >>> sedstats.setModelPhotometry()
+    
+    Alternatively, you can take the SedStats object from a ComboCode object
+    given that STATISTICS=1 in the inputfile for CC. Then the above is 
+    already done for you. 
+    
+    >>> model = ComboCode.ComboCode('inputfile.dat')
+    >>> model.startSession()
+    >>> sedstats = model.sedstats
+    
+    Now you can go ahead and calculate chi^2 values and write them to a 
+    file:
+    
+    >>> chi2 = sedstats.calcChi2()
+    >>> sedstats.writeChi2('myfile.dat')
+    
+    The writeChi2 method writes the latest chi2 calculation to a file with
+    given filename. Several options are available for selecting and sorting
+    photometry during the calculation, and sorting and adding extra columns
+    of model parameters when writing the results to a file. Check the 
+    docstrings of each method for more information.
+    
     """
         
     def __init__(self,star_name,code='MCMax',path_code='codeSep2015'):        
         
         """ 
         Initializing an instance of SedStats.
-        
-        Then run several methods to set data, and models. e.g. (requires a 
-        star_grid to be defined):
-        >>> sed = Sed.Sed('rscl')
-        >>> sedstats = SedStats.SedStats(star_name='rscl',\
-                                         path_code='codeSep2015')
-        >>> sedstats.setInstrument(sed=sed)
-        >>> sedstats.setModels(star_grid=star_grid)
-        >>> sedstats.setModelPhotometry()
-        Then run setInstrument and setModels. The rest of the 
-        class works interactively.
         
         @param star_name: Star name from Star.dat
         @type star_name: string
@@ -258,11 +276,12 @@ class SedStats(Statistics):
                 dphot.extend(self.dphot_ivs['phot'][keep])
                 ephot.extend(self.dphot_ivs['ephot'][keep])
         
-        self.chi2 = []
         #-- If no data are selected at all, return an empty array
         if not dphot:
-            return np.empty(0)
+            self.chi2 = np.empty(0)
+            return self.chi2
             
+        self.chi2 = []
         for iphot in mphot:
             self.chi2.append(BasicStats.calcChiSquared(dphot,iphot,ephot,ndf))
         self.chi2 = np.array(self.chi2)
@@ -339,12 +358,16 @@ class SedStats(Statistics):
         DataIO.writeFile(filename=fn,input_lines=comments,delimiter='\t')
         
         #-- Define the columns
-        if sort: isort = np.argsort(self.chi2) 
-        else: isort = np.ones(np.shape(self.chi2),dtype=bool)
-        mids = np.array([s['LAST_MCMAX_MODEL'] for s in self.star_grid])
-        cols = [mids[isort],self.chi2[isort]]
+        cols = [[s['LAST_MCMAX_MODEL'] for s in self.getStarGrid(sort=sort)]]
+        if sort: 
+            isort = np.argsort(self.chi2) 
+            cols.append(self.chi2[isort])
+        else: 
+            cols.append(self.chi2)
+        
+        #-- Add additional model parameters if requested
         for par in parameters:
-            cols.append([s[par] for s in self.star_grid])
-        print cols
+            cols.append([s[par] for s in self.getStarGrid(sort=sort)])
+
         #-- Append the columns to the file after the header
         DataIO.writeCols(filename=fn,cols=cols,mode='a')

@@ -8,8 +8,8 @@ Author: R. Lombaert
 """
 
 import os
-import scipy
 import scipy.stats
+import numpy as np
 
 import cc.path
 from cc.tools.io import DataIO
@@ -185,6 +185,7 @@ class Statistics(object):
                 return
             #-- Get rid of models that were not calculated successfully
             self.star_grid = [s for s in star_grid if s['LAST_MCMAX_MODEL']]
+            self.star_grid = np.array(self.star_grid)
             
         #-- The unresolved-data case
         elif self.instrument:
