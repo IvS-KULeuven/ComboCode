@@ -45,7 +45,7 @@ def calcChiSquared(data,model,noise,ndf=0,mode='diff'):
     if mode == 'diff':
         chi2 = ((data - model)**2./noise**2.).sum()/(len(data)-ndf-1)
     elif mode = 'division':
-        chi2 = sqrt(((data/model)**2./noise**2.).sum())/(len(data)-ndf-1)
+        chi2 = ((data/model)**2./noise**2.).sum()/(len(data)-ndf-1)
     else:
         print 'Chi^2 mode not recognized.'
         chi2 = None
