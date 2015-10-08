@@ -12,7 +12,7 @@ import scipy
 from scipy import array,sqrt,log,pi
 
 
-def calcChiSquared(data,model,noise,ndf=0):
+def calcChiSquared(data,model,noise,ndf=0,mode='diff'):
     
     """
     Calculate the reduced chi-squared value of a data array minus a model array,
@@ -38,10 +38,18 @@ def calcChiSquared(data,model,noise,ndf=0):
     
     """
     
+    mode = str(mode).lower()
     if type(data) not in [types.ListType,scipy.ndarray]:
         data = [data]
     data, model, noise = array(data), array(model), array(noise) 
-    return sqrt(((data - model)**2./noise**2.).sum())/(len(data)-ndf-1)
+    if mode == 'diff':
+        chi2 = ((data - model)**2./noise**2.).sum()/(len(data)-ndf-1)
+    elif mode = 'division':
+        chi2 = sqrt(((data/model)**2./noise**2.).sum())/(len(data)-ndf-1)
+    else:
+        print 'Chi^2 mode not recognized.'
+        chi2 = None
+    return chi2
     
     
 
