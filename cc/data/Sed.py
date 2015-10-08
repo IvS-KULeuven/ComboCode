@@ -148,7 +148,7 @@ class Sed(object):
     
     '''
     
-    def __init__(self,star_name,remove=[]):
+    def __init__(self,star_name,remove=[],reddening=0):
         
         ''' 
         Initializing an Sed instance. 
@@ -163,17 +163,23 @@ class Sed(object):
     
                          (default: [])
         @type remove: list[str]
+        @keyword reddening: Apply reddening to models for interstellar 
+                            extinction
+                            
+                            (default: 0)
+        @type reddening: bool
         
         '''
         
         self.instrument = 'SED'
-        self.photbands = np.empty(0)
+        self.photbands = np.empty(0,dtype=str)
         self.star_name = star_name
         self.data = dict()
         self.setStarPars()
         self.setData(remove=remove)
         self.readData()
         self.readPhotInfo()
+        self.reddening = reddening
         self.ak = dict()
 
 

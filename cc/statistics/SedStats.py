@@ -159,7 +159,9 @@ class SedStats(Statistics):
         for model_id,d in zip(mids,dists):
             dpath = os.path.join(cc.path.mout,'models',model_id)
             w,f = MCMax.readModelSpectrum(dpath,rt_sed)
-            f = Reddening.redden(w,f,self.sed.getAk(d))
+            if self.sed.reddening:
+                print 'Reddening models to correct for interstellar extinction.'
+                f = Reddening.redden(w,f,self.sed.getAk(d))
             self.mwave.append(w)
             self.mflux.append(f)
         

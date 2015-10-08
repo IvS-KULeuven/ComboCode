@@ -44,6 +44,7 @@ RADIO_AUTOSEARCH=0                  # Put to 1 if TRANSITION objects are to be m
 
 #-- SED/Correlated Fluxes data selection and plotting. Location givens in cc.path.home/usr/Path.dat
 SED=0                               # Turn on the SED module.
+SED_REDDENING=0                     # Turn on reddening of models to correct for interstellar extinction.
 SED_PHOT_REMOVE=                    # If any photometric sources (such as WISE or DENIS) are to be removed for whatever reason, include them here separated with ampersand (e.g. WISE&DENIS )  
 
 #-- Continuum division for select features in the SED is possible, for comparison between data and model

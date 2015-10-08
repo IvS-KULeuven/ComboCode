@@ -236,6 +236,7 @@ class ComboCode(object):
         
         sed = self.processed_input.pop('SED',0)
         remove = self.processed_input.pop('SED_PHOT_REMOVE','')
+        reddening = self.processed_input.pop('SED_REDDENING',0)
         
         #-- If SED is not requested, put self.spire to None. Still popping the
         #   SED specific keywords to avoid clutter in the Star() objects.
@@ -248,7 +249,8 @@ class ComboCode(object):
         elif isinstance(remove,str): remove = [remove]
         else: remove = list(remove)
 
-        self.sed = Sed.Sed(star_name=self.star_name,remove=remove)
+        self.sed = Sed.Sed(star_name=self.star_name,remove=remove,\
+                           reddening=reddening)
 
 
 

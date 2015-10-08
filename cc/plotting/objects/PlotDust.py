@@ -215,7 +215,9 @@ class PlotDust(PlottingSession):
         for model_id,d in zip(model_ids_mcm,distances):
             dpath = os.path.join(cc.path.mout,'models',model_id)
             w,f = MCMax.readModelSpectrum(dpath,rt_sed)
-            f = Reddening.redden(w,f,self.sed.getAk(d))
+            if self.sed.reddening:
+                print 'Reddening models to correct for interstellar extinction.'
+                f = Reddening.redden(w,f,self.sed.getAk(d))
             wmodels.append(w)
             fmodels.append(f)
         
