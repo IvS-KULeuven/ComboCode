@@ -180,7 +180,8 @@ class SedStats(Statistics):
         
         
         
-    def calcChi2(self,ndf=0,fns=None,cwave=0.0,phot_ivs=1,sort=1):
+    def calcChi2(self,ndf=0,fns=None,cwave=0.0,phot_ivs=1,sort=1,\
+                 chi2_method='diff'):
     
         '''
         Calculate, save and return the chi^2 values for a given set of models.
@@ -225,6 +226,11 @@ class SedStats(Statistics):
         
                        (default: 1)
         @type sort: bool
+        @keyword chi2_method: Method for calculating chi^2. Can be diff or 
+                              division
+        
+                              (default: 'diff')
+        @type chi2_method: str
         
         @return: The list of chi^2 values with the same length as the model grid
                  of valid MCMax models. 
@@ -285,7 +291,8 @@ class SedStats(Statistics):
             
         self.chi2 = []
         for iphot in mphot:
-            self.chi2.append(BasicStats.calcChiSquared(dphot,iphot,ephot,ndf))
+            self.chi2.append(BasicStats.calcChiSquared(dphot,iphot,ephot,ndf,\
+                                                       chi2_method))
         self.chi2 = np.array(self.chi2)
         
         return np.sort(self.chi2) if sort else self.chi2
