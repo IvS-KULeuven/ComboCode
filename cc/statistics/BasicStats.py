@@ -31,6 +31,16 @@ def calcChiSquared(data,model,noise,ndf=0,mode='diff'):
                   
                   (default: 0) 
     @type ndf: int
+    @keyword mode: The method used for the chi^2 calculation. 'diff' is the 
+                   standard differentiation of the chi^2. 'log' redistributes 
+                   the ratio of data and model points on a logarithmic scale 
+                   such that lower than 1 or larger than 1 are essentially 
+                   equivalent. This removes bias in either direction of 1. Other
+                   than the input array distribution the chi^2 'log' method is 
+                   mathematically equivalent to the differentiation.
+                   
+                   (default: 'diff')
+    @type mode: str
     
     @return: The chi squared value
     @rtype: float
@@ -43,8 +53,7 @@ def calcChiSquared(data,model,noise,ndf=0,mode='diff'):
     data, model, noise = np.array(data), np.array(model), np.array(noise) 
     if mode == 'diff':
         chi2 = ((data - model)**2./noise**2.).sum()/(len(data)-ndf-1)
-    elif mode == 'division':
-        print noise/data
+    elif mode == 'log':
         chi2 = ((10**abs(np.log10(data/model))-1)**2./(noise/model)**2.).sum()
         chi2 /= (len(data)-ndf-1)
     else:

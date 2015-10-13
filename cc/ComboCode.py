@@ -125,7 +125,7 @@ class ComboCode(object):
                           ('append_results',0),('write_dust_density',0),\
                           ('replace_db_entry',0),('update_spec',0),\
                           ('path_gastronoom',''),('path_mcmax',''),\
-                          ('print_model_info',1),('stat_chi2','normal'),\
+                          ('print_model_info',1),('stat_chi2','diff'),\
                           ('contdiv_features',[]),('cfg_contdiv',''),\
                           ('show_contdiv',0),('skip_cooling',0),\
                           ('recover_sphinxfiles',0),('stat_print',0),\
@@ -838,7 +838,7 @@ class ComboCode(object):
             self.sedstats.setInstrument(sed=self.sed)
             self.sedstats.setModels(star_grid=self.star_grid)
             self.sedstats.setModelPhotometry()
-        
+            self.sedstats.calcChi2(chi2_method=self.stat_chi2)
         if self.statistics and self.radio:
             trans_sel = Transition.extractTransFromStars(self.star_grid,\
                                                          dtype='resolved')

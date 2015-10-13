@@ -227,7 +227,7 @@ class SedStats(Statistics):
                        (default: 1)
         @type sort: bool
         @keyword chi2_method: Method for calculating chi^2. Can be diff or 
-                              division
+                              log (see BasicStats for more information)
         
                               (default: 'diff')
         @type chi2_method: str
