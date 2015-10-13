@@ -8,8 +8,7 @@ Author: R. Lombaert
 """
 
 import types
-import scipy
-from scipy import array,sqrt,log,pi
+import numpy as np
 
 
 def calcChiSquared(data,model,noise,ndf=0,mode='diff'):
@@ -41,12 +40,13 @@ def calcChiSquared(data,model,noise,ndf=0,mode='diff'):
     mode = str(mode).lower()
     if type(data) not in [types.ListType,scipy.ndarray]:
         data = [data]
-    data, model, noise = array(data), array(model), array(noise) 
+    data, model, noise = np.array(data), np.array(model), np.array(noise) 
     if mode == 'diff':
         chi2 = ((data - model)**2./noise**2.).sum()/(len(data)-ndf-1)
     elif mode == 'division':
-        print mode
-        chi2 = ((data/model-1)**2./(noise/model)**2.).sum()/(len(data)-ndf-1)
+        print noise/data
+        chi2 = ((10**abs(np.log10(data/model))-1)**2./(noise/model)**2.).sum()
+        chi2 /= (len(data)-ndf-1)
     else:
         print 'Chi^2 mode not recognized.'
         chi2 = None
@@ -72,8 +72,8 @@ def calcLoglikelihood(data,model,noise):
     
     """
     
-    data, model, noise = array(data), array(model), array(noise) 
-    lll = (-log(sqrt(2.*pi)) - log(noise) - 1./2.*((data-model)/noise)**2.).sum()
+    data, model, noise = np.array(data), np.array(model), np.array(noise) 
+    lll = (-np.log(np.sqrt(2.*np.pi)) - np.log(noise) - 1./2.*((data-model)/noise)**2.).sum()
     return lll
     
     
