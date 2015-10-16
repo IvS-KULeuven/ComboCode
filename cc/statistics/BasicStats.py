@@ -48,7 +48,7 @@ def calcChiSquared(data,model,noise,ndf=0,mode='diff'):
     """
     
     mode = str(mode).lower()
-    if type(data) not in [types.ListType,scipy.ndarray]:
+    if type(data) not in [types.ListType,np.ndarray]:
         data = [data]
     data, model, noise = np.array(data), np.array(model), np.array(noise) 
     if mode == 'diff':
