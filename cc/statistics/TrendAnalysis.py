@@ -404,14 +404,15 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
     
     x_titles = dict([('MDOT_GAS',r'$\log$ $\left[\dot{M}_\mathrm{g}\ (\mathrm{M}_\odot/\mathrm{yr})\right]$'),\
                      ('MDOT_DUST',r'$\log$ $\left[\dot{M}_\mathrm{d}\ (\mathrm{M}_\odot/\mathrm{yr})\right]$'),\
-                     ('VEL_INFINITY_GAS','$v_{\infty\mathrm{,g}}$ ($\mathrm{km} \mathrm{s}^{-1}$)'),\
-                     ('SHELLMASS',r'$\log$ $\left[\bar{M_\mathrm{s}}\ (\mathrm{g}\ \mathrm{cm}^{-1})\right]$'),\
+                     ('VEL_INFINITY_GAS',r'$v_{\infty\mathrm{,g}}$ ($\mathrm{km} \mathrm{s}^{-1}$)'),\
+                     ('SHELLMASS',r'$\log$ $\left[\dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}}\ (\mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s})\right]$'),\
                      ('SHELLDENS',r'$\log$ $\left[\bar{\rho}\ (\mathrm{g}\ \mathrm{cm}^{-3})\right]$'),\
                      ('SHELLCOLDENS',r'$\log$ $\left[\bar{m}\ (\mathrm{g}\ \mathrm{cm}^{-2})\right]$'),\
                      ('SHELLDENS2',r'$\sqrt{\bar{\rho}^2 R_\star}$ (g/cm$^{5/2}$)'),\
                      ('L_STAR','$L_\star$ (L$_\odot$)'),\
                      ('P_STAR',r'$\log$ $\left[P\ (\mathrm{days})\right]$'),\
                      ('T_STAR','$T_\star$ (K)'),\
+                     ('R_STAR','$R_\star$ (Rsun)'),\
                      ('Q_STAR','$Q_\star$ (days)'),\
                      ('R_INNER_GAS','$R_\mathrm{i,g}$ (R$_\star$)'),\
                      ('F_H2O',r'$\log$ $\left[A_{\mathrm{H}_2\mathrm{O}}/A_{\mathrm{H}_2}\right]$'),\
@@ -430,6 +431,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                       ('SHELLCOLDENS','coldens'),\
                       ('SHELLDENS2','dens3-2'),\
                       ('L_STAR','lstar'),\
+                      ('R_STAR','rstar'),\
                       ('P_STAR','period'),\
                       ('Q_STAR','qstar'),\
                       ('T_STAR','tstar'),\
@@ -444,6 +446,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                       ('R_INNER_GAS','rig'),\
                       ('MDOT_CLASS','mdotgrad'),\
                       ('SCD_CLASS','scdgrad'),\
+                      ('SHELLMASS_CLASS','shellmassclass'),\
                       ('ABUN_O','abuno'),\
                       ('L_CLASS','lclass'),\
                       ('T_CLASS','tclass'),\
@@ -459,8 +462,8 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('A_SICB','A(SICB)'),\
                      ('STARTYPE','StarType'),\
                      ('A_AMCSPH','A(AMCSPH)'),\
-                     ('VEL_INFINITY_GAS','$v_{\infty\mathrm{,g}}$'),\
-                     ('SHELLMASS','$\bar{M_\mathrm{s}}$'),\
+                     ('VEL_INFINITY_GAS',r'$v_{\infty\mathrm{,g}}$'),\
+                     ('SHELLMASS',r'$\dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}}$'),\
                      ('SHELLDENS',r'$\bar{\rho}$'),\
                      ('SHELLCOLDENS',r'$\bar{m}$'),\
                      ('SHELLDENS2',r'$\sqrt{\bar{\rho}^2 R_\star}}$'),\
@@ -479,6 +482,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('R_INNER_GAS','$R_\mathrm{i,g}$'),\
                      ('MDOT_CLASS',''),\
                      ('SCD_CLASS',''),\
+                     ('SHELLMASS_CLASS',''),\
                      ('ABUN_O','$n_{\mathrm{O}}/n_{\mathrm{H}_\mathrm{tot}}$'),\
                      ('L_CLASS',''),\
                      ('T_CLASS',''),\
@@ -495,7 +499,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('A_SICB',''),\
                      ('A_AMCSPH',''),\
                      ('VEL_INFINITY_GAS','$\mathrm{km\;s}^{-1}$'),\
-                     ('SHELLMASS','$\mathrm{g\;cm}^{-1}$'),\
+                     ('SHELLMASS','$\mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s}$'),\
                      ('SHELLDENS','$\mathrm{g\;cm}^{-3}$'),\
                      ('SHELLCOLDENS','$\mathrm{g\;cm}^{-2}$'),\
                      ('SHELLDENS2','$\mathrm{g\;cm}^{5/2}$'),\
@@ -514,6 +518,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('R_INNER_GAS','$\mathrm{R}_\star$'),\
                      ('MDOT_CLASS',''),\
                      ('SCD_CLASS',''),\
+                     ('SHELLMASS_CLASS',''),\
                      ('ABUN_O',''),\
                      ('T_CLASS',''),\
                      ('VG_CLASS',''),\
@@ -549,6 +554,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('R_INNER_GAS',0),\
                      ('MDOT_CLASS',0),\
                      ('SCD_CLASS',0),\
+                     ('SHELLMASS_CLASS',0),\
                      ('ABUN_O',0),\
                      ('L_CLASS',0),\
                      ('T_CLASS',0),\
@@ -711,10 +717,17 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                 #-- Check if errors are given (in d or c mode) and check for log
                 if epar.size and eparlog:
                     err[axisstr].append(np.concatenate([epar[isgd],np.zeros(nsgm)]))
-                elif epar.size:
+                #-- Check if upper and lower error bars are the same (ie 1d)
+                elif epar.size and len(epar.shape) == 1:
                     ll = np.concatenate([-np.log10(1-epar[isgd]),np.zeros(nsgm)])
                     ul = np.concatenate([np.log10(1+epar[isgd]),np.zeros(nsgm)])
                     err[axisstr].append([ll,ul])
+                #-- maybe two separate arrays are given for upper and lower
+                elif epar.size and epar.shape[0] == 2:
+                    ll = np.concatenate([-np.log10(1-epar[0][isgd]),np.zeros(nsgm)])
+                    ul = np.concatenate([np.log10(1+epar[1][isgd]),np.zeros(nsgm)])
+                    err[axisstr].append([ll,ul])
+                    
         else:
             #-- Select the line strengths and errors of the main transition for 
             #   both axes. This information is only used when par is not a str.
@@ -1022,6 +1035,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
             pfn = os.path.join(pfn_path,'%s_%s%s_vs_%s%s_%s'\
                                         %(mode,pfn_ytag,pfn_yrat,pfn_xtag,\
                                           pfn_xrat,pfn_ecl))
+
             extra_pars['filename'] = pfn
             ff = Plotting2.plotCols(x=xb and x[xk]+xb or x[xk],\
                                     y=yb and y[yk]+yb or y[yk],\

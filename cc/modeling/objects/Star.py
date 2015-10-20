@@ -1799,26 +1799,55 @@ class Star(dict):
             self['MDOT_GAS_START'] = self['MDOT_GAS']
         else:
             pass
+
+
+    def calcSHELLMASS_CLASS(self):
+        
+        '''
+        Set the order of magnitude of SHELLMASS = Mdot/v_inf. 
+        0: Mdot/v_inf < 5e-8
+        1: 5e-8 <= Mdot/v_inf < 2e-7
+        2: 2e-7 <= Mdot/v_inf < 5e-7
+        3: 5e-7 <= Mdot/v_inf
+        
+        '''
+        
+        if not self.has_key('SHELLMASS_CLASS'):
+            if self['SHELLMASS'] < 5e-8: 
+                #self['SHELLMASS_CLASS'] = (0,r'$\dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} < 5 \times 10^{-8}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s}$')
+                self['SHELLMASS_CLASS'] = (0,r'$\dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} < 5 \times 10^{-8}$')
+            elif self['SHELLMASS'] >= 3e-7: 
+                #self['SHELLMASS_CLASS'] = (3,r'$\dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} \geq 3 \times 10^{-7}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s}$')
+                self['SHELLMASS_CLASS'] = (3,r'$\dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} \geq 3 \times 10^{-7}$')
+            elif self['SHELLMASS'] >= 5e-8 and self['SHELLMASS'] < 1.0e-7: 
+                self['SHELLMASS_CLASS'] = (1,r'$5 \times 10^{-8}$ $\leq \dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} < 1 \times 10^{-7}$') 
+                #self['SHELLMASS_CLASS'] = (1,r'$5 \times 10^{-8}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s}$ $\leq \dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} < 1 \times 10^{-7}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s}$') 
+            else: 
+                #self['SHELLMASS_CLASS'] = (2,r'$1 \times 10^{-7}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s}$ $\leq \dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} < 3 \times 10^{-7}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s}$')
+                self['SHELLMASS_CLASS'] = (2,r'$1 \times 10^{-7}$ $\leq \dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} < 3 \times 10^{-7}$') 
+        else:
+            pass
+        
         
 
     def calcMDOT_CLASS(self):
         
         '''
         Set the order of magnitude of MDOT. 
-        0: Mdot < 1e-6
-        1: 1e-6 <= Mdot < 3e-6
+        0: Mdot < 3e-7
+        1: 3e-7 <= Mdot < 3e-6
         2: 3e-6 <= Mdot < 1e-5
         3: 1e-5 <= Mdot
         
         '''
         
         if not self.has_key('MDOT_CLASS'):
-            if self['MDOT_GAS'] < 1e-6: 
-                self['MDOT_CLASS'] = (0,r'$\dot{M}_\mathrm{g} < 1 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$')
+            if self['MDOT_GAS'] < 3e-7: 
+                self['MDOT_CLASS'] = (0,r'$\dot{M}_\mathrm{g} < 3 \times 10^{-7}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$')
             elif self['MDOT_GAS'] >= 1e-5: 
                 self['MDOT_CLASS'] = (3,r'$\dot{M}_\mathrm{g} \geq 1 \times 10^{-5}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$')
-            elif self['MDOT_GAS'] >= 1e-6 and self['MDOT_GAS'] < 3e-6: 
-                self['MDOT_CLASS'] = (1,r'$1 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$ $\leq \dot{M}_\mathrm{g} < 3 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$') 
+            elif self['MDOT_GAS'] >= 3e-7 and self['MDOT_GAS'] < 3e-6: 
+                self['MDOT_CLASS'] = (1,r'$3 \times 10^{-7}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$ $\leq \dot{M}_\mathrm{g} < 3 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$') 
             else: 
                 self['MDOT_CLASS'] = (2,r'$3 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$ $\leq \dot{M}_\mathrm{g} < 1 \times 10^{-5}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$') 
         else:
@@ -2270,8 +2299,9 @@ class Star(dict):
         """
         
         if not self.has_key('SHELLMASS'):
-            self['SHELLMASS'] = float(self['MDOT_GAS'])*self.Msun\
-                                  /((self['VEL_INFINITY_GAS']*10**5)*self.year)
+            #self['SHELLMASS'] = float(self['MDOT_GAS'])*self.Msun\
+                                  #/((self['VEL_INFINITY_GAS']*10**5)*self.year)
+            self['SHELLMASS'] = self['MDOT_GAS']/self['VEL_INFINITY_GAS']
         else:
             pass
 
