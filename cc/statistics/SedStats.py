@@ -247,6 +247,8 @@ class SedStats(Statistics):
         if fns is None:
             fns = self.dphot_other.keys()
         else:
+            fns = [fn if os.path.split(fn)[0] else os.path.join(cc.path.dsed,fn)
+                   for fn in fns]
             fns = [fn for fn in fns if fn in self.dphot_other.keys()]
         
         #-- When no valid filenames are given, and IvS phot is not requested, 
