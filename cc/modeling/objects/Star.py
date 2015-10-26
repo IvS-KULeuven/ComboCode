@@ -1285,7 +1285,23 @@ class Star(dict):
             self['F_CONT_63_TYPE'] = 'MCMax'
         else:
             pass
+    
+    
+    def calcAH2O_RATE(self):
         
+        '''
+        Calculate the outflow rate of H2O, by multiplying the H2O abundance 
+        with the mass-loss rate. 
+        
+        Value is set in units of Msun/yr
+        
+        '''
+        
+        if not self.has_key('AH2O_RATE'):
+            self['AH2O_RATE'] = self['F_H2O'] * self['MDOT_GAS']
+        else:
+            pass
+    
         
     def calcT_INNER_DUST(self):
         
@@ -1644,7 +1660,25 @@ class Star(dict):
         else:
             pass
     
-
+    
+    def calcDRIFT_TYPE(self):
+        
+        """
+        Set the type of drift between dust and gas taken into account. 
+        
+        Is either consistent (from momentum transfer calculation or zero). 
+        
+        """
+        
+        if not self.has_key('DRIFT_TYPE'):
+            if self['V_EXP_DUST'] == self['VEL_INFINITY_GAS']:
+                self['DRIFT_TYPE'] = 'ZERO'
+            else: 
+                self['DRIFT_TYPE'] = 'CONSISTENT'
+        else:
+            pass
+        
+    
     
     def calcDRIFT(self):
         

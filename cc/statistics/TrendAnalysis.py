@@ -415,6 +415,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('R_STAR','$R_\star$ (Rsun)'),\
                      ('Q_STAR','$Q_\star$ (days)'),\
                      ('R_INNER_GAS','$R_\mathrm{i,g}$ (R$_\star$)'),\
+                     ('AH2O_RATE',r'$\log$ $\left[A_{\mathrm{H}_2\mathrm{O}}/A_{\mathrm{H}_2} \times \dot{M}_\mathrm{g}\ (\mathrm{M}_\odot/\mathrm{yr})\right]$'),\
                      ('F_H2O',r'$\log$ $\left[A_{\mathrm{H}_2\mathrm{O}}/A_{\mathrm{H}_2}\right]$'),\
                      ('F_CONT_63',r'$\log$ $\left[F_\mathrm{6.3\ \mu m}\ (\mathrm{Jy})\right]$'),\
                      ('FD2_CONT_63',r'$\log$ $\left[F_\mathrm{6.3\ \mu m}\times D^2\ (\mathrm{Jy}\ \mathrm{pc}^2)\right]$'),\
@@ -451,9 +452,11 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                       ('L_CLASS','lclass'),\
                       ('T_CLASS','tclass'),\
                       ('VG_CLASS','vgclass'),\
+                      ('AH2O_RATE','ah2orate'),\
                       ('F_CONT_63','fcont63'),\
                       ('FD2_CONT_63','fd2cont63'),\
                       ('F_CONT_63_TYPE','fcont63type'),\
+                      ('DRIFT_TYPE','drifttype'),\
                       ('FD2M_CONT_63','fd2mcont63'),\
                       ('ENHANCE_ABUNDANCE_FACTOR_H2O','h2oabunfac'),\
                       ('ABUNDANCE_FILENAME_H2O','h2oabunfile')])
@@ -487,6 +490,8 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('L_CLASS',''),\
                      ('T_CLASS',''),\
                      ('VG_CLASS',''),\
+                     ('DRIFT_TYPE',''),\
+                     ('AH2O_RATE',r'$A_{\mathrm{H}_2\mathrm{O}}/A_{\mathrm{H}_2} \times \dot{M}_\mathrm{g}$'),\
                      ('F_CONT_63',r'$F_\mathrm{6.3\ \mu m}$'),\
                      ('FD2_CONT_63',r'$F_\mathrm{6.3\ \mu m}\times D^2$'),\
                      ('F_CONT_63_TYPE','$Type F_\mathrm{6.3\ \mu m}$'),\
@@ -522,7 +527,9 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('ABUN_O',''),\
                      ('T_CLASS',''),\
                      ('VG_CLASS',''),\
+                     ('DRIFT_TYPE','Drift'),\
                      ('L_CLASS',''),\
+                     ('AH2O_RATE','$\mathrm{M}_\odot\ \mathrm{yr}^{-1}$'),\
                      ('F_CONT_63','$\mathrm{Jy}$'),\
                      ('FD2_CONT_63','$\mathrm{Jy}$ $\mathrm{pc}^2$'),\
                      ('F_CONT_63_TYPE',''),\
@@ -559,6 +566,8 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('L_CLASS',0),\
                      ('T_CLASS',0),\
                      ('VG_CLASS',0),\
+                     ('DRIFT_TYPE',0),\
+                     ('AH2O_RATE',0),\
                      ('F_CONT_63',0),\
                      ('FD2_CONT_63',0),\
                      ('F_CONT_63_TYPE',0),\
