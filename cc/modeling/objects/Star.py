@@ -1258,6 +1258,8 @@ class Star(dict):
         flux. A difference between measured and modeled currently is not 
         available. 
         
+        No (de)reddening is taken into account.
+        
         """
         
         if not self.has_key('F_CONT_63'):
@@ -1265,7 +1267,9 @@ class Star(dict):
                 dpath = os.path.join(cc.path.mout,'models',\
                                      self['LAST_MCMAX_MODEL'])
                 w,f = MCMax.readModelSpectrum(dpath,rt_sed=1)
-                fi = f[argmin(abs(w-6.3))]
+                interp = interp1d(w,f)
+                fi = interp(6.3)
+                #fi = f[argmin(abs(w-6.3))]
                 self['F_CONT_63'] = fi
             else:
                 self['F_CONT_63'] = None

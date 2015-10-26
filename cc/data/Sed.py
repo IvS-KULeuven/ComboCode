@@ -148,7 +148,7 @@ class Sed(object):
     
     '''
     
-    def __init__(self,star_name,remove=[],reddening=0):
+    def __init__(self,star_name,remove=[]):
         
         ''' 
         Initializing an Sed instance. 
@@ -163,11 +163,6 @@ class Sed(object):
     
                          (default: [])
         @type remove: list[str]
-        @keyword reddening: Apply reddening to models for interstellar 
-                            extinction
-                            
-                            (default: 0)
-        @type reddening: bool
         
         '''
         
@@ -179,7 +174,6 @@ class Sed(object):
         self.setData(remove=remove)
         self.readData()
         self.readPhotInfo()
-        self.reddening = reddening
         self.ak = dict()
 
 
