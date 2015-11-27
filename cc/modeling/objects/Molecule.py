@@ -301,8 +301,23 @@ class Molecule():
         self.ratio_16o_to_18o = ratio_16o_to_18o
         self.opr = opr
         self.dust_to_gas_change_ml_sp = float(dust_to_gas_change_ml_sp)
+        
+        #-- Set the molecule inputfiles for abundance and temperature, applying
+        #   the path from Path.dat if the file does not exist or the path to the
+        #   file is not given. (eg a subfolder might be given, but that works)
+        for k in ['abundance_filename','change_fraction_filename',\
+                  'new_temperature_filename']:
+            fn = locals()[k]
+            if fn and not (os.path.isfile(fn) and os.path.split(fn)[0]):
+                fn = os.path.join(cc.path.molf,fn)
+                setattr(self,k,fn)
+            else:
+                setattr(self,k,fn)
         self.enhance_abundance_factor = float(enhance_abundance_factor)
-        self.abundance_filename = abundance_filename
+        self.set_keyword_change_abundance = int(set_keyword_change_abundance)
+        self.set_keyword_change_temperature = \
+                    int(set_keyword_change_temperature)
+
         #-- Mainly for plotting purposes: The relative, multiplicative abundance 
         #   factor with respect to main isotope (and OPR) is calculated
         #   This does not take into account enhance_abundance_factor!
@@ -310,11 +325,6 @@ class Molecule():
         self.outer_r_mode = outer_r_mode
         if self.outer_r_mode == 'MAMON': self.r_outer = 0
         else: self.r_outer = float(r_outer)
-        self.set_keyword_change_abundance = int(set_keyword_change_abundance)
-        self.change_fraction_filename = change_fraction_filename
-        self.set_keyword_change_temperature = \
-                    int(set_keyword_change_temperature)
-        self.new_temperature_filename = new_temperature_filename
         self.__model_id = None
         if not linelist:
             if self.use_indices_dat:

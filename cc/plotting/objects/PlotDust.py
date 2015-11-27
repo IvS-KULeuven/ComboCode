@@ -75,12 +75,15 @@ class PlotDust(PlottingSession):
 
 
     def plotSed(self,star_grid=[],cfg='',iterative=0,no_models=0,\
-                fn_add_star=0,show_phot_filter=1):
+                fn_add_star=0,show_phot_filter=0,**kwargs):
         
         """ 
         Creating an SED with 0, 1 or more models and data. 
         
         Includes data preparation on the spot.
+        
+        Additional plotCols keywords can be passed through kwargs. They 
+        overwrite cfg input.
         
         @keyword star_grid: list of Star() models to plot. If star_grid is [], 
                             only data are plotted.
@@ -110,7 +113,7 @@ class PlotDust(PlottingSession):
         @keyword show_phot_filter: Show the wavelength band of the photometric
                                    filters as an x error bar on the model phot
                                    
-                                   (default: 1)
+                                   (default: 0)
         @type show_phot_filter: bool
         
         """
@@ -200,24 +203,24 @@ class PlotDust(PlottingSession):
         model_ids_mcm = [s['LAST_MCMAX_MODEL'] 
                          for s in star_grid
                          if s['LAST_MCMAX_MODEL']]
-        distances = [s['DISTANCE'] for s in star_grid if s['LAST_MCMAX_MODEL']]
         
         #- Only if the model_ids list is not empty, MCMax models are available
         #- Otherwise the ray tracing keyword is unnecessary.
         if no_models:
             model_ids_mcm = []
-            distances = []
         if model_ids_mcm: 
             rt_sed = star_grid[0]['RT_SED']
         
         wmodels = []
         fmodels = []
-        for model_id,d in zip(model_ids_mcm,distances):
+        for model_id,s in zip(model_ids_mcm,star_grid):
             dpath = os.path.join(cc.path.mout,'models',model_id)
-            w,f = MCMax.readModelSpectrum(dpath,rt_sed)
-            if self.sed.reddening:
+            w,f = MCMax.readModelSpectrum(dpath,s['RT_SED'])
+            if s['REDDENING']:
                 print 'Reddening models to correct for interstellar extinction.'
-                f = Reddening.redden(w,f,self.sed.getAk(d))
+                ak = self.sed.getAk(s['DISTANCE'],s['REDDENING_MAP'],\
+                                    s['REDDENING_LAW'])
+                f = Reddening.redden(w,f,ak,law=s['REDDENING_LAW'])
             wmodels.append(w)
             fmodels.append(f)
         
@@ -233,10 +236,11 @@ class PlotDust(PlottingSession):
             filts = self.sed.filter_info  
             for i,(w,f) in enumerate(zip(wmodels,fmodels)):
                 mphot = Sed.calcPhotometry(w,f,self.sed.photbands)
-                data_x.append(filts.eff_wave)
+                data_x.append(self.sed.photwave)
                 data_y.append(mphot)
                 if show_phot_filter:
-                    data_xerr.append([filts.wlower,filts.wupper])
+                    data_xerr.append([self.sed.photwave-filts.wlower,\
+                                      filts.wupper-self.sed.photwave])
                 else:
                     data_xerr.append(None)
                 data_yerr.append(None)
@@ -258,6 +262,7 @@ class PlotDust(PlottingSession):
         extra_pars['xerr_capsize'] = 0
         extra_pars['xerr_linewidth'] = 4
         extra_pars.update(cfg_dict)
+        extra_pars.update(kwargs)
         filename = Plotting2.plotCols(x=data_x,y=data_y,xerr=data_xerr,\
                                       yerr=data_yerr,filename=fn_plt,\
                                       **extra_pars)

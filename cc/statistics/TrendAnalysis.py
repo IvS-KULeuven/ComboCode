@@ -7,16 +7,18 @@ Author: R. Lombaert
 
 """
 
-import cc.path
-from cc.modeling.objects import Transition
-from cc.plotting import Plotting2
 import os
 import operator
 from numpy import array
 import numpy as np
-import types
 from numpy.random import normal
 from matplotlib import pyplot as plt
+
+import cc.path
+from cc.modeling.objects import Transition
+from cc.plotting import Plotting2
+from cc.data import Sed
+
 
 
 def makeDiagnosticPlot(sg,molec,scaling=[],escaling=[],combine_water=0,\
@@ -238,9 +240,9 @@ def makeDiagnosticPlot(sg,molec,scaling=[],escaling=[],combine_water=0,\
     
 def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                   emdot=[],exparlog=0,eyparlog=0,edists=[],mode='dint',\
-                  n_data=0,extra_mcon=[],extra_dcon=[],cfg='',pfn_path='',\
-                  add_linear_fit=0,alf_xmin=None,alf_xmax=None,efcont63=[],\
-                  **kwargs):
+                  n_data=0,extra_mpar=[],extra_dpar=[],cfg='',pfn_path='',\
+                  add_linear_fit=0,alf_xmin=None,alf_xmax=None,seds=[],\
+                  deredden=0,**kwargs):
     
     '''
     Make a diagnostic plot of either measured line strengths or intrinsic 
@@ -257,24 +259,30 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
     @type sg: list[Star()]
     @param xpar: The parameter on the x-axis. Can be either a string (Star() 
                  keyword), or an index (of the transition in the first object 
-                 in the sg list) for line strengths. In a combo mode (cint or 
+                 in the sg list) for line strengths, or a float giving the 
+                 wavelength of the continuum point. When looking at line 
+                 strengths in a combo mode (cint or 
                  ctmb) this means it is the index in the transition list of the
                  data objects rather than the model objects. Transitions in 
                  objects other than the first 1 can have different indices.
+                 Note the essential difference between floats and integers!
     @type xpar: string/int
     @param ypar: The parameter on the y-axis. Can be either a string (Star() 
                  keyword), or an index (of the transition in the first object 
-                 in the sg list) for line strengths. In a combo mode (cint or 
+                 in the sg list) for line strengths, or a float giving the 
+                 wavelength of the continuum point. When looking at line 
+                 strengths inn a combo mode (cint or 
                  ctmb) this means it is the index in the transition list of the
                  data objects rather than the model objects. Transitions in 
                  objects other than the first 1 can have different indices.
+                 Note the essential difference between floats and integers!
     @type ypar: string/int
     
-    @keyword xratios: If xpar is a line strength, multiple ratios can be 
-                      requested to be plotted in succession. 
+    @keyword xratios: If xpar is a line strength or a continuum point, multiple 
+                      ratios can be requested to be plotted in succession. 
                       Therefore, this gives the indices (if int, refers to the 
                       1st Star() object in sg) or 'mdot' (if ratio wrt Mdot)  
-                      or 'fcont63' (if ratio wrt 6.3 mic continuumflux) for the
+                      or float (in case of a continuum wavelength point) for the
                       x-axis ratio.
                       
                       (default: [])
@@ -283,8 +291,8 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                       requested to be plotted in succession.
                       Therefore, this gives the indices (if int, refers to the 
                       1st Star() object in sg) or 'mdot' (if ratio wrt Mdot)  
-                      or 'fcont63' (if ratio wrt 6.3 mic continuumflux) for the
-                      x-axis ratio.
+                      or float (in case of a continuum wavelength point) for the
+                      y-axis ratio
                                             
                       (default: [])
     @type yratios: list[int/str]
@@ -294,12 +302,6 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
     
                     (default: [])
     @type emdot: list[float]
-    @keyword efcont63: Include errors for the x/yratio quantity if it is 
-                       fcont63. Not used for error estimation on fcont63 as a 
-                       parameter! The fcont63 errors are given in linear scale
-                       
-                       (default: [])
-    @type efcont63: list[float]
     @keyword expar: The error on the x-parameter if it is a Star() key and if 
                     mode is cint or dint. Number of entries in array is equal 
                     to the number of data Star() objects.
@@ -334,31 +336,52 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                    this key to 'cint' or 'ctmb'. Then the extra keyword 
                    'n_data' is required, which indicates how many Star() 
                    objects are associated with data. The method assumes they 
-                   are the first objects in the list of Star() objects.
+                   are the first objects in the list of Star() objects. In case
+                   only continuum wavelengths are requested (a combination is 
+                   possible!), only the first letter really matters.
                    
                    (default: 'dint')
     @type mode: str
     @keyword n_data: The number of data Star() objects, assuming they are the 
                      first in the star_grid. Only required if mode == 'combo'.
+                     This number, if given, must be equal to the number of seds,
+                     if given.
                      
                      (default: 0)
     @type n_data: int
-    @keyword extra_mcon: If extra conditionals are requested for models, the 
+    @keyword extra_mpar: If extra conditional parameters are requested for 
+                         models, the 
                          plot is colour coded based on them. For instance, 
                          Star() object keywords can serve as conditionals.
                          Note that these are only applied when mode == mtmb, 
                          mint, cint or ctmb.
                         
                          (default: [])
-    @type extra_mcon: list[string]
-    @keyword extra_dcon: If extra conditionals are requested for data, the plot  
+    @type extra_mpar: list[string]
+    @keyword extra_dpar: If extra conditional parameters are requested for data,
+                         the plot  
                          is colour coded based on them. For instance, Star() 
                          object keywords can serve as conditionals. Note that 
                          these are only applied when mode == dtmb, dint, cint 
                          or ctmb.
                                 
                          (default: [])
-    @type extra_dcon: list[string]
+    @type extra_dpar: list[string]
+    @keyword seds: The SEDs of the data objects. Only used when xpar or ypar is 
+                   a float (and thus continuum points are required). 
+                   The number of SEDs given must
+                   be equal to n_data, or the number of Star() objects if 
+                   mode[0] == 'd'. An error is thrown otherwise. 
+                   
+                   (default: [])
+    @type seds: list[Sed()]
+    @keyword deredden: Deredden the SEDs before plotting, in case of continuum
+                       flux points. This is never done in case only one data 
+                       object is given and reddening is requested in models to 
+                       avoid double correction.
+                       
+                       (default: 0)
+    @type deredden: bool
     @keyword cfg: config filename read as a dictionary, can replace any keyword 
                   given to plotCols. Can also be a dictionary itself, in which
                   case no file is read and the kwargs are updated with the 
@@ -417,9 +440,6 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('R_INNER_GAS','$R_\mathrm{i,g}$ (R$_\star$)'),\
                      ('AH2O_RATE',r'$\log$ $\left[A_{\mathrm{H}_2\mathrm{O}}/A_{\mathrm{H}_2} \times \dot{M}_\mathrm{g}\ (\mathrm{M}_\odot/\mathrm{yr})\right]$'),\
                      ('F_H2O',r'$\log$ $\left[A_{\mathrm{H}_2\mathrm{O}}/A_{\mathrm{H}_2}\right]$'),\
-                     ('F_CONT_63',r'$\log$ $\left[F_\mathrm{6.3\ \mu m}\ (\mathrm{Jy})\right]$'),\
-                     ('FD2_CONT_63',r'$\log$ $\left[F_\mathrm{6.3\ \mu m}\times D^2\ (\mathrm{Jy}\ \mathrm{pc}^2)\right]$'),\
-                     ('FD2M_CONT_63',r'$\log$ $\left[F_\mathrm{6.3\ \mu m}\times D^2 / \dot{M}_\mathrm{g}\ (\mathrm{Jy}\ \mathrm{pc}^2\ yr/\mathrm{M}_\odot \right]$)'),\
                      ])
     pfn_parts = dict([('MDOT_GAS','mg'),\
                       ('MDOT_DUST',r'md'),\
@@ -453,11 +473,8 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                       ('T_CLASS','tclass'),\
                       ('VG_CLASS','vgclass'),\
                       ('AH2O_RATE','ah2orate'),\
-                      ('F_CONT_63','fcont63'),\
-                      ('FD2_CONT_63','fd2cont63'),\
-                      ('F_CONT_63_TYPE','fcont63type'),\
+                      ('F_CONT_TYPE','fconttype'),\
                       ('DRIFT_TYPE','drifttype'),\
-                      ('FD2M_CONT_63','fd2mcont63'),\
                       ('ENHANCE_ABUNDANCE_FACTOR_H2O','h2oabunfac'),\
                       ('ABUNDANCE_FILENAME_H2O','h2oabunfile')])
     keynames = dict([('MDOT_GAS','$\dot{M}_\mathrm{g}$'),\
@@ -492,10 +509,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('VG_CLASS',''),\
                      ('DRIFT_TYPE',''),\
                      ('AH2O_RATE',r'$A_{\mathrm{H}_2\mathrm{O}}/A_{\mathrm{H}_2} \times \dot{M}_\mathrm{g}$'),\
-                     ('F_CONT_63',r'$F_\mathrm{6.3\ \mu m}$'),\
-                     ('FD2_CONT_63',r'$F_\mathrm{6.3\ \mu m}\times D^2$'),\
-                     ('F_CONT_63_TYPE','$Type F_\mathrm{6.3\ \mu m}$'),\
-                     ('FD2M_CONT_63',r'$F_\mathrm{6.3\ \mu m}\times D^2 / \dot{M}_\mathrm{g}$'),\
+                     ('F_CONT_TYPE','Type F$_\mathrm{cont}$'),\
                      ('ENHANCE_ABUNDANCE_FACTOR_H2O','h2oAbunFac'),\
                      ('ABUNDANCE_FILENAME_H2O','h2oAbunFile')])
     keyunits = dict([('MDOT_GAS','$\mathrm{M}_\odot\ \mathrm{yr}^{-1}$'),\
@@ -530,10 +544,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('DRIFT_TYPE','Drift'),\
                      ('L_CLASS',''),\
                      ('AH2O_RATE','$\mathrm{M}_\odot\ \mathrm{yr}^{-1}$'),\
-                     ('F_CONT_63','$\mathrm{Jy}$'),\
-                     ('FD2_CONT_63','$\mathrm{Jy}$ $\mathrm{pc}^2$'),\
-                     ('F_CONT_63_TYPE',''),\
-                     ('FD2M_CONT_63',r'$\mathrm{Jy}$ $\mathrm{pc}^2$ $\mathrm{yr}\ \mathrm{M}_{\odot}^{-1}$'),\
+                     ('F_CONT_TYPE',''),\
                      ('ENHANCE_ABUNDANCE_FACTOR_H2O',''),\
                      ('ABUNDANCE_FILENAME_H2O','')])
     makeints = dict([('MDOT_GAS',0),\
@@ -568,23 +579,29 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                      ('VG_CLASS',0),\
                      ('DRIFT_TYPE',0),\
                      ('AH2O_RATE',0),\
-                     ('F_CONT_63',0),\
-                     ('FD2_CONT_63',0),\
-                     ('F_CONT_63_TYPE',0),\
-                     ('FD2M_CONT_63',0),\
+                     ('F_CONT_TYPE',0),\
                      ('ENHANCE_ABUNDANCE_FACTOR_H2O',0),\
                      ('ABUNDANCE_FILENAME_H2O',0)])
     
-    edists,emdot,efcont63 = array(edists), array(emdot), array(efcont63)    
+    for k in extra_mpar+extra_dpar: 
+        if k not in pfn_parts.keys():
+            pfn_parts[k] = k.lower().replace('_','')
+            keynames[k] = k.replace('_','\_')
+            keyunits[k] = ''
+            makeints[k] = 0
+    
+    edists,emdot = array(edists), array(emdot)
     n_data = int(n_data)
     expar, eypar = array(expar), array(eypar)
-    if type(extra_mcon) is types.StringType:
-        extra_mcon = [extra_mcon]
-    if type(extra_dcon) is types.StringType:
-        extra_dcon = [extra_dcon]
-    if type(xpar) is types.StringType:
+    if isinstance(extra_mpar,str):
+        extra_mpar = [extra_mpar]
+    if isinstance(extra_dpar,str):
+        extra_dpar = [extra_dpar]
+    #-- If the x or y parameter is a string, it's a keyword and a ratio is not
+    #   allowed for now. 
+    if isinstance(xpar,str):
         xratios = []
-    if type(ypar) is types.StringType:
+    if isinstance(ypar,str):
         yratios = []
     ratios = [xratios,yratios]
     sg_dists = array([s['DISTANCE'] for s in sg])
@@ -596,29 +613,43 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
     epars = [expar,eypar]
     eparlogs = [exparlog,eyparlog]
     
+    #-- If continuum points are requested, disallow linear fits for now
+    #   Check if enough SEDs are provided given the number of data objects, but
+    #   only in case continuum points are requested.
+    if isinstance(xpar,float) or isinstance(ypar,float) \
+            or True in [isinstance(i,float) for i in xratios+yratios]:
+        add_linear_fit = 0
+        if mode[0] == 'd' and not seds:
+            raise IOError('No SEDs given for data objects.')
+        elif mode[0] == 'c' and n_data != len(seds):
+            raise IOError('Number of SEDs not equal to number of data objects')
+    
+    #-- Remember number of data objects versus model objects, also in terms of 
+    #   extra conditional parameters for plotting purposes.
     if mode[0] == 'm':
         #-- In model mode, no errors can be given for any of the parameters.
         add_linear_fit = 0
         expar = array([])
         eypar = array([])
         n_data = 0
-        extra_dcon = []
-        extra_con = extra_mcon
-        current_con = 'm'
+        seds = []
+        extra_dpar = []
+        extra_par = extra_mpar
+        current_par = 'm'
     elif mode[0] == 'd':
         n_data = len(sg)
-        extra_mcon = []
+        extra_mpar = []
     if mode[0] != 'm':
-        extra_con = extra_dcon
-        current_con = 'd'
+        extra_par = extra_dpar
+        current_par = 'd'
     for istar,s in enumerate(sg):
         if n_data and istar == n_data:
-            extra_con = extra_mcon
-            current_con = 'm'
-        s['EC'] = (current_con,\
-                    tuple([s[con]
-                            for con in extra_con 
-                            if s[con] <> None]))
+            extra_par = extra_mpar
+            current_par = 'm'
+        s['EC'] = (current_par,\
+                    tuple([s[par]
+                            for par in extra_par
+                            if s[par] <> None]))
     ecl = sorted(list(set([s['EC'] for s in sg])))
     ecl_num = []
     for ec in ecl:
@@ -639,14 +670,6 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
             xratio = xratios[0]
         if yratios:
             yratio = yratios[0]
-        if yratio == 'fcont63':
-            eyratio = efcont63
-        else:
-            eyratio = []
-        if xratio == 'fcont63':
-            exratio = efcont63
-        else:
-            exratio = []
         results = corrSG(sg=sg[:n_data],xpar=xpar,ypar=ypar,expar=expar,\
                          eypar=eypar,xratio=xratio,yratio=yratio,edist=edists,\
                          show=0,eyratio=eyratio,exratio=exratio,**kwargs)
@@ -665,28 +688,29 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
 
     #-- Check if 'mdot' is requested. Split these up in y and x mdot, because
     #   the error estimate on the ratio depends on the x or y line strength.
-    #   This is not the case for fcont63 because the error estimate is simpler
-    #   there, hence either y or x fcont63 ratios can remain the same.
+    #   This is not the case for cont flux because the error estimate is simpler
+    #   there, hence either y or x continuum ratios can remain the same.
     if 'mdot' in xratios: 
         xratios[xratios.index('mdot')] = 'xmdot'
     if 'mdot' in yratios: 
         yratios[yratios.index('mdot')] = 'ymdot'
         
-    #-- Select all line strengths and errors for the ratios. fcont63 if 
-    #   requested is added as well. These dicts hold the info for both x and y.
+    #-- Select all line strengths/continuum fluxes and errors for the ratios. 
+    #   These dicts hold the info for both x and y.
     ls_ratios = dict()
     els_ratios = dict()
     for i in set(yratios+xratios): 
         #-- mdot must be done separately, due to the cumbersome error estimate
         if i == 'xmdot' or i == 'ymdot': continue
-        elif i == 'fcont63':
-            #-- Convert to W/m2/Hz for unit consistency later on 
-            #   (LS/fcont63 is in Hz)
-            sg_fcont63 = array([s['F_CONT_63']*1e-26 for s in sg])
-            ls_ratios[i] = sg_fcont63
-            els_ratios[i] = efcont63
+        elif isinstance(i,float):
+            #-- getCFlux Converts to W/m2/Hz for unit consistency later on 
+            #   (LS/fcont is in Hz, fcont/LS is in Hz^-1)
+            dists = [s['DISTANCE'] for s in sg[:n_data]] if deredden else []
+            cflux,eflux = Sed.getCFlux(wav=i,seds=seds,star_grid=sg[n_data:],
+                                       deredden=dists)
+            ls_ratios[i] = cflux
+            els_ratios[i] = eflux
         else:
-            i = int(i)
             ratsample = sg[0]['GAS_LINES'][i]
             rattrans = Transition.getTransFromStarGrid(sg,ratsample,'sample')
             ls,els = Transition.getLineStrengths(rattrans,mode,n_data=n_data)
@@ -708,12 +732,16 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
     errs = [xerr,yerr]
     axes = ['x','y']
     #-- Select the x/y parameters, making a difference between a Star() key or 
-    #   line strengths. Star keys are never used in ratios, except MDOT_GAS and
-    #    F_CONT_63, but those are handled separately anyway.
+    #   floats (continuum points) or line strengths. Star keys are never used 
+    #   in ratios, except MDOT_GAS but that is handled separately anyway.
+    #   In case of line strengths or floats, the blends/xy/errs/axes dicts are 
+    #   filled later. In case of Star() keys, sample/seltrans/allint/allerr
+    #   are not used. sample/seltrans is also not used by continuum points, and
+    #   add None.
     sample, seltrans, allint, allerr = [] , [], [], []
     for par,epar,eparlog,blend,xyi,err,axisstr in zip(pars,epars,eparlogs,\
                                                       blends,xy,errs,axes):
-        if type(par) is types.StringType:
+        if isinstance(par,str):
             sg_par = array([s[par] for s in sg])
             sample.append(None)
             seltrans.append(None)
@@ -736,13 +764,23 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                     ll = np.concatenate([-np.log10(1-epar[0][isgd]),np.zeros(nsgm)])
                     ul = np.concatenate([np.log10(1+epar[1][isgd]),np.zeros(nsgm)])
                     err[axisstr].append([ll,ul])
-                    
+        elif isinstance(par,float):
+            #-- Extract the continuum fluxes and their errors at the requested
+            #   wavelength
+            dists = [d for d in sg_dists[:n_data]] if deredden else []
+            all_iflux, all_ieflux = Sed.getCFlux(wav=par,seds=seds,\
+                                                 star_grid=sg[n_data:],\
+                                                 deredden=dists)
+            sample.append(None)
+            seltrans.append(None)
+            allint.append(all_iflux)
+            allerr.append(all_ieflux)            
         else:
             #-- Select the line strengths and errors of the main transition for 
-            #   both axes. This information is only used when par is not a str.
-            #   Later, when ratios are set, this also is only done if par is 
-            #   not a str. So no mix-ups can happen. The sample and selection 
-            #   transitions are remembered for later.
+            #   both axes. This information is only used when par is not a str
+            #   or a float. Later, when ratios are set, this also is only done 
+            #   if par is not a str or a float. So no mix-ups can happen. The 
+            #   sample and selection transitions are remembered for later.
             isample = sg[0]['GAS_LINES'][par]
             iseltrans = Transition.getTransFromStarGrid(sg,isample,'sample')
             iallint,iallerr = Transition.getLineStrengths(iseltrans,mode,\
@@ -755,6 +793,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
     #-- If an Mdot ratio is requested, set the second component of the ratio
     #   and the errors here. (Takes a bit of calc time to estimate errors for 
     #   these ratios)
+    #-- Works for both line strengths and continuum fluxes in the same way.
     for iratios,iallint,iallerr,axisstr in zip(ratios,allint,allerr,axes):
         if axisstr+'mdot' in iratios:
             line1 = abs(iallint[:n_data])*sg_dists[:n_data]**2/100.**2
@@ -774,7 +813,8 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
         #-- Set the main line strength for the x/yaxis if par is not a string
         for par,blend,xyi,err,axisstr,iallint,iallerr,iratios \
                 in zip(pars,blends,xy,errs,axes,allint,allerr,ratios):
-            if type(par) is not types.StringType:
+            if not isinstance(par,str):
+                #-- continuum points always positive, so never a blend.
                 blend[axisstr].append(iallint[isgd] < 0)
                 #-- This irat1 is used later as well but only in this for loop
                 irat1 = abs(iallint[isg])
@@ -798,13 +838,9 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                     xyi[k].append(xyi[axisstr][-1]-np.log10(ls_ratios[k][isg]))
                     if mode[0] != 'm': 
                         etot = els_ratios[k][isgd]
-                elif k =='fcont63':
-                    #-- Just append the bool array for the 1st component LS
-                    blend[k].append(blend[axisstr][-1])
-                    xyi[k].append(np.log10(irat1/ls_ratios[k][isg]))
-                    if mode[0] != 'm': 
-                        etot = np.sqrt(iallerr[isgd]**2+els_ratios[k][isgd]**2)
                 else:        
+                    #-- Both continuum flux points are positive. This will never
+                    #   evaluate to True when continuum is considered. 
                     blend[k].append((blend[axisstr][-1])+(ls_ratios[k][isgd]<0))
                     xyi[k].append(np.log10(irat1/abs(ls_ratios[k][isg])))
                     if mode[0] != 'm': 
@@ -818,46 +854,46 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
     cfg_dict = Plotting2.readCfg(cfg)
     if cfg_dict.has_key('pfn_path'):
         pfn_path = cfg_dict['pfn_path']
-    extra_pars = dict()
+    extra_ppars = dict()
     #-- Set the title, depending on if LS are requested vs pars.
     pt = ''
-    if not type(xpar) is types.StringType:
-        pt += 'VS %s: E$_\mathrm{ul,x}$ = %.1f - %.2f'\
-              %(str(sample[0]),sample[0].getEnergyUpper(),\
-                sample[0].wavelength*10**4)
-    if not type(ypar) is types.StringType:
+    if isinstance(ypar,int):
         pt += '%s: E$_\mathrm{ul,y}$ = %.1f - %.2f'\
               %(str(sample[1]),sample[1].getEnergyUpper(),\
                 sample[1].wavelength*10**4)
-    extra_pars['plot_title'] = pt
-    extra_pars['fontsize_title'] = 20
-    extra_pars['figsize'] = (8*np.sqrt(2),8)
-    extra_pars['extension'] = '.pdf'
-    extra_pars['fontsize_key'] = 14
-    extra_pars['linewidth'] = 2
+    if isinstance(xpar,int):
+        pt += 'VS %s: E$_\mathrm{ul,x}$ = %.1f - %.2f'\
+              %(str(sample[0]),sample[0].getEnergyUpper(),\
+                sample[0].wavelength*10**4)
+    extra_ppars['plot_title'] = pt
+    extra_ppars['fontsize_title'] = 20
+    extra_ppars['figsize'] = (8*np.sqrt(2),8)
+    extra_ppars['extension'] = '.pdf'
+    extra_ppars['fontsize_key'] = 14
+    extra_ppars['linewidth'] = 2
     
     #-- Set the keytags and linestyles based on if data or models are
     #   plotted.
     if not ecl in [[('m',()),('d',())],[('m',())],[('d',())]]:
         keytags = []
-        for currcon,ec in ecl:
-            this_con = currcon == 'm' and extra_mcon or extra_dcon
+        for curr_par,ec in ecl:
+            this_par = curr_par == 'm' and extra_mpar or extra_dpar
             k = []
-            for con,v in zip(this_con,ec):
-                if 'CLASS' in con:
+            for par,v in zip(this_par,ec):
+                if 'CLASS' in par:
                     kstr = v[1]
-                elif con == 'P_TYPE':
+                elif par == 'P_TYPE':
                     kstr = '$\mathrm{%s}$'%v 
-                elif con == 'SHELLCOLDENS':
-                    kstr = '%s = $%.2f$ %s'%(keynames[con],v,keyunits[con])
+                elif par == 'SHELLCOLDENS':
+                    kstr = '%s = $%.2f$ %s'%(keynames[par],v,keyunits[par])
                 else:
                     kstr = '%s = $%s$ %s'\
-                           %(keynames[con],\
-                             makeints[con] and str(int(v)) or str(v),\
-                             keyunits[con])
+                           %(keynames[par],\
+                             makeints[par] and str(int(v)) or str(v),\
+                             keyunits[par])
                 k.append(kstr)
             keytags.append(', '.join(k))
-        extra_pars['key_location'] = 'best'
+        extra_ppars['key_location'] = 'best'
     mlinestyles = ['-x','-x','-x','-x','-x','-x','-x',\
                    '--s','--s','--s','--s','--s','--s','--s',\
                    '-.+','-.+','-.+','-.+','-.+','-.+','-.+',\
@@ -883,7 +919,9 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                         + mline_types[:m_ecl]
         zorder = range(10,10+d_ecl) + range(-m_ecl,0)
     markersize = [6]*len(keytags)
-    pfn_ecl = '_'.join([pfn_parts[ec] for ec in extra_dcon+extra_mcon])
+    pfn_ecl = '_'+'_'.join([pfn_parts[ec] for ec in extra_dpar+extra_mpar])
+    if pfn_ecl == '_': pfn_ecl = ''
+    
     
     #-- Avoid overhead: If ratios are requested, you generally dont want the 
     #   separate line strengths outside a ratio.
@@ -895,102 +933,133 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
     #-- Loop over the X-AXIS KEYS
     for xk in x.keys():
         #-- extract the ratio transition if applicable
-        if xk not in ['x','xmdot','fcont63']:
+        if isinstance(xk,int):
             xratsample = sg[0]['GAS_LINES'][xk]
         
+        #-- Change the xaxis name/min/max based on each plot
+        #   ie if no errors are given, just take min and max and scale.
+        #-- if errors are given: full plot.
+        if not xerr[xk]:
+            extra_ppars['xmin'] = min([min(xi) for xi in x[xk]])-0.2
+            extra_ppars['xmax'] = max([max(xi) for xi in x[xk]])+0.2
+        
         #-- Set the x-axis title, xmin, xmax and pfn_xtag.
-        if type(xpar) is types.StringType:
-            extra_pars['xaxis'] = x_titles[xpar]
-            extra_pars['xmin'] = min([min(xi) for xi in x[xk]])-0.2
-            extra_pars['xmax'] = max([max(xi) for xi in x[xk]])+0.2
+        if isinstance(xpar,str):
+            extra_ppars['xaxis'] = x_titles[xpar]
             pfn_xtag = pfn_parts[xpar]
             pfn_xrat = ''
+        elif isinstance(xpar,float):
+            s1 = r'F_\mathrm{%.1f\ \mu m}'%xpar
+            if xk == 'xmdot':
+                extra_ppars['xaxis'] = r'$\log$ $\left[%s/\dot{M}_\mathrm{'%s1+\
+                                       r'g}\ (\mathrm{W}/\mathrm{m}^2/\mathrm{Hz}\ '+\
+                                       r'\mathrm{yr}/\mathrm{M}_\odot)\right]$'
+            elif xk == 'x':
+                extra_ppars['xaxis'] = r'$\log$ $\left[%s\ (\mathrm{W}/\mathrm{m}^2/\mathrm{Hz})\right]$'%s1
+            elif isinstance(xk,int):
+                s2 = xratsample.makeAxisLabel()
+                extra_ppars['xaxis'] = r'$\log$ $\left[%s/%s\ (\mathrm{Hz}^{-1})\right]$'%(s1,s2)
+            else:       
+                s2 = r'F_\mathrm{%.1f\ \mu m}'%xk
+                extra_ppars['xaxis'] = r'$\log$ $\left[%s/%s\right]$'%(s1,s2)
+            pfn_xtag = 'f%.1fmic'%xpar
+            if xk =='xmdot':
+                pfn_xrat = '_mdot'
+            elif xk == 'x':
+                pfn_xrat = ''
+            elif isinstance(xk,int):
+                ms = yratsample.molecule.molecule_short
+                pfn_xrat = '_%s%i'%(ms,xk)
+            else:
+                pfn_xrat = '_f%.1fmic'%xk
         else: 
             #-- Adapt the xaxis title based on the xratios.
             s1 = sample[0].makeAxisLabel()
             if xk == 'xmdot':
-                extra_pars['xaxis'] = r'$\log$ $\left[%s/\dot{M}_\mathrm{'%s1+\
+                extra_ppars['xaxis'] = r'$\log$ $\left[%s/\dot{M}_\mathrm{'%s1+\
                                       r'g}\ (\mathrm{W}/\mathrm{m}^2\ \mathrm{yr}/\mathrm{M}_\odot)\right]$'
-            if xk == 'fcont63':
-                extra_pars['xaxis'] = r'$\log$ $\left[%s/F_\mathrm{6.3\ '%s1+\
-                                      r'\mu m}\ (\mathrm{Hz})\right]$'
             elif xk == 'x':
-                extra_pars['xaxis'] = r'$\log$ $\left[%s\ (\mathrm{W}/\mathrm{m}^2)\right]$'%s1
+                extra_ppars['xaxis'] = r'$\log$ $\left[%s\ (\mathrm{W}/\mathrm{m}^2)\right]$'%s1
+            elif isinstance(xk,float):
+                s2 = r'F_\mathrm{%.1f\ \mu m}'%xk
+                extra_ppars['xaxis'] = r'$\log$ $\left[%s/%s'%(s1,s2)+\
+                                       r'\ (\mathrm{Hz})\right]$'
             else:
                 iml = sample[0].molecule.molecule != xratsample.molecule.molecule
                 s1 = sample[0].makeAxisLabel(iml)
                 s2 = xratsample.makeAxisLabel(iml)
-                extra_pars['xaxis'] = r'$\log$ $\left[%s/%s\right]$'%(s1,s2)
-            #-- Change the xaxis name/min/max based on each plot
-            #   ie if no errors are given, just take min and max and scale.
-            if not xerr[xk]:
-                extra_pars['xmin'] = min([min(yi) for yi in y[xk]])-0.2
-                extra_pars['xmax'] = max([max(yi) for yi in y[xk]])+0.2
-            #-- If errors are given, full plot, unless they are line-strength 
-            #   ratios.
-            elif xk not in ['x','xmdot','fcont63'] \
-                 and xratsample.molecule.molecule != sample[0].molecule.molecule:
-                extra_pars['xmin'] = -2
-                extra_pars['xmax'] = 1
-            else:
-                if extra_pars.has_key('xmin'): del extra_pars['xmin']
-                if extra_pars.has_key('xmax'): del extra_pars['xmax']
-            
+                extra_ppars['xaxis'] = r'$\log$ $\left[%s/%s\right]$'%(s1,s2)
+
             pfn_xtag = '%s_eul_%i_wl_%.1f'\
                        %(sample[0].molecule.molecule,\
                          int(sample[0].getEnergyUpper()),\
                          float(sample[0].wavelength*10**4))
             if xk =='xmdot':
                 pfn_xrat = '_mdot'
-            elif xk == 'fcont63':
-                pfn_xrat = '_fcont63'
             elif xk == 'x':
                 pfn_xrat = ''
+            elif isinstance(xk,float):
+                pfn_xrat = '_f%.1fmic'%xk
             else:
-                ms = xratsample.molecule.isWater() and 'h2o' or 'co'
-                ts = not xratsample.molecule.isWater() and xratsample.jup or xk
-                pfn_xrat = '_%s%i'%(ms,ts)
+                ms = xratsample.molecule.molecule_short
+                pfn_xrat = '_%s%i'%(ms,xk)
             
         #-- Loop over the Y-AXIS KEYS
         for yk in y.keys():
-            if yk not in ['y','ymdot','fcont63']:
+            if isinstance(yk,int):
                 yratsample = sg[0]['GAS_LINES'][yk]
-            if type(ypar) is types.StringType:
-                extra_pars['yaxis'] = x_titles[ypar]
-                extra_pars['ymin'] = min([min(yi) for yi in y[yk]])-0.2
-                extra_pars['ymax'] = max([max(yi) for yi in y[yk]])+0.2
+            
+            #-- Change the yaxis name/min/max based on each plot
+            #   ie if no errors are given, just take min and max and scale.
+            #-- If erros are given: full plot.
+            if not yerr[yk]:
+                extra_ppars['ymin'] = min([min(yi) for yi in y[yk]])-0.2
+                extra_ppars['ymax'] = max([max(yi) for yi in y[yk]])+0.2
+                
+            if isinstance(ypar,str):
+                extra_ppars['yaxis'] = x_titles[ypar]
                 pfn_ytag = pfn_parts[ypar]
                 pfn_yrat = ''
+            elif isinstance(ypar,float):
+                s1 = r'F_\mathrm{%.1f\ \mu m}'%ypar
+                if yk == 'ymdot':
+                    extra_ppars['yaxis'] = r'$\log$ $\left[%s/\dot{M}_\mathrm{'%s1+\
+                                           r'g}\ (\mathrm{W}/\mathrm{m}^2/\mathrm{Hz}\ '+\
+                                           r'\mathrm{yr}/\mathrm{M}_\odot)\right]$'
+                elif yk == 'y':
+                    extra_ppars['yaxis'] = r'$\log$ $\left[%s\ (\mathrm{W}/\mathrm{m}^2/\mathrm{Hz})\right]$'%s1
+                elif isinstance(yk,int):
+                    s2 = yratsample.makeAxisLabel()
+                    extra_ppars['yaxis'] = r'$\log$ $\left[%s/%s\ (\mathrm{Hz}^{-1})\right]$'%(s1,s2)
+                else:       
+                    s2 = r'F_\mathrm{%.1f\ \mu m}'%yk
+                    extra_ppars['yaxis'] = r'$\log$ $\left[%s/%s\right]$'%(s1,s2)
+                pfn_ytag = 'f%.1fmic'%ypar
+                if yk =='ymdot':
+                    pfn_yrat = '_mdot'
+                elif yk == 'y':
+                    pfn_yrat = ''
+                elif isinstance(yk,int):
+                    ms = yratsample.molecule.molecule_short
+                    pfn_yrat = '_%s%i'%(ms,yk)
+                else:
+                    pfn_yrat = '_f%.1fmic'%yk
             else: 
                 s1 = sample[1].makeAxisLabel()
                 if yk == 'ymdot':
-                    extra_pars['yaxis'] = r'$\log$ $\left[%s/\dot{M}_\mathrm{'%s1+\
+                    extra_ppars['yaxis'] = r'$\log$ $\left[%s/\dot{M}_\mathrm{'%s1+\
                                         r'g}\ (\mathrm{W}/\mathrm{m}^2\ \mathrm{yr}/\mathrm{M}_\odot)\right]$'
-                if yk == 'fcont63':
-                    extra_pars['yaxis'] = r'$\log$ $\left[%s/F_\mathrm{6.3\ '%s1+\
-                                        r'\mu m}\ (\mathrm{Hz})\right]$'
                 elif yk == 'y':
-                    extra_pars['yaxis'] = r'$\log$ $\left[%s\ (\mathrm{W}/\mathrm{m}^2)\right]$'%s1
+                    extra_ppars['yaxis'] = r'$\log$ $\left[%s\ (\mathrm{W}/\mathrm{m}^2)\right]$'%s1
+                elif isinstance(yk,float):
+                    s2 = r'F_\mathrm{%.1f\ \mu m}'%yk
+                    extra_ppars['yaxis'] = r'$\log$ $\left[%s/%s'%(s1,s2)+\
+                                           r'\ (\mathrm{Hz})\right]$'
                 else:
                     iml = sample[1].molecule.molecule != yratsample.molecule.molecule
                     s1 = sample[1].makeAxisLabel(iml)
                     s2 = yratsample.makeAxisLabel(iml)
-                    extra_pars['yaxis'] = r'$\log$ $\left[%s/%s\right]$'%(s1,s2)
-                
-                #-- Change the yaxis name/min/max based on each plot
-                #   ie if no errors are given, just take min and max and scale.
-                if not yerr[yk]:
-                    extra_pars['ymin'] = min([min(yi) for yi in y[yk]])-0.2
-                    extra_pars['ymax'] = max([max(yi) for yi in y[yk]])+0.2
-                #-- If errors are given, full plot, unless they are line-strength 
-                #   ratios.
-                elif yk not in ['y','ymdot','fcont63'] \
-                    and yratsample.molecule.molecule != sample[1].molecule.molecule:
-                    extra_pars['ymin'] = -2
-                    extra_pars['ymax'] = 1
-                else:
-                    if extra_pars.has_key('ymin'): del extra_pars['ymin']
-                    if extra_pars.has_key('ymax'): del extra_pars['ymax']
+                    extra_ppars['yaxis'] = r'$\log$ $\left[%s/%s\right]$'%(s1,s2)
                 
                 pfn_ytag = '%s_eul_%i_wl_%.1f'\
                         %(sample[1].molecule.molecule,\
@@ -998,14 +1067,13 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                             float(sample[1].wavelength*10**4))
                 if yk =='ymdot':
                     pfn_yrat = '_mdot'
-                elif yk == 'fcont63':
-                    pfn_yrat = '_fcont63'
                 elif yk == 'y':
                     pfn_yrat = ''
+                elif isinstance(yk,float):
+                    pfn_yrat = '_f%.1fmic'%yk
                 else:
-                    ms = yratsample.molecule.isWater() and 'h2o' or 'co'
-                    ts = not yratsample.molecule.isWater() and yratsample.jup or yk
-                    pfn_yrat = '_%s%i'%(ms,ts)
+                    ms = yratsample.molecule.molecule_short
+                    pfn_yrat = '_%s%i'%(ms,yk)
             
             #-- Make an extra list of blends.
             xb, yb = [[]], [[]]            
@@ -1015,23 +1083,23 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                 yb[-1].extend(yi[blended])
             
             if xb[-1]: 
-                extra_pars['keytags'] = keytags + ['$\mathrm{Blended}$']
-                extra_pars['line_types'] = line_types + ['xk']
-                extra_pars['markersize'] = markersize + [14]
-                extra_pars['zorder'] = zorder + [max(zorder)+1]
+                extra_ppars['keytags'] = keytags + ['$\mathrm{Blended}$']
+                extra_ppars['line_types'] = line_types + ['xk']
+                extra_ppars['markersize'] = markersize + [14]
+                extra_ppars['zorder'] = zorder + [max(zorder)+1]
             else: 
                 xb, yb, = [], []
-                extra_pars['keytags'] = keytags
-                extra_pars['line_types'] = line_types
-                extra_pars['markersize'] = markersize
-                extra_pars['zorder'] = zorder 
+                extra_ppars['keytags'] = keytags
+                extra_ppars['line_types'] = line_types
+                extra_ppars['markersize'] = markersize
+                extra_ppars['zorder'] = zorder 
             
             if add_linear_fit: 
-                extra_pars['keytags'] = extra_pars['keytags'] + ['Mean Linear fit']
-                extra_pars['line_types'] = extra_pars['line_types'] + ['-g'] + ['-k']*len(add_linear_fit['xgrid'])
-                extra_pars['markersize'] = extra_pars['markersize'] + [4] + [4]*len(add_linear_fit['xgrid'])
-                extra_pars['zorder'] = extra_pars['zorder'] + [min(zorder)-1] + [min(zorder)-2]*len(add_linear_fit['xgrid'])
-                extra_pars['alpha'] = [1]*len(x[xk])+[1]*len(xb)+[1]+[0.002]*len(add_linear_fit['xgrid'])
+                extra_ppars['keytags'] = extra_ppars['keytags'] + ['Mean Linear fit']
+                extra_ppars['line_types'] = extra_ppars['line_types'] + ['-g'] + ['-k']*len(add_linear_fit['xgrid'])
+                extra_ppars['markersize'] = extra_ppars['markersize'] + [4] + [4]*len(add_linear_fit['xgrid'])
+                extra_ppars['zorder'] = extra_ppars['zorder'] + [min(zorder)-1] + [min(zorder)-2]*len(add_linear_fit['xgrid'])
+                extra_ppars['alpha'] = [1]*len(x[xk])+[1]*len(xb)+[1]+[0.002]*len(add_linear_fit['xgrid'])
                 xb.append(add_linear_fit['xmean'])
                 yb.append(add_linear_fit['ymean'])
                 xb.extend(add_linear_fit['xgrid'])
@@ -1040,17 +1108,17 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
             
             #-- Update from cfg file, in case any setting (except plotfile) has
             #   to be overridden. 
-            extra_pars.update(cfg_dict)
-            pfn = os.path.join(pfn_path,'%s_%s%s_vs_%s%s_%s'\
+            extra_ppars.update(cfg_dict)
+            pfn = os.path.join(pfn_path,'%s_%s%s_vs_%s%s%s'\
                                         %(mode,pfn_ytag,pfn_yrat,pfn_xtag,\
                                           pfn_xrat,pfn_ecl))
 
-            extra_pars['filename'] = pfn
+            extra_ppars['filename'] = pfn
             ff = Plotting2.plotCols(x=xb and x[xk]+xb or x[xk],\
                                     y=yb and y[yk]+yb or y[yk],\
                                     yerr=yb and yerr[yk]+[None]*len(yb) or yerr[yk],\
                                     xerr=xb and xerr[xk]+[None]*len(xb) or xerr[xk],\
-                                    **extra_pars)
+                                    **extra_ppars)
             print ff
             
             if n_data > 0:                    
@@ -1066,7 +1134,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
                                       makeints[con] and str(int(v)) or str(v),\
                                       keyunits[con] and ' ' or '',\
                                       keyunits[con])
-                                   for con,v in zip(extra_dcon,ec[1])])
+                                   for con,v in zip(extra_dpar,ec[1])])
                     print k, ': %s'%', '.join([s['STAR_NAME'] for s in sgsort])
             
             return ff
@@ -1418,7 +1486,7 @@ def selectDataSG(sg,par,epar,par_co=None,edist=[]):
     '''
     
     edist = array(edist)
-    if type(par) is types.StringType:
+    if isinstance(par,str):
         vals = array([s[par] for s in sg])
         if par_co <> None:
             if par_co[0] is None:
@@ -1552,7 +1620,7 @@ def corrSG(sg,xpar,ypar,expar=[],eypar=[],xratio=None,yratio=None,\
     ep = dict() 
     
     #-- The x-axis parameter is set here. 
-    if xratio is None or type(xratio) is types.StringType:
+    if xratio is None or isinstance(xratio,str):
         xv, exv, xpar_co, ep['par1_log'] = selectDataSG(sg,xpar,expar,xpar_co,\
                                                         edist)
     else:
@@ -1566,7 +1634,7 @@ def corrSG(sg,xpar,ypar,expar=[],eypar=[],xratio=None,yratio=None,\
         xrat, exrat, dummy, ep['par2_log'] = selectDataSG(sg,xratio,exratio)
     
     #-- The y-axis parameter is set here
-    if yratio is None or type(yratio) is types.StringType:
+    if yratio is None or isinstance(yratio,str):
         yv, eyv, ypar_co, ep['line1_log'] = selectDataSG(sg,ypar,eypar,\
                                                          ypar_co,edist)
     else:

@@ -10,14 +10,26 @@ How does reddening in ComboCode work?
 
 First and foremost, we define the interstellar extinction in the Johnson K band.
 The magnitude of extinction, Ak, is derived from extinction models. Either from
-Marshall et al. 2006, or from Drimmel et al. 2003 if not available from the 
+Marshall et al. 2006, or from Schlegel et al. 1998 if not available from the 
 former. Ak requires the distance to be given, before it can be applied to a 
 model. All of our modeling requires a distance as input, so this is not an issue
-in practice.
+in practice. If needed, the extinction model can be changed to a different 
+3d galactic map from marshall (or Schlegel), see getAk.
+
+A note on the extinction models. Schlegel et al say that they could not verify
+their values at |bb| < 5 degrees, so they should not be trusted. However, Sans
+Fuentes et al 2014 checked those values by comparing them with OGLE maps for the
+|ll| < 10 degrees region and found a very good match. Common practice is to 
+compare model values with measurements, in -- for instance -- the IRSA catalog.
+http://irsa.ipac.caltech.edu/applications/DUST/ (based on COBE/DIRBE maps) 
+Here, you can find total extinction in several bands. This then needs to be
+converted to the distance you're looking at for your source. It is more 
+convenient to use galactic 3D models and do this exercise once for a given
+direction to see how accurate the models are. 
 
 The interstellar extinction law of preference is that of Chiar and Tielens 2006.
 This law is given normalized per Ak and can be directly combined with the 
-interstellar extinction given from Marshall or Drimmel. We use the curve for the
+interstellar extinction given from Marshall or Schlegel. We use the curve for the
 local ISM. The alternative is a curve for the galactic center, but even in the 
 direction of the galactic center the local ISM doesn't change much in terms of 
 dust extinction, except at very large distances on the order of 5kpc or more. We
@@ -25,7 +37,7 @@ don't work with sources at those distances for now, so we can safely ignore it.
 For completeness, the GC curve is made as well and provided as an option in the
 reddening module of IvS repo.
 
-However, while Marshall gives Ak and presents no issue, Drimmel gives Av. To
+However, while Marshall gives Ak and presents no issue, other maps give Av. To
 convert Av to Ak, we have to convert the V-band normalization of Drimmel to 
 K-band normalization. Chiar and Tielens, however, derived a law only in the IR
 hence no V-band normalization can be defined. We need a different interstellar 
@@ -63,11 +75,18 @@ import ivs.sed.reddening as red
 import ivs.sed.extinctionmodels as em
 
 
-def getAk(ll,bb,distance=None,law='Fitz2004Chiar2006',lawtype='ism'):
+def getAk(ll,bb,distance=None,map='marshall',law='fitz2004chiar2006',\
+          lawtype='ism'):
 
     '''
     Find the Johnson K-band interstellar extinction at given longitude and 
-    latitude.
+    latitude for a given galactic extinction model.
+    
+    Default is marshall, and if not available there, schlegel. When marshall is 
+    requested, schlegel is always returned for ll and bb outside the range of 
+    marshall. 
+    
+    Alternatives are arenou, drimmel and schlegel, see ivs repo. 
     
     @param ll: The galactic longitude of the star
     @type ll: float
@@ -80,12 +99,16 @@ def getAk(ll,bb,distance=None,law='Fitz2004Chiar2006',lawtype='ism'):
                        
                        (default: None)
     @type distance: float    
+    @keyword map: The galactic 3d extinction model. 
+    
+                  (default: 'marshall')
+    @type map: str
     @keyword law: The reddening law
                 
-                  (default: 'Fitz2004Chiar2006')
+                  (default: 'fitz2004chiar2006')
     @type law: str
     @keyword lawtype: The type of Chiar & Tielens reddening law (either ism or 
-                      gc)
+                      gc). Only when relevant.
                       
                       (default: 'ism')
     @type lawtype: str
@@ -94,12 +117,15 @@ def getAk(ll,bb,distance=None,law='Fitz2004Chiar2006',lawtype='ism'):
     @rtype: float 
     
     '''
-        
-    ak = em.findext_marshall(ll=ll,bb=bb,distance=distance,redlaw=law,\
-                             curve=lawtype,norm='Ak')
-    if not ak:
-        ak = em.findext_drimmel(lng=ll,lat=bb,distance=distance,redlaw=law,\
-                                curve=lawtype,norm='Ak')[0]
+    
+    ak = em.findext(lng=ll,lat=bb,distance=distance,model=map,redlaw=law,\
+                    norm='Ak',curve=lawtype)
+    if map == 'marshall' and not ak:
+        map = 'schlegel'
+        ak = em.findext(lng=ll,lat=bb,distance=distance,model=map,\
+                        redlaw=law,norm='Ak',curve=lawtype)
+    if map == 'drimmel':
+        ak = ak[0]               
     return ak
 
 

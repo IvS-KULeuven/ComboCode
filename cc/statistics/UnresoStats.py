@@ -10,6 +10,7 @@ Author: R. Lombaert
 import os
 import scipy
 from scipy import argmin,array,sqrt,log10
+import numpy as np
 import operator
 
 import cc.path
@@ -56,14 +57,13 @@ class UnresoStats(Statistics):
         self.sample_trans = dict()
         self.central_mwav = dict()
         
-        #-- Remember the peak and integrated flux ratios, and individual chi^2 
-        #   of the mint-dint comparison.
+        #-- Remember the peak and integrated flux ratios, and the data errors on
+        #   the ratios
         #   key: filename
         #   value: dict([instrument based id, list[float] or float])
         self.peak_ratios = dict()     
         self.int_ratios = dict()
         self.int_ratios_err = dict()
-        self.chi2_intsi = dict()
         
         #-- Remember chi2 per model for integrated line strengths and straight 
         #   up comparison between convolved model and observed spectrum.
@@ -91,7 +91,7 @@ class UnresoStats(Statistics):
         
         
 
-    def setRatios(self,chi2_type='normal'):
+    def setRatios(self,chi2_method='diff'):
         
         ''' 
         Find the peak to peak ratios of data versus model.
@@ -99,12 +99,15 @@ class UnresoStats(Statistics):
         The result are saved in the self.peak_ratios dictionary, see 
         __init__.__doc__()
         
-        @keyword chi2_type: The type of chi-squared calculated for integrated 
-                            fluxes. 'normal' for the usual kind, 'log' for chi2
-                            of the log of the integrated fluxes and noise. 
+        
+        @keyword chi2_method: The type of chi-squared calculated for integrated 
+                              fluxes. 'diff' for standard chi^2 kind, 'log' for 
+                              redistributing the data/model ratios on an 
+                              absolute logarithmic scale before calculating the 
+                              chi2
                             
-                            (default: normal)
-        @type chi2_type: string
+                              (default: 'diff')
+        @type chi2_method: string
         
         '''
         
@@ -137,35 +140,62 @@ class UnresoStats(Statistics):
             
             self.__setPeakRatios(ifn,fn)
             if inst.linefit <> None:
-                self.__setIntRatios(ifn,fn,chi2_type=chi2_type)
+                self.__setIntRatios(ifn,fn)
         
-        self.calcChiSquared()
+        self.calcChiSquared(chi2_method=chi2_method)
         print '***********************************'
                 
                 
                 
-    def calcChiSquared(self):
+    def calcChiSquared(self,chi2_method='diff'):
         
         '''
         Calculate the chi_squared value for given models and data. 
         
         If integrated fluxes are available, they are used without the line 
-        blends. 
+        blends. LINES FLAGGED AS A BLEND ARE EXCLUDED FROM THE CHI2 CALCULATION.
         
         If not, the modeled, convolved spectrum is compared directly with the 
         data, where the model is not just 0 flux.
         
+        @keyword chi2_method: The type of chi-squared calculated for integrated 
+                              fluxes. 'diff' for standard chi^2 kind, 'log' for 
+                              redistributing the data/model ratios on an 
+                              absolute logarithmic scale before calculating the 
+                              chi2
+                            
+                              (default: 'diff')
+        @type chi2_method: string
         '''
         
         inst = self.instrument
         for istar,star in enumerate(self.star_grid):
             this_id = star['LAST_%s_MODEL'%inst.instrument.upper()]
         
-            #-- Get all integrated flux chi2s, add them up for a single model
-            #   and divide by the amount of comparisons. Line blends not incl. 
+            #-- Get all integrated fluxes and errors for this particular model, 
+            #   no matter the filename of the data (ie no matter the band)
+            #. Line blends not incl. 
             #   If no integrated flux available, set chi2_inttot[this_id] to 0
-            all_chi2s = []
-            [all_chi2s.extend(dd[this_id]) for dd in self.chi2_intsi.values()]
+            all_dints = []
+            all_derrs = []
+            for dd in self.int_ratios.values():
+                all_dints.extend(dd[this_id])
+                all_derrs.extend(dd[this_id])
+            all_derrs = array(all_errs)[(np.isfinite(all_ints))*(all_ints>=0)]
+            all_dints = array(all_ints)
+            if all_ints.size:
+                all_ints
+
+            if dintint > 0 and not mt.sphinx.nans_present:
+
+                ichi2 = bs.calcChiSquared(dintint,mintint,\
+                                          dintint*dintinterr,
+                                          mode=chi2_method)
+                #ichi2 = bs.calcLoglikelihood(dintint,\
+                #                             mintint,\
+                #                             dintint*dintinterr)
+                self.chi2_intsi[fn][this_id].append(ichi2)
+            
             if not all_chi2s:
                 self.chi2_inttot[this_id] = 0
             else:
@@ -185,10 +215,11 @@ class UnresoStats(Statistics):
                 all_mflux.extend(mflux[mflux>0])
                 all_dstd.extend([dstd]*len(mflux[mflux>0]))
             self.chi2_con[this_id] = bs.calcChiSquared(all_dflux,all_mflux,\
-                                                       all_dstd)
+                                                       all_dstd,\
+                                                       mode=chi2_method)
             
             
-    def __setIntRatios(self,ifn,fn,chi2_type='normal'):
+    def __setIntRatios(self,ifn,fn):
         
         '''
         Calculate ratios of integrated intensities, if requested. 
@@ -202,21 +233,12 @@ class UnresoStats(Statistics):
         @param fn: The filename of the data set. Needed for book keeping.
         @type fn: string
         
-        @keyword chi2_type: The type of chi-squared calculated for integrated 
-                            fluxes. 'normal' for the usual kind, 'log' for chi2
-                            of the log of the integrated fluxes and noise. 
-                            
-                            (default: normal)
-        @type chi2_type: string
-        
-        
         '''
         
         #-- Get some data properties, and extract data wavelength and flux
         inst = self.instrument
-        self.int_ratios[fn] = dict()
-        self.int_ratios_err[fn] = dict() 
-        self.chi2_intsi[fn] = dict()
+        self.dint_bands[fn] = []
+        self.derr_bands[fn] = []
         
         #-- Comparing integrated intensities between PACS and models.
         #   Comparisons only made per filename! 
@@ -235,8 +257,8 @@ class UnresoStats(Statistics):
                 #      trans does not contain a PACS integrated intensity.
                 if mt is None or st.getIntIntUnresolved(fn)[0] is None or \
                         st.getIntIntUnresolved(fn)[0] == 'inblend':
-                    these_ratios.append(None)
-                    these_errs.append(None)
+                    these_ratios.append(np.nan)
+                    these_errs.append(np.nan)
                
                 #   5) Match found with a wave_fit value. Get int ratio 
                 #      m/d. If dintint is negative, it is a blend due to large
@@ -258,21 +280,10 @@ class UnresoStats(Statistics):
                         mintint = sum([t.getIntIntIntSphinx() 
                                        for t in blendlines])
                         dintint = -1.*abs(dintint)
-                    if dintint > 0 and not mt.sphinx.nans_present:
-                        if chi2_type == 'log':
-                            ichi2 = bs.calcChiSquared(log10(dintint),\
-                                                      log10(mintint),\
-                                                      log10(dintint*dintinterr))
-                        else:
-                            ichi2 = bs.calcChiSquared(dintint,\
-                                                      mintint,\
-                                                      dintint*dintinterr)
-                        #ichi2 = bs.calcLoglikelihood(dintint,\
-                        #                             mintint,\
-                        #                             dintint*dintinterr)
-                        self.chi2_intsi[fn][this_id].append(ichi2)
                     this_ratio = mintint/dintint
                     these_ratios.append(this_ratio)
+                    #-- Note that the error is relative, and the chi^2 wants
+                    #   an absolute value.
                     these_errs.append(abs(this_ratio)*dintinterr)
             self.int_ratios[fn][this_id] = these_ratios
             self.int_ratios_err[fn][this_id] = these_errs        
