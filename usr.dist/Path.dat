@@ -58,3 +58,5 @@ ll=LineLists
 starf=ComboCode/StarFiles
 #-- Folder for processed density profiles. ICC key DENSFILE. 
 densf=ComboCode/DensFiles
+#-- Folder for molecular inputfiles (abundance profiles, temperature profiles, ...)
+molf=ComboCode/MolFiles
