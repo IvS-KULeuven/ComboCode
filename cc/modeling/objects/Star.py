@@ -1242,23 +1242,6 @@ class Star(dict):
             self['AH2O_RATE'] = self['F_H2O'] * self['MDOT_GAS']
         else:
             pass
-    
-
-
-    def calcAH2O_RATE(self):
-        
-        '''
-        Calculate the outflow rate of H2O, by multiplying the H2O abundance 
-        with the mass-loss rate. 
-        
-        Value is set in units of Msun/yr
-        
-        '''
-        
-        if not self.has_key('AH2O_RATE'):
-            self['AH2O_RATE'] = self['F_H2O'] * self['MDOT_GAS']
-        else:
-            pass
 
 
         
