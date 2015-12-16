@@ -3037,7 +3037,7 @@ class Star(dict):
                 self['STARFILE'] = starfile
             elif self['STARTYPE'] == 'TABLE':
                 self['STARTABLE'] = self['STARTABLE'].strip('"').strip("'")
-                if not (os.isfile(self['STAR_TABLE']) \
+                if not (os.path.isfile(self['STARTABLE']) \
                         and os.path.split(self['STARTABLE'])[0]):
                     self['STARFILE'] = os.path.join(cc.path.starf,\
                                                     self['STARTABLE'])

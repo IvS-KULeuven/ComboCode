@@ -25,7 +25,7 @@ class PlottingSession(object):
     """
         
     def __init__(self,star_name='model',inputfilename=None,\
-                 path='codeJun2010',code='GASTRoNOoM'):
+                 path='',code='GASTRoNOoM'):
         
         """ 
         Initializing an instance of PlottingSession.
@@ -37,7 +37,7 @@ class PlottingSession(object):
         @type star_name: string
         @keyword path: Output modeling folder in code home folder
         
-                       (default: 'codeJun2010')
+                       (default: '')
         @type path: string
         @keyword inputfilename: name of inputfile that is also copied to the 
                                 output folder of the plots, 
@@ -61,8 +61,10 @@ class PlottingSession(object):
                                                    rindex=self.star_index)
         
         #-- Can't use convenience paths here through cc.path, because the 
-        #   module is not code specific. Within a single pything session, there
+        #   module is not code specific. Within a single python session, there
         #   may be multiple instances of PlottingSession
+        if not path:
+            print('Warning! %s model output folder not set.'%code)
         self.path = path
         fn_mcm = os.path.join(cc.path.aux,'Mutable_Parameters_MCMax.dat')
         self.mutable_mcmax = [line[0] 

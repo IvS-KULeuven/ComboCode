@@ -83,7 +83,7 @@ class Instrument(object):
         istar = DataIO.getInputData(keyword='STAR_NAME').index(star_name)
         #-- Set relevant velocities in cm/s
         self.c = 2.99792458e10 
-        self.vlsr = DataIO.getInputData(keyword='V_LSR',rindex=istar)*10**5
+        self.vlsr = float(DataIO.getInputData(keyword='V_LSR',rindex=istar))*10**5
         if self.path <> None:
             pp = getattr(cc.path,self.code.lower())
             DataIO.testFolderExistence(os.path.join(pp,self.path,'stars'))

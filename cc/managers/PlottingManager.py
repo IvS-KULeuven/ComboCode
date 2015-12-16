@@ -102,7 +102,8 @@ class PlottingManager():
                                                   sed=sed)
         else: 
             self.plotter_dust = None
-        if self.gastronoom or self.gas_pars.has_key('PLOT_LINE_LISTS'):
+        if self.gastronoom or self.gas_pars.has_key('PLOT_LINE_LISTS')\
+                or 'PLOT_TRANSITIONS' in self.gas_pars:
             self.plotter_gas = PlotGas.PlotGas(star_name=star_name,pacs=pacs,\
                                                path_gastronoom=path_gastronoom,\
                                                inputfilename=inputfilename,\
@@ -147,7 +148,8 @@ class PlottingManager():
                 thisMethod = getattr(self.plotter_dust,method_name)
                 thisMethod(star_grid=star_grid,\
                            cfg=self.dust_cfg.get(k.replace('PLOT_','CFG_'),''))
-        if self.gastronoom or self.gas_pars.has_key('PLOT_LINE_LISTS'):
+        if self.gastronoom or self.gas_pars.has_key('PLOT_LINE_LISTS') \
+                 or 'PLOT_TRANSITIONS' in self.gas_pars:
             for k in self.gas_pars:
                 method_name = 'plot' + \
                               ''.join([w.capitalize() 

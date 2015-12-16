@@ -811,7 +811,8 @@ class ComboCode(object):
                                          instrument_instance=self.pacs,\
                                          stat_method=self.stat_method)
             self.pacsstats.setModels(star_grid=self.star_grid)
-            self.pacsstats.setRatios(chi2_type=self.stat_chi2)
+            self.pacsstats.setLineStrengths()
+            self.pacsstats.calcChiSquared(chi2_method=self.stat_chi2)
             self.pacsstats.plotRatioWav(inputfilename=self.inputfilename)
         
         if self.statistics and self.spire <> None:

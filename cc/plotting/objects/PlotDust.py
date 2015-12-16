@@ -35,7 +35,7 @@ class PlotDust(PlottingSession):
     """
     
     def __init__(self,star_name='model',sed=None,\
-                 path_mcmax='runTestDec09',inputfilename=None):
+                 path_mcmax='',inputfilename=None):
         
         '''
         Initializing PlotDust session.
@@ -47,7 +47,7 @@ class PlotDust(PlottingSession):
         @type star_name: string
         @keyword path_mcmax: Output modeling folder in MCMax home folder
         
-                             (default: 'runTestDec09')
+                             (default: '')
         @type path_mcmax: string
         @keyword inputfilename: name of inputfile that is also copied to the 
                                 output folder of the plots, 
@@ -976,9 +976,10 @@ class PlotDust(PlottingSession):
             kr = KappaReader.KappaReader()
             wl_list = [kr.getKappas(sp)[0] for sp in species]
             q_list = [kr.getKappas(sp)[1] for sp in species]
+            if not ppars.has_key('keytags'):
+                ppars['keytags'] = species
             fn_plt = Plotting2.plotCols(x=wl_list,y=q_list,filename=fn_plt,\
-                                        plot_title = 'Dust Opacities',\
-                                        keytags=species,*args,**ppars)
+                                        *args,**ppars)
             print '** Your plot can be found at:'
             print fn_plt
         else:    

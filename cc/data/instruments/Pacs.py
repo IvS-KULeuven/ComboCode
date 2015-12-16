@@ -347,9 +347,9 @@ class Pacs(Instrument):
             #-- Convenience path
             cc.path.gout = os.path.join(cc.path.gastronoom,self.path)
             #-- Check the path for the PACS database if a model folder is known
-            dbpath = os.path.join(cc.path.gout,'stars',self.star_name)
+            db_path = os.path.join(cc.path.gout,'stars',self.star_name)
             if os.path.isdir(db_path):
-                self.db_path = os.path.join(dbpath,'GASTRoNOoM_pacs_models.db')
+                self.db_path = os.path.join(db_path,'GASTRoNOoM_pacs_models.db')
                 self.db = Database.Database(self.db_path)
                 DataIO.testFolderExistence(os.path.join(cc.path.gout,'stars',\
                                            self.star_name,'PACS_results'))
