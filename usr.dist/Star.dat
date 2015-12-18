@@ -1,7 +1,5 @@
 ### Stellar Data
-### Ak taken from Marschall et al. 2006 where possible, otherwise Drimmel et al 2003
-### Exception: V669 Cas from Arenou et al. 1992 => Ak ~ 0.24. Now changed to the value from Marshall or Drimmel.
-### Vlsr taken from De Beck et al 2010. HR 4049 Hinkle et al 2007. V384 Per, S Cep, AFGL4202, V1417 Aql Groenewegen et al 2002. R Lep, S Aur, RV Cyg Olofsson et al 1993, NSV 24044, V829 Cas fr9m loup 1993
+### Vlsr taken from De Beck et al 2010. HR 4049 Hinkle et al 2007. V384 Per, S Cep, AFGL4202, V1417 Aql Groenewegen et al 2002. R Lep, S Aur, RV Cyg Olofsson et al 1993, NSV 24044, V829 Cas, V1366 aql fr9m loup 1993, OH75.3, v438 sct, oh65 taken from Benson et al. 1990
 ###################################################################################################
 #STAR_NAME  STAR_NAME_PLOTS  V_LSR   LONG    LAT
 nmlcyg  NML_Cyg              2.0     80.8    -1.9
@@ -33,6 +31,7 @@ uant     U_Ant               24.0    276.2   16.1
 uhya        U_Hya            -31.0   260.0   38.1
 vhya     V_Hya               -17.0   269.0   33.6
 qzmus    QZ_Mus              -2.0    297.3   -11.2
+v885cen   V885_Cen           42.0    293.0    5.9
 ycvn     Y_CVn               21.0    126.4   71.6
 rhya    R_Hya                -10.0   314.2   38.7
 iras13428  IRAS_13428-6232   0.0     309.2   -0.6
@@ -40,6 +39,7 @@ whya     W_Hya               40.4    318.0   32.8
 rxboo   RX_Boo               2.0     21.2    -48.8
 afgl4202  AFGL_4202          24.4    316.6   -2.5
 iilup    II_Lup              -15.0   325.5   4.7
+iras15445  IRAS_15445-5449   -150.0  326.5   -0.4
 xher     X_Her               0       74.5    47.8
 alphasco  $\alpha$_Sco       -2.3    351.9   15.1
 gher    G_Her                20.4    66.2    43.7
@@ -57,7 +57,8 @@ afgl5502    AFGL_5502        43.0    26.4    1.7
 iras18327   IRAS_18327-0715  40.0    24.7    0.2
 nxser       NX_Ser           33.5    36.1    6.0
 v437sct  V437_Sct            27.4    26.5    0.6
-iras18361   IRAS18361-0647   27.5    25.5    -6.5
+iras18361   IRAS_18361-0647   27.5    25.5    -6.5
+v438sct     V438_Sct         73.0    26.2    -0.6
 v821her     V821_Her         -0.5    47.8    10.0
 v1417aql    V1417_Aql        3.0     29.9    0.96 
 v1360aql    V1360_Aql        40.0    30.7    0.4
@@ -66,18 +67,22 @@ v1362aql    V1362_Aql        100.0   30.1    -0.7
 ssct     S_Sct               15.0    25.8    -3.3
 v1363aql    V1363_Aql        75.0    32.0    -0.5
 v1365aql    V1365_Aql        60.0    32.8    -0.3
+oh35        OH_35.6-0.3      78.0    35.6    -0.3
+v1366aql    V1366_Aql        21.0    39.7    1.5
 v1368aql    V1368_Aql        60.0    42.3    -0.1
 iras19110   IRAS_19110+1045  60.0    45.1    0.1
 v1427aql    V1427_Aql        99.0    35.7    -5.0
 waql     W_Aql               -25.0   29.3    -8.5
 oh44.8  OH_44.8-2.3          -70.5   44.8    -2.3
 v1302aql    V1302_Aql        75.5    47.1    -2.5
-afgl2403    AFGL_2403        29.0    55.0    0.7
+oh55     OH_55.0+0.7         29.0    55.0    0.7
 chicyg   $\chi$_Cyg          10.0    68.5    3.3
 afgl2477 AFGL_2477           5.0     67.3    1.0
+oh65      OH_65.3-2.7        -5.0    65.3    -2.7
 xpav    X_Pav                -18.5   337.2   -33.2
 v1300aql    V1300_Aql        -18.0   36.4    -20.4
 rzsgr   RZ_Sgr               -30.0   355.7   -33.2
+oh75    OH_75.3-1.8          -4.0    75.3    -1.8   
 vcyg     V_Cyg               15.0    86.5    3.8
 afgl5625 AFGL_5625           2.2     98.2    3.7   
 scep    S_Cep                -15.5   113.8   19.4
@@ -85,7 +90,7 @@ rvcyg   RV_Cyg               16.3    86.9    -11.4
 mucep   Mu_Cep               23.0    100.6   4.3
 epaqr   EP_Aqr               -33.5   54.2    -39.3
 iras21554   IRAS_21554+6204  -18.7   104.1   6.0
-oh104   OH_104.9+2.4         -26.0   105.0   2.4
+oh104   OH_104.9+2.4         -26.0   104.9   2.4
 pi1gru  Pi1_Gru              -11.0   350.3   -55.2
 llpeg    LL_Peg              -31.0   93.5    -40.4
 lpand    LP_And              -17.0   108.5   -17.1
