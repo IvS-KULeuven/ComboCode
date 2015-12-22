@@ -114,7 +114,7 @@ def readVisibilities(dpath,fn_vis='visibility01.0.dat'):
 
 
 def rayTraceSpectrum(model_id,path_mcmax='runTestDec09',inputfilename='',\
-                     redo_rt=0):
+                     remove_source=0,redo_rt=0):
     
     '''
     Do the ray-tracing of the spectrum according to cc.path.mobs/Spec.out, but 
@@ -129,7 +129,11 @@ def rayTraceSpectrum(model_id,path_mcmax='runTestDec09',inputfilename='',\
                             inputMCMax_model_YYYY-MM-DDhHH-mm-ss.
                             
                             (default: '')
-    @type inputfilename: string          
+    @type inputfilename: string       
+    @keyword remove_source: remove the central source from the image
+    
+                            (default: 0)
+    @type remove_source: bool   
     @keyword redo_rt: redo the ray tracing of the spectrum regardless of the 
                       spectrum already existing or not
                       
@@ -149,8 +153,13 @@ def rayTraceSpectrum(model_id,path_mcmax='runTestDec09',inputfilename='',\
         output_folder = os.path.join(cc.path.mcmax,path_mcmax,'models',\
                                      model_id)
         spec_file = os.path.join(cc.path.mobs,'Spec.out')
-        subprocess.call([' '.join(['MCMax ' + inputfilename,'0','-o',\
-                                   output_folder,spec_file])],shell=True)
+        if remove_source:
+            subprocess.call([' '.join(['MCMax ' + inputfilename,'0',\
+                                       '-s tracestar=.false.','-o',\
+                                       output_folder,spec_file])],shell=True)
+        else:
+            subprocess.call([' '.join(['MCMax ' + inputfilename,'0','-o',\
+                                       output_folder,spec_file])],shell=True)
     else:
         print '** Spectrum ray-tracing is already finished.'
         
@@ -582,7 +591,7 @@ class MCMax(ModelingSession):
                 #   .particle files exist in the same location
                 elif star['SCATTYPE'] == 'FULL':
                     partfile = os.path.splitext(speciesfile)[0] + '.particle'
-                    if os.isfile(os.path.join(cc.path.mopac,partfile)):
+                    if os.path.isfile(os.path.join(cc.path.mopac,partfile)):
                         ftype = 'part'
                         speciesfile = partfile
                     else:

@@ -28,11 +28,16 @@ from cc.tools.numerical import Interpol
 from cc.statistics import BasicStats as bs
 from cc.data import LPTools
 
-def getLineStrengths(trl,mode='dint',nans=1,n_data=0, scale = 0):
+
+def getLineStrengths(trl,mode='dint',nans=1,n_data=0, scale = 0,**kwargs):
+
     
     '''
     Get the line strengths from Transition() objects, either from data or from
-    models defined by the mode.
+    models defined by the mode. 
+    
+    Additional keywords for the functions that return LSs from the Transition()
+    object can be passed along as **kwargs.
     
     Modes:
         - dint: Integrated line strength of an observed line in spectral mode
@@ -108,15 +113,16 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0, scale = 0):
         if t is None:
             allints.append(nans and float('nan') or None)
             continue
+
         if t.telescope not in scaling.keys():
             print 'Add telescope diameter to scaling dictionary in Transition.getLineStrengths!'
             return
-        nls = getattr(t,modes[mode])()
+        nls = getattr(t,modes[mode])(**kwargs)
 
         if mode == 'dint':
             if nls[0] == 'inblend':
                 for tb in nls[2]:
-                    bls,ebls,blends = getattr(tb,modes[mode])()
+                    bls,ebls,blends = getattr(tb,modes[mode])(**kwargs)
                     if bls != 'inblend': 
                         nls = (abs(bls)*(-1),ebls,blends)
                         break
@@ -2004,7 +2010,7 @@ class Transition():
          
     
     
-    def getIntTmbData(self,index=0):
+    def getIntTmbData(self,index=0,use_fit=0):
         
         """
         Calculate the integrated Tmb of the data line profile over velocity.
@@ -2021,6 +2027,9 @@ class Transition():
         gaussian is used, the integrated data profile is returned. Otherwise, 
         the soft parabola fit is integrated instead to avoid taking into 
         account an absorption feature in the profile.
+        
+        The fitted line profile can be forced to be used for the integrated line
+        strength.
         
         Returns None if no data are available. 
         
@@ -2039,7 +2048,7 @@ class Transition():
         self.readData()
         if self.fittedlprof is None:
             return
-        if self.fittedlprof[index]['fitabs'] <> None:
+        if use_fit or self.fittedlprof[index]['fitabs'] <> None:
             #-- Integrating the fitted SoftPar, rather than data
             #   due to detected absorption component in the line profile.
             return self.fittedlprof[index]['fgintint']

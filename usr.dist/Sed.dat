@@ -1,22 +1,8 @@
 ### Dust Data
 ###################################################################################################
-#DATA_TYPES          PLOT_NAMES              LINE_TYPES
-SWS_Sacha           ISO_SWS_Sacha           -k
-PACS                    PACS_14_0_785           -k
-MIDI                MIDI                    -b                    
-Photometric_IvS   Photometric_IvS              og
-#SPIRE_SLW              SPIRE_SLW        -c
-#SPIRE_SSW               SPIRE_SSW       -b
-#SWS                    SWS                     -r
-#SPIRE_SLW              SPIRE_SLW_SCALEDDOWN_FAC3        -c
-#SPIRE_SSW               SPIRE_SSW_SCALEDDOWN_FAC3       -b
-#PACS                 PACS                    -g
-#LWS                  LWS                     -b
-#SWS                    SWS                     -r
-#LWS_SCALED           ISO_LWS                    -k
-#SWS_NEW              ISO_SWS                    -k
-#SWS_X                  ISO_SWS                 -r
-#PACSPHOT             PACS_Photometry         xb
-#Spitzer              Spitzer                  -k
-#SWS_D                SWS_D.L.                -m
-#LRS_D                IRAS_LRS_D.L.           -m
+#DATA_TYPES          PLOT_NAMES              LINE_TYPES     ABS_ERR     
+SWS_Sacha           ISO_SWS_Sacha           -k               0.1
+PACS                    PACS_14_0_785           -k             0.2
+MIDI                MIDI                    -b                 0.3    
+Photometric_IvS   Photometric_IvS              og               0
+

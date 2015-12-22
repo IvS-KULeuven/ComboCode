@@ -8,8 +8,8 @@ Author: R. Lombaert
 """
 
 import os
-import scipy
 import scipy.stats
+import numpy as np
 
 import cc.path
 from cc.tools.io import DataIO
@@ -57,57 +57,54 @@ class Statistics(object):
 
     def setInstrument(self,instrument_name,searchstring='',\
                       data_filenames=[],instrument_instance=None,\
-                      pacs_oversampling=None,sample_transitions=[],\
-                      redo_convolution=0,resolution=None,absflux_err=0.2,\
-                      stat_method='clipping'):
+                      sample_transitions=[],\
+                      stat_method='clipping',**kwargs):
        
         '''
-        Set an instrument as a source of data.
+        Set an instrument as a source of data. Define the instrument_name on 
+        calling the method: PACS, SPIRE, SED, FREQ_RESO.
         
-        @param instrument_name: The instrument (such as 'PACS', 'SPIRE', 
+        FREQ_RESO requires no additional keywords nor an instrument_instance. 
+        
+        For the other options, the instrument instance that contains the data 
+        references and other info can be passed as an object, or can be set in 
+        situ. If the latter, include required keywords for creating the 
+        instrument object. 
+        
+        For PACS: resolution
+        For SPIRE: resolution, oversampling
+        
+        See the respective modules __init__ methods for more information on 
+        these keywords as well as other optional keys.
+        
+        Spire and Pacs objects have to set data manually. Provide the 
+        data_filenames or the searchstring for this. Not needed for FREQ_RESO or
+        SED. 
+        
+        @param instrument_name: The instrument (such as 'PACS', 'SPIRE', 'SED',
                                 or 'FREQ_RESO')
         @type instrument_name: string
         
         @keyword data_filenames: The data filenames. If empty, auto-search is 
-                                 done, with searchstring.
+                                 done, with searchstring. Only for Pacs and 
+                                 Spire
                                  
                                  (default: [])
         @type data_filenames: list[string]
-        @keyword searchstring: the searchstring conditional for the auto-search
+        @keyword searchstring: the searchstring conditional for the auto-search,
+                               only for Pacs and Spire.
         
                                (default: '')
         @type searchstring: string
         @keyword instrument_instance: If None a new instance is made, otherwise
                                       the instance is given here for the 
-                                      instrument
+                                      instrument. Remember to pass the relevant
+                                      keywords to the method for the creation.
                                       
                                       (default: None)
         @type instrument_instance: Instrument()
-        @keyword oversampling: The instrumental oversampling, for 
-                               correct convolution of the Sphinx output.
-                               Not required if instrument_instance is given
-                                   
-                               (default: None)
-        @type oversampling: int
-        @keyword redo_convolution: if you want to do the convolution of the 
-                                   sphinx models for PACS regardless of what's 
-                                   already in the database. The pacs id will 
-                                   not change, nor the entry in the db, and the
-                                   old convolution will be copied to a backup
-                                   Only relevant if instrument==PACS. Not 
-                                   required if instrument_instance is given
-                                 
-                                   (default: 0)
-        @type redo_convolution: bool
-        @keyword resolution: The spectral resolution of the SPIRE apodized 
-                             spectra. Only required when instrument_name is 
-                             SPIRE.
-                             
-                             (default: None)
-        @type resolution: float
-        
         @keyword stat_method: Std/Mean/RMS determination method for unresolved
-                              data. Options:
+                              data (Pacs and Spire) Options:
                                 - 'clipping': 1-sigma clipping based on std/... 
                                               of full spectrum, then takes 
                                               std/... of clipped spectrum. 
@@ -116,12 +113,6 @@ class Statistics(object):
                          
                               (default: 'clipping')
         @type stat_method: string
-        @keyword absflux_err: The absolute flux calibration uncertainty of the
-                              instrument. Only relevant for PACS or SPIRE and 
-                              if no instrument_instance is given.
-                               
-                              (default: 0.2)
-        @type absflux_err: float
         
         '''
         
@@ -133,10 +124,7 @@ class Statistics(object):
                                         searchstring=searchstring)
             else:
                 self.instrument = Pacs.Pacs(star_name=self.star_name,\
-                                            oversampling=oversampling,\
-                                            path=self.path_code,\
-                                            redo_convolution=redo_convolution,\
-                                            absflux_err=absflux_err)
+                                            path=self.path_code,**kwargs)
                 self.instrument.setData(data_filenames=data_filenames,\
                                         searchstring=searchstring)
         
@@ -147,17 +135,21 @@ class Statistics(object):
                                         searchstring=searchstring)
             else:
                 self.instrument = Spire.Spire(star_name=self.star_name,\
-                                              oversampling=oversampling,\
-                                              path=self.path_code,\
-                                              resolution=resolution,\
-                                              absflux_err=absflux_err)
+                                              path=self.path_code,**kwargs)
                 self.instrument.setData(data_filenames=data_filenames,\
                                         searchstring=searchstring)
+        
+        elif instrument_name == 'SED':
+            if instrument_instance <> None:
+                self.instrument = instrument_instance
+            else:
+                self.instrument = Sed.Sed(star_name=self.star_name,**kwargs)
         
         elif instrument_name == 'FREQ_RESO':
             self.instrument = None
             
-        #-- Do data stats for unresolved data. Resolved data will never do this
+        #-- Do data stats for unresolved data. Resolved or SED data will never 
+        #   do this
         self.doDataStats(method=stat_method)
         
         
@@ -184,8 +176,19 @@ class Statistics(object):
         
         '''        
 
+        #-- The SED case
+        if self.instrument.instrument == 'SED':
+            if not star_grid: 
+                raise IOError('Statistics.setModels requires a ' + \
+                              'star_grid to be defined for SED data.')
+            if set([s['LAST_MCMAX_MODEL'] for s in star_grid]) == set(['']):
+                return
+            #-- Get rid of models that were not calculated successfully
+            self.star_grid = [s for s in star_grid if s['LAST_MCMAX_MODEL']]
+            self.star_grid = np.array(self.star_grid)
+            
         #-- The unresolved-data case
-        if self.instrument:
+        elif self.instrument:
             instr = self.instrument.instrument.upper()
             print '***********************************'
             print '* Checking Sphinx models for comparison with %s.'%instr
@@ -236,7 +239,8 @@ class Statistics(object):
         method = method.lower()
         if method not in ['preset','clipping']: method = 'clipping'
         self.data_stats = dict()
-        if self.instrument:
+        inst = self.instrument.instrument.upper()
+        if self.instrument and inst in ['PACS','SPIRE']:
             if not self.data_info: self.setDataInfo()
             for filename,data_wave,data_flux,band in \
                         zip(self.instrument.data_filenames,\

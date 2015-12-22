@@ -342,21 +342,23 @@ class Pacs(Instrument):
         self.data_orders = []
         self.data_delta_list = []
         self.redo_convolution = redo_convolution
-        #-- Convenience path
-        cc.path.gout = os.path.join(cc.path.gastronoom,self.path)
-        
-        #-- Check the path for the PACS database if a model folder is known.
+
         if self.path <> None:
-            self.db_path = os.path.join(cc.path.gout,'stars',self.star_name,\
-                                        'GASTRoNOoM_pacs_models.db')
-            self.db = Database.Database(self.db_path)
-            DataIO.testFolderExistence(os.path.join(cc.path.gout,'stars',\
-                                       self.star_name,'PACS_results'))
-        else:
-            self.db = None
+            #-- Convenience path
+            cc.path.gout = os.path.join(cc.path.gastronoom,self.path)
+            #-- Check the path for the PACS database if a model folder is known
+            db_path = os.path.join(cc.path.gout,'stars',self.star_name)
+            if os.path.isdir(db_path):
+                self.db_path = os.path.join(db_path,'GASTRoNOoM_pacs_models.db')
+                self.db = Database.Database(self.db_path)
+                DataIO.testFolderExistence(os.path.join(cc.path.gout,'stars',\
+                                           self.star_name,'PACS_results'))
+            else:
+                self.db = None
+                self.db_path = None
+        
         self.sphinx_prep_done = 0
         self.readLineFit()
-
 
 
     def readLineFit(self):

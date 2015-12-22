@@ -9,7 +9,6 @@ Author: R. Lombaert
 
 import os
 from scipy import array 
-import pyfits
 
 import cc.path
 from cc.tools.io import DataIO

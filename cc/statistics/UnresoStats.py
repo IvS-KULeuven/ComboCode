@@ -10,6 +10,7 @@ Author: R. Lombaert
 import os
 import scipy
 from scipy import argmin,array,sqrt,log10
+import numpy as np
 import operator
 
 import cc.path
@@ -56,14 +57,19 @@ class UnresoStats(Statistics):
         self.sample_trans = dict()
         self.central_mwav = dict()
         
-        #-- Remember the peak and integrated flux ratios, and individual chi^2 
-        #   of the mint-dint comparison.
+        #-- Remember the peak and integrated flux ratios, and the data errors on
+        #   the ratios
         #   key: filename
         #   value: dict([instrument based id, list[float] or float])
         self.peak_ratios = dict()     
         self.int_ratios = dict()
         self.int_ratios_err = dict()
-        self.chi2_intsi = dict()
+        
+        #-- Remember the line strengths from observations and models per band
+        self.dint_bands = dict()
+        self.derr_bands = dict()
+        self.blends_bands = dict()
+        self.mint_bands = dict()
         
         #-- Remember chi2 per model for integrated line strengths and straight 
         #   up comparison between convolved model and observed spectrum.
@@ -91,7 +97,7 @@ class UnresoStats(Statistics):
         
         
 
-    def setRatios(self,chi2_type='normal'):
+    def setLineStrengths(self):
         
         ''' 
         Find the peak to peak ratios of data versus model.
@@ -99,18 +105,11 @@ class UnresoStats(Statistics):
         The result are saved in the self.peak_ratios dictionary, see 
         __init__.__doc__()
         
-        @keyword chi2_type: The type of chi-squared calculated for integrated 
-                            fluxes. 'normal' for the usual kind, 'log' for chi2
-                            of the log of the integrated fluxes and noise. 
-                            
-                            (default: normal)
-        @type chi2_type: string
-        
         '''
         
         inst = self.instrument
         print '***********************************'
-        print '** Calculating integrated/peak intensity ratios for %s.'\
+        print '** Gathering model and observed line strengths for %s.'\
               %inst.instrument
         
         #-- Make a sample selection of Transition()s.
@@ -137,58 +136,101 @@ class UnresoStats(Statistics):
             
             self.__setPeakRatios(ifn,fn)
             if inst.linefit <> None:
-                self.__setIntRatios(ifn,fn,chi2_type=chi2_type)
+                self.__setIntRatios(ifn,fn)
         
-        self.calcChiSquared()
         print '***********************************'
                 
                 
                 
-    def calcChiSquared(self):
+    def calcChiSquared(self,chi2_method='diff',ndf=0,filename=None):
         
         '''
         Calculate the chi_squared value for given models and data. 
         
         If integrated fluxes are available, they are used without the line 
-        blends. 
+        blends. LINES FLAGGED AS A BLEND ARE EXCLUDED FROM THE CHI2 CALCULATION.
         
         If not, the modeled, convolved spectrum is compared directly with the 
         data, where the model is not just 0 flux.
         
+        @keyword chi2_method: The type of chi-squared calculated for integrated 
+                              fluxes. 'diff' for standard chi^2 kind, 'log' for 
+                              redistributing the data/model ratios on an 
+                              absolute logarithmic scale before calculating the 
+                              chi2
+                            
+                              (default: 'diff')
+        @type chi2_method: string
+        @keyword ndf: Number of degrees of freedom. Default in case of calculating
+                  for one single model. Typically the number of variable grid
+                  parameters in a grid calculation.
+                  
+                  (default: 0) 
+        @type ndf: int
+        @keyword filename: the filename for which you want to return the list, 
+                           if None, all filenames are used and the lists are 
+                           merged into one
+                           
+                           (default: None)
+        @type filename: string
         '''
         
+        #-- For now excluding blends
         inst = self.instrument
+        all_dints = self.getRatios(sel_type='dint_bands',data_type='dint_bands',\
+                                   filename=filename)
+        all_derrs = self.getRatios(sel_type='dint_bands',data_type='derr_bands',\
+                                   filename=filename)
+        
         for istar,star in enumerate(self.star_grid):
             this_id = star['LAST_%s_MODEL'%inst.instrument.upper()]
         
-            #-- Get all integrated flux chi2s, add them up for a single model
-            #   and divide by the amount of comparisons. Line blends not incl. 
+            #-- Get all integrated fluxes and errors for this particular model, 
+            #   no matter the filename of the data (ie no matter the band).
             #   If no integrated flux available, set chi2_inttot[this_id] to 0
-            all_chi2s = []
-            [all_chi2s.extend(dd[this_id]) for dd in self.chi2_intsi.values()]
-            if not all_chi2s:
+            all_mints = self.getRatios(this_id=this_id,sel_type='dint_bands',\
+                                       data_type='mint_bands',filename=filename)
+            sel = np.isfinite(all_mints)*np.isfinite(all_dints)
+            
+            if not all_mints[sel].size:
                 self.chi2_inttot[this_id] = 0
             else:
-                self.chi2_inttot[this_id] = sum(all_chi2s)/len(all_chi2s)
+                chi2 = bs.calcChiSquared(data=all_dints,model=all_mints,\
+                                         noise=all_derrs*all_dints,\
+                                         mode=chi2_method,ndf=ndf)
+                self.chi2_inttot[this_id] = chi2
         
             #-- Calculate chi2 based on the convolved model with respect to the
             #   continuum-subtracted data.
             all_dflux = []
             all_mflux = []
             all_dstd = []
-            for fn,dflux in zip(inst.data_filenames,inst.data_flux_list):
+            if not filename:
+                fns = inst.data_filenames
+                fluxes = inst.data_flux_list
+            else:
+                fns = filename is None and inst.data_filenames or [filename]
+                fluxes = [inst.data_flux_list[inst.data_filenames.index(fn)]
+                          for fn in fns]
+                          
+            for fn,dflux in zip(fns,fluxes):
                 dstd = self.data_stats[fn]['std']
                 #-- Cannot return empty list as the selection of existing 
                 #   convolutions is done in Statistics.setModels()
                 mflux = inst.getSphinxConvolution(star,fn)[1]
+                #-- Make sure all points are positive. Some data points may be 
+                #   <0 due to continuum subtraction.
+                mflux = mflux[dflux>0]
+                dflux = dflux[dflux>0]
                 all_dflux.extend(dflux[mflux>0])
                 all_mflux.extend(mflux[mflux>0])
                 all_dstd.extend([dstd]*len(mflux[mflux>0]))
-            self.chi2_con[this_id] = bs.calcChiSquared(all_dflux,all_mflux,\
-                                                       all_dstd)
+            self.chi2_con[this_id] = bs.calcChiSquared(all_dflux,\
+                                                       all_mflux,all_dstd,\
+                                                       mode=chi2_method,ndf=ndf)
             
             
-    def __setIntRatios(self,ifn,fn,chi2_type='normal'):
+    def __setIntRatios(self,ifn,fn):
         
         '''
         Calculate ratios of integrated intensities, if requested. 
@@ -202,80 +244,81 @@ class UnresoStats(Statistics):
         @param fn: The filename of the data set. Needed for book keeping.
         @type fn: string
         
-        @keyword chi2_type: The type of chi-squared calculated for integrated 
-                            fluxes. 'normal' for the usual kind, 'log' for chi2
-                            of the log of the integrated fluxes and noise. 
-                            
-                            (default: normal)
-        @type chi2_type: string
-        
-        
         '''
         
         #-- Get some data properties, and extract data wavelength and flux
         inst = self.instrument
+        self.dint_bands[fn] = []
+        self.derr_bands[fn] = []
+        self.blends_bands[fn] = []
+        self.mint_bands[fn] = dict()
         self.int_ratios[fn] = dict()
-        self.int_ratios_err[fn] = dict() 
-        self.chi2_intsi[fn] = dict()
+        self.int_ratios_err[fn] = dict()
         
         #-- Comparing integrated intensities between PACS and models.
         #   Comparisons only made per filename! 
         inst.intIntMatch(trans_list=self.sample_trans[fn],ifn=ifn)
         
+        for st in self.sample_trans[fn]:
+            dintint, dintinterr, blends = st.getIntIntUnresolved(fn)
+            if dintint is None or dintint == 'inblend':
+                self.dint_bands[fn].append(np.nan)
+                self.derr_bands[fn].append(np.nan)
+                self.blends_bands[fn].append(None)
+            else: 
+                if blends <> None:
+                    #-- Take abs in case dintint is already blend due to FWHM
+                    dintint = -1*abs(dintint)
+                self.dint_bands[fn].append(dintint)
+                self.derr_bands[fn].append(dintinterr)
+                self.blends_bands[fn].append(blends)
+        
+        self.dint_bands[fn] = array(self.dint_bands[fn])
+        self.derr_bands[fn] = array(self.derr_bands[fn])
+        
         for star in self.star_grid:
             #--  From here on, we start extracting the model specific int ints.
             this_id = star['LAST_%s_MODEL'%inst.instrument.upper()]
+            self.mint_bands[fn][this_id] = []
             mtrans = array([star.getTransition(t) 
                             for t in self.sample_trans[fn]])
-            these_ratios = []
-            these_errs = []
-            self.chi2_intsi[fn][this_id] = []
-            for mt,st in zip(mtrans,self.sample_trans[fn]):
-                #   4) No trans == sample_trans found for this model, or sample
-                #      trans does not contain a PACS integrated intensity.
-                if mt is None or st.getIntIntUnresolved(fn)[0] is None or \
-                        st.getIntIntUnresolved(fn)[0] == 'inblend':
-                    these_ratios.append(None)
-                    these_errs.append(None)
+                            
+            for mt,dint,blend in zip(mtrans,self.dint_bands[fn],\
+                                     self.blends_bands[fn]):
+                #   4) No trans == sample_trans found for this model, 
+                #      Note that model value is added even if PACS int int is 
+                #      not available
+                if mt is None:
+                    self.mint_bands[fn][this_id].append(np.nan)
                
                 #   5) Match found with a wave_fit value. Get int ratio 
-                #      m/d. If dintint is negative, it is a blend due to large
+                #      m/d. If dint is negative, it is a blend due to large
                 #      FWHM! If blends is not None, multiple sample trans have 
                 #      been found in the wavelength resolution bin of the 
                 #      fitted line and also indicates a blend.
                 else:
-                    dintint, dintinterr, blends = st.getIntIntUnresolved(fn)
-                    if blends is None:
-                        mintint = mt.getIntIntIntSphinx() 
+                    if blend is None:
+                        mintint = mt.getIntIntIntSphinx()
+                        self.mint_bands[fn][this_id].append(mintint)
                     else:
                         #-- blends is a list of sample transitions that refers
                         #   to the transitions involved in the blend, so get 
-                        #   these from the model grid, add them up and make 
-                        #   sure the ratio will be negative to indicate a blend
+                        #   these from the model grid, and add them up. dintint
+                        #   was made negative to indicate blend presence.
                         blendlines = [star.getTransition(t) 
                                       for t in blends
                                       if star.getTransition(t) <> None]
-                        mintint = sum([t.getIntIntIntSphinx() 
-                                       for t in blendlines])
-                        dintint = -1.*abs(dintint)
-                    if dintint > 0 and not mt.sphinx.nans_present:
-                        if chi2_type == 'log':
-                            ichi2 = bs.calcChiSquared(log10(dintint),\
-                                                      log10(mintint),\
-                                                      log10(dintint*dintinterr))
-                        else:
-                            ichi2 = bs.calcChiSquared(dintint,\
-                                                      mintint,\
-                                                      dintint*dintinterr)
-                        #ichi2 = bs.calcLoglikelihood(dintint,\
-                        #                             mintint,\
-                        #                             dintint*dintinterr)
-                        self.chi2_intsi[fn][this_id].append(ichi2)
-                    this_ratio = mintint/dintint
-                    these_ratios.append(this_ratio)
-                    these_errs.append(abs(this_ratio)*dintinterr)
-            self.int_ratios[fn][this_id] = these_ratios
-            self.int_ratios_err[fn][this_id] = these_errs        
+                        total_mint = sum([t.getIntIntIntSphinx() 
+                                          for t in blendlines])
+                        self.mint_bands[fn][this_id].append(total_mint)
+
+            #-- Note that the error is relative, and the chi^2 wants
+            #   an absolute value.
+            self.mint_bands[fn][this_id] = array(self.mint_bands[fn][this_id])
+            self.int_ratios[fn][this_id] = self.mint_bands[fn][this_id]\
+                                           /self.dint_bands[fn]
+            self.int_ratios_err[fn][this_id] = self.derr_bands[fn]*\
+                                               abs(self.int_ratios[fn][this_id])
             
 
 
@@ -349,23 +392,33 @@ class UnresoStats(Statistics):
                                                             central_dflux)]
             
                                                                                 
-    def getRatios(self,this_id,sel_type='peak_ratios',\
+    def getRatios(self,this_id=None,sel_type='peak_ratios',\
                   data_type='peak_ratios',return_negative=0,filename=None):
         
         '''
         Return all ratios for all filenames, including only the values that are
         not None.
         
-        @param this_id: The requested instrument id
-        @type this_id: string 
+        Selection type helps to filter out blended lines (negative values for 
+        the ratios), or unavailable ratios (None). Can only be int_ratios or
+        peak_ratios when this_id is not None.
         
+        The data type that is returned can be any of the dictionaries tracking
+        stuff in this object.
+        
+        @keyword this_id: The requested instrument id. Can be None in case both
+                          sel_type and data_type point to dictionaries that are 
+                          not sorted per model. 
+                          
+                          (default: None)
+        @type this_id: string 
         @keyword sel_type: The type of data used to select values, one of 
                            'peak_ratios' or 'int_ratios'
                               
                            (default: 'peak_ratios')
         @type sel_type: string
-        @keyword data_type: the type of data returned, one of 'peak_ratios' or
-                            'central_wav'
+        @keyword data_type: the type of data returned, one of 'peak_ratios', 
+                            'int_ratios', 'central_mwav', '*_bands'
                             
                             (default: 'peak_ratios')
         @type data_type: string
@@ -388,14 +441,45 @@ class UnresoStats(Statistics):
 
         inst = self.instrument
         filenames = filename is None and inst.data_filenames or [filename]
-        if data_type == 'central_wav':
+        
+        bandsel = ['dint_bands','derr_bands','blends_bands','central_mwav',\
+                   'sample_trans']
+        modelsel = ['int_ratios','peak_ratios','mint_bands','int_ratios_err']
+        
+        if sel_type in bandsel and data_type in bandsel: 
+            this_id = None
+        
+        #-- Cannot select values for model specific dicts when id not given
+        if this_id is None and (sel_type in modelsel or data_type in modelsel): 
+            return None
+            
+        elif this_id is None:
             return array([v2     
                           for fn in filenames
-                          for v,v2 in zip(getattr(self,sel_type)[fn][this_id],\
-                                          self.central_mwav[fn])
+                          for v,v2 in zip(getattr(self,sel_type)[fn],\
+                                          getattr(self,data_type)[fn])
                           if v <> None \
                             and ((return_negative and v < 0) \
                                  or (not return_negative and v > 0))])
+
+        elif data_type in bandsel:
+            return array([v2     
+                          for fn in filenames
+                          for v,v2 in zip(getattr(self,sel_type)[fn][this_id],\
+                                          getattr(self,data_type)[fn])
+                          if v <> None \
+                            and ((return_negative and v < 0) \
+                                 or (not return_negative and v > 0))])
+        
+        elif sel_type in bandsel:
+            return array([v2     
+                          for fn in filenames
+                          for v,v2 in zip(getattr(self,sel_type)[fn],\
+                                          getattr(self,data_type)[fn][this_id])
+                          if v <> None \
+                            and ((return_negative and v < 0) \
+                                 or (not return_negative and v > 0))])
+        
         else:
             return array([v2  
                           for fn in filenames
@@ -449,7 +533,7 @@ class UnresoStats(Statistics):
             
             #-- the ratios included in the statistics
             if not no_peak:
-                this_wav_inc = self.getRatios(data_type='central_wav',\
+                this_wav_inc = self.getRatios(data_type='central_mwav',\
                                               this_id=this_id)
                 this_ratio_inc = self.getRatios(this_id=this_id)
                 if list(this_wav_inc):    
@@ -460,11 +544,11 @@ class UnresoStats(Statistics):
                 
                 #-- ratios replaced by lower limits if data point is in the noise
                 #   ie data point can only be smaller than or equal to used value
-                this_wav_lower = self.getRatios(data_type='central_wav',\
+                this_wav_lower = self.getRatios(data_type='central_mwav',\
                                                 this_id=this_id,\
                                                 return_negative=1)
                 this_ratio_lower = self.getRatios(return_negative=1,\
-                                                this_id=this_id)
+                                                  this_id=this_id)
                 this_ratio_lower = [abs(r) for r in this_ratio_lower]
                 if list(this_wav_lower):
                     waves.append(this_wav_lower)
@@ -476,7 +560,7 @@ class UnresoStats(Statistics):
                 #-- If integrated intensities are available for the instrument, get
                 #   the integrated intensity ratios
                 this_wav_int = self.getRatios(sel_type='int_ratios',\
-                                              data_type='central_wav',\
+                                              data_type='central_mwav',\
                                               this_id=this_id)
                 this_ratio_int = self.getRatios(sel_type='int_ratios',\
                                                 data_type='int_ratios',\
@@ -494,7 +578,7 @@ class UnresoStats(Statistics):
                 #   Line blends detected due to fitted FHWM/PACS FHWM > 120%
                 #   ie model int can only be larger than or equal to used value
                 this_wav_lowerint = self.getRatios(sel_type='int_ratios',\
-                                                   data_type='central_wav',\
+                                                   data_type='central_mwav',\
                                                    this_id=this_id,\
                                                    return_negative=1)
                 this_ratio_lowerint = self.getRatios(sel_type='int_ratios',\
@@ -578,8 +662,7 @@ class UnresoStats(Statistics):
         @rtype: list[Star]
         
         '''
-        
-        print self.chi2_inttot
+
         if self.chi2_inttot.values()[0]:
             styp = 'chi2_inttot'
         else: 

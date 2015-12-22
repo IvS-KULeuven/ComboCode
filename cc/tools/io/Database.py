@@ -259,6 +259,36 @@ def addUseStarfileToMline(db_fn):
     return db
     
     
+    
+def replaceSubstring(db,oldss,newss):
+
+    '''
+    Replace a substring of values in database entries, such as the home 
+    directory of filenames. This is applied to all strings in the database vals!
+    
+    This applies to the value of a dictionary (key,value) pair on the second 
+    level of the database (the first level being (model_id, dictionary). Does
+    not work for embedded dictionaries in a dictionary, such as the dust_species
+    embedded dictionary in an MCMax database!
+    
+    The database is not synchronized in this method.
+    
+    @param db: The database (for now only MCMax or cooling) 
+    @type db: Database()
+    @param oldss: The old home name (eg /home/mariev/ or /home/)
+    @type oldss: str
+    @param newss: The new home name (efg /Users/robinl/ or /Users/)
+    @type newss: str
+    
+    '''
+    
+    for m,dd in db.items(): 
+        for k,v in dd.items():
+            if isinstance(v,str) and oldss in v:
+                dd[k] = v.replace(oldss,newss)
+                db.addChangedKey(m)
+                
+    
 
 class Database(dict):
     

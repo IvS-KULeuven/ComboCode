@@ -137,6 +137,7 @@ class Star(dict):
         if extra_input <> None: self.update(extra_input)
         self.Rsun = 6.95508e10         #in cm  Harmanec & Prsa 2011
         self.Msun = 1.98547e33      #in g   Harmanec & Prsa 2011
+        self.Mearth = 5.97237e27        # in g
         self.Tsun = 5779.5747            #in K   Harmanec & Psra 2011
         self.Lsun = 3.846e33           #in erg/s
         self.year = 31557600.            #julian year in seconds
@@ -1213,79 +1214,36 @@ class Star(dict):
             pass
 
 
-    def calcFD2_CONT_63(self):
+    def calcF_CONT_TYPE(self):
         
         """
-        If F_CONT_63 is available, that value is multiplied by distance^2 for 
-        this key. 
+        Set the default value of F_CONT_TYPE to MCMax. This is the type of 
+        derivation of measured continuum fluxes. Can be: ISO, MSX, PHOT, MCMax
         
         """
         
-        if not self.has_key('FD2_CONT_63'):
-            if self['F_CONT_63'] <> None: 
-                self['FD2_CONT_63'] = self['F_CONT_63']*self['DISTANCE']**2
-            else:
-                self['FD2_CONT_63'] = None
+        if not self.has_key('F_CONT_TYPE'):
+            self['F_CONT_TYPE'] = 'MCMax'
+        else:
+            pass
+    
+    
+    def calcAH2O_RATE(self):
+        
+        '''
+        Calculate the outflow rate of H2O, by multiplying the H2O abundance 
+        with the mass-loss rate. 
+        
+        Value is set in units of Msun/yr
+        
+        '''
+        
+        if not self.has_key('AH2O_RATE'):
+            self['AH2O_RATE'] = self['F_H2O'] * self['MDOT_GAS']
         else:
             pass
 
 
-    def calcFD2M_CONT_63(self):
-        
-        """
-        If F_CONT_63 is available, that value is multiplied by distance^2 and 
-        divided by MDOT_GAS for this key. 
-        
-        """
-        
-        if not self.has_key('FD2M_CONT_63'):
-            if self['F_CONT_63'] <> None: 
-                self['FD2M_CONT_63'] = self['F_CONT_63']*self['DISTANCE']**2 \
-                                            /self['MDOT_GAS']
-            else:
-                self['FD2M_CONT_63'] = None
-        else:
-            pass
-
-
-    def calcF_CONT_63(self):
-        
-        """
-        Set the default value of F_CONT_63 to the monochromatic flux calculated
-        by MCMax. If no MCMax model is available, it is set to None.
-        
-        If set in the inputfile, it is assumed to be the measured monochromatic
-        flux. A difference between measured and modeled currently is not 
-        available. 
-        
-        """
-        
-        if not self.has_key('F_CONT_63'):
-            if self['LAST_MCMAX_MODEL']: 
-                dpath = os.path.join(cc.path.mout,'models',\
-                                     self['LAST_MCMAX_MODEL'])
-                w,f = MCMax.readModelSpectrum(dpath,rt_sed=1)
-                fi = f[argmin(abs(w-6.3))]
-                self['F_CONT_63'] = fi
-            else:
-                self['F_CONT_63'] = None
-        else:
-            pass
-
-
-    def calcF_CONT_63_TYPE(self):
-        
-        """
-        Set the default value of F_CONT_63_TYPE to MCMax. This is the type of 
-        derivation of the measured 6.3 mic flux. Can be: ISO, MSX, PHOT, MCMax
-        
-        """
-        
-        if not self.has_key('F_CONT_63_TYPE'):
-            self['F_CONT_63_TYPE'] = 'MCMax'
-        else:
-            pass
-        
         
     def calcT_INNER_DUST(self):
         
@@ -1644,7 +1602,25 @@ class Star(dict):
         else:
             pass
     
-
+    
+    def calcDRIFT_TYPE(self):
+        
+        """
+        Set the type of drift between dust and gas taken into account. 
+        
+        Is either consistent (from momentum transfer calculation or zero). 
+        
+        """
+        
+        if not self.has_key('DRIFT_TYPE'):
+            if self['V_EXP_DUST'] == self['VEL_INFINITY_GAS']:
+                self['DRIFT_TYPE'] = 'ZERO'
+            else: 
+                self['DRIFT_TYPE'] = 'CONSISTENT'
+        else:
+            pass
+        
+    
     
     def calcDRIFT(self):
         
@@ -1799,26 +1775,55 @@ class Star(dict):
             self['MDOT_GAS_START'] = self['MDOT_GAS']
         else:
             pass
+
+
+    def calcSHELLMASS_CLASS(self):
+        
+        '''
+        Set the order of magnitude of SHELLMASS = Mdot/v_inf. 
+        0: Mdot/v_inf < 5e-8
+        1: 5e-8 <= Mdot/v_inf < 2e-7
+        2: 2e-7 <= Mdot/v_inf < 5e-7
+        3: 5e-7 <= Mdot/v_inf
+        
+        '''
+        
+        if not self.has_key('SHELLMASS_CLASS'):
+            if self['SHELLMASS'] < 5e-8: 
+                #self['SHELLMASS_CLASS'] = (0,r'$\dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} < 5 \times 10^{-8}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s}$')
+                self['SHELLMASS_CLASS'] = (0,r'$\dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} < 5 \times 10^{-8}$')
+            elif self['SHELLMASS'] >= 3e-7: 
+                #self['SHELLMASS_CLASS'] = (3,r'$\dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} \geq 3 \times 10^{-7}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s}$')
+                self['SHELLMASS_CLASS'] = (3,r'$\dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} \geq 3 \times 10^{-7}$')
+            elif self['SHELLMASS'] >= 5e-8 and self['SHELLMASS'] < 1.0e-7: 
+                self['SHELLMASS_CLASS'] = (1,r'$5 \times 10^{-8}$ $\leq \dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} < 1 \times 10^{-7}$') 
+                #self['SHELLMASS_CLASS'] = (1,r'$5 \times 10^{-8}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s}$ $\leq \dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} < 1 \times 10^{-7}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s}$') 
+            else: 
+                #self['SHELLMASS_CLASS'] = (2,r'$1 \times 10^{-7}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s}$ $\leq \dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} < 3 \times 10^{-7}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}\ \mathrm{km}^{-1}\ \mathrm{s}$')
+                self['SHELLMASS_CLASS'] = (2,r'$1 \times 10^{-7}$ $\leq \dot{M}_\mathrm{g}/v_{\infty\mathrm{,g}} < 3 \times 10^{-7}$') 
+        else:
+            pass
+        
         
 
     def calcMDOT_CLASS(self):
         
         '''
         Set the order of magnitude of MDOT. 
-        0: Mdot < 1e-6
-        1: 1e-6 <= Mdot < 3e-6
+        0: Mdot < 3e-7
+        1: 3e-7 <= Mdot < 3e-6
         2: 3e-6 <= Mdot < 1e-5
         3: 1e-5 <= Mdot
         
         '''
         
         if not self.has_key('MDOT_CLASS'):
-            if self['MDOT_GAS'] < 1e-6: 
-                self['MDOT_CLASS'] = (0,r'$\dot{M}_\mathrm{g} < 1 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$')
+            if self['MDOT_GAS'] < 3e-7: 
+                self['MDOT_CLASS'] = (0,r'$\dot{M}_\mathrm{g} < 3 \times 10^{-7}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$')
             elif self['MDOT_GAS'] >= 1e-5: 
                 self['MDOT_CLASS'] = (3,r'$\dot{M}_\mathrm{g} \geq 1 \times 10^{-5}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$')
-            elif self['MDOT_GAS'] >= 1e-6 and self['MDOT_GAS'] < 3e-6: 
-                self['MDOT_CLASS'] = (1,r'$1 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$ $\leq \dot{M}_\mathrm{g} < 3 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$') 
+            elif self['MDOT_GAS'] >= 3e-7 and self['MDOT_GAS'] < 3e-6: 
+                self['MDOT_CLASS'] = (1,r'$3 \times 10^{-7}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$ $\leq \dot{M}_\mathrm{g} < 3 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$') 
             else: 
                 self['MDOT_CLASS'] = (2,r'$3 \times 10^{-6}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$ $\leq \dot{M}_\mathrm{g} < 1 \times 10^{-5}\ \mathrm{M}_\odot\ \mathrm{yr}^{-1}$') 
         else:
@@ -1985,6 +1990,70 @@ class Star(dict):
         if not self.has_key('V_EXP_DUST'):
             self['V_EXP_DUST']= float(self['VEL_INFINITY_GAS']) \
                                     + float(self['DRIFT'])
+        else:
+            pass    
+
+
+
+    def calcREDDENING(self):
+    
+        '''
+        A boolean flag for applying interstellar reddening or not. This is 
+        model (read: distance) dependent, hence belongs in Star() objects.
+        
+        Having this available here makes it possible to compare using reddening 
+        or not. 
+        
+        Default value is set to 0.
+        
+        '''
+        
+        if not self.has_key('REDDENING'):
+            self['REDDENING']= 0
+        else:
+            pass    
+
+
+
+    def calcREDDENING_MAP(self):
+    
+        '''
+        The interstellar extinction map used for determining the interstellar
+        extinction in K-band at a given distance, in the direction of given 
+        longitude and latitude (set in Star.dat). 
+        
+        Default is Marshall et al. 2006 (marshall), but is replaced by Drimmel 
+        et al. 2003 (drimmel) in case ll and bb are outside the range of 
+        availability in Marshall. 
+        
+        Alternatives are Arenou et al. 1992 (arenou) and Schlegel et al. 1998 
+        (schlegel).
+        
+        '''
+        
+        if not self.has_key('REDDENING_MAP'):
+            self['REDDENING_MAP']= 'marshall'
+        else:
+            pass    
+
+
+
+    def calcREDDENING_LAW(self):
+    
+        '''
+        The extinction law used to redden model spectra. 
+        
+        Default is the combination of the laws by Fitzpatrick et al. 2004 
+        (Optical) and Chiar & Tielens 2006 (IR), see IvS repo for more details
+        at ivs.sed.reddening. 
+        
+        Alternatives include cardelli1989, donnell1994, fitzpatrick1999,
+        fitzpatrick2004, chiar2006.
+        
+        '''
+        
+        if not self.has_key('REDDENING_LAW'):
+            self['REDDENING_LAW']= 'fitz2004chiar2006'
         else:
             pass    
 
@@ -2270,8 +2339,9 @@ class Star(dict):
         """
         
         if not self.has_key('SHELLMASS'):
-            self['SHELLMASS'] = float(self['MDOT_GAS'])*self.Msun\
-                                  /((self['VEL_INFINITY_GAS']*10**5)*self.year)
+            #self['SHELLMASS'] = float(self['MDOT_GAS'])*self.Msun\
+                                  #/((self['VEL_INFINITY_GAS']*10**5)*self.year)
+            self['SHELLMASS'] = self['MDOT_GAS']/self['VEL_INFINITY_GAS']
         else:
             pass
 
@@ -2967,7 +3037,8 @@ class Star(dict):
                 self['STARFILE'] = starfile
             elif self['STARTYPE'] == 'TABLE':
                 self['STARTABLE'] = self['STARTABLE'].strip('"').strip("'")
-                if not os.path.split(self['STARTABLE'])[0]:
+                if not (os.path.isfile(self['STARTABLE']) \
+                        and os.path.split(self['STARTABLE'])[0]):
                     self['STARFILE'] = os.path.join(cc.path.starf,\
                                                     self['STARTABLE'])
                 else:

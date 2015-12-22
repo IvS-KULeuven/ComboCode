@@ -24,6 +24,7 @@ VIC_TIME_PER_SPHINX=30              # Pre-allocated time in minutes per Sphinx s
 VIC_CREDITS=                        # Credits account to be charged, leave open or remove for making use of your own personal credits.
 
 #-- PACS convolution and plotting. Location given in cc.path.home/usr/Path.dat
+PACS=0                              # Turn on the PACS module. 
 PACS_REDO_CONVOLUTION=0             # Re-do the convolution of sphinx output to PACS resolution (fi if the data has changed, sphinx convolution output depends on the wavelength list in the data lists)
 PACS_SEARCHSTRING=oversampling2     # searchstring used when looking for data, all data that include this string will be taken so make it unique
 PACS_OVERSAMPLING=2                 # The oversampling factor of the PACS data, this should also be included in the filenames of the data
@@ -31,6 +32,7 @@ PACS_LINEFIT=                       # folder name in $PACS_PATH$/$STAR_NAME$/ of
 #PACS_ABSFLUX_ERR=0.2               # The absolute flux calibration uncertainty for PACS. Default is set at 20%. Used when calculating the line-strength uncertainty for line fit results.
 
 #-- SPIRE convolution and plotting. Location given in cc.path.home/usr/Path.dat
+SPIRE=0                             # Turn on the SPIRE module. 
 SPIRE_SEARCHSTRING=oversampling2    # searchstring used when looking for data, all data that include this string will be taken so make it unique
 SPIRE_RESOLUTION=0.06               # The resolution of the apodized Spire spectrum in cm^-1. This is typically 1.5*0.04 cm-1, with 0.04 cm-1 the intrinsic SPIRE resolution
 SPIRE_OVERSAMPLING=6                # The oversampling factor of the apodized SPIRE spectrum. This is typically 6.
@@ -41,6 +43,7 @@ SPIRE_LINEFIT=                      # folder name in $SPIRE_PATH$/$STAR_NAME$/ o
 RADIO_AUTOSEARCH=0                  # Put to 1 if TRANSITION objects are to be made automatically based on the available data.
 
 #-- SED/Correlated Fluxes data selection and plotting. Location givens in cc.path.home/usr/Path.dat
+SED=0                               # Turn on the SED module.
 SED_PHOT_REMOVE=                    # If any photometric sources (such as WISE or DENIS) are to be removed for whatever reason, include them here separated with ampersand (e.g. WISE&DENIS )  
 
 #-- Continuum division for select features in the SED is possible, for comparison between data and model
@@ -49,7 +52,7 @@ CFG_CONTDIV=                        # Settings for the final plot for the contin
 SHOW_CONTDIV=0                      # Show plots of the intermediary steps of the continuum division.
 
 #-- Statistics module
-STATISTICS=0                        # Calculate basic statistics
+STATISTICS=1                        # Turn on the Statistics module.
 STAT_PRINT=0                        # RESO_STATS - print statistics for individual lines and models of spectrally resolved lines, use cc_session.resostats for more interactive options
 STAT_LLL_P=                         # RESO_STATS - The number of variable parameters is given here, for the automatic determination of the loglikelihood threshold determination (95% confidence interval). The loglikelihood can be used to determine best-fit models based on the shape of the line profile. 
 STAT_METHOD=clipping                # UNRESO_STATS - (clipping or preset) The method used to determine the noise in an unresolved spectrum. Clipping determines the std/rms/... on the full continuum-subtracted spectrum, then determines std/rms/... after 1-sigma clipping based on the first estimate. 'preset' takes a wavelength range from Data.dat and determines the std/rms/... for a full band, without clipping. Line scans should best be treated with 'clipping'.
@@ -72,10 +75,10 @@ L_STAR=11000                        # Stellar luminosity [Lsol]
 #LOGG=0.0                           # Only relevant if model atmospheres are used for MCMax (STARTYPE=ATMOSPHERE), default is 0.0
 DISTANCE=1300                       # Distance to object [pc]           
 STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody, ATMOSPHERE for a low-resolution model atmosphere spectrum in which case ATM_FILENAME has to be defined, TABLE for a custom file in which case STARTABLE has to be given, otherwise it's ignored)
-#STARTABLE=                         # Only relevant if STARTYPE=TABLE. Two columns - one with wavelength in micron, one with flux in Jy. If the full path is not given, the file is assumed to be in starf in Path.dat. The spectrum is assumed to be taken at the stellar surface, and is converted to intensity.
+#STARTABLE=                         # Only relevant if STARTYPE=TABLE. Two columns - one with wavelength in micron, one with flux in Jy. If the full path is not given, the file is assumed to be in starf in Path.dat. The spectrum is assumed to be taken at the stellar surface, and is converted to intensity by GASTRoNOoM. It doesn't matter for MCMax, which scales the stellar spectrum based on requested distance and luminosity.
 #ATM_FILENAME=                      # The filename of the model atmosphere located in cc.path.home/usr/Path.dat (atm keyword)
 
-#F_CONT_63=                         # Include 6.3 monochromatic continuum flux if needed (as observed in SWS for instance). Flux is given in Jy.
+#F_CONT_TYPE=                       # The type of continuum flux if used. (Can be ISO, PHOT, MCMax, etc)
 
 ####################
 # DENSITY Parameters
@@ -180,6 +183,11 @@ SCATTYPE='ISOTROPIC'                #'FULL' for aggregates and when anisotropic 
 
 #-- Numerical precision
 PHOTON_COUNT=10000                   # Number of photons used in Monte Carlo simulation                 
+
+#-- Interstellar reddening
+REDDENING=0                         # Redden your models according to the distance to correct for interstellar extinction. Off by default.
+REDDENING_LAW=fitz2004chiar2006    # The extinction law. Default is the combination of the laws by Fitzpatrick 2004 (Optical) and Chiar & Tielens 2006 (IR), see IvS repo for more details at ivs.sed.reddening. Alternatives include cardelli1989, fitzpatrick2004, chiartielens2006, etc.
+REDDENING_MAP=marshall             # The Galactic 3d extinction model used to derive the K-band extinction magnitude for given longitude and latitude (given in Star.dat for your source). Default is Marshall 2006, replaced by Drimmel 2003 if long/lat not available in Marshall. Alternatives are Arenou 1992 and Schlegel 1998. See IvS repo for more details at ivs.sed.extinctionmodels
 
 #-- Observational output
 RT_SED=0                            # Put to 0 if no ray tracing for SED (ie MC spectra are OK), if multiple  1 or 0 (based on ~/MCMax/Observation_Files/Spec.out, and not changing the angle)                   

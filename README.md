@@ -37,7 +37,7 @@ have to contact the authors of the codes.</li>
 ## Requirements
 Currently the code has been tested to run on Unix-based systems, more specifically Fedora and Mac OS X. In principle, any operating systems that fulfills the requirements listed below should be able to run ComboCode. The code runs ons machines with an internal memory of 8 GB, but less is likely fine as well. The memory requirements are primarily set by the numerical codes included in ComboCode.
 
-First and foremost, you require a Python distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. If you have the Anaconda distribution installed, you only require the pyfits, PyPDF2 and ephem packages to be installed in addition to the Anaconda basic package. (e.g., run "pip install ephem" in the shell after Anaconda installation)
+First and foremost, you require a Python distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. Specific packages required to be installed in your python distribution are: pyfits, PyPDF2, h5py and ephem. (e.g., in case of Anaconda, run "pip install ephem" in the shell after Anaconda installation)
 
 Secondly, we are using git for the version control of the repository. Follow the instructions given <a href="https://help.github.com/articles/set-up-git/"> here</a> to set up git on your local machine, after you have created a user account at GitHub.
 
@@ -49,8 +49,8 @@ Lastly, ComboCode can be used to its fullest potential when working in tandem wi
 
 ## Installation
 Once the requirements are sorted out, you can get to work with ComboCode. You can download the code to your hard disk right away (or if you intend to submit code for this repository: fork the repo, and clone that -- see Developer's Manual below): 
-* Clone the git repository to create a local copy, located in ~/ComboCode/ (or whichever location your prefer):
-    - $ cd 
+* Clone the git repository to create a local copy, located in ~/ComboCode/ (or whichever location your prefer, replace ~/ with the parent folder you want):
+    - $ cd ~/
     - $ git clone https://github.com/IvS-KULeuven/ComboCode.git ComboCode
 
 * Copy the contents of the usr.dist/ folder to the usr/ folder. The usr/ folder contains user-specific settings that are not updated with the repository. Any changes made to the structure of those files will come through usr.dist/ and won't affect the usr/ folder, allowing the user to save personal settings before updating usr/ files. Note especially usr/Path.dat which contains all the relevant folders for ComboCode.
@@ -77,8 +77,8 @@ If you want to make changes to ComboCode, you should fork the repository to your
 ### Setting up your developer's environment for ComboCode
 * Go to the main IvS-KULeuven/ComboCode.git page and fork the repository to your account. 
 
-* Clone a copy of the code in your account to your local machine (fill in your github user name, and change the ComboCode folder to whatever you want for your copy)
-    - $ cd 
+* Clone a copy of the code in your account to your local machine (fill in your github user name, and change the ComboCode folder to whatever you want for your copy. Replace ~/ with the parent folder you want.)
+    - $ cd ~/
     - $ git clone https://github.com/YOUR_USERNAME/ComboCode.git ComboCode
 
 * Tell git what the original "upstream" version of the code is at IvS-KULeuven (i.e. the original online version of the code -- don't confuse with origin, i.e. *your* online version of the code):
