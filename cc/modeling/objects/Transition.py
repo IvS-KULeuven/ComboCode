@@ -1468,8 +1468,8 @@ class Transition():
                     return r'$\nu=%i$' %(self.vup)
                 else:
                     return r'$\nu=%i$, $%s=%i_{%i} - %i_{%i}$'\
-                           %(ugly,self.vup,self.jup,self.nup,\
-                             self.vlow,self.jlow,self.nlow)
+                           %(self.vup,ugly,self.jup,self.nup,\
+                             self.jlow,self.nlow)
 
             else:
                 return '%i,%i$_{%i,%i}$ - %i,%i$_{%i,%i}$'\
