@@ -306,7 +306,7 @@ class UnresoStats(Statistics):
                         #   these from the model grid, and add them up. dintint
                         #   was made negative to indicate blend presence.
                         blendlines = [star.getTransition(t) 
-                                      for t in blends
+                                      for t in blend
                                       if star.getTransition(t) <> None]
                         total_mint = sum([t.getIntIntIntSphinx() 
                                           for t in blendlines])
