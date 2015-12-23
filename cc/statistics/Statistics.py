@@ -115,7 +115,6 @@ class Statistics(object):
         @type stat_method: string
         
         '''
-        
         instrument_name = instrument_name.upper()
         if instrument_name == 'PACS':
             if instrument_instance <> None:
@@ -150,8 +149,6 @@ class Statistics(object):
             
         #-- Do data stats for unresolved data. Resolved or SED data will never 
         #   do this
-        print 'instrument_name'
-        print instrument_name
         
         if not instrument_name == 'FREQ_RESO' or instrument_name == 'SED':
             self.doDataStats(method=stat_method)
