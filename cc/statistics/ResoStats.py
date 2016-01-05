@@ -22,8 +22,8 @@ from cc.tools.io import DataIO
 from cc.statistics.Statistics import Statistics
 import matplotlib.pyplot as plt
 from cc.modeling.objects import Transition
-
-
+from cc.statistics import BasicStats    
+from time import gmtime
 
 class ResoStats(Statistics):
     
@@ -256,8 +256,7 @@ class ResoStats(Statistics):
             self.dinttmb[st] = st.getIntTmbData()
             self.dpeaktmb[st] = st.getPeakTmbData() 
             
-            ### CRITERION CHANGED TO 6*NOISE FOR HCN ##
-            if self.dpeaktmb[st] <= 6.*noise:
+            if self.dpeaktmb[st] <= 3*noise:
                 self.noisy[ist] = True
             else: 
                 self.noisy[ist] = False
@@ -367,7 +366,44 @@ class ResoStats(Statistics):
         isnoisy = int(isnoisy)
         self.noisy[ist] = isnoisy
 
+
+
+    def resetNoisy(self, factor, use_fit = True):
+        '''
+        Change criterion for noisy lines.  By default, the script checks if
+        the peak of the line profile is above 3 sigma in the dataset. 
+        With this method, the factor can be changed. 
         
+        With use_fit, it is possible to use the gaussian or parabolic fit to 
+        the data to derive the integrated intensity instead of the line itself 
+        for noisy lines. 
+        
+        @keyword factor: Sigma level. If the peak intensity of a line is below
+                         this level, it is marked as noisy.
+        @type factor: int
+        
+        @keyword use_fit: Use gaussian or parabolic fit instead of the line
+                          to derive the integrated intensity of noisy lines
+        @type use_fit: bool
+        '''
+        
+        for ist,st in enumerate(self.translist):
+            noise = st.getNoise()
+            if self.dpeaktmb[st] <= factor*noise:
+                self.noisy[ist] = True
+            else:
+                self.noisy[ist] = False
+
+        
+            if use_fit == True:
+                if self.noisy[ist] == False:
+                    self.dinttmb[st] = st.getIntTmbData(use_fit = 1)
+                else:
+                    self.dinttmb[st] = st.getIntTmbData(use_fit = 0)
+                self.ratioint[st] = self.minttmb[st]/self.dinttmb[st]
+                
+                
+
         
     def includeTrans(self,ist):
         
@@ -669,6 +705,7 @@ class ResoStats(Statistics):
         
         return self.bfmlll    
 
+
             
     def findLLLRange(self, includedTrans = 1):
         '''
@@ -693,13 +730,11 @@ class ResoStats(Statistics):
         '''
         
         self.confidenceLLL = dict()
-        #self.LLLx = dict()
         self.confidenceLLL_verdict = dict()
         
         for i,st in enumerate(self.translist):
             self.confidenceLLL[st] = []
             self.confidenceLLL_verdict[st] = []
-            #self.LLLx[st] = []
             
             maxlll = max(self.loglikelihood[st])
             
@@ -707,11 +742,9 @@ class ResoStats(Statistics):
                 if maxlll >= self.loglikelihood[st][kk] \
                    and self.loglikelihood[st][kk] >= self.lll_threshold[i]:
                     self.confidenceLLL[st].append(self.loglikelihood[st][kk]-self.lll_threshold[i])
-                    #self.LLLx[st].append(maxlll - self.loglikelihood[st][kk])
                     self.confidenceLLL_verdict[st].append(1)
                 else:
                     self.confidenceLLL[st].append(self.loglikelihood[st][kk]-self.lll_threshold[i])
-                    #self.LLLx[st].append(maxlll - self.loglikelihood[st][kk])
                     self.confidenceLLL_verdict[st].append(0)
         
         total = []
@@ -725,6 +758,8 @@ class ResoStats(Statistics):
         
         counted = [total.count(k) for k in set(total)]
         self.confidenceLLL_models = np.where(array(counted) == max(counted))[0]
+
+
 
 
     def selectBestFitperLine(self, use_lll = 1, excludevib = 1):
@@ -754,10 +789,6 @@ class ResoStats(Statistics):
             self.excludeTrans([i for i in range(T) if str(trans[i]).split()[1] != '0'])
         
         #-- Perform selection routine for every line separately
-        #self.all_bfmint = []
-        #self.all_bfmpeak = []
-        #self.all_bfmcombo = []
-        #self.all_bfmlll = []
         all_bfmint = []
         all_bfmpeak = []
         all_bfmcombo = []
@@ -789,13 +820,7 @@ class ResoStats(Statistics):
 
         #-- Set included_trans back to original state
         self.includedtrans = orig_included
-        
-        #-- Initialise arrays
-        #self.occurences_bfmint = array(self.occurences_bfmint)
-        #self.occurences_bfmpeak = array(self.occurences_bfmpeak)
-        #self.occurences_bfmcombo = array(self.occurences_bfmcombo)
-        #self.occurences_bfmlll = array(self.occurences_bfmlll)
-        
+
         #-- How often is a line fitted by a model?
         self.fittedLines_bfmint = sum(self.occurences_bfmint, axis = 0)
         self.fittedLines_bfmpeak = sum(self.occurences_bfmpeak, axis = 0)
@@ -809,6 +834,7 @@ class ResoStats(Statistics):
         self.fittedModels_bfmlll = sum(self.occurences_bfmlll, axis = 1)        
         
     
+
     
     def calcRatioIntTmb(self, useNoisy = 1, useRms = 0, err = 0.2, err_noisy = 0.3, plot = 0):
         '''
@@ -887,21 +913,35 @@ class ResoStats(Statistics):
 
         
         if plot:
-            self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId() \
+            plot_id = 'plot_%.4i-%.2i-%.2ih%.2i-%.2i-%.2i' \
+                %(gmtime()[0],gmtime()[1],gmtime()[2],\
+                    gmtime()[3],gmtime()[4],gmtime()[5])
+            self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId().replace('_','-') \
                 for ii in range(len(self.star_grid))]
             tr = [self.verdict_ratioint[st] for st in self.translist]
             
-            fig = plt.figure(1, figsize = (15, 10))
+            fig = plt.figure(2, figsize = (15, 10))
             ax = fig.add_subplot(111)
-            ax.set_xticks(np.arange(len(self.modellist)))
-            ax.set_yticks(np.arange(len(tr)))
-            ax.xaxis.set_ticklabels([i for i in self.modellist])
-            ax.yaxis.set_ticklabels([str(st)[28:-5] for st in self.translist])
-        
+            ax.set_xticks(np.arange(len(tr)))
+            ax.set_yticks(np.arange(len(self.modellist)))
+            ax.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope for st in self.translist], rotation = 45)
+            ax.yaxis.set_ticklabels([i for i in self.modellist])
+            ax.imshow(self.model_ratioint, interpolation='nearest', origin='upper', cmap = 'Blues')
+            plt.tight_layout()
+            fig.suptitle('Ratio of integrated intensities', size = 18)
+            path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
+            DataIO.testFolderExistence(os.path.join(path,'resostats'))
+            filename_combo = os.path.join(path, 'resostats','int-%s_len_%s-%s'%(self.modellist[0],(len(self.modellist)),plot_id))
+            fig.savefig(filename_combo+'.pdf')   
+            print '*** Plot of stats can be found at:'
+            print filename_combo+'.pdf'
     
-    def calcRatioPeakTmb(self, useNoisy = 1, useRms = 0, err = 0.2, err_noisy = 0.3):
+    
+    
+    
+    def calcRatioPeakTmb(self, useNoisy = 1, useRms = 0, err = 0.2, err_noisy = 0.3, plot = 0):
         '''
-        Calculate the ratio of the integrated main beam intensity per transition.
+        Calculate the ratio of the peak main beam intensity per transition.
         
         @keyword useNoisy: assign a larger error to noisy lines
         @type useNoisy: bool
@@ -972,171 +1012,233 @@ class ResoStats(Statistics):
         self.model_ratiopeak_verdict = sum(array(self.model_ratiopeak), axis = 1)    
         
         
-    
-### Obsolete, replaced by calcRatioIntTmb and calcRatioPeakTmb    
-    def checkTmb(self):
-        '''
-        Checks wether the integrated main beam intensity and peak intensity 
-        of a line lies within 20% of that of the data. 
-        The cross section of the int and peak results can be found in the 
-        combo arrays.
-       
-        '''
-        
-        S = len(self.star_grid)
-        T = len(self.translist)
-        
-        ###- Integrated main beam temperature
-        verdict_int_hard = [[] for _ in range(S)]
-        verdict_int_soft = [[] for _ in range(S)]
+        if plot:
+            self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId() \
+                for ii in range(len(self.star_grid))]
+            tr = [self.verdict_ratiopeak[st] for st in self.translist]
+            
+            fig = plt.figure(1, figsize = (15, 10))
+            ax = fig.add_subplot(111)
+            ax.set_xticks(np.arange(len(tr)))
+            ax.set_yticks(np.arange(len(self.modellist)))
+            ax.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope for st in self.translist], rotation = 45)
+            ax.yaxis.set_ticklabels([i for i in self.modellist])
+            ax.imshow(self.model_ratiopeak, interpolation='nearest', origin='upper', cmap = 'Blues')
+            plt.tight_layout()
+            fig.suptitle('Ratio of peak intensities', size = 18)
+            path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
+            DataIO.testFolderExistence(os.path.join(path,'resostats'))
+            filename_combo = os.path.join(path, 'resostats','int-%s_len_%s-%s'%(self.modellist[0],(len(self.modellist)),plot_id))
+            fig.savefig(filename_combo+'.pdf')   
+            print '*** Plot of stats can be found at:'
+            print filename_combo+'.pdf'
 
-        ratios = []
+
+
+
+
+    def calcRatioComboTmb(self, useNoisy = 1, useRms = 0, err = 0.2, err_noisy = 0.3, plot = 0):
+        '''
+        Combine the ratio of the integrated and peak main beam intensity per transition.
+        
+        @keyword useNoisy: assign a larger error to noisy lines
+        @type useNoisy: bool
+        
+        @keyword useRms: use statistical noise in addition to instrumental error
+        @type useRms: bool
+        
+        @keyword err: error on data
+        @type err: float
+        
+        @keyword err_noisy: error on noisy data (only needed when useNoisy = 1)
+        @type err_noisy: float
+        
+        @return self.verdict_ratiocombo: dictionary containing whether a line satisfies 
+                                       the condition or not. One list per transition,
+                                       each list containing the verdict per model.
+        @rtype verdictpermodel_combo: dict(list[])
+        
+        @return self.model_ratiocombo: list containing the verdict per transition, per model.
+                                     Number of lists = number of models. Length of each 
+                                     list = number of transitions.                                    
+        @rtype self.model_ratiocombo: list[list[]]
+        
+        @return self.model_ratiocombo_verdict: list containing the total number of transitions
+                                             that satisfy the condition, per model. Number 
+                                             of lists = number of models. Each list contains
+                                             a single number.
+        '''
+        
+        print 'Calculating ratios of main beam intensities, combining int and peak... '
+        print 'Error on data = '+str(err)
+        if useNoisy:
+            print 'Error on noisy data = '+str(err_noisy)
+            
+        self.verdict_ratiocombo = dict()
+        self.y = dict()
+        
+        for ist, st in enumerate(self.translist):
+            if useNoisy == 1 and useRms == 1:
+                if self.noisy[ist] ==  True:
+                    self.y[st] = [[1 if x <= (1. + err_noisy + st.getNoise()) \
+                        and x >= (1. - err_noisy - st.getNoise()) else 0 for x in self.ratiocombo[st][i]] \
+                        for i in range(len(self.ratiocombo[st]))]
+                else:
+                    self.y[st] = [[1 if x <= (1. + err + st.getNoise()) \
+                        and x >= (1. - err - st.getNoise()) else 0 for x in self.ratiocombo[st][i]] \
+                        for i in range(len(self.ratiocombo[st]))]
+        
+            elif useNoisy == 1 and useRms == 0:
+                if self.noisy[ist] ==  True:
+                    self.y[st] = [[1 if x <= (1. + err_noisy) \
+                        and x >= (1. - err_noisy) else 0 for x in self.ratiocombo[st][i]] \
+                        for i in range(len(self.ratiocombo[st]))]
+                else:
+                    self.y[st] = [[1 if x <= 1. + err \
+                        and x >= 1. - err else 0 for x in self.ratiocombo[st][i]] \
+                        for i in range(len(self.ratiocombo[st]))]
+        
+            elif useNoisy == 0 and useRms == 1:    
+                self.y[st] = [[1 if x <= (1. + err + st.getNoise()) \
+                    and x >= (1. - err - st.getNoise()) else 0 for x in self.ratiocombo[st][i]] \
+                    for i in range(len(self.ratiocombo[st]))]
+            
+            else:
+                self.y[st] = [[1 if x <= 1. + err and x >= 1. - err \
+                    else 0 for x in self.ratiocombo[st][i]] \
+                    for i in range(len(self.ratiocombo[st]))]
+                        
         for st in self.translist:
-            ratios.append(self.ratioint[st])
-        ratios_int = np.array(ratios).T
-   
-        for ii in range(S):
-            for jj in range(T):
-                if ratios_int[ii][jj] <= 1.20 and ratios_int[ii][jj] >= 0.80:
-                    verdict_int_hard[ii].append(1)
-                else:
-                    verdict_int_hard[ii].append(0)
-         
-        for ii in range(S):
-            for jj in range(T):
-                if ratios_int[ii][jj] < 1.15 and ratios_int[ii][jj] > 0.85:
-                    verdict_int_soft[ii].append(1)
-                elif ratios_int[ii][jj] >= 1.15 and ratios_int[ii][jj] <= 1.20\
-                    or ratios_int[ii][jj] >= 0.80 and ratios_int[ii][jj] <= 0.85:
-                    verdict_int_soft[ii].append(0.5)
-                else:
-                    verdict_int_soft[ii].append(0)
-                    
-        self.ratios_int = ratios_int
-        self.verdict_int_hard = verdict_int_hard
-        self.verdict_int_soft = verdict_int_soft
-        self.verdictpermodel_int = sum(array(self.verdict_int_hard), axis = 1)
-    
-        ###- Peak main beam temperature
-        verdict_peak_hard = [[] for _ in range(S)]
-        verdict_peak_soft = [[] for _ in range(S)]
-        
-        ratios = []
-        for st in self.translist:
-            ratios.append(self.ratiopeak[st])
-        ratios_peak = np.array(ratios).T
-   
-        for ii in range(S):
-            for jj in range(T):
-                if ratios_peak[ii][jj] <= 1.20 and ratios_peak[ii][jj] >= 0.80:
-                    verdict_peak_hard[ii].append(1)
-                else:
-                    verdict_peak_hard[ii].append(0)
-                            
-        for ii in range(S):
-            for jj in range(T):
-                if ratios_peak[ii][jj] < 1.15 and ratios_peak[ii][jj] > 0.85:
-                    verdict_peak_soft[ii].append(1)
-                elif ratios_peak[ii][jj] >= 1.15 and ratios_peak[ii][jj] <= 1.20\
-                    or ratios_peak[ii][jj] >= 0.80 and ratios_peak[ii][jj] <= 0.85:
-                    verdict_peak_soft[ii].append(0.5)
-                else:
-                    verdict_peak_soft[ii].append(0)
-                    
-        self.ratios_peak = ratios_peak
-        self.verdict_peak_hard = verdict_peak_hard
-        self.verdict_peak_soft = verdict_peak_soft
-        self.verdictpermodel_peak = sum(array(self.verdict_peak_hard), axis = 1)
+            self.verdict_ratiocombo[st] = [0 if 0 in self.y[st][i] else 1 for i in range(len(self.y[st]))]
         
         
-        ###- Combination of int and peak
         
-        verdict_combo_hard = []
+        self.model_ratiocombo = []
         
-        for ii in range(S):
-            verdict_combo_hard.append([self.verdict_int_hard[ii][x] \
-                if self.verdict_int_hard[ii][x] == self.verdict_peak_hard[ii][x] else 0 \
-                for x in range(len(self.translist))])
+        for ii in range(len(self.star_grid)):
+            self.model_ratiocombo.append([self.verdict_ratiocombo[tr][ii] for tr in self.translist])
         
-        self.verdict_combo_hard = verdict_combo_hard
-        self.verdictpermodel_combo = sum(array(self.verdict_combo_hard), axis = 1)
+        self.model_ratiocombo_verdict = sum(array(self.model_ratiocombo), axis = 1)    
         
+        
+        if plot:
+            self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId() \
+                for ii in range(len(self.star_grid))]
+            tr = [self.verdict_ratiocombo[st] for st in self.translist]
+            
+            fig = plt.figure(3, figsize = (15, 10))
+            ax = fig.add_subplot(111)
+            ax.set_xticks(np.arange(len(tr)))
+            ax.set_yticks(np.arange(len(self.modellist)))
+            ax.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope for st in self.translist], rotation = 45)
+            ax.yaxis.set_ticklabels([i for i in self.modellist])
+            ax.imshow(self.model_ratiocombo, interpolation='nearest', origin='upper', cmap = 'Blues')
+            plt.tight_layout()
+            fig.suptitle('Combo - ratio of integrated intensities and peak intensities', size = 18)
+            path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
+            DataIO.testFolderExistence(os.path.join(path,'resostats'))
+            filename_combo = os.path.join(path, 'resostats','int-%s_len_%s-%s'%(self.modellist[0],(len(self.modellist)),plot_id))
+            fig.savefig(filename_combo+'.pdf')   
+            print '*** Plot of stats can be found at:'
+            print filename_combo+'.pdf'
+
     
     
-    
-    def calcChiSquared(self, P = 2, useTeleUncertainties = 1, useNoisy = 1):
-       # P =  aantal fitparameters
-       
-       self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId() \
+    def calcChiSquared(self, P = 2, useTeleUncertainties = 1, useNoisy = 1, err = 0.2, err_noisy = 0.3):
+        '''
+        Calculate the (reduced) chi squared of the integrated main beam intensities.
+        
+        @keyword P: Degrees of freedom = len(data) - P
+        @type P: int
+        
+        @keyword useTeleUncertainties: Use telescope uncertainties instead of a fixed error.
+        @type useTeleUncertainties: bool
+        
+        @keyword useNoisy: Use a higher uncertainty for noisy lines
+        @type useNoisy: bool
+        
+        @keyword err: Fixed uncertainty on lines (if not telescope uncertainties)
+        @type err: float
+        
+        @keyword err_noisy: Uncertainty on noisy lines
+        @type err_noisy: float 
+        
+        @return chiSquared: Chi squared values of each model
+        @type chiSquared: list[]
+        
+        @return redChiSquared: Reduced chi squared values of each model
+        @type redChiSquared: list[]
+        
+        @return errRedChiSquared: Error on reduced chi squared 
+        @type errRedChiSquared: float
+        
+        @return redChiSquaredWithinThreeSigma: Models that have a reduced chi squared within
+                                               three sigma of the best model (ie the model with
+                                               the lowest reduced chi squared)
+        @type redChiSquaredWithinThreeSigma: list[]
+        '''
+        self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId() \
             for ii in range(len(self.star_grid))]
        
-       self.chiSquared = []
-       
-       for mm in range(len(self.modellist)):
+        self.chiSquared = []
+        self.redChiSquared = []
+        data = array([self.dinttmb[st] for st in self.translist])
+        dof = P - 1
+
+        for mm in range(len(self.modellist)):
+            model = array([self.minttmb[st][mm] for st in self.translist])
+           
             if useTeleUncertainties == 1 and useNoisy == 1:
-                self.chiSquared.append(sum([((self.dinttmb[t] - self.minttmb[t][mm]) / (self.tele_uncertainties[t.telescope]*self.dinttmb[t]))**2 if self.noisy[i] == False \
-                    else ((self.dinttmb[t] - self.minttmb[t][0]) / (0.3*self.dinttmb[t]))**2 \
-                    for i,t in enumerate(self.translist)]))
-            
-            if useTeleUncertainties == 0 and useNoisy == 1:        
-                self.chiSquared.append(sum([((self.dinttmb[t] - self.minttmb[t][mm]) / (0.2*self.dinttmb[t]))**2 if self.noisy[i] == False \
-                    else ((self.dinttmb[t] - self.minttmb[t][0]) / (0.3*self.dinttmb[t]))**2 \
-                    for i,t in enumerate(self.translist)]))
-               
-            if useTeleUncertainties == 1 and useNoisy == 0:
-                self.chiSquared.append(sum([((self.dinttmb[t] - self.minttmb[t][mm]) / (self.tele_uncertainties[t.telescope]*self.dinttmb[t]))**2 \
-                    for t in self.translist]))
+                noise = array([self.tele_uncertainties[t.telescope]*self.dinttmb[t] if not self.noisy[i] else err_noisy*self.dinttmb[t] \
+                        for i,t in enumerate(self.translist)])
+                cs = BasicStats.calcChiSquared(data,model,noise,ndf=dof)
+                self.redChiSquared.append(cs)
+                self.chiSquared.append(cs*(len(data) - dof - 1))
                 
+            if useTeleUncertainties == 0 and useNoisy == 1: 
+                noise = array([err*self.dinttmb[t] if not self.noisy[i]*self.dinttmb[t] else err_noisy*self.dinttmb[t] \
+                        for i,t in enumerate(self.translist)])
+                cs = BasicStats.calcChiSquared(data,model,noise,ndf=dof)
+                self.redChiSquared.append(BasicStats.calcChiSquared(data,model,noise,ndf=dof))
+                self.chiSquared.append(cs*(len(data) - dof - 1))
+                                           
+            if useTeleUncertainties == 1 and useNoisy == 0:
+                noise = [self.tele_uncertainties[t.telescope] for t in self.translist]*data
+                cs = BasicStats.calcChiSquared(data,model,noise,ndf=dof)
+                self.redChiSquared.append(BasicStats.calcChiSquared(data,model,noise,ndf=dof))
+                self.chiSquared.append(cs*(len(data) - dof - 1))
+                                           
             if useTeleUncertainties == 0 and useNoisy == 0:
-                self.chiSquared.append(sum([((self.dinttmb[t] - self.minttmb[t][mm]) / (0.2*self.dinttmb[t]))**2 \
-                    for t in self.translist])) 
+                noise = err*data
+                cs = BasicStats.calcChiSquared(data,model,noise,ndf=dof)
+                self.redChiSquared.append(BasicStats.calcChiSquared(data,model,noise,ndf=dof))
+                self.chiSquared.append(cs*(len(data) - dof - 1))
+
+
+        self.errRedChiSquared = (2.0/len(self.translist))**0.5
        
+        best = np.where(np.array(self.redChiSquared) == min(self.redChiSquared))[0][0]
        
-        
-       self.redChiSquared = [i/(len(self.translist)-P) for i in self.chiSquared]
-       self.errRedChiSquared = (2.0/len(self.translist))**0.5
-       
-       best = np.where(np.array(self.redChiSquared) == min(self.redChiSquared))[0][0]
-       
-       self.redChiSquaredWithinThreeSigma = [ii for ii in range(len(self.modellist)) \
+        self.redChiSquaredWithinThreeSigma = [ii for ii in range(len(self.modellist)) \
                                             if self.redChiSquared[ii] > (min(self.redChiSquared) - 3*self.errRedChiSquared) \
                                             and self.redChiSquared[ii] < (min(self.redChiSquared) + 3*self.errRedChiSquared)]
       
            
        
        
-       print '*******************************************************'
-       print '****************** Chi Squared ************************'
-       print '********  Chi squared  -  Reduced chi squared  ********'
-       print '*******************************************************'
-       for mm in range(len(self.modellist)):
-           print str(self.modellist[mm]) + '\t' + str('%.3f' %self.chiSquared[mm]) + '\t' + str('%.3f' %self.redChiSquared[mm]) + '+-' + str('%.3f' %self.errRedChiSquared)
-       print '\n'
-       print 'Best model = ' + str(best) +', '+ str(self.modellist[best]) + ', with ' + str('%.3f' %self.redChiSquared[best])
-       print '*******************************************************'
+        print '*******************************************************'
+        print '****************** Chi Squared ************************'
+        print '********  Chi squared  -  Reduced chi squared  ********'
+        print '*******************************************************'
+        for mm in range(len(self.modellist)):
+            print str(self.modellist[mm]) + '\t' + str('%.3f' %self.chiSquared[mm]) + '\t' + str('%.3f' %self.redChiSquared[mm]) + '+-' + str('%.3f' %self.errRedChiSquared)
+        print '\n'
+        print 'Best model = ' + str(best) +', '+ str(self.modellist[best]) + ', with ' + str('%.3f' %self.redChiSquared[best])
+        print '*******************************************************'
+
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     
     
     def plotBestFit(self, plot_int = 1, plot_peak = 0, plot_combo = 0):
@@ -1282,114 +1384,6 @@ class ResoStats(Statistics):
             print filename_combo+'.pdf'
             print '***********************************'              
     
-        
-### Obsolete, uses results of checkTmb    
-    def plotCheckTmb(self, plot_int = 1, plot_peak = 0, plot_combo = 0):
-        
-        '''
-        Can only be perfomed after self.checkTmb().
-        
-        Visualization of self.verdict_(mode)_soft. 
-        Dark blue: model \pm 15%, light blue: model \pm 15-20% (so more at the edge).
-        '''
-        
-        self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId() \
-            for ii in range(len(self.star_grid))]
-        
-        jup = [t.jup for t in self.translist]
-        
-        plt.close()
-        
-        if plot_int:
-            fig = plt.figure(2, figsize = (20,10))
-
-            ax2 = fig.add_subplot(111)
-            ax2.set_xticks(np.arange(len(jup)))
-            ax2.set_yticks(np.arange(len(self.modellist)))
-            ax2.xaxis.set_ticklabels(jup)
-            ax2.yaxis.set_ticklabels([" -- ".join([self.modellist[i][6:], str(self.verdictpermodel_int[i])]) \
-                for i in range(len(self.modellist))])
-            ax2.imshow(self.verdictpermodel_int, interpolation='nearest', origin='upper', cmap = 'Blues')
-            ax2.set_xlabel('$J_{up}$')
-            #ax2.set_title('Dark blue: model = data $\pm$ 15% \n \
-                #Light blue: model = data $\pm$ 15-20%')
-            
-            fig.suptitle('Ratio of integrated main beam temperature: model/data', size = 18)
-
-
-            path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
-            DataIO.testFolderExistence(os.path.join(path,'StatsTmb'))
-            filename = os.path.join(path, 'StatsTmb','%s_len_%i'%(self.modellist[0],(len(self.modellist))))
-        
-            
-            print '***********************************'   
-            print '** Plot of Stats Tmb can be found at:'
-            print filename+'.pdf'
-            print '***********************************'                            
-            
-            fig.savefig(filename+'.pdf')    
-
-        
-        if plot_peak:
-            fig = plt.figure(2, figsize = (20,10))
-
-            ax2 = fig.add_subplot(111)
-            ax2.set_xticks(np.arange(len(jup)))
-            ax2.set_yticks(np.arange(len(self.modellist)))
-            ax2.xaxis.set_ticklabels(jup)
-            ax2.yaxis.set_ticklabels([" -- ".join([self.modellist[i][6:], str(self.verdictpermodel_peak[i])]) \
-                for i in range(len(self.modellist))])
-            ax2.imshow(self.verdictpermodel_peak, interpolation='nearest', origin='upper', cmap = 'Blues')
-            ax2.set_xlabel('$J_{up}$')
-            #ax2.set_title('Dark blue: model = data $\pm$ 15% \n \
-                #Light blue: model = data $\pm$ 15-20%')
-            
-            fig.suptitle('Ratio of integrated main beam temperature: model/data', size = 18)
-
-
-            path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
-            DataIO.testFolderExistence(os.path.join(path,'StatsTmb'))
-            filename = os.path.join(path, 'StatsTmb','%s_len_%i'%(self.modellist[0],(len(self.modellist))))
-        
-            
-            print '***********************************'   
-            print '** Plot of Stats Tmb can be found at:'
-            print filename+'.pdf'
-            print '***********************************'                            
-            
-            fig.savefig(filename+'.pdf')            
-
-        
-        if plot_combo:
-            fig = plt.figure(2, figsize = (20,10))
-
-            ax2 = fig.add_subplot(111)
-            ax2.set_xticks(np.arange(len(jup)))
-            ax2.set_yticks(np.arange(len(self.modellist)))
-            ax2.xaxis.set_ticklabels(jup)
-            ax2.yaxis.set_ticklabels([" -- ".join([self.modellist[i][6:], str(self.verdictpermodel_combo[i])]) \
-                for i in range(len(self.modellist))])
-            ax2.imshow(self.verdict_combo_soft, interpolation='nearest', origin='upper', cmap = 'Blues')
-            ax2.set_xlabel('$J_{up}$')
-            ax2.set_title('Dark blue: model = data $\pm$ 15% \n \
-                Light blue: model = data $\pm$ 15-20%')
-            
-            fig.suptitle('Ratio of integrated main beam temperature: model/data', size = 18)
-
-
-            path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
-            DataIO.testFolderExistence(os.path.join(path,'StatsTmb'))
-            filename = os.path.join(path, 'StatsTmb','%s_len_%i'%(self.modellist[0],(len(self.modellist))))
-        
-            
-            print '***********************************'   
-            print '** Plot of Stats Tmb can be found at:'
-            print filename+'.pdf'
-            print '***********************************'                            
-            
-            fig.savefig(filename+'.pdf')          
-        
-        
         
     def printBestFitperLine(self, bfm_int = 1, bfm_peak = 0, bfm_combo = 0, bfm_lll = 1):
         '''
