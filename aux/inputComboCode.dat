@@ -40,6 +40,7 @@ SPIRE_LINEFIT=                      # folder name in $SPIRE_PATH$/$STAR_NAME$/ o
 #SPIRE_ABSFLUX_ERR=0.1              # The absolute flux calibration uncertainty for PACS. Default is set at 10%. Used when calculating the line-strength uncertainty for line fit results.
 
 #-- RADIO data selection (including autosearch) and plotting (typically resolved lines in K vs km/s). Location given in cc.path.home/usr/Path.dat
+RADIO=0                             # Turn on the Radio mo
 RADIO_AUTOSEARCH=0                  # Put to 1 if TRANSITION objects are to be made automatically based on the available data.
 
 #-- SED/Correlated Fluxes data selection and plotting. Location givens in cc.path.home/usr/Path.dat
