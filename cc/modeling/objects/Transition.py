@@ -2163,7 +2163,7 @@ class Transition():
         
     
     
-    def getLoglikelihood(self,use_bestvlsr=1,index=0):
+    def getLoglikelihood(self,use_bestvlsr=1,index=0,partial=0,vcut=0.0):
         
         """
         Calculate the loglikelihood of comparison between sphinx and dataset.
@@ -2195,7 +2195,16 @@ class Transition():
                                
                                (default: 1)
         @type use_bestvlsr: bool
-       
+        @keyword partial: Use a partial profile rather than the entire profile. 
+                          Set to 1 for larger than the cutoff value (vcut), set 
+                          to -1 for smaller than the cutoff value.
+                          
+                          (default: 0)
+        @type partial: int
+        @keyword vcut: The cut off value in km/s used by partial.
+                       
+                       (default: 0.0)
+        @type vcut: float        
         @keyword index: The data list index of the requested noise value
         
                         (default: 0)
@@ -2217,13 +2226,20 @@ class Transition():
         window = self.fittedlprof[index]['intwindow']
         vexp = self.getVexp(index=index)
         vlsr = self.getVlsr(index=index)
+        
+        #-- Select the line profile within the relevant window, and cut off 
+        #   part in case partial lll is requested
+        if partial > 0:
+            selection = (abs(vel-vlsr)<=window*vexp)*(vel>vcut)
+        elif partial < 0:
+            selection = (abs(vel-vlsr)<=window*vexp)*(vel<vcut)
+
         if self.fittedlprof[index]['fitabs'] <> None:
             pars = array(self.fittedlprof[index]['fitprof'][1])
             functype = self.fittedlprof[index]['fitprof'][0]
-            dsel = funclib.evaluate(functype,vel,pars)
-            dsel = dsel[abs(vel-vlsr)<=window*vexp]
+            dsel = funclib.evaluate(functype,vel[selection],pars)
         else:
-            dsel = self.lpdata[index].getFlux()[abs(vel-vlsr)<=window*vexp]
+            dsel = self.lpdata[index].getFlux()[selection]
         if self.getPeakTmbData(index=index) <= 5.*self.getNoise(index=index):
             #-- If the data are very noisy, use the fitted line profile to 
             #   determine the shift_factor, instead of the data themself.
@@ -2236,15 +2252,14 @@ class Transition():
             shift_factor = num/self.getIntTmbSphinx()
         
         if use_bestvlsr:
-            msel = self.best_mtmb[abs(vel-vlsr)<=window*vexp]
+            msel = self.best_mtmb[selection]
             msel = msel*shift_factor
         else:
             mvel = self.sphinx.getVelocity()
             mtmb = self.sphinx.getLPTmb()
             interpolator = interp1d(x=mvel+self.getVlsr(index=index),y=mtmb,\
                                     fill_value=0.0,bounds_error=False)
-            mtmb_interp = interpolator(vel)
-            msel = mtmb_interp[abs(vel-vlsr)<=window*vexp]
-            msel = msel*shift_factor
-
+            mtmb_interp = interpolator(vel[selection])
+            msel = mtmb_interp*shift_factor
+        
         return bs.calcLoglikelihood(data=dsel,model=msel,noise=noise)
