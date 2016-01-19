@@ -2233,6 +2233,8 @@ class Transition():
             selection = (abs(vel-vlsr)<=window*vexp)*(vel>vcut)
         elif partial < 0:
             selection = (abs(vel-vlsr)<=window*vexp)*(vel<vcut)
+        else:
+            selection = abs(vel-vlsr)<=window*vexp
 
         if self.fittedlprof[index]['fitabs'] <> None:
             pars = array(self.fittedlprof[index]['fitprof'][1])
