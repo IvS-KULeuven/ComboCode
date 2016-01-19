@@ -149,7 +149,6 @@ class Statistics(object):
             
         #-- Do data stats for unresolved data. Resolved or SED data will never 
         #   do this
-        
         if not instrument_name == 'FREQ_RESO' or instrument_name == 'SED':
             self.doDataStats(method=stat_method)
         #self.doDataStats(method=stat_method)

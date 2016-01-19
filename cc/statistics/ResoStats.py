@@ -401,7 +401,8 @@ class ResoStats(Statistics):
                 else:
                     self.dinttmb[st] = st.getIntTmbData(use_fit = 0)
                 self.ratioint[st] = self.minttmb[st]/self.dinttmb[st]
-                
+            else:
+                self.dinttmb[st] = st.getIntTmbData(use_fit = 0)
                 
 
         
@@ -697,7 +698,10 @@ class ResoStats(Statistics):
                 lll_thresh = self.lll_threshold[ist]
                 for i,lll in enumerate(self.loglikelihood[st]):
                     ##-- Loglikelihood is maximized by best fitting model
-                    if lll_thresh <> None and not self.noisy[ist] \
+                    #if lll_thresh <> None and not self.noisy[ist] \
+                            #and lll < lll_thresh:
+                        #bfbools[i] = False
+                    if lll_thresh <> None  \
                             and lll < lll_thresh:
                         bfbools[i] = False
         self.bfmlll = stars[bfbools]      
@@ -792,7 +796,9 @@ class ResoStats(Statistics):
         all_bfmint = []
         all_bfmpeak = []
         all_bfmcombo = []
-        all_bfmlll = []        
+        all_bfmlll = []    
+
+        
         for ii in orig_included:
             self.excludeTrans([i for i in range(T)])
             self.includeTrans(ii)
@@ -800,7 +806,7 @@ class ResoStats(Statistics):
             all_bfmpeak.append(self.selectBestFitModels('peak', use_lll, output = 0))
             all_bfmcombo.append(self.selectBestFitModels('combo', use_lll, output = 0))
             all_bfmlll.append(self.selectBestFitModelsLLL(output = 0))
-        
+
         #-- Make the main list
         self.occurences_bfmint = [[all_bfmint[x].count(self.modellist[i]) \
             for x in range(len(all_bfmint))] \
@@ -833,8 +839,158 @@ class ResoStats(Statistics):
         self.fittedModels_bfmcombo = sum(self.occurences_bfmcombo, axis = 1)
         self.fittedModels_bfmlll = sum(self.occurences_bfmlll, axis = 1)        
         
-    
 
+    def selectBestFitperLineLLL(self, excludevib = 1, plot = 0):
+        '''
+        Checks which lines are fitted by which models according to the loglikelihood
+        statistic. A  list 'ocurrences_bfmlll' is made. This 
+        list contains a sublist for each model, len(list) = # models. Every sublist
+        contains a one or zero, indicating wether a line is fitted by the model 
+        according to the criterion, len(sublist) = # lines.
+        
+        The list fittedLines_bfmlll contains how often a line was modelled according
+        to the criterion, len(list) = # lines.
+        
+        The list fittedModels_bfmlll contains the number of lines each model fitted
+        according to the criterion, len(list) = # models.
+        
+        '''
+        if self.no_stats: return
+        print "Checking which model occurs most as a best fit per line..."
+        
+        trans = self.translist
+        T = len(trans)
+        orig_included = self.includedtrans
+              
+        #-- Excluded vibrational transitions, if necessary      
+        if excludevib:
+            self.excludeTrans([i for i in range(T) if str(trans[i]).split()[1] != '0'])
+        
+        #-- Perform selection routine for every line separately
+        all_bfmlll = []    
+
+        
+        for ii in orig_included:
+            self.excludeTrans([i for i in range(T)])
+            self.includeTrans(ii)
+            all_bfmlll.append(self.selectBestFitModelsLLL(output = 0))
+
+        #-- Make the main list        
+        self.occurences_bfmlll = [[all_bfmlll[x].count(self.modellist[i]) \
+            for x in range(len(all_bfmlll))] \
+            for i in range(len(self.modellist))]
+
+        #-- Set included_trans back to original state
+        self.includedtrans = orig_included
+
+        #-- How often is a line fitted by a model?
+        self.fittedLines_bfmlll = sum(self.occurences_bfmlll, axis = 0)
+        
+        #-- How many lines did a model fit?
+        self.model_bfmlll = sum(self.occurences_bfmlll, axis = 1)        
+    
+        if plot:
+            plot_id = 'plot_%.4i-%.2i-%.2ih%.2i-%.2i-%.2i' \
+                %(gmtime()[0],gmtime()[1],gmtime()[2],\
+                    gmtime()[3],gmtime()[4],gmtime()[5])
+            self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId().replace('_','-') \
+                for ii in range(len(self.star_grid))]
+            
+            plt.clf()
+            fig = plt.figure(2, figsize = (15, 10))
+            ax = fig.add_subplot(111)
+            ax.set_xticks(np.arange(len(self.translist))-0.5)
+            ax.set_yticks(np.arange(len(self.modellist)))
+            ax.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope if self.noisy[ist]== False\
+                else '\\textbf{'+str(st.jup)+'-'+str(st.jlow)+' '+st.telescope+'}' for ist,st in enumerate(self.translist)], rotation = 60)
+            ax.yaxis.set_ticklabels([i for i in self.modellist])
+            ax.imshow(self.occurences_bfmlll, interpolation='nearest', origin='upper', cmap = 'Blues')
+            plt.tight_layout()
+            fig.suptitle('Loglikehood criterium', size = 18)
+            path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
+            DataIO.testFolderExistence(os.path.join(path,'resostats'))
+            filename_combo = os.path.join(path, 'resostats','lll-%s_len_%s-%s'%(self.modellist[0],(len(self.modellist)),plot_id))
+            fig.savefig(filename_combo+'.pdf')   
+            print '*** Plot of stats can be found at:'
+            print filename_combo+'.pdf'
+  
+  
+    
+    def calcLLL(self, plot = 0):
+        
+        self.line_lll = dict()
+        self.line_lll_range = dict()
+        
+        self.model_lll = []
+        self.model_lll_range = []
+        
+        translist = [self.translist[i] for i in self.includedtrans]
+        
+        
+        for ist,st in enumerate(translist):
+            self.line_lll[st] = []
+            self.line_lll_range[st] = []
+            
+            maxlll = max(self.loglikelihood[st])
+            
+            for kk in range(len(self.loglikelihood[st])):
+                if self.loglikelihood[st][kk] >= self.lll_threshold[ist]:
+                    self.line_lll[st].append(1)
+                else:
+                    self.line_lll[st].append(0)
+                
+                if maxlll >= self.loglikelihood[st][kk] \
+                   and self.loglikelihood[st][kk] >= self.lll_threshold[ist]:
+                    self.line_lll_range[st].append(1)
+                else:
+                    self.line_lll_range[st].append(0)
+            
+        for ii in range(len(self.star_grid)):
+            self.model_lll.append([self.line_lll[tr][ii] for tr in translist])
+            self.model_lll_range.append([self.line_lll_range[tr][ii] for tr in translist])
+        
+        self.verdict_model_lll = sum(self.model_lll, axis = 1)        
+        self.verdict_model_lll_range = sum(self.model_lll_range, axis = 1)
+        
+        if plot:
+            plot_id = 'plot_%.4i-%.2i-%.2ih%.2i-%.2i-%.2i' \
+                %(gmtime()[0],gmtime()[1],gmtime()[2],\
+                    gmtime()[3],gmtime()[4],gmtime()[5])
+            self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId().replace('_','-') \
+                for ii in range(len(self.star_grid))]
+            
+            plt.clf()
+            fig = plt.figure(1, figsize = (15, 10))
+            ax1 = fig.add_subplot(121)
+            ax1.set_xticks(np.arange(len(translist))-0.5)
+            ax1.set_yticks(np.arange(len(self.modellist)))
+            ax1.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope if self.noisy[ist]== False\
+                else '\\textbf{'+str(st.jup)+'-'+str(st.jlow)+' '+st.telescope+'}' for ist,st in enumerate(translist)], rotation = 60)
+            ax1.yaxis.set_ticklabels([i for i in self.modellist])
+            ax1.imshow(self.model_lll, interpolation='nearest', origin='upper', cmap = 'Blues')
+            ax1.set_title('LLL criterion')
+
+            
+            
+            ax2 = fig.add_subplot(122)
+            ax2.set_xticks(np.arange(len(translist))-0.5)
+            ax2.set_yticks(np.arange(len(self.modellist)))
+            ax2.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope if self.noisy[ist]== False\
+                else '\\textbf{'+str(st.jup)+'-'+str(st.jlow)+' '+st.telescope+'}' for ist,st in enumerate(translist)], rotation = 60)
+            ax2.yaxis.set_ticklabels([i for i in self.modellist])
+            ax2.imshow(self.model_lll_range, interpolation='nearest', origin='upper', cmap = 'Blues')
+            ax2.set_title('LLL 95\% confidence interval')
+            
+            plt.tight_layout()
+            path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
+            DataIO.testFolderExistence(os.path.join(path,'resostats'))
+            filename = os.path.join(path, 'resostats','LLL+range-%s_len_%s-%s'%(self.modellist[0],(len(self.modellist)),plot_id))
+            fig.savefig(filename+'.pdf')   
+            print '*** Plot of stats can be found at:'
+            print filename+'.pdf'
+  
+        
+        
     
     def calcRatioIntTmb(self, useNoisy = 1, useRms = 0, err = 0.2, err_noisy = 0.3, plot = 0):
         '''
@@ -876,40 +1032,42 @@ class ResoStats(Statistics):
         if useNoisy:
             print 'Error on noisy data = '+str(err_noisy)
         
-        self.verdict_ratioint = dict()
+        self.line_ratioint = dict()
         
-        for ist, st in enumerate(self.translist):
+        translist = [self.translist[i] for i in self.includedtrans]
+        
+        for ist, st in enumerate(translist):
             if useNoisy == 1 and useRms == 1:
                 if self.noisy[ist] ==  True:
-                    self.verdict_ratioint[st] = [1 if x <= (1. + err_noisy + st.getNoise()) \
+                    self.line_ratioint[st] = [1 if x <= (1. + err_noisy + st.getNoise()) \
                         and x >= (1. - err_noisy - st.getNoise()) else 0 for x in self.ratioint[st]]
                 else:
-                    self.verdict_ratioint[st] = [1 if x <= (1. + err + st.getNoise()) \
+                    self.line_ratioint[st] = [1 if x <= (1. + err + st.getNoise()) \
                         and x >= (1. - err - st.getNoise()) else 0 for x in self.ratioint[st]]
         
             elif useNoisy == 1 and useRms == 0:
                 if self.noisy[ist] ==  True:
-                    self.verdict_ratioint[st] = [1 if x <= (1. + err_noisy) \
+                    self.line_ratioint[st] = [1 if x <= (1. + err_noisy) \
                         and x >= (1. - err_noisy) else 0 for x in self.ratioint[st]]
                 else:
-                    self.verdict_ratioint[st] = [1 if x <= 1. + err \
+                    self.line_ratioint[st] = [1 if x <= 1. + err \
                         and x >= 1. - err else 0 for x in self.ratioint[st]]
         
             elif useNoisy == 0 and useRms == 1:    
-                self.verdict_ratioint[st] = [1 if x <= (1. + err + st.getNoise()) \
+                self.line_ratioint[st] = [1 if x <= (1. + err + st.getNoise()) \
                     and x >= (1. - err - st.getNoise()) else 0 for x in self.ratioint[st]]
             
             else:
-                self.verdict_ratioint[st] = [1 if x <= 1. + err \
+                self.line_ratioint[st] = [1 if x <= 1. + err \
                     and x >= 1. - err else 0 for x in self.ratioint[st]]
         
         
         self.model_ratioint = []
         
         for ii in range(len(self.star_grid)):
-            self.model_ratioint.append([self.verdict_ratioint[tr][ii] for tr in self.translist])
+            self.model_ratioint.append([self.line_ratioint[tr][ii] for tr in translist])
         
-        self.model_ratioint_verdict = sum(array(self.model_ratioint), axis = 1)
+        self.verdict_model_ratioint = sum(array(self.model_ratioint), axis = 1)
 
         
         if plot:
@@ -918,25 +1076,95 @@ class ResoStats(Statistics):
                     gmtime()[3],gmtime()[4],gmtime()[5])
             self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId().replace('_','-') \
                 for ii in range(len(self.star_grid))]
-            tr = [self.verdict_ratioint[st] for st in self.translist]
             
+            plt.clf()
             fig = plt.figure(2, figsize = (15, 10))
             ax = fig.add_subplot(111)
-            ax.set_xticks(np.arange(len(tr)))
+            ax.set_xticks(np.arange(len(translist))-0.5)
             ax.set_yticks(np.arange(len(self.modellist)))
-            ax.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope for st in self.translist], rotation = 45)
+            ax.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope if self.noisy[ist]== False\
+                else '\\textbf{'+str(st.jup)+'-'+str(st.jlow)+' '+st.telescope+'}' for ist,st in enumerate(translist)], rotation = 60)
             ax.yaxis.set_ticklabels([i for i in self.modellist])
             ax.imshow(self.model_ratioint, interpolation='nearest', origin='upper', cmap = 'Blues')
             plt.tight_layout()
-            fig.suptitle('Ratio of integrated intensities', size = 18)
+            fig.suptitle('Ratio of integrated intensities \\ Error = '+str(err*100.)+'\%, error noisy lines = '+str(err_noisy*100.)+'\%', size = 18)
             path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
             DataIO.testFolderExistence(os.path.join(path,'resostats'))
             filename_combo = os.path.join(path, 'resostats','int-%s_len_%s-%s'%(self.modellist[0],(len(self.modellist)),plot_id))
             fig.savefig(filename_combo+'.pdf')   
             print '*** Plot of stats can be found at:'
             print filename_combo+'.pdf'
+            
     
-    
+    def combineRatioIntLLL(self, useNoisy = 1, useRms = 0, err = 0.2, err_noisy = 0.3, plot = 0):
+        
+        self.calcRatioIntTmb(useNoisy=useNoisy,useRms=useRms,err=err,err_noisy=err_noisy)
+        self.combRatioIntLLL = []
+        self.calcLLL()
+        
+        translist = [self.translist[i] for i in self.includedtrans]
+        
+        for ii in range(len(self.star_grid)):
+            self.combRatioIntLLL.append([self.model_lll[ii][x] \
+                if self.model_lll[ii][x] == self.model_ratioint[ii][x] else 0 \
+                for x in range(len(translist))])
+        
+        self.verdict_combRatioIntLLL = sum(array(self.combRatioIntLLL), axis = 1)
+        
+        if plot:
+            plt.clf()
+            plot_id = 'plot_%.4i-%.2i-%.2ih%.2i-%.2i-%.2i' \
+                %(gmtime()[0],gmtime()[1],gmtime()[2],\
+                    gmtime()[3],gmtime()[4],gmtime()[5])
+            self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId().replace('_','-') \
+                for ii in range(len(self.star_grid))]
+            
+            fig = plt.figure(2, figsize = (15, 10))
+            ax1 = fig.add_subplot(131)
+            ax1.set_xticks(np.arange(len(translist))-0.5)
+            ax1.set_yticks(np.arange(len(self.modellist)))
+            ax1.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope if self.noisy[ist]== False\
+                else '\\textbf{'+str(st.jup)+'-'+str(st.jlow)+' '+st.telescope+'}' for ist,st in enumerate(translist)], rotation = 60)
+            ax1.yaxis.set_ticklabels([i for i in self.modellist])
+            ax1.imshow(self.combRatioIntLLL, interpolation='nearest', origin='upper', cmap = 'Blues')
+            ax1.set_title('Combination')
+            
+            ax2 = fig.add_subplot(132)
+            ax2.set_xticks(np.arange(len(translist))-0.5)
+            ax2.set_yticks(np.arange(len(self.modellist)))
+            ax2.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope if self.noisy[ist]== False\
+                else '\\textbf{'+str(st.jup)+'-'+str(st.jlow)+' '+st.telescope+'}' for ist,st in enumerate(translist)], rotation = 60)
+            ax2.yaxis.set_ticklabels([i for i in self.modellist])
+            ax2.imshow(self.model_ratioint, interpolation='nearest', origin='upper', cmap = 'Blues')
+            ax2.set_title('Ratio integrated intensities')
+            
+            ax3 = fig.add_subplot(133)
+            ax3.set_xticks(np.arange(len(translist))-0.5)
+            ax3.set_yticks(np.arange(len(self.modellist)))
+            ax3.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope if self.noisy[ist]== False\
+                else '\\textbf{'+str(st.jup)+'-'+str(st.jlow)+' '+st.telescope+'}' for ist,st in enumerate(translist)], rotation = 60)
+            ax3.yaxis.set_ticklabels([i for i in self.modellist])
+            ax3.imshow(self.model_lll, interpolation='nearest', origin='upper', cmap = 'Blues')
+            ax3.set_title('Loglikelihood')
+            
+            plt.tight_layout()
+            fig.suptitle('Models complying to integrated intensity and loglikelihood criteria \\ Error = '+str(err*100.)+'\%, error noisy lines = '+str(err_noisy*100.)+'\%', size = 18)
+            path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
+            DataIO.testFolderExistence(os.path.join(path,'resostats'))
+            filename = os.path.join(path, 'resostats','intLLL-%s_len_%s-%s'%(self.modellist[0],(len(self.modellist)),plot_id))
+            fig.savefig(filename+'.pdf')   
+            print '*** Plot of stats can be found at:'
+            print filename+'.pdf'
+        
+        
+        
+    def makeInput(self, model_array):
+        
+        for m in model_array:
+            print 'MOLECULE='+(' ').join(self.star_grid[m]['MOLECULE'][0])
+            
+        
+        
     
     
     def calcRatioPeakTmb(self, useNoisy = 1, useRms = 0, err = 0.2, err_noisy = 0.3, plot = 0):
@@ -1017,11 +1245,12 @@ class ResoStats(Statistics):
                 for ii in range(len(self.star_grid))]
             tr = [self.verdict_ratiopeak[st] for st in self.translist]
             
+            plt.clf()
             fig = plt.figure(1, figsize = (15, 10))
             ax = fig.add_subplot(111)
-            ax.set_xticks(np.arange(len(tr)))
+            ax.set_xticks(np.arange(len(tr))-0.5)
             ax.set_yticks(np.arange(len(self.modellist)))
-            ax.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope for st in self.translist], rotation = 45)
+            ax.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope for st in self.translist], rotation = 60)
             ax.yaxis.set_ticklabels([i for i in self.modellist])
             ax.imshow(self.model_ratiopeak, interpolation='nearest', origin='upper', cmap = 'Blues')
             plt.tight_layout()
@@ -1126,11 +1355,12 @@ class ResoStats(Statistics):
                 for ii in range(len(self.star_grid))]
             tr = [self.verdict_ratiocombo[st] for st in self.translist]
             
+            plt.clf()
             fig = plt.figure(3, figsize = (15, 10))
             ax = fig.add_subplot(111)
-            ax.set_xticks(np.arange(len(tr)))
+            ax.set_xticks(np.arange(len(tr))-0.5)
             ax.set_yticks(np.arange(len(self.modellist)))
-            ax.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope for st in self.translist], rotation = 45)
+            ax.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope for st in self.translist], rotation = 60)
             ax.yaxis.set_ticklabels([i for i in self.modellist])
             ax.imshow(self.model_ratiocombo, interpolation='nearest', origin='upper', cmap = 'Blues')
             plt.tight_layout()
