@@ -138,8 +138,7 @@ class ResoStats(Statistics):
                   'threshold automatically.'
         else: 
             self.lll_p = int(lll_p)
-            
-            
+        
         
     def setInstrument(self,sample_transitions):
        
@@ -171,8 +170,7 @@ class ResoStats(Statistics):
         self.sample_trans = sample_transitions    
 
         
-    def setIntensities(self,use_bestvlsr=1):
-        
+    def setIntensities(self,use_bestvlsr=1, partial = 0, vcut = 0):
         """
         The data intensities are stored in the dictionary 
         self.dintint/self.dpeakint, the model intensities in 
@@ -195,6 +193,13 @@ class ResoStats(Statistics):
         @type use_bestvlsr: bool
         
         """
+        self.vcut = vcut
+        self.partial = partial
+        
+        if partial != 0:
+            print 'Calculating loglikelihood statistics using a partial line profile.'
+            print 'Cutoff velocity = '+str(vcut)
+        
         
         tnodata = [t 
                    for t in self.sample_trans
@@ -262,8 +267,9 @@ class ResoStats(Statistics):
                 self.noisy[ist] = False
             
             #-- Collect the loglikelihoods for all models
-            self.loglikelihood[st] = array([mt.getLoglikelihood(use_bestvlsr) 
-                                            for mt in self.trans_models[st]])
+            self.loglikelihood[st] = array([mt.getLoglikelihood(use_bestvlsr, \
+                                                partial = partial, vcut = vcut) \
+                                                for mt in self.trans_models[st]])
             
             #-- Calculate the ratios for integrated and peak Tmbs (model/data)
             self.ratioint[st] = self.minttmb[st]/self.dinttmb[st]
@@ -1151,7 +1157,8 @@ class ResoStats(Statistics):
             fig.suptitle('Models complying to integrated intensity and loglikelihood criteria \\ Error = '+str(err*100.)+'\%, error noisy lines = '+str(err_noisy*100.)+'\%', size = 18)
             path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
             DataIO.testFolderExistence(os.path.join(path,'resostats'))
-            filename = os.path.join(path, 'resostats','intLLL-%s_len_%s-%s'%(self.modellist[0],(len(self.modellist)),plot_id))
+            filename = os.path.join(path, 'resostats','intLLL-%s_len_%s_partial_%s_vcut_%s-%s'\
+                %(self.modellist[0],(len(self.modellist)),self.partial,self.vcut,plot_id))
             fig.savefig(filename+'.pdf')   
             print '*** Plot of stats can be found at:'
             print filename+'.pdf'
