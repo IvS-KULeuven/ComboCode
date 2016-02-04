@@ -154,7 +154,9 @@ def getInputData(path=cc.path.usr,keyword='STAR_NAME',filename='Star.dat',\
                          
                          (default: 1)
     @type make_float: bool
-    @keyword start_index: Start search for keyword at this value
+    @keyword start_index: Start search for keyword on the line before this index
+                          (ie data is returned from the first noncommented line 
+                          at or after this index)
      
                           (default: 1)
     @type start_index: int

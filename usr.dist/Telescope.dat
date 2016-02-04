@@ -1,0 +1,25 @@
+#-- Telescope specifications, such as dish sizes (m), abs flux uncertainty (relative), etc. 
+#   APEX - http://www.apex-telescope.org/~mdumke/publications/2010/spie2010/node4.html
+#   Herschel - See respective manuals (times 2, for other sources of err)
+#   JCMT - See Kemper et al. 2003 p611
+#   Other instrument flux calibration uncertainties are arbitrary! 
+#-- When doing statistics, these values can be changed on a per line basis. 
+#-- When plotting integrated line strengths, these values cannot be changed on a
+#   per-line basis yet. TBI: absolute uncertainties via Radio database on per-line basis, which will over-write the value given here.
+#-- For unresolved data, these uncertainties are added to the fitting uncertainties.
+#
+#TELESCOPE   SIZE   ABS_ERR
+APEX         12.    0.2
+BLT          7.     0.2
+CSO          10.    0.2
+FCRAO        14.    0.2
+IRAM         30.    0.2
+JCMT         15.    0.2
+ODIN         1.1    0.2
+OSO          20.    0.2
+MOPRA        22.    0.2
+NRAO         12.    0.2
+SEST         15.    0.2
+HIFI         3.5    0.2
+PACS         3.5    0.2
+SPIRE        3.5    0.2

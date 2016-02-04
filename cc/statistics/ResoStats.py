@@ -102,25 +102,15 @@ class ResoStats(Statistics):
         self.no_stats = False
         self.stats = dict([('peak',self.ratiopeak),('int',self.ratioint),\
                            ('combo',self.ratiocombo)])
-        #-- The default uncertainties were taken from the manuals of the 
-        #   respective telescopes, and give a safe estimate based on the given
-        #   values. 
-        #   APEX - http://www.apex-telescope.org/~mdumke/publications/2010/spie2010/node4.html
-        #   Herschel - See respective manuals (times 2, for other sources of err)
-        #   JCMT - See Kemper et al. 2003 p611
-        #   Other instrument flux calibration uncertainties are arbitrary! 
+        #-- Default Flux calibration uncertainties from Telescope.dat
         #   I suggest to change these values based on what you want to use 
         #   yourself, depending on the transition under consideration.
-        self.tele_uncertainties = dict([('APEX',.15),\
-                                        ('CSO',.20),\
-                                        ('FCRAO',.20),\
-                                        ('HIFI',.20),\
-                                        ('IRAM',.20),\
-                                        ('JCMT',.30),\
-                                        ('MOPRA',.20),\
-                                        ('NRAO',.20),\
-                                        ('OSO',.20),\
-                                        ('SEST',.20)])
+        telescopes = DataIO.getInputData(keyword='TELESCOPE',start_index=5,\
+                                         filename='Telescope.dat')
+        abs_errs = DataIO.getInputData(keyword='ABS_ERR',start_index=5,\
+                                       filename='Telescope.dat')
+        self.tele_uncertainties = dict(zip(telescopes,abs_errs))
+        
         #-- The uncertainties and loglikelihoods for each template transition 
         #   is kept here, but the key is the INDEX of the template transition.
         self.trans_uncertainties = dict()
@@ -258,7 +248,7 @@ class ResoStats(Statistics):
                                        for mt in self.trans_models[st]])
             
             #-- Set the data integrated and peak Tmb for this dataset
-            self.dinttmb[st] = st.getIntTmbData()
+            self.dinttmb[st],abs_err = st.getIntTmbData()
             self.dpeaktmb[st] = st.getPeakTmbData() 
             
             if self.dpeaktmb[st] <= 3*noise:
@@ -403,12 +393,12 @@ class ResoStats(Statistics):
         
             if use_fit == True:
                 if self.noisy[ist] == False:
-                    self.dinttmb[st] = st.getIntTmbData(use_fit = 1)
+                    self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 1)
                 else:
-                    self.dinttmb[st] = st.getIntTmbData(use_fit = 0)
+                    self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 0)
                 self.ratioint[st] = self.minttmb[st]/self.dinttmb[st]
             else:
-                self.dinttmb[st] = st.getIntTmbData(use_fit = 0)
+                self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 0)
                 
 
         

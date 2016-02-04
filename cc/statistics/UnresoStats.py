@@ -293,7 +293,7 @@ class UnresoStats(Statistics):
                
                 #   5) Match found with a wave_fit value. Get int ratio 
                 #      m/d. If dint is negative, it is a blend due to large
-                #      FWHM! If blends is not None, multiple sample trans have 
+                #      FWHM! If blend is not None, multiple sample trans have 
                 #      been found in the wavelength resolution bin of the 
                 #      fitted line and also indicates a blend.
                 else:
@@ -301,7 +301,7 @@ class UnresoStats(Statistics):
                         mintint = mt.getIntIntIntSphinx()
                         self.mint_bands[fn][this_id].append(mintint)
                     else:
-                        #-- blends is a list of sample transitions that refers
+                        #-- blend is a list of sample transitions that refers
                         #   to the transitions involved in the blend, so get 
                         #   these from the model grid, and add them up. dintint
                         #   was made negative to indicate blend presence.

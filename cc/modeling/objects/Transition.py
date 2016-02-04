@@ -29,7 +29,7 @@ from cc.statistics import BasicStats as bs
 from cc.data import LPTools
 
 
-def getLineStrengths(trl,mode='dint',nans=1,n_data=0, scale = 0,**kwargs):
+def getLineStrengths(trl,mode='dint',nans=1,n_data=0,scale=0,**kwargs):
 
     
     '''
@@ -74,9 +74,10 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0, scale = 0,**kwargs):
                      
                      (default: 0)
     @type n_data: int
-    @param scale: Scale data to antenna of 1 m**2, necesarry if comparing data
-                  from different telescopes
-                  (default: 0)
+    @keyword scale: Scale data to antenna of 1 m**2, necessary if comparing data
+                    from different telescopes
+                  
+                    (default: 0)
     @type scale: bool
     
     @return: The requested line strengths in W/m2, or K*km/s, as well as errors
@@ -86,7 +87,10 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0, scale = 0,**kwargs):
     @rtype: (list[float],list[float])
     
     '''
-    scaling = {'APEX': 12**2, 'SEST': 15**2, 'HIFI':3.5**2, 'PACS':3.5**2, 'SPIRE':3.5**2}
+    
+    #-- The telescope sizes in m, squared.
+    scaling = {'APEX': 12**2, 'SEST': 15**2, 'HIFI':3.5**2, \
+               'PACS':3.5**2, 'SPIRE':3.5**2}
     
     modes = {'dint': 'getIntIntUnresolved',\
              'mint': 'getIntIntIntSphinx',\
@@ -108,6 +112,7 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0, scale = 0,**kwargs):
     allints = []
     allerrs = []
     for it,t in enumerate(trl):
+        scaling = t.telescope_size**2
         if n_data and it == n_data:
             mode = 'm%s'%mode[1:]
         if t is None:
@@ -115,7 +120,8 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0, scale = 0,**kwargs):
             continue
 
         if t.telescope not in scaling.keys():
-            print 'Add telescope diameter to scaling dictionary in Transition.getLineStrengths!'
+            print 'Add telescope diameter to scaling dictionary in '+\
+                  'Transition.getLineStrengths!'
             return
         nls = getattr(t,modes[mode])(**kwargs)
 
@@ -131,21 +137,22 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0, scale = 0,**kwargs):
             allints.append(nint)
             allerrs.append(nerr)
             
+        #-- To be done: Make sure scaling is not applied when nls[0] is None and nans is off.
         elif mode == 'dtmb':
             if scale == 1:
-                allints.append(((nans and nls is None) and float('nan') or nls)/scaling[t.telescope])
-                allerrs.append(((nans and nls is None) and float('nan') or nls)*0.2/scaling[t.telescope])
+                allints.append(((nans and nls is None) and float('nan') or nls[0])/scaling)
+                allerrs.append((nans and nls is None) and float('nan') or nls[1])
             else:
-                allints.append((nans and nls is None) and float('nan') or nls)
-                allerrs.append(((nans and nls is None) and float('nan') or nls)*0.2)
+                allints.append((nans and nls is None) and float('nan') or nls[0])
+                allerrs.append((nans and nls is None) and float('nan') or nls[1])
             
         else:
             if scale == 1:
-                allints.append(((nans and nls is None) and float('nan') or nls)/scaling[t.telescope])
-                allerrs.append(((nans and nls is None) and float('nan') or nls)/scaling[t.telescope])                           
+                allints.append(((nans and nls is None) and float('nan') or nls)/scaling)
+                allerrs.append(None)                           
             else:    
                 allints.append((nans and nls is None) and float('nan') or nls)
-                allerrs.append((nans and nls is None) and float('nan') or nls)            
+                allerrs.append(None)            
     
     
     allints, allerrs = array(allints), array(allerrs)
@@ -750,7 +757,6 @@ def checkUniqueness(trans_list):
 
     merged = []
     for trans in trans_list:
-        print trans, trans.datafiles, trans.fittedlprof, trans.n_quad
         if trans not in merged: 
             merged.append(trans)
         else:
@@ -898,6 +904,7 @@ class Transition():
                       #'removing all LINE_SPEC lines.'
                 telescope = '%s-H2O'%telescope
             self.telescope = telescope
+            self.readTelescopeProperties()
         self.vup = int(vup)
         self.jup = int(jup)
         self.kaup = int(kaup)
@@ -951,9 +958,6 @@ class Transition():
             self.unreso_err = None
             self.unreso_blends = None
         #
-        self.scaling = {'APEX': 12, 'SEST': 15, 'HIFI':3.5}
-        #
-
 
         
     def __str__(self):
@@ -1033,6 +1037,35 @@ class Transition():
         
         return hash(str(self.makeDict()))
 
+
+
+    def readTelescopeProperties(self):
+    
+        """
+        Read the telescope properties from Telescope.dat. 
+        
+        This currently includes the telescope size in m, and the default 
+        absolute flux calibration uncertainty. 
+        
+        """
+        
+        all_telescopes = DataIO.getInputData(keyword='TELESCOPE',start_index=5,\
+                                             filename='Telescope.dat')
+        if 'PACS' in self.telescope: 
+            telescope = 'PACS'
+        else:
+            telescope = self.telescope
+        try:
+            tel_index = all_telescopes.index(telescope)
+        except ValueError:
+            raise ValueError('Requested telescope not found in Telescope.dat.')
+        
+        self.telescope_size = DataIO.getInputData(keyword='SIZE',start_index=5,\
+                                                  filename='Telescope.dat',\
+                                                  rindex=tel_index)
+        self.tel_abs_err = DataIO.getInputData(keyword='ABS_ERR',start_index=5,\
+                                               filename='Telescope.dat',\
+                                               rindex=tel_index)
 
 
     def getInputString(self,include_nquad=1):
@@ -1115,14 +1148,15 @@ class Transition():
                 else:
                     return Interpol.linInterpol(wav[-2:],beam[-2:],\
                                                 self.wavelength)
-        filename = os.path.join(cc.path.gdata,self.telescope+'.spec')
-        telescope_diameter = [float(line.split('=')[1][0:line.split('=')[1]\
-                                    .index('!')].strip())
-                              for line in DataIO.readFile(filename)
-                              if line.find('TELESCOPE_DIAM') == 0][0] * 100.
+        #filename = os.path.join(cc.path.gdata,self.telescope+'.spec')
+        #telescope_diameter = [float(line.split('=')[1][0:line.split('=')[1]\
+        #                            .index('!')].strip())
+        #                      for line in DataIO.readFile(filename)
+        #                      if line.find('TELESCOPE_DIAM') == 0][0] * 100.
         
         #- 1.22 is diffraction limited specification, 
         #- last factor is conversion to arcseconds
+        telescope_diameter = self.telescope_size * 100
         return 1.22*self.wavelength/telescope_diameter*60.*60.*360./(2.*pi)  
         
 
@@ -2031,6 +2065,13 @@ class Transition():
         The fitted line profile can be forced to be used for the integrated line
         strength.
         
+        The uncertainty is also returned. Three options: 
+        - The default absolute flux calibration uncertainty from Telescope.dat
+        - The above + the fitting uncertainty [TBI]
+        - The abs flux cal uncertainty set in Radio.py + the fitting uncertainty [TBI]
+        The fitting uncertainty is currently not yet implemented, nor the option
+        to add the the flux calibration uncertainty to Radio.py. [TBI]
+        
         Returns None if no data are available. 
         
         This does not work for PACS or SPIRE data.
@@ -2040,22 +2081,26 @@ class Transition():
                         (default: 0)
         @type index: int
         
-        @return: The integrated data Tmb in K km/s
-        @rtype: float
+        @return: The integrated data Tmb in K km/s and the relative uncertainty
+        @rtype: (float,float)
         
         """
         
         self.readData()
         if self.fittedlprof is None:
             return
+        if self.fittedlprof[index].has_key('abs_err'): 
+            abs_err = self.fittedlprof[index]['abs_err']
+        else:
+            abs_err = self.tel_abs_err 
         if use_fit or self.fittedlprof[index]['fitabs'] <> None:
             #-- Integrating the fitted SoftPar, rather than data
             #   due to detected absorption component in the line profile.
-            return self.fittedlprof[index]['fgintint']
+            return (self.fittedlprof[index]['fgintint'],abs_err)
         else:
             #-- Using broader integration window for data
             #   due to a Gaussian-like profile, rather than a SP.
-            return self.fittedlprof[index]['dintint']
+            return (self.fittedlprof[index]['dintint'],abs_err)
         
         
     
@@ -2122,7 +2167,7 @@ class Transition():
                      blend are then given by st_blends. 
         @type dint: float or string
         @param dint_err: The fitting uncertainty on the intensity  + absolute 
-                         flux calibration uncertainty of 20%.
+                         flux calibration uncertainty of 20%. Relative value!
         @type dint_err: float
         @param vlsr: The source velocity with respect to the local standard of 
                      rest in cm/s.
@@ -2174,7 +2219,8 @@ class Transition():
         
         @return: The integrated intensity measured in unresolved data for this 
                  filename, in SI units of W/m2, and the fitting uncertainty + 
-                 absolute flux calibration uncertainty.
+                 absolute flux calibration uncertainty (relative value!), and 
+                 the blends if applicable.
         @rtype: (float,float,list)
         
         '''
@@ -2280,7 +2326,7 @@ class Transition():
         else:
             #-- Note that even if data are not noisy, the fitted lprof is still
             #   used here, in case an absorption is detected. 
-            num = self.getIntTmbData(index=index)
+            num,abs_err = self.getIntTmbData(index=index)
             shift_factor = num/self.getIntTmbSphinx()
         
         if use_bestvlsr:
