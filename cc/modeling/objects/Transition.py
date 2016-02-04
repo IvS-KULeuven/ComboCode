@@ -88,10 +88,6 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0,scale=0,**kwargs):
     
     '''
     
-    #-- The telescope sizes in m, squared.
-    scaling = {'APEX': 12**2, 'SEST': 15**2, 'HIFI':3.5**2, \
-               'PACS':3.5**2, 'SPIRE':3.5**2}
-    
     modes = {'dint': 'getIntIntUnresolved',\
              'mint': 'getIntIntIntSphinx',\
              'dtmb': 'getIntTmbData',\
