@@ -56,7 +56,7 @@ def massFractionGSD(acut,amin=0.01,amax=100.,slope=-3.5):
     acut = sorted(acut)
     #-- Slope is negative typically. If slope == -4, this doesn't work
     if slope == -4.: return np.empty(0)
-    #-- n(a) = Cst * Int(a**3 * a**-3.5 da) ==> Cst * [a**0.5]^amax_amin
+    #-- rho(a) = rho_spec * V(a) * n(a) = Cst * Int(a**3 * a**-3.5 da) ==> Cst * [a**0.5]^amax_amin
     p = (3.+slope)+1.
     subsets = []
     #-- first subset:
