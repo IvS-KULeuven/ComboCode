@@ -32,7 +32,7 @@ class PlotGas(PlottingSession):
     
     """    
     
-    def __init__(self,star_name,path_gastronoom='codeJun2013',\
+    def __init__(self,star_name,path_gastronoom='Output2014',\
                  inputfilename=None,pacs=None,spire=None):
         
         """ 
@@ -1885,3 +1885,118 @@ class PlotGas(PlottingSession):
             print '\n'.join(plot_filenames)
             print '***********************************'
 
+    
+    def plotIntTmb(self, star_grid = [], scale = 1, cfg = ''):
+        '''
+        Plot of the integrated main beam temperature of the molecular data
+        and that obtained from model(s). Jup vs K.
+        
+        @keyword star_grid: star models to be included in
+        
+                            (default: [])
+        @type star_grid: list[Star()]
+        
+        @param scale: scale int. Tmb to an antenna of 1 m**2,
+                        necesarry to compare data from different telescope_string
+                        
+                        (default = 1)
+        @type scale: bool
+        
+        @param cfg: path to the Plotting2.plotCols config file. If default,
+                      the hard-coded default plotting options are used.
+                      
+                      (default: '')
+        @type cfg: string
+        
+        '''
+        print '***********************************'   
+        print '** Plotting integrated main beam temperatures'
+        print '** Plots can be found at '
+        
+        
+        S = len(star_grid)
+
+        ### Data
+        #-- Get the int. mean beam temp. and its error for the data, 
+        #-- split up according to telescope
+        trans = star_grid[0]['GAS_LINES']
+        tele = list(set([t.telescope for t in trans]))
+        molecules = list(set([t.molecule for t in trans]))
+
+        for jj in range(len(molecules)):
+            jup_split = []
+            data = []
+            error = []
+            
+            for ii in range(len(tele)):
+                tr = [t for t in trans if t.telescope == tele[ii] and t.molecule == molecules[jj]]
+                jup_split.append([t.jup for t in tr])
+                data.append(Transition.getLineStrengths(tr,mode='dtmb',scale=scale)[0])            
+                error.append(Transition.getLineStrengths(tr,mode='dtmb',scale=scale)[1])
+            
+            tra = [t for t in trans if t.molecule == molecules[jj]]
+            
+           #-- Initialise labels and types for plotting
+            types_data = ['ro','gs','bp']
+            if len(jup_split)%3 != 0:
+                types_data = types_data + types_data[0:(len(jup_split)%3)]    
+            if len(tele) == 2:
+                types_data = ['ro','gs']
+            
+            ### Models
+            #-- Get int. main beam temp. of model(s) and initialise plotting
+            data_model = []
+            label_model = []
+            types_model = []
+            colors = ['k', 'm', '0.50', 'c', 'y', 'r', 'g','b']
+            C = len(colors)
+            for ii in range(S):
+                trans = star_grid[ii]['GAS_LINES']
+                molecules = list(set([t.molecule for t in trans]))
+                intra = [t for t in trans if t.molecule == molecules[jj]]
+                data_model.append(Transition.getLineStrengths(intra,mode='mtmb',scale=scale)[0])
+                label_model.append(trans[0].getModelId().replace('_','\_'))
+                types_model.append("".join([colors[ii%C], '--x']))
+                
+            ##- Get jup, and sort data in order of increasing jup
+            jup = [t.jup for t in tra]
+            indices = np.argsort(jup)
+            jup.sort()
+            data_model = [list(data_model[x][indices]) for x in range(len(data_model))]
+
+
+            ### Plotting
+            #-- Initialise x, y, yerr, line types and labels
+            x_toplot = jup_split + [jup]*S 
+            y_toplot = data + data_model            
+            yerr_toplot = error + [None]*S
+            types = types_data + types_model
+            labels = tele + label_model
+            #-- Folder and filename
+            DataIO.testFolderExistence(os.path.join(self.pplot,'intTmb'))
+            pfn = os.path.join(self.pplot,'intTmb-%s-%s'\
+                                %(star_grid[0]['LAST_GASTRONOOM_MODEL'], \
+                                  molecules[jj].makeLabel()[2:-2]))
+            #-- Cfg and specific plotting settings
+            cfg_dict = Plotting2.readCfg(cfg)
+            extra_pars = dict()
+            extra_pars['xmin'] = min(jup)-0.5
+            extra_pars['xmax'] = max(jup)+0.5
+            extra_pars['figsize'] = (15,9)
+            extra_pars['filename'] = pfn
+            #-- Plot
+            pfn = Plotting2.plotCols(x=x_toplot, y=y_toplot,\
+                yerr = yerr_toplot, keytags = labels, line_types = types,\
+                xaxis = '$J_{up}$',yaxis = '$\int T_\mathrm{mb}\ (\mathrm{K\ km/s})$',\
+                cfg=cfg_dict,**extra_pars)
+            
+
+            print pfn
+        print '***********************************'
+
+        
+        
+        
+    
+    
+    
