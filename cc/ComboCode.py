@@ -130,7 +130,8 @@ class ComboCode(object):
                           ('show_contdiv',0),('skip_cooling',0),\
                           ('recover_sphinxfiles',0),('stat_print',0),\
                           ('stat_lll_p',None),('stat_method','clipping'),\
-                          ('star_name','model')]
+                          ('star_name','model'),\
+                          ('stat_lll_partial',0),('stat_lll_vcut',0)]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v))
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -853,7 +854,7 @@ class ComboCode(object):
                                            lll_p=self.stat_lll_p)
             self.resostats.setInstrument(trans_sel)
             self.resostats.setModels(star_grid=self.star_grid)
-            self.resostats.setIntensities()
+            self.resostats.setIntensities(partial = self.stat_lll_partial,vcut = self.stat_lll_vcut)
             if self.stat_print:
                 self.resostats.printStats()
             #bfms = self.resostats.selectBestFitModels(mode='int')

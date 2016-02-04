@@ -115,7 +115,6 @@ class Statistics(object):
         @type stat_method: string
         
         '''
-        
         instrument_name = instrument_name.upper()
         if instrument_name == 'PACS':
             if instrument_instance <> None:
@@ -150,7 +149,9 @@ class Statistics(object):
             
         #-- Do data stats for unresolved data. Resolved or SED data will never 
         #   do this
-        self.doDataStats(method=stat_method)
+        if not instrument_name == 'FREQ_RESO' or instrument_name == 'SED':
+            self.doDataStats(method=stat_method)
+        #self.doDataStats(method=stat_method)
         
         
         
@@ -177,7 +178,7 @@ class Statistics(object):
         '''        
 
         #-- The SED case
-        if self.instrument.instrument == 'SED':
+        if self.instrument == 'SED':
             if not star_grid: 
                 raise IOError('Statistics.setModels requires a ' + \
                               'star_grid to be defined for SED data.')
@@ -215,8 +216,6 @@ class Statistics(object):
             if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) == set([0]): 
                 return
             self.star_grid = star_grid
-
-
     
     def doDataStats(self,method='clipping'):
         

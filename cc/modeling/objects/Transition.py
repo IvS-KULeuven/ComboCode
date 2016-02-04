@@ -28,7 +28,9 @@ from cc.tools.numerical import Interpol
 from cc.statistics import BasicStats as bs
 from cc.data import LPTools
 
-def getLineStrengths(trl,mode='dint',nans=1,n_data=0,**kwargs):
+
+def getLineStrengths(trl,mode='dint',nans=1,n_data=0, scale = 0,**kwargs):
+
     
     '''
     Get the line strengths from Transition() objects, either from data or from
@@ -72,6 +74,10 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0,**kwargs):
                      
                      (default: 0)
     @type n_data: int
+    @param scale: Scale data to antenna of 1 m**2, necesarry if comparing data
+                  from different telescopes
+                  (default: 0)
+    @type scale: bool
     
     @return: The requested line strengths in W/m2, or K*km/s, as well as errors
              if applicable. If a combo mode is requested, errors are given when
@@ -80,6 +86,7 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0,**kwargs):
     @rtype: (list[float],list[float])
     
     '''
+    scaling = {'APEX': 12**2, 'SEST': 15**2, 'HIFI':3.5**2, 'PACS':3.5**2, 'SPIRE':3.5**2}
     
     modes = {'dint': 'getIntIntUnresolved',\
              'mint': 'getIntIntIntSphinx',\
@@ -106,7 +113,12 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0,**kwargs):
         if t is None:
             allints.append(nans and float('nan') or None)
             continue
+
+        if t.telescope not in scaling.keys():
+            print 'Add telescope diameter to scaling dictionary in Transition.getLineStrengths!'
+            return
         nls = getattr(t,modes[mode])(**kwargs)
+
         if mode == 'dint':
             if nls[0] == 'inblend':
                 for tb in nls[2]:
@@ -118,9 +130,23 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0,**kwargs):
             nerr = (nans and nls[0] is None) and float('nan') or nls[1]
             allints.append(nint)
             allerrs.append(nerr)
+            
+        elif mode == 'dtmb':
+            if scale == 1:
+                allints.append(((nans and nls is None) and float('nan') or nls)/scaling[t.telescope])
+                allerrs.append(((nans and nls is None) and float('nan') or nls)*0.2/scaling[t.telescope])
+            else:
+                allints.append((nans and nls is None) and float('nan') or nls)
+                allerrs.append(((nans and nls is None) and float('nan') or nls)*0.2)
+            
         else:
-            allints.append((nans and nls is None) and float('nan') or nls)
-            allerrs.append((nans and nls is None) and float('nan') or nls)
+            if scale == 1:
+                allints.append(((nans and nls is None) and float('nan') or nls)/scaling[t.telescope])
+                allerrs.append(((nans and nls is None) and float('nan') or nls)/scaling[t.telescope])                           
+            else:    
+                allints.append((nans and nls is None) and float('nan') or nls)
+                allerrs.append((nans and nls is None) and float('nan') or nls)            
+    
     
     allints, allerrs = array(allints), array(allerrs)
     return (allints,allerrs)
@@ -724,6 +750,7 @@ def checkUniqueness(trans_list):
 
     merged = []
     for trans in trans_list:
+        print trans, trans.datafiles, trans.fittedlprof, trans.n_quad
         if trans not in merged: 
             merged.append(trans)
         else:
@@ -923,6 +950,9 @@ class Transition():
             self.unreso = None
             self.unreso_err = None
             self.unreso_blends = None
+        #
+        self.scaling = {'APEX': 12, 'SEST': 15, 'HIFI':3.5}
+        #
 
 
         

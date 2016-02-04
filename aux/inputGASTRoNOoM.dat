@@ -112,6 +112,7 @@ STEP_RIN_ROUT=1e+13        ! Step in  radius in DLSODA from RINNER to ROUT
 ITERA_COOLING=2           !set > 1 to iterate on dust-to-gas ratio to obtain requested vel_infinity
 START_APPROX=0             !set =0 when one wants to start with LTE-approx as starting n(NY,N_IMPACT); set =1 when starting from another model - with same NY, N_IMPACT, ...
 
+
 USE_COLLIS_RADIAT_SWITCH=0  !set to 1 if one wants to use the collision-radiative switching method of Hummer and Voels (1988)
 USE_FRACTION_LEVEL_CORR=1 !set to 1 if one wants to put a limit on the level-population correction (BES3).
 FRACTION_LEVEL_CORR=0.8 ! user-defined fraction for maximum change in level-population correction; useful in case of H2O
