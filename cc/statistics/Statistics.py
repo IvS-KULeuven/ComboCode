@@ -176,7 +176,7 @@ class Statistics(object):
         '''        
 
         #-- The SED case
-        if self.instrument.instrument == 'SED':
+        if self.instrument and self.instrument.instrument == 'SED':
             if not star_grid: 
                 raise IOError('Statistics.setModels requires a ' + \
                               'star_grid to be defined for SED data.')
