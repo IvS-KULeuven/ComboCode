@@ -115,10 +115,6 @@ def getLineStrengths(trl,mode='dint',nans=1,n_data=0,scale=0,**kwargs):
             allints.append(nans and float('nan') or None)
             continue
 
-        if t.telescope not in scaling.keys():
-            print 'Add telescope diameter to scaling dictionary in '+\
-                  'Transition.getLineStrengths!'
-            return
         nls = getattr(t,modes[mode])(**kwargs)
 
         if mode == 'dint':
