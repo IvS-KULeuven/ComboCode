@@ -238,8 +238,8 @@ class Statistics(object):
         method = method.lower()
         if method not in ['preset','clipping']: method = 'clipping'
         self.data_stats = dict()
-        inst = self.instrument.instrument.upper()
-        if self.instrument and inst in ['PACS','SPIRE']:
+        if self.instrument \
+                and self.instrument.instrument.upper() in ['PACS','SPIRE']:
             if not self.data_info: self.setDataInfo()
             for filename,data_wave,data_flux,band in \
                         zip(self.instrument.data_filenames,\
