@@ -919,8 +919,6 @@ class Transition():
         self.vibrational = vibrational
         self.sphinx = None
         self.path_gastronoom = path_gastronoom
-        #-- Convenience path
-        cc.path.gout = os.path.join(cc.path.gastronoom,self.path_gastronoom)
         self.unresolved = 'PACS' in self.telescope or 'SPIRE' in self.telescope
         self.datafiles = None
         self.lpdata = None 
@@ -1596,7 +1594,8 @@ class Transition():
          
         if self.sphinx is None and self.getModelId() <> None \
                 and self.getModelId() != '':
-            filename = os.path.join(cc.path.gout,'models',self.getModelId(),\
+            gout = os.path.join(cc.path.gastronoom,self.path_gastronoom)
+            filename = os.path.join(gout,'models',self.getModelId(),\
                                     self.makeSphinxFilename())
             self.sphinx = SphinxReader.SphinxReader(filename)
      
