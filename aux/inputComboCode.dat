@@ -29,7 +29,6 @@ PACS_REDO_CONVOLUTION=0             # Re-do the convolution of sphinx output to 
 PACS_SEARCHSTRING=oversampling2     # searchstring used when looking for data, all data that include this string will be taken so make it unique
 PACS_OVERSAMPLING=2                 # The oversampling factor of the PACS data, this should also be included in the filenames of the data
 PACS_LINEFIT=                       # folder name in $PACS_PATH$/$STAR_NAME$/ of line fit results, done by Pierre (assumes his structure and syntax, as well as the presence of a file called 'lineFitResults')
-#PACS_ABSFLUX_ERR=0.2               # The absolute flux calibration uncertainty for PACS. Default is set at 20%. Used when calculating the line-strength uncertainty for line fit results.
 
 #-- SPIRE convolution and plotting. Location given in cc.path.home/usr/Path.dat
 SPIRE=0                             # Turn on the SPIRE module. 
@@ -37,7 +36,6 @@ SPIRE_SEARCHSTRING=oversampling2    # searchstring used when looking for data, a
 SPIRE_RESOLUTION=0.06               # The resolution of the apodized Spire spectrum in cm^-1. This is typically 1.5*0.04 cm-1, with 0.04 cm-1 the intrinsic SPIRE resolution
 SPIRE_OVERSAMPLING=6                # The oversampling factor of the apodized SPIRE spectrum. This is typically 6.
 SPIRE_LINEFIT=                      # folder name in $SPIRE_PATH$/$STAR_NAME$/ of line fit results, done in Hipe on the intrinsic UNAPODIZED spectra (using sinc functions) and with SPIRE resolution of 0.04 cm-1 and oversampling 5, as well as the presence of a file called 'lineFitResults'
-#SPIRE_ABSFLUX_ERR=0.1              # The absolute flux calibration uncertainty for PACS. Default is set at 10%. Used when calculating the line-strength uncertainty for line fit results.
 
 #-- RADIO data selection (including autosearch) and plotting (typically resolved lines in K vs km/s). Location given in cc.path.home/usr/Path.dat
 RADIO=0                             # Turn on the Radio mo

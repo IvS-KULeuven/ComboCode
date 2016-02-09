@@ -284,7 +284,7 @@ class Pacs(Instrument):
     """
     
     def __init__(self,star_name,oversampling,path=None,redo_convolution=0,\
-                 intrinsic=1,path_linefit='',absflux_err=0.2):
+                 intrinsic=1,path_linefit=''):
         
         '''
         Initializing an instance of Pacs().
@@ -323,17 +323,11 @@ class Pacs(Instrument):
                                
                                (default: '')
         @type path_linefit: string
-        @keyword absflux_err: The absolute flux calibration uncertainty of the
-                              instrument. 
-                               
-                              (default: 0.2)
-        @type absflux_err: float
         
         '''
         
         super(Pacs,self).__init__(star_name=star_name,code='GASTRoNOoM',\
                                   path_linefit=path_linefit,path=path,\
-                                  absflux_err=absflux_err,
                                   oversampling=oversampling,\
                                   instrument_name='PACS',intrinsic=intrinsic)
         self.data_wave_list = []

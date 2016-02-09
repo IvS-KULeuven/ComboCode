@@ -27,8 +27,7 @@ class Spire(Instrument):
     """
     
     def __init__(self,star_name,resolution,oversampling,\
-                 path='codeSep2010',intrinsic=1,path_linefit='',\
-                 absflux_err=0.1):
+                 path='codeSep2010',intrinsic=1,path_linefit=''):
         
         '''
         Initializing an instance of Spire().
@@ -61,17 +60,11 @@ class Spire(Instrument):
                                
                                (default: '')
         @type path_linefit: string
-        @keyword absflux_err: The absolute flux calibration uncertainty of the
-                               instrument. 
-                               
-                               (default: 0.1)
-        @type absflux_err: float
         
         '''
         
         super(Spire,self).__init__(star_name=star_name,code='GASTRoNOoM',\
-                                   path=path,absflux_err=absflux_err,\
-                                   oversampling=oversampling,\
+                                   path=path,oversampling=oversampling,\
                                    path_linefit=path_linefit,\
                                    instrument_name='SPIRE',intrinsic=intrinsic)
         #- resolution is given in cm^-1
