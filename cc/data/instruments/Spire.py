@@ -224,7 +224,7 @@ class Spire(Instrument):
         wave_fit (micron), 
         line_flux (W/m2),
         line_flux_err (W/m2), 
-        line_flux_rel, 
+        line_flux_rel (ratio), 
         line_peak (W/m2 m), 
         fwhm_fit_freq (GHz),
         fwhm_fit (micron),

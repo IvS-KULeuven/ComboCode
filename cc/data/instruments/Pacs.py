@@ -373,7 +373,7 @@ class Pacs(Instrument):
         wave_fit (micron), 
         line_flux (W/m2),
         line_flux_err (W/m2), 
-        line_flux_rel, 
+        line_flux_rel (%), 
         continuum (W/m2 m), 
         line_peak (W/m2 m), 
         fwhm_fit (micron),
@@ -394,7 +394,8 @@ class Pacs(Instrument):
             del dd[-1]
             del dd[-1]
             del dd[-10]
-        dd[-6] = [float(val.strip('%')) for val in dd[-6]]
+        #-- Convert relative error in % to ratio
+        dd[-6] = [float(val.strip('%'))/100. for val in dd[-6]]
         del dd[-8]
         #bands = []
         #obs_bands = set([(band,obsid) 

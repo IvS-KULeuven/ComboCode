@@ -351,7 +351,7 @@ class Instrument(object):
             #      blend IN DATA: Check the ratio fitted FWHM/PACS FWHM. If
             #      larger by 30% or more, put the int int negative. 
             elif len(wf_blends[ii]) == 1:
-                err = sqrt((lf.line_flux_rel[ii]/100)**2+self.absflux_err**2)
+                err = sqrt((lf.line_flux_rel[ii])**2+self.absflux_err**2)
                 factor = lf.fwhm_rel[ii] >= 1.2 and -1 or 1
                 st.setIntIntUnresolved(fn,factor*lf.line_flux[ii],err,self.vlsr)
             #   8) If multiple matches, give a selection of strans included
@@ -362,7 +362,7 @@ class Instrument(object):
             #      The *OTHER* transitions found this way are not compared 
             #      with any data and get None. (see point 4) )
             else: 
-                err = sqrt((lf.line_flux_rel[ii]/100)**2+self.absflux_err**2)
+                err = sqrt((lf.line_flux_rel[ii])**2+self.absflux_err**2)
                 st.setIntIntUnresolved(fn,-1.*lf.line_flux[ii],err,self.vlsr,
                                        wf_blends[ii])
                 
