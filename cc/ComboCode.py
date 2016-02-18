@@ -826,7 +826,9 @@ class ComboCode(object):
                                           instrument_instance=self.spire,\
                                           stat_method=self.stat_method)
             self.spirestats.setModels(star_grid=self.star_grid)
-            self.spirestats.setRatios(chi2_type=self.stat_chi2)
+            #self.spirestats.setRatios(chi2_type=self.stat_chi2)
+            self.spirestats.setLineStrengths()
+            self.spirestats.calcChiSquared(chi2_method=self.stat_chi2)
             self.spirestats.plotRatioWav(inputfilename=self.inputfilename)
         
         if self.statistics and self.sed <> None:
