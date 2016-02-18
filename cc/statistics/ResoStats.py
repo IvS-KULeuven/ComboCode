@@ -687,10 +687,15 @@ class ResoStats(Statistics):
         self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId() \
             for ii in range(len(self.star_grid))]
         stars = array(self.modellist)
-
+        
+        self.lll_test = dict()
+        
         bfbools = ones(len(stars),dtype='bool')
         for ist,st in enumerate(self.translist):
             if ist in self.includedtrans:
+                
+                self.lll_test[st] = []
+                
                 lll_thresh = self.lll_threshold[ist]
                 for i,lll in enumerate(self.loglikelihood[st]):
                     ##-- Loglikelihood is maximized by best fitting model
@@ -700,6 +705,10 @@ class ResoStats(Statistics):
                     if lll_thresh <> None  \
                             and lll < lll_thresh:
                         bfbools[i] = False
+                        self.lll_test[st].append(0)
+                    else:
+                        self.lll_test[st].append(1)
+                        
         self.bfmlll = stars[bfbools]      
         self.bfmlll = list(self.bfmlll)
         
@@ -915,37 +924,80 @@ class ResoStats(Statistics):
     def calcLLL(self, plot = 0):
         
         self.line_lll = dict()
-        self.line_lll_range = dict()
-        
         self.model_lll = []
-        self.model_lll_range = []
-        
-        translist = [self.translist[i] for i in self.includedtrans]
         
         
-        for ist,st in enumerate(translist):
-            self.line_lll[st] = []
-            self.line_lll_range[st] = []
-            
-            maxlll = max(self.loglikelihood[st])
-            
-            for kk in range(len(self.loglikelihood[st])):
-                if self.loglikelihood[st][kk] >= self.lll_threshold[ist]:
-                    self.line_lll[st].append(1)
-                else:
-                    self.line_lll[st].append(0)
+        for ist,st in enumerate(self.translist):
+            if ist in self.includedtrans:
                 
-                if maxlll >= self.loglikelihood[st][kk] \
-                   and self.loglikelihood[st][kk] >= self.lll_threshold[ist]:
-                    self.line_lll_range[st].append(1)
-                else:
-                    self.line_lll_range[st].append(0)
+                self.line_lll[st] = []
+                lll_thresh = self.lll_threshold[ist]
+                for i,lll  in enumerate(self.loglikelihood[st]):
+                    if lll >= lll_thresh:
+                        self.line_lll[st].append(1)
+                    else:
+                        self.line_lll[st].append(0)
+
             
         for ii in range(len(self.star_grid)):
-            self.model_lll.append([self.line_lll[tr][ii] for tr in translist])
-            self.model_lll_range.append([self.line_lll_range[tr][ii] for tr in translist])
+            self.model_lll.append([self.line_lll[tr][ii] \
+                for i,tr in enumerate(self.translist) if i in self.includedtrans])
         
         self.verdict_model_lll = sum(self.model_lll, axis = 1)        
+        
+        if plot:
+            plot_id = 'plot_%.4i-%.2i-%.2ih%.2i-%.2i-%.2i' \
+                %(gmtime()[0],gmtime()[1],gmtime()[2],\
+                    gmtime()[3],gmtime()[4],gmtime()[5])
+            self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId().replace('_','-') \
+                for ii in range(len(self.star_grid))]
+            
+            plt.clf()
+            fig = plt.figure(1, figsize = (15, 10))
+            ax1 = fig.add_subplot(111)
+            ax1.set_xticks(np.arange(len(self.includedtrans))-0.5)
+            ax1.set_yticks(np.arange(len(self.modellist)))
+            ax1.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope if self.noisy[ist]== False\
+                else '\\textbf{'+str(st.jup)+'-'+str(st.jlow)+' '+st.telescope+'}' \
+                    for ist,st in enumerate(self.translist) if ist in self.includedtrans], rotation = 60)
+            ax1.yaxis.set_ticklabels([i for i in self.modellist])
+            ax1.imshow(self.model_lll, interpolation='nearest', origin='upper', cmap = 'Blues')
+            ax1.set_title('LLL criterion')
+
+                        
+            plt.tight_layout()
+            path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
+            DataIO.testFolderExistence(os.path.join(path,'resostats'))
+            #filename = os.path.join(path, 'resostats','LLL-%s_len_%s-%s'%(self.modellist[0],(len(self.modellist)),plot_id))
+            filename = os.path.join(path, 'resostats','LLL-%s_len_%s_partial_%s_vcut_%s-%s'\
+                %(self.modellist[0],(len(self.modellist)),self.partial,self.vcut,plot_id))
+
+            fig.savefig(filename+'.pdf')   
+            print '*** Plot of stats can be found at:'
+            print filename+'.pdf'
+  
+        
+    def calcLLLrange(self, plot = 0):
+        
+        self.line_lll_range = dict()
+        self.model_lll_range = []
+            
+        for ist,st in enumerate(self.translist):
+            if ist in self.includedtrans:
+                self.line_lll_range[st] = []
+                maxlll = max(self.loglikelihood[st])
+                lll_thresh = self.lll_threshold[ist]
+                for i,lll  in enumerate(self.loglikelihood[st]):                   
+                    if maxlll >= self.loglikelihood[st][kk] \
+                    and self.loglikelihood[st][kk] >= self.lll_threshold[ist]:
+                        self.line_lll_range[st].append(1)
+                    else:
+                        self.line_lll_range[st].append(0)
+            
+        for ii in range(len(self.star_grid)):
+            self.model_lll_range.append([self.line_lll_range[tr][ii] \
+                for i,tr in enumerate(self.translist) if i in self.includedtrans])
+        
         self.verdict_model_lll_range = sum(self.model_lll_range, axis = 1)
         
         if plot:
@@ -957,18 +1009,7 @@ class ResoStats(Statistics):
             
             plt.clf()
             fig = plt.figure(1, figsize = (15, 10))
-            ax1 = fig.add_subplot(121)
-            ax1.set_xticks(np.arange(len(translist))-0.5)
-            ax1.set_yticks(np.arange(len(self.modellist)))
-            ax1.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope if self.noisy[ist]== False\
-                else '\\textbf{'+str(st.jup)+'-'+str(st.jlow)+' '+st.telescope+'}' for ist,st in enumerate(translist)], rotation = 60)
-            ax1.yaxis.set_ticklabels([i for i in self.modellist])
-            ax1.imshow(self.model_lll, interpolation='nearest', origin='upper', cmap = 'Blues')
-            ax1.set_title('LLL criterion')
-
-            
-            
-            ax2 = fig.add_subplot(122)
+            ax2 = fig.add_subplot(111)
             ax2.set_xticks(np.arange(len(translist))-0.5)
             ax2.set_yticks(np.arange(len(self.modellist)))
             ax2.xaxis.set_ticklabels([str(st.jup)+'-'+str(st.jlow)+' '+st.telescope if self.noisy[ist]== False\
@@ -984,7 +1025,7 @@ class ResoStats(Statistics):
             fig.savefig(filename+'.pdf')   
             print '*** Plot of stats can be found at:'
             print filename+'.pdf'
-  
+        
         
         
     
