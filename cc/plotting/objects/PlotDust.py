@@ -301,12 +301,11 @@ class PlotDust(PlottingSession):
         
         """
         
-        if not cc.path.dcflux:
-            print 'No dcflux given in Path.dat. Cannot plot Correlated Fluxes. Aborting...'
-            return
         print '***********************************'
         print '** Creating Correlated Fluxes plot.'
-        
+        if not cc.path.dcflux:
+            print 'No dcflux given in Path.dat. No data are plotted.'
+            
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('no_models'):
             no_models = cfg_dict['no_models']
@@ -397,7 +396,7 @@ class PlotDust(PlottingSession):
                                      for ix,iy in zip(ddict['x'],ddict['y'])
                                      if iy.size])
         kwargs = dict()
-        kwargs['keytags'] = ['MIDI']
+        kwargs['keytags'] = ['MIDI'] if ggd or []
         if not no_models:
             kwargs['keytags'].extend([s['LAST_MCMAX_MODEL'].replace('_','\_') 
                                       for s in star_grid])
@@ -462,12 +461,12 @@ class PlotDust(PlottingSession):
         if not cc.path.dcflux:
             print 'No dcflux given in Path.dat. Aborting...'
             return
-        if not self.sed or 'MIDI' not in self.sed.data_types:
-            print 'No dsed given in Path.dat or no MIDI spectral data found. Aborting.'
-            return
         
         print '***********************************'
         print '** Creating Visibilities plot.'
+        if not self.sed or 'MIDI' not in self.sed.data_types:
+            print 'No dsed given in Path.dat or no MIDI spectral data found.'
+
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('no_models'):
             no_models = cfg_dict['no_models']
@@ -509,18 +508,21 @@ class PlotDust(PlottingSession):
         if no_models: wavelengths = (8.,10.,13.)
         
         #-- Grab the MIDI spectrum
-        fn = self.sed.data_filenames[self.sed.data_types.index('MIDI')]
-        midi_flux = self.sed.data[('MIDI',fn)][1]
-        midi_err = self.sed.data[('MIDI',fn)][2]
-        midi_relerr = (midi_err/midi_flux)**2
+        if self.sed and 'MIDI' in self.sed.data_types:
+            fn = self.sed.data_filenames[self.sed.data_types.index('MIDI')]
+            midi_flux = self.sed.data[('MIDI',fn)][1]
+            midi_err = self.sed.data[('MIDI',fn)][2]
+            midi_relerr = (midi_err/midi_flux)**2
         
-        #-- Select MIDI data. Assumes baseline at the end of the filename.
-        ssd = os.path.join(cc.path.dcflux,self.star_name,\
-                           '_'.join([self.star_name,'MIDI','*.fits']))
-        files = [os.path.splitext(gi)[0] for gi in glob.glob(ssd)]
-        ggd = dict([(float(gi.split('_')[-1].strip('m')),gi+'.fits') 
-                    for gi in files])
-        
+            #-- Select MIDI data. Assumes baseline at the end of the filename.
+            ssd = os.path.join(cc.path.dcflux,self.star_name,\
+                               '_'.join([self.star_name,'MIDI','*.fits']))
+            files = [os.path.splitext(gi)[0] for gi in glob.glob(ssd)]
+            ggd = dict([(float(gi.split('_')[-1].strip('m')),gi+'.fits') 
+                        for gi in files])
+        else: 
+            ggd = dict()
+                    
         #-- Collect MIDI data from the fits file and calculate visibilities
         ddf = dict()
         for k,v in sorted(ggd.items()):
@@ -554,14 +556,20 @@ class PlotDust(PlottingSession):
             ddict = dict()
             data.append(ddict)
             
-            #-- Set the plot x and y
-            bls = [k for k in sorted(ddf.keys())]
-            ddict['x'] = [[bl for bl in bls]]
-            ddict['y'] = [[ddf[bl]['y'][np.argmin(abs(ddf[bl]['x']-w))]
-                           for bl in bls]]
-            ddict['yerr'] = [[ddf[bl]['yerr'][np.argmin(abs(ddf[bl]['x']-w))]
-                              for bl in bls]]
-            #-- Set limits and labels
+            #-- Set the plot x and y if data are available 
+            if ddf:
+                bls = [k for k in sorted(ddf.keys())]
+                ddict['x'] = [[bl for bl in bls]]
+                ddict['y'] = [[ddf[bl]['y'][np.argmin(abs(ddf[bl]['x']-w))]
+                               for bl in bls]]
+                ddict['yerr'] = [[ddf[bl]['yerr'][np.argmin(abs(ddf[bl]['x']-w))]
+                                  for bl in bls]]
+            else:
+                ddict['x'] = []
+                ddict['y'] = []
+                ddict['yerr'] = []
+            
+            #-- Set labels
             ddict['labels'] = [('MIDI %s $\\mu$m'%w,0.85,0.9)]
             
             if no_models:
@@ -578,7 +586,7 @@ class PlotDust(PlottingSession):
                 ddict['y'].append(model['wavelength'][w])
                             
         kwargs = dict()
-        kwargs['keytags'] = ['MIDI']
+        kwargs['keytags'] = ['MIDI'] if ddf else []
         if not no_models:
             kwargs['keytags'].extend([s['LAST_MCMAX_MODEL'].replace('_','\_') 
                                       for s in star_grid])

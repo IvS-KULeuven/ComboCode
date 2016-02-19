@@ -395,8 +395,11 @@ CFG_GAS_PACS_SEGMENTS=
 PLOT_DUST_SED=0                     # Plot the SED with data as defined in ~/ComboCode/Data/Sed.dat
 CFG_DUST_SED=
 
-PLOT_DUST_CORRFLUX=0                # Plot correlated fluxes for data available in CORRFLUX_PATH
+PLOT_DUST_CORRFLUX=0                # Plot correlated fluxes for data available in CORRFLUX_PATH (or for models only)
 CFG_DUST_CORRFLUX=                  
+
+PLOT_DUST_VISIBILITIES=0            # Plot Visibilities as a function of baseline for data available in CORRFLUX_PATH (or models only)
+CFG_DUST_VISIBILITIES=
 
 PLOT_DUST_DENS=0                    # Plot the dust density profile.
 CFG_DUST_DENS=
