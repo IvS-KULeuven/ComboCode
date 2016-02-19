@@ -1143,8 +1143,8 @@ class Star(dict):
         density profile from that. This requires a GASTRoNOoM cooling model to 
         have been calculated. 
         
-        The gas density is simply calculated by multiplying with the mass of a 
-        molecular hydrogen atom.
+        The gas density is simply calculated by multiplying with the mass of
+        molecular hydrogen.
         
         The dust density is calculated by multiplying the H_2 density with the 
         dust-to-gas ratio. The radial dependence of the velocity profiles is 
