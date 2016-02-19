@@ -509,6 +509,16 @@ class MCMax(ModelingSession):
         elif star['DENSTYPE'] == 'POW':
             self.command_list['denspow'] = star['DENSPOW']
             self.command_list['mdust'] = star['M_DUST']
+        elif star['DENSTYPE'] == 'MEIXNER':
+            self.command_list['mdust'] = star['M_DUST']
+            self.command_list['MeixA'] = star['MEIXA']
+            self.command_list['MeixB'] = star['MEIXB']
+            self.command_list['MeixC'] = star['MEIXC']
+            self.command_list['MeixD'] = star['MEIXD']
+            self.command_list['MeixE'] = star['MEIXE']
+            self.command_list['MeixF'] = star['MEIXF']
+            self.command_list['MeixRsw'] = star['MEIXRSW']
+        
         if int(star['MRN_DUST']):
             self.command_list['mrn'] = '.true.'
             self.command_list['mrn_index'] = star['MRN_INDEX']

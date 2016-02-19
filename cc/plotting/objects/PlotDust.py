@@ -396,7 +396,7 @@ class PlotDust(PlottingSession):
                                      for ix,iy in zip(ddict['x'],ddict['y'])
                                      if iy.size])
         kwargs = dict()
-        kwargs['keytags'] = ['MIDI'] if ggd or []
+        kwargs['keytags'] = ['MIDI'] if ggd else []
         if not no_models:
             kwargs['keytags'].extend([s['LAST_MCMAX_MODEL'].replace('_','\_') 
                                       for s in star_grid])

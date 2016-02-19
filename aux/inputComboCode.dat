@@ -104,7 +104,7 @@ MDOT_DUST=1.6e-7                    # Dust mass-loss rate [Msol/yr]
 #-- These are standard values but can be changed here
 DUST_TO_GAS_INITIAL=2e-3            # Dust-to-gass mass ratio, initial guess only!                     
 USE_DENSITY_NON_CONSISTENT=0        # Change density according to your mass loss function, this is off by default
-#DENSTYPE=%                         # If commented, MASSLOSS is used in first iteration of MCMax, then in the 2nd the density distribution from GASTRoNOoM is used. Put to MASSLOSS if you do not want to use the density from GASTRoNOoM in MCMax. Put to SHELLFILE if you want to use a 1d custom density grid.
+#DENSTYPE=%                         # If commented, MASSLOSS is used in first iteration of MCMax, then in the 2nd the density distribution from GASTRoNOoM is used. Put to MASSLOSS if you do not want to use the density from GASTRoNOoM in MCMax. Put to SHELLFILE if you want to use a 1d custom density grid. Put to MEIXNER for the Meixner shell model. Note that MeixA => MeixF (See Meixner et al. 2002) and MeixSW (in AU) have to be defined as well. M_DUST can be defined (in Msun), but if not, it is calculated from the GASTRoNOoM model. 
 #DENSFILE=                          # In case DENSTYPE=SHELLFILE. Two columns: AU - g/cm3. If the path is not given, the file is assumed to be in densf in Path.dat.
 MDOT_MODE=CONSTANT                  # Modus of mass-loss prescription (CONSTANT/2STEP/SINUS/PERIODIC/OTHER)  -- Only CONSTANT and OTHER are implemented. If OTHER, still define MDOT_GAS and MDOT_DUST correctly for the first part of the wind. DUST_TO_GAS is calculated from this. That, or give DUST_TO_GAS_CHANGE_ML_SP.
 

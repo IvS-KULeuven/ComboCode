@@ -1000,8 +1000,6 @@ class Star(dict):
     
     
     
-    
-    
     def getGasVelocity(self,**kwargs):
         
         '''
@@ -1137,6 +1135,62 @@ class Star(dict):
         return fn
         
         
+
+    def getWindDensity(self,denstype='gas'):
+        
+        '''
+        Read the n_h2 number density profile and calculate the total gas or dust
+        density profile from that. This requires a GASTRoNOoM cooling model to 
+        have been calculated. 
+        
+        The gas density is simply calculated by multiplying with the mass of a 
+        molecular hydrogen atom.
+        
+        The dust density is calculated by multiplying the H_2 density with the 
+        dust-to-gas ratio. The radial dependence of the velocity profiles is 
+        taken into account. Not the radial dependence of the mass-loss rate, but
+        CC assumes the d2g ratio remains constant in case of variable mass-loss
+        rate.
+        
+        @keyword denstype: The type of density profile, either 'dust' or 'gas'.
+        
+                           (default: 'gas')
+        @type denstype: str
+        
+        @return: The density profile (g/cm3)
+        @rtype: array
+        
+        '''
+        
+        denstype = denstype.lower()
+        if denstype not in ['gas','dust']:
+            print "Density type not known. Must be gas or dust."
+            return
+        #-- GASTRoNOoM calculates smoother density profiles than 
+        #   this formula ever can accomplish
+        #dens = float(self['MDOT_DUST'])*self.Msun\
+        #        /((vg+drift)*4.*pi*rad**2.*self.year) 
+        
+        #-- Use the H2 density profile to take into account any 
+        #   type of variable mass loss (including exponents in 
+        #   r_points_mass_loss.
+        nh2 = self.getGasNumberDensity()
+        gas_dens = nh2*self.mh*2.
+        
+        if denstype == 'gas': return gas_dens
+        
+        #-- The gas velocity profile       
+        vg = self.getGasVelocity()
+        #-- The drift profile, corrected for the average grain size
+        drift = self.getAverageDrift()     
+        
+        #-- Calc dust density based on md/mg instead of d2g to take
+        #   into account velocity profiles instead of terminal vels
+        dust_dens = gas_dens*self['MDOT_DUST']/self['MDOT_GAS']*vg/(vg+drift)
+        
+        return dust_dens
+
+
 
     def calcTLR(self):  
         
@@ -1646,12 +1700,35 @@ class Star(dict):
             pass
         
 
-
+    
     def calcM_DUST(self):
         
         """
+        Calculate the total dust mass based on the requested denstype 
+        prescription. 
+        
+        The dust mass is set in solar masses.
+        
+        If Denstype == 'POW':
         Find total dust mass, based on sigma_0 in the case of a power law.
-    
+        
+        In all other cases, the dust mass is calculated from the density profile
+        of the GASTRoNOoM model after correcting for d2g ratio, for now.
+        
+        Note that in the latter case the dust mass will be an upper limit
+        when compared to the actual dust mass determined by MCMax, if tdesiter
+        is on: Some of the dust in the density profile will be destroyed based 
+        on the condensation temperature.
+        
+        Only in the case of denstypes POW and MEIXNER this dust mass is actually
+        used as input for MCMax. This never takes into account the MCMax output. 
+        To retrieve the dust mass calculated with MCMax, check the MCMax log 
+        file. 
+        
+        Currently GASTRoNOoM is never calculated first, so giving this as input
+        does not yet work for any denstype other than POW. The value returned is
+        correct, however. When implemented, 2 iterations will be required.
+        
         """
         
         if not self.has_key('M_DUST'):
@@ -1668,9 +1745,19 @@ class Star(dict):
                         *(self['R_INNER_DUST']*self['R_STAR']*self.Rsun)**2\
                         /(2.-self['DENSPOW'])/self.Msun\
                         *((self['R_OUTER_DUST']/float(self['R_INNER_DUST']))\
-                        **(2.-self['DENSPOW'])-1.)
+                        **(2.-self['DENSPOW'])-1.)            
+            
             else:
-                pass
+                if self['LAST_GASTRONOOM_MODEL']: 
+                    rad = self.getGasRad(unit='rstar')
+                    dens = self.getWindDensity(denstype='dust')
+                    selection = (rad>self["R_INNER_DUST"])*(rad<self['R_OUTER_DUST'])
+                    dens = dens[selection]
+                    rad = rad[selection]*self['R_STAR']*self.Rsun
+                    m_dust = integrate.trapz(x=rad,y=dens*pi*4*rad**2)
+                    self['M_DUST'] = m_dust/self.Msun
+                else: 
+                    pass
         else:
             pass
         
@@ -2295,27 +2382,10 @@ class Star(dict):
                     if self.has_key('DENSTYPE'):
                         if self['DENSTYPE'] == "MASSLOSS": 
                             raise IOError
-                    #-- Grab the velocity profile so the gas velocity can be 
-                    #   converted to the dust velocity.
-                    rad = self.getGasRad()
-                    vg = self.getGasVelocity()
-                    #-- Use the H2 density profile to take into account any 
-                    #   type of variable mass loss (including exponents in 
-                    #   r_points_mass_loss.
-                    nh2 = self.getGasNumberDensity()
-                    #-- Get the drift profile, corrected for the average grain 
-                    #   size
-                    drift = self.getAverageDrift()     
                     self['DENSTYPE'] = "SHELLFILE"
-                    #-- Calc dust density based on md/mg instead of d2g to take
-                    #   into account velocity profiles instead of terminal vels
-                    dens = nh2*self.mh*2.*self['MDOT_DUST']/self['MDOT_GAS']\
-                            *vg/(vg+drift)
-                    #-- GASTRoNOoM calculates smoother density profiles than 
-                    #   this formula ever can accomplish
-                    #dens = float(self['MDOT_DUST'])*self.Msun\
-                    #        /((vg+drift)*4.*pi*rad**2.*self.year)
                     self['DENSFILE'] = filename
+                    rad = self.getGasRad()
+                    dens = self.getWindDensity(denstype='dust')
                     DataIO.writeCols(filename,[rad/self.au,dens])        
                     print '** Made MCMax density input file at %s.'%filename
                 else:
