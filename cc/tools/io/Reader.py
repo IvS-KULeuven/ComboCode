@@ -31,7 +31,7 @@ class Reader(object):
         self.contents = dict()
         
     
-    def readFile(self, filename, delimiter = ' '):
+    def readFile(self, filename, delimiter = ' ', replace_spaces=1):
         
         '''
         Read a filename and store its contents in the OutputReader.
@@ -46,10 +46,17 @@ class Reader(object):
         
                             (default: ' ')
         @type delimiter: string
-        
+        @keyword replace_spaces: Replace any number of spaces or tabs by just 1
+                                 space. If delimiter == ' ', then replace_spaces
+                                 is always active.
+                             
+                                 (default: 1)
+        @type replace_spaces: bool 
+    
         '''
         try:
-            self.contents[filename] = DataIO.readFile(filename, delimiter)
+            self.contents[filename] = DataIO.readFile(filename, delimiter, \
+                                                      replace_spaces)
         except IOError:
             self.contents[filename] = None
             

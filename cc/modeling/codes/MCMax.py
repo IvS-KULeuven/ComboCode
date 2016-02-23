@@ -17,7 +17,7 @@ from cc.modeling.ModelingSession import ModelingSession
 
 
 
-def readModelSpectrum(dpath,rt_sed=1,fn_spec='spectrum45.0.dat'):
+def readModelSpectrum(dpath,rt_spec=1,fn_spec='spectrum45.0.dat'):
      
     '''
     Read the model output spectrum.
@@ -28,13 +28,13 @@ def readModelSpectrum(dpath,rt_sed=1,fn_spec='spectrum45.0.dat'):
     @param dpath: folder that contains the MCMax outputfiles
     @type dpath: string
     
-    @keyword rt_sed: If a ray-traced spectrum is requested
+    @keyword rt_spec: If a ray-traced spectrum is requested
      
-                     (default: 1)
-    @type rt_sed: bool
+                      (default: 1)
+    @type rt_spec: bool
     @keyword fn_spec: The filename of the ray-traced spectrum. Typically this 
                       is the default name, but can be different depending on 
-                      the ray-tracing angle that is used. 
+                      the ray-tracing angle (inclination) that is used. 
                       Not used if MCSpec are used.
                       
                       (default: spectrum45.0.dat)
@@ -45,9 +45,9 @@ def readModelSpectrum(dpath,rt_sed=1,fn_spec='spectrum45.0.dat'):
      
     '''
      
-    rt_sed = int(rt_sed)
+    rt_spec = int(rt_spec)
     try:    
-        if rt_sed:  
+        if rt_spec:  
             dfile = os.path.join(dpath,fn_spec)
             this_data = DataIO.readCols(dfile)
             #- if the lists are not empty
@@ -78,7 +78,7 @@ def readVisibilities(dpath,fn_vis='visibility01.0.dat'):
     
     @keyword fn_spec: The filename of the ray-traced visibilities. Typically 
                       this is the default name, but can be different depending 
-                      on the inclination (or baseline) that is used. 
+                      on the inclination that is used. 
                       
                       (default: visibility01.0.dat)
     @type fn_spec: str
@@ -113,142 +113,128 @@ def readVisibilities(dpath,fn_vis='visibility01.0.dat'):
 
 
 
-def rayTraceSpectrum(model_id,path_mcmax='runTestDec09',inputfilename='',\
-                     remove_source=0,redo_rt=0):
+def rayTrace(rt_type,model_id='',path_mcmax='',modelfolder='',outputfolder='',\
+             inputfilename='',nosource=0,redo=0,inclination=45.0):
     
     '''
-    Do the ray-tracing of the spectrum according to cc.path.mobs/Spec.out, but 
-    only if spectrum45.0.dat does not exist yet.
+    Ray trace an MCMax model. If output of the requested type and inclination is
+    found the ray tracing is NOT done anew. Ask for redo_rt if the ray tracing 
+    must be re-done.
     
-    @param model_id: the model_id of the requested model
+    Alternatively, request a different location for the output. The resulting 
+    model observations are moved to the new folder, so that any ray tracing is 
+    always re-done when called anew. 
+    
+    @param rt_type: The type of output requested. One of ['spec','image',\
+                    'vis','basevis'] for spectrum, images, visibilities as 
+                    function of wavelength, visibilities as function of baseline
+                    respectively. Requires, respectively, Spec.out, Image.out, 
+                    Visibilities.out, Basevis.out as observation files in 
+                    cc.path.mobs.
+    @type rt_type: str
+    
+    @keyword model_id: the model_id of the requested model. Only required when 
+                       model_folder is not given.
+                       
+                       (default: '')
     @type model_id: string
+    @keyword path_mcmax: modeling folder in MCMax home. Only required if 
+                         model_folder is not given.
+                         
+                         (default: '')s
+    @type path_mcmax: str
+    @keyword model_folder: The location of the model_folder. path_mcmax and 
+                           model_id are ignored if this is given. This folder is
+                           checked for existing model observations, in which 
+                           case the ray tracing is not done.
+                           
+                           (default: '')
+    @type model_folder: str
+    @keyword outputfolder: The location of the output folder. By default, set 
+                           at the model folder. This folder is *not* checked 
+                           for existing model observations. 
     
-    @keyword path_mcmax: modeling folder in MCMax home
-    @type path_mcmax: string
+                           (default: '')
+    @type outputfolder: str
     @keyword inputfilename: the inputfilename of the model. if '': filename is 
-                            inputMCMax_model_YYYY-MM-DDhHH-mm-ss.
+                            inputMCMax_model_YYYY-MM-DDhHH-mm-ss in path_mcmax/
+                            models/. 
                             
                             (default: '')
     @type inputfilename: string       
-    @keyword remove_source: remove the central source from the image
+    @keyword nosource: remove the central source from the model observation 
     
-                            (default: 0)
-    @type remove_source: bool   
-    @keyword redo_rt: redo the ray tracing of the spectrum regardless of the 
-                      spectrum already existing or not
+                       (default: 0)
+    @type nosource: bool   
+    @keyword redo: redo the ray tracing of the spectrum regardless of the 
+                   spectrum already existing or not
                       
-                      (default: 0)
-    @type redo_rt: bool
-    
+                   (default: 0)
+    @type redo: bool
+    @keyword inclination: The inclination of the observer towards the object. 
+                          
+                          (default: 45.0)
+    @type inclination: float
+
     '''
     
-    redo_rt = int(redo_rt)
-    spectrum_file = os.path.join(cc.path.mcmax,path_mcmax,'models',model_id,\
-                                 'spectrum45.0.dat')
-    if not os.path.isfile(spectrum_file) or redo_rt:
-        print '** Ray-tracing spectrum now...'
-        if not inputfilename:
-            inputfilename=os.path.join(cc.path.mcmax,path_mcmax,'models',\
-                                       'inputMCMax_%s.dat'%model_id)
-        output_folder = os.path.join(cc.path.mcmax,path_mcmax,'models',\
-                                     model_id)
-        spec_file = os.path.join(cc.path.mobs,'Spec.out')
-        if remove_source:
-            subprocess.call([' '.join(['MCMax ' + inputfilename,'0',\
-                                       '-s tracestar=.false.','-o',\
-                                       output_folder,spec_file])],shell=True)
-        else:
-            subprocess.call([' '.join(['MCMax ' + inputfilename,'0','-o',\
-                                       output_folder,spec_file])],shell=True)
+    redo = int(redo)
+    rt_type = rt_type.lower()
+
+    #-- Folder settings and defining output filename
+    if not modelfolder: 
+        modelfolder = os.path.join(cc.path.mcmax,path_mcmax,'models',model_id)
+    obsfile_types = dict([('spec',('Spec','spectrum')),\
+                          ('image',('Image','Image')),\
+                          ('vis',('Visibilities','visibility')),\
+                          ('basevis',('Basevis','basevis'))])
+    outprefix = obsfile_types[rt_type][1]
+    
+    #-- Note that images found with a matching inclination will not re-do the 
+    #   ray tracing, even if the observation file has different settings for
+    #   wavelength and field of view.
+    if rt_type == 'image':
+        outfile = '*Image*_i{:04.1f}_*'.format(inclination)
     else:
-        print '** Spectrum ray-tracing is already finished.'
-        
-
-
-def rayTraceImage(model_id,path_mcmax='runTestDec09',inputfilename='',\
-                  remove_source=0,output_folder=''):
+        outfile = '{:s}{:04.1f}.dat'.format(outprefix,inclination)
     
-    '''
-    Do the ray-tracing of images, according to cc.path.mobs/Image.out.
+    #-- Check if file already exists in model folder for inc unless redo is True
+    if glob(os.path.join(modelfolder,outfile)) and not redo:
+        print '** Spectrum ray-tracing is already finished. '+\
+              'Your {:s} models can be found at:'.format(outprefix)
+        print modelfolder
+        return
     
-    @param model_id: the model_id of the requested model
-    @type model_id: string
-        
-    @keyword path_mcmax: modeling folder in MCMax home
-    @type path_mcmax: string
-    @keyword inputfilename: the inputfilename of the model. if '': filename is 
-                            inputMCMax_model_YYYY-MM-DDhHH-mm-ss.
-                            
-                            (default: '')
-    @type inputfilename: string                        
-    @keyword remove_source: remove the central source from the image
+    #-- Additional keys to be added to the ray-trace call.
+    add_keys = dict()
+    add_keys['incangle'] = inclination
+    if nosource: 
+        add_keys['tracestar'] = '.false.'
+    str_keys = ['-s '+'='.join([k,str(v)]) for k,v in add_keys.items()]    
     
-                            (default: 0)
-    @type remove_source: bool
-    @keyword output_folder: The location of the output folder. By default, set 
-                            at the model output folder.
+    print '** Ray-tracing {:s} now...'.format(outprefix)
+    obsfile = os.path.join(cc.path.mobs,obsfile_types[rt_type][0]+'.out')
     
-                            (default: '')
-    @type output_folder: str
-    
-    '''
-    
-    remove_source = int(remove_source)
-    print '** Ray-tracing images now...'
+    #-- Set default input filename
     if not inputfilename:
         inputfilename=os.path.join(cc.path.mcmax,path_mcmax,'models',\
-                                   'inputMCMax_%s.dat'%model_id)
-    model_folder = os.path.join(cc.path.mcmax,path_mcmax,'models',model_id)
-    image_file = os.path.join(cc.path.mobs,'Image.out')
-    if remove_source:
-        subprocess.call([' '.join(['MCMax ' + inputfilename,'0',\
-                                   '-s tracestar=.false.','-o',model_folder,\
-                                   image_file])],shell=True)
-    else:
-        subprocess.call([' '.join(['MCMax ' + inputfilename,'0','-o',\
-                                   model_folder,image_file])],shell=True)
+                                   'inputMCMax_{:s}.dat'.format(model_id))
+    #-- Run the ray tracing
+    call_str = ['MCMax',inputfilename,'0','-o',modelfolder] + str_keys + \
+               [obsfile]
+    subprocess.call([' '.join(call_str)],shell=True)        
     
-    if not output_folder:
-        output_folder = model_folder
-    else: 
-        subprocess.call(['mv %s %s'%(os.path.join(model_folder,'Image*'),\
-                                     os.path.join(output_folder,'.'))],\
+    #-- Move model observations to requested output folder if applicable
+    if not outputfolder:
+        outputfolder = modelfolder
+    else:
+        ofiles = outfile if rt_type == 'image' else outprefix+'*.dat'
+        subprocess.call([' '.join(['mv',os.path.join(modelfolder,ofiles),\
+                                   os.path.join(outputfolder,'.')])],\
                         shell=True)
-    print '** Your images can be found at:'
-    print output_folder
-                                
-
-
-def rayTraceVisibilities(model_id,path_mcmax='runTestDec09',inputfilename=''):
+    print '** Your {:s} model observations can be found at:'.format(outprefix)
+    print outputfolder
     
-    '''
-    Do the ray-tracing of visibilities, according to 
-    cc.path.mobs/Visibilities.out.
-    
-    @param model_id: the model_id of the requested model
-    @type model_id: string
-        
-    @keyword path_mcmax: modeling folder in MCMax home
-    @type path_mcmax: string
-    @keyword inputfilename: the inputfilename of the model. if '': filename is 
-                            inputMCMax_model_YYYY-MM-DDhHH-mm-ss.
-                            
-                            (default: '')
-    @type inputfilename: string                        
-    
-    '''
-    
-    print '** Ray-tracing visibilities now...'
-    if not inputfilename:
-        inputfilename=os.path.join(cc.path.mcmax,path_mcmax,'models',\
-                                   'inputMCMax_%s.dat'%model_id)
-    output_folder = os.path.join(cc.path.mcmax,path_mcmax,'models',model_id)
-    visibilities_file = os.path.join(cc.path.mobs,'Visibilities.out')
-    subprocess.call([' '.join(['MCMax ' + inputfilename,'0','-o',\
-                               output_folder,visibilities_file])],shell=True)
-    print '** Your visibilities can be found at:'
-    print output_folder
-                               
                                
 
 class MCMax(ModelingSession):
@@ -316,15 +302,15 @@ class MCMax(ModelingSession):
         @type star: Star()
         
         '''
-
-        if self.model_id and int(star['RT_SED']):
-            rayTraceSpectrum(model_id=self.model_id,path_mcmax=self.path,\
-                             redo_rt=star['REDO_OBS'])
-        if self.model_id and int(star['IMAGE']):
-            rayTraceImage(model_id=self.model_id,path_mcmax=self.path,\
-                          remove_source=star['IMAGE_NOSOURCE'])
-        if self.model_id and int(star['VISIBILITIES']):
-            rayTraceVisibilities(model_id=self.model_id,path_mcmax=self.path)
+        
+        obstypes = ['RT_IMAGE','RT_SPEC','RT_VIS','RT_BASEVIS']
+        obs_request = [req.lower().replace('rt_','')
+                       for req in obstypes if int(star[req])]
+        settings = ['RT_REDO','RT_INCLINATION','RT_OUTPUTFOLDER','RT_NOSOURCE']
+        kwargs = dict([(k.lower().replace('rt_',''),star[k]) for k in settings])
+        for obstype in obs_request: 
+            rayTrace(rt_type=obstype,path_mcmax=star.path_mcmax,\
+                     model_id=star['LAST_MCMAX_MODEL'],**kwargs)
 
 
             

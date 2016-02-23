@@ -156,7 +156,8 @@ class SedStats(Statistics):
         self.mflux = []
         for model_id,s in zip(mids,self.star_grid):
             dpath = os.path.join(cc.path.mout,'models',model_id)
-            w,f = MCMax.readModelSpectrum(dpath,s['RT_SED'])
+            fn_spec = 'spectrum{:04.1f}.dat'.format(s['RT_INCLINATION'])
+            w,f = MCMax.readModelSpectrum(dpath,s['RT_SPEC'],fn_spec)
             if s['REDDENING']:
                 print 'Reddening models to correct for interstellar extinction.'
                 ak = self.sed.getAk(s['DISTANCE'],s['REDDENING_MAP'],\

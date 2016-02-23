@@ -842,7 +842,7 @@ class Star(dict):
         
         '''
         Return the dust radial grid in cm, au or Rstar. 
-              
+        
         @keyword species: The dust species for which to return the grid. If 
                           default or if T_CONTACT is on, the file is denstemp
                           otherwise it is the species specific file.
@@ -877,15 +877,50 @@ class Star(dict):
         return rad   
     
     
+    def getDustTheta(self,species=''):
+        
+        '''
+        Return the dust theta grid in radians.
+        
+        This is the angular grid goin from pole at zero radians to equator at 
+        pi/2 radians.
+              
+        @keyword species: The dust species for which to return the grid. If 
+                          default or if T_CONTACT is on, the file is denstemp
+                          otherwise it is the species specific file.
+        
+                          (default: '')
+        @type species: str
+        
+        @return: array giving the theta grid.
+        @rtype: array
+        
+        '''
+
+        if not self['LAST_MCMAX_MODEL']: return empty(0)
     
-    def getDustDensity(self,species=''):
+        fn = self.getDustFn(species)
+        theta = array(DataIO.getMCMaxOutput(incr=int(self['NTHETA']),\
+                                            keyword='THETA',filename=fn))
+        return theta
+        
+        
+    
+    def getDustDensity(self,species='',avg_theta=1):
         
         '''
         Return the dust density profile from the file made for MCMax.
         
         self.getDustRad returns the radial grid associated with this profile. 
+        self.getDustTheta returns the angular grid associated with this profile
+        if angular averaging is off. 
         
         An empty array is returned if the model does not exist.
+        
+        Note that MCMax is a 2D code. By default, the theta coordinate (angle
+        pole-equator) is averaged out. This can be turned off, in which case
+        the full density grid is returned giving rho at (r_0,t_0),...,(r_0,t_n),
+        (r_1,t_0),...,(r_1,t_n),...,(r_n,t_0),...,(r_n,t_n).
         
         @keyword species: The dust species for which to return the grid. If 
                           default or if T_CONTACT is on, the file is denstemp
@@ -893,6 +928,13 @@ class Star(dict):
         
                           (default: '')
         @type species: str
+        @keyword avg_theta: Average out the angular grid in the density 
+                            distribution. At a given radial point, the densities
+                            at all thetas are averaged. On by default.
+                            
+                            (default: 1)
+        @type avg_theta: bool
+        
         @return: the density profile (g/cm3)
         @rtype: array
         
@@ -901,29 +943,37 @@ class Star(dict):
         if not self['LAST_MCMAX_MODEL']: return empty(0)
         
         #-- Read the dust density profile and reduce the array by averaging
-        #   over the azimuthal coordinate.
+        #   over the theta coordinate, if requested.
         fn = self.getDustFn(species)
         incr = int(self['NRAD'])*int(self['NTHETA'])
         dens_ori = DataIO.getMCMaxOutput(filename=fn,incr=incr,\
                                          keyword='DENSITY')
-        dens = Data.reduceArray(dens_ori,self['NTHETA'])
+        if avg_theta: dens = Data.reduceArray(dens_ori,self['NTHETA'])
+        else: dens = dens_ori
         
         return dens         
          
          
 
-    def getDustTemperature(self,add_key=0,species=''):
+    def getDustTemperature(self,add_key=0,species='',avg_theta=1):
          
         '''
         Return the dust temperature profile from MCMax model.
         
-        self.getDustRad returns the radial grid associated with this profile. 
+        self.getDustRad returns the radial grid associated with this profile.
+        self.getDustTheta returns the angular grid associated with this profile
+        if angular averaging is off. 
         
         An empty array is returned if the model does not exist.
         
         The total dust temperature without separate components for the 
         different dust species is returned if no species is requested or if 
         thermal contact is on.
+        
+        Note that MCMax is a 2D code. By default, the theta coordinate (angle
+        pole-equator) is averaged out. This can be turned off, in which case
+        the full temperature grid is returned giving T at (r_0,t_0),...,
+        (r_0,t_n),(r_1,t_0),...,(r_1,t_n),...,(r_n,t_0),...,(r_n,t_n).
         
         @keyword species: The dust species for which to return the grid. If 
                           default or if T_CONTACT is on, the file is denstemp
@@ -936,9 +986,15 @@ class Star(dict):
                           
                           (default: 0)
         @type add_key: bool
+        @keyword avg_theta: Average out the angular grid in the temperature 
+                            distribution. At a given radial point, the temps
+                            at all thetas are averaged. On by default.
+                            
+                            (default: 1)
+        @type avg_theta: bool
         
         @return: The temperature profile (K) as well as a key, if requested.
-        @rtype: (array,string)
+        @rtype: array or (array,string)
         
         '''
         
@@ -946,12 +1002,13 @@ class Star(dict):
             return add_key and (empty(0),'') or empty(0)
 
         #-- Read the dust temperature profile and reduce the array by averaging
-        #   over the azimuthal coordinate.
+        #   over the theta coordinate, if requested.
         fn = self.getDustFn(species)
         incr = int(self['NRAD'])*int(self['NTHETA'])
         temp_ori = DataIO.getMCMaxOutput(incr=incr,keyword='TEMPERATURE',\
                                          filename=fn)
-        temp = Data.reduceArray(temp_ori,self['NTHETA'])
+        if avg_theta: temp = Data.reduceArray(temp_ori,self['NTHETA'])
+        else: temp = temp_ori
 
         if add_key:
             key = '$T_{\mathrm{d, avg}}$ for %s'\
@@ -1732,6 +1789,7 @@ class Star(dict):
         """
         
         if not self.has_key('M_DUST'):
+            #-- M_DUST is an input parameter calculated from an equation
             if self['DENSTYPE'] == 'POW':
                 if self['DENSPOW'] == 2:
                     self['M_DUST']  \
@@ -1745,13 +1803,23 @@ class Star(dict):
                         *(self['R_INNER_DUST']*self['R_STAR']*self.Rsun)**2\
                         /(2.-self['DENSPOW'])/self.Msun\
                         *((self['R_OUTER_DUST']/float(self['R_INNER_DUST']))\
-                        **(2.-self['DENSPOW'])-1.)            
-            
+                        **(2.-self['DENSPOW'])-1.)
+            #-- M_DUST is not an input parameter and can be calculated from the
+            #   MCMax density profile. Note that for DENSTYPE==MEIXNER M_DUST 
+            #   has to be given in the CC inputfile, so this is never calculated
+            #-- If MCMax was not yet ran, calculate the dust mass from the gas 
+            #   density profile times the dust-to-gas ratio.
             else:
-                if self['LAST_GASTRONOOM_MODEL']: 
+                if self['LAST_MCMAX_MODEL']: 
+                    rad = self.getDustRad(unit='cm')
+                    dens = self.getDustDensity()
+                    m_dust = integrate.trapz(x=rad,y=dens*pi*4*rad**2)
+                    self['M_DUST'] = m_dust/self.Msun
+                elif self['LAST_GASTRONOOM_MODEL']: 
                     rad = self.getGasRad(unit='rstar')
                     dens = self.getWindDensity(denstype='dust')
-                    selection = (rad>self["R_INNER_DUST"])*(rad<self['R_OUTER_DUST'])
+                    selection = (rad>self["R_INNER_DUST"])\
+                                    *(rad<self['R_OUTER_DUST'])
                     dens = dens[selection]
                     rad = rad[selection]*self['R_STAR']*self.Rsun
                     m_dust = integrate.trapz(x=rad,y=dens*pi*4*rad**2)
@@ -2145,60 +2213,113 @@ class Star(dict):
             pass    
 
 
+    def calcRT_INCLINATION(self):
+        
+        '''
+        Set the default value of MCMax ray-tracing inclination to 45 degrees.
+        
+        '''
+        
+        if not self.has_key('RT_INCLINATION'):
+            self['RT_INCLINATION']= 45.0
+        else:
+            pass         
 
-    def calcRT_SED(self):
+
+    def calcRT_NOSOURCE(self):
         
         '''
-        Set the default value of MCMax ray-tracing of the SED to False.
+        Set the default value of excluding the central source from the ray 
+        tracing of the MCMax model to False.
         
         '''
         
-        if not self.has_key('RT_SED'):
-            self['RT_SED']= 0
+        if not self.has_key('RT_NOSOURCE'):
+            self['RT_NOSOURCE']= 0
+        else:
+            pass         
+
+
+    def calcRT_SPEC(self):
+        
+        '''
+        Set the default value of MCMax ray-tracing of the spectrum to False.
+        
+        '''
+        
+        if not self.has_key('RT_SPEC'):
+            self['RT_SPEC']= 0
         else:
             pass         
 
 
 
-    def calcIMAGE(self):
+    def calcRT_IMAGE(self):
         
         '''
         Set the default value of MCMax image to False.
         
         '''
         
-        if not self.has_key('IMAGE'):
-            self['IMAGE']= 0
+        if not self.has_key('RT_IMAGE'):
+            self['RT_IMAGE']= 0
         else:
             pass    
 
 
-    def calcVISIBILITIES(self):
+    def calcRT_VIS(self):
         
         '''
         Set the default value of MCMax visibilities to False.
         
         '''
         
-        if not self.has_key('VISIBILITIES'):
-            self['VISIBILITIES']= 0
+        if not self.has_key('RT_VIS'):
+            self['RT_VIS']= 0
         else:
             pass    
 
-    def calcREDO_OBS(self):
+
+    def calcRT_BASEVIS(self):
         
         '''
-        Set the default value of redoing observation files to False.
+        Set the default value of MCMax visibilities versus baseline to False.
         
         '''
         
-        if not self.has_key('REDO_OBS'):
-            self['REDO_OBS']= 0
+        if not self.has_key('RT_BASEVIS'):
+            self['RT_BASEVIS']= 0
+        else:
+            pass    
+            
+
+    def calcRT_REDO(self):
+        
+        '''
+        Set the default value of redoing the MCMax model observation to False.
+        
+        '''
+        
+        if not self.has_key('RT_REDO'):
+            self['RT_REDO']= 0
         else:
             pass    
         
  
-    
+    def calcRT_OUTPUTFOLDER(self):
+        
+        '''
+        Set the default value of MCMax ray-tracing outputfolder to empty. The
+        output model observations are then saved in the model output folder.
+        
+        '''
+        
+        if not self.has_key('RT_OUTPUTFOLDER'):
+            self['RT_OUTPUTFOLDER']= ''
+        else:
+            pass         
+
+ 
     def calcR_MAX(self,missing_key):
         
         """

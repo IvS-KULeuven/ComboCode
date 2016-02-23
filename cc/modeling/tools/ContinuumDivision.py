@@ -180,15 +180,13 @@ class ContinuumDivision(object):
         The equivalent width of the feature is also calculated here.
         
         '''
-        
-        model_ids = [s['LAST_MCMAX_MODEL'] 
-                     for s in self.star_grid
-                     if s['LAST_MCMAX_MODEL']]
-        if model_ids: 
-            rt_sed = self.star_grid[0]['RT_SED']
-            path_mcmax = self.star_grid[0].path_mcmax
-        for i,model_id in enumerate(model_ids):
-            w,f = MCMax.readModelSpectrum(path_mcmax,model_id,rt_sed)
+
+        for i,s in enumerate(self.star_grid):
+            model_id = s['LAST_MCMAX_MODEL']
+            if not model_id: continue
+            dpath = os.path.join(cc.path.mout,'models',model_id)
+            fn_spec = 'spectrum{:04.1f}.dat'.format(s['RT_INCLINATION'])
+            w,f = MCMax.readModelSpectrum(dpath,s['RT_SPEC'],fn_spec)
             self.divideContinuum(w,f,dtype=model_id,frindex=i)
             self.calcEqWidth(dtype=model_id,frindex=i)
                 

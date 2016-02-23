@@ -557,3 +557,18 @@ class Molecule():
         return self.molecule in ['1H1H16O','p1H1H16O','1H1H17O',\
                                  'p1H1H17O','1H1H18O','p1H1H18O']
         
+        
+    
+    def readMline(self):
+    
+        """
+        Read the mline output for this molecule, given that a model_id is 
+        available. 
+        
+        The mline output is available in the MlineReader object, as a property
+        of Molecule().
+        
+        [NYI]
+        
+        
+        """

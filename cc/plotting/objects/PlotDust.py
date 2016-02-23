@@ -208,14 +208,13 @@ class PlotDust(PlottingSession):
         #- Otherwise the ray tracing keyword is unnecessary.
         if no_models:
             model_ids_mcm = []
-        if model_ids_mcm: 
-            rt_sed = star_grid[0]['RT_SED']
         
         wmodels = []
         fmodels = []
         for model_id,s in zip(model_ids_mcm,star_grid):
             dpath = os.path.join(cc.path.mout,'models',model_id)
-            w,f = MCMax.readModelSpectrum(dpath,s['RT_SED'])
+            fn_spec = 'spectrum{:04.1f}.dat'.format(s['RT_INCLINATION'])
+            w,f = MCMax.readModelSpectrum(dpath,s['RT_SPEC'],fn_spec)
             if s['REDDENING']:
                 print 'Reddening models to correct for interstellar extinction.'
                 ak = self.sed.getAk(s['DISTANCE'],s['REDDENING_MAP'],\
@@ -342,8 +341,8 @@ class PlotDust(PlottingSession):
             for s in star_grid:
                 model_id = s['LAST_MCMAX_MODEL']
                 dpath = os.path.join(cc.path.mout,'models',model_id)
-                model = MCMax.readVisibilities(dpath=dpath,\
-                                               fn_vis='visibility01.0.dat')
+                fn_vis = 'visibility{:04.1f}.dat'.format(s['RT_INCLINATION'])
+                model = MCMax.readVisibilities(dpath=dpath,fn_vis=fn_vis)
                 models.append(model)
             real_models = [model for model in models if model]
             if not real_models: 
@@ -496,8 +495,8 @@ class PlotDust(PlottingSession):
             for s in star_grid:
                 model_id = s['LAST_MCMAX_MODEL']
                 dpath = os.path.join(cc.path.mout,'models',model_id)
-                model = MCMax.readVisibilities(dpath=dpath,\
-                                               fn_vis='basevis01.0.dat')
+                fn_vis = 'basevis{:04.1f}.dat'.format(s['RT_INCLINATION'])
+                model = MCMax.readVisibilities(dpath=dpath,fn_vis=fn_vis)
                 models.append(model)
             real_models = [model for model in models if model]
             if not real_models: 
