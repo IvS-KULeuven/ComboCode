@@ -158,7 +158,7 @@ class PlotGas(PlottingSession):
                                         keytags=['Gas Velocity',\
                                                  'Grain-size Weighted Drift'],\
                                         xlogscale=1))
-        if plot_filenames and plot_filenames[0][-4:] == '.pdf':    
+        if pfns and pfns[0][-4:] == '.pdf':    
             new_filename = os.path.join(self.pplot,'velocity_profiles.pdf')
             DataIO.joinPdf(old=sorted(pfns),new=new_filename)
             print '** Plots can be found at:'

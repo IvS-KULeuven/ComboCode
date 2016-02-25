@@ -530,7 +530,11 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
                                     function=funclib.soft_parabola)
 
     vexp = abs(firstguess.get_parameters()[0][2])
+    ###
+    #window = 2.
     window = 2.
+    print window
+    ##
     print 'First guess fit, using a soft parabola:'
     print firstguess.param2str(accuracy=5)
     
@@ -631,14 +635,18 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
         fvlsr = finalfit.get_parameters()[0][1]
         fevlsr = finalfit.get_parameters()[1][1]
         gamma, egamma = None,None
+        ###
+        #window = 3.
         window = 3.
+        print window
+        ###
         print 'Improved fit, using a gaussian instead of soft parabola:'
         print finalfit.param2str(accuracy=5)
         
     #-- Compute numerical integrations.
     #   After fitting, window for integration should be 0.6*window. vexp is
     #   not expected to be too small anymore as in checkLPShape
-    keep = np.abs(vel-vlsr)<=(0.6*window*vexp)
+    keep = np.abs(vel-vlsr)<=(0.6*window*vexp)    
     velsel = vel[keep]
     flux_first = firstguess.evaluate(velsel)
     flux_final = finalfit.evaluate(velsel)

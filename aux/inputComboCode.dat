@@ -104,7 +104,7 @@ MDOT_DUST=1.6e-7                    # Dust mass-loss rate [Msol/yr]
 #-- These are standard values but can be changed here
 DUST_TO_GAS_INITIAL=2e-3            # Dust-to-gass mass ratio, initial guess only!                     
 USE_DENSITY_NON_CONSISTENT=0        # Change density according to your mass loss function, this is off by default
-#DENSTYPE=%                         # If commented, MASSLOSS is used in first iteration of MCMax, then in the 2nd the density distribution from GASTRoNOoM is used. Put to MASSLOSS if you do not want to use the density from GASTRoNOoM in MCMax. Put to SHELLFILE if you want to use a 1d custom density grid.
+#DENSTYPE=%                         # If commented, MASSLOSS is used in first iteration of MCMax, then in the 2nd the density distribution from GASTRoNOoM is used. Put to MASSLOSS if you do not want to use the density from GASTRoNOoM in MCMax. Put to SHELLFILE if you want to use a 1d custom density grid. Put to MEIXNER for the Meixner shell model. Note that MeixA => MeixF (See Meixner et al. 2002) and MeixSW (in AU) have to be defined as well. M_DUST can be defined (in Msun), but if not, it is calculated from the GASTRoNOoM model. 
 #DENSFILE=                          # In case DENSTYPE=SHELLFILE. Two columns: AU - g/cm3. If the path is not given, the file is assumed to be in densf in Path.dat.
 MDOT_MODE=CONSTANT                  # Modus of mass-loss prescription (CONSTANT/2STEP/SINUS/PERIODIC/OTHER)  -- Only CONSTANT and OTHER are implemented. If OTHER, still define MDOT_GAS and MDOT_DUST correctly for the first part of the wind. DUST_TO_GAS is calculated from this. That, or give DUST_TO_GAS_CHANGE_ML_SP.
 
@@ -183,19 +183,25 @@ TDESITER=1                          # 1 to destroy high temperature dust, is put
 SCATTYPE='ISOTROPIC'                #'FULL' for aggregates and when anisotropic scattering is important. Otherwise, 'ISOTROPIC'.
 
 #-- Numerical precision
-PHOTON_COUNT=10000                   # Number of photons used in Monte Carlo simulation                 
+PHOTON_COUNT=10000                  # Number of photons used in Monte Carlo simulation                 
 
 #-- Interstellar reddening
 REDDENING=0                         # Redden your models according to the distance to correct for interstellar extinction. Off by default.
-REDDENING_LAW=fitz2004chiar2006    # The extinction law. Default is the combination of the laws by Fitzpatrick 2004 (Optical) and Chiar & Tielens 2006 (IR), see IvS repo for more details at ivs.sed.reddening. Alternatives include cardelli1989, fitzpatrick2004, chiartielens2006, etc.
-REDDENING_MAP=marshall             # The Galactic 3d extinction model used to derive the K-band extinction magnitude for given longitude and latitude (given in Star.dat for your source). Default is Marshall 2006, replaced by Drimmel 2003 if long/lat not available in Marshall. Alternatives are Arenou 1992 and Schlegel 1998. See IvS repo for more details at ivs.sed.extinctionmodels
+REDDENING_LAW=fitz2004chiar2006     # The extinction law. Default is the combination of the laws by Fitzpatrick 2004 (Optical) and Chiar & Tielens 2006 (IR), see IvS repo for more details at ivs.sed.reddening. Alternatives include cardelli1989, fitzpatrick2004, chiartielens2006, etc.
+REDDENING_MAP=marshall              # The Galactic 3d extinction model used to derive the K-band extinction magnitude for given longitude and latitude (given in Star.dat for your source). Default is Marshall 2006, replaced by Drimmel 2003 if long/lat not available in Marshall. Alternatives are Arenou 1992 and Schlegel 1998. See IvS repo for more details at ivs.sed.extinctionmodels
 
-#-- Observational output
-RT_SED=0                            # Put to 0 if no ray tracing for SED (ie MC spectra are OK), if multiple  1 or 0 (based on ~/MCMax/Observation_Files/Spec.out, and not changing the angle)                   
-REDO_OBS=0                          # CC checks if ray tracing for the SED has been done already, but this can be circumvented by putting this to 1, and then the observation output is produced regardless 
-IMAGE=0                             # Put to 1 if you want to make images based on ~/MCMax/Observation_Files/Image.out (ie change this file if you want different images), always runs, regardless of REDO_OBS 
-IMAGE_NOSOURCE=0                    # Remove the central source from the image
-VISIBILITIES=0                      # Calculate visibilities of your MCMax model according to an observation file ~/MCMax/Observation_Files/Visibilities.out
+#-- Ray tracing model observations with MCMax
+#   TYPES
+RT_SPEC=0                           # Calculate SED of your MCMax model according to an observation file cc.path.mobs/Spec.out. If 0, the SED can still be plotted by averaging out the MC Spectra (when PLOT_DUST_SED is 1), but this is not valid when a nonspherically symmetric model is calculated (e.g. DENSTYPE = MEIXNER)
+RT_IMAGE=0                          # Calculate images of your MCMax model according to an observation file cc.path.mobs/Image.out (ie change this file if you want different images) 
+RT_VIS=0                            # Calculate visibilities of your MCMax model at a given baseline as a function of wavelength according to an observation file cc.path.mobs/Visibilities.out. 
+RT_BASEVIS=0                        # Calculate visibilities of your MCMax model at a given wavelenght as a function of baseline according to an observation file cc.path.mobs/Basevis.out. 
+
+#   SETTINGS
+RT_INCLINATION=45.0                 # The inclination between observer and source of the model observation. Default is 45.0, and is given in the outputfilename of the model observation.
+RT_NOSOURCE=0                       # Remove the central source from the model observation
+RT_REDO=0                           # CC checks if ray tracing for the model observation at requested inclination has been done already, but this can be circumvented by putting this to 1, and then the observation output is produced regardless 
+RT_OUTPUTFOLDER=                    # The output folder of the ray-traced model observations. If left empty, the output is placed in the model folder. If a folder is given, ray tracing is ALWAYS re-done when called. 
 
 ####################
 # DUST Particle Parameters  0 = particle type is ignored, "A_" is reserved for dust species abundances
@@ -395,8 +401,11 @@ CFG_GAS_PACS_SEGMENTS=
 PLOT_DUST_SED=0                     # Plot the SED with data as defined in ~/ComboCode/Data/Sed.dat
 CFG_DUST_SED=
 
-PLOT_DUST_CORRFLUX=0                # Plot correlated fluxes for data available in CORRFLUX_PATH
+PLOT_DUST_CORRFLUX=0                # Plot correlated fluxes for data available in CORRFLUX_PATH (or for models only)
 CFG_DUST_CORRFLUX=                  
+
+PLOT_DUST_VISIBILITIES=0            # Plot Visibilities as a function of baseline for data available in CORRFLUX_PATH (or models only)
+CFG_DUST_VISIBILITIES=
 
 PLOT_DUST_DENS=0                    # Plot the dust density profile.
 CFG_DUST_DENS=
