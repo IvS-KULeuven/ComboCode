@@ -284,7 +284,7 @@ class Pacs(Instrument):
     """
     
     def __init__(self,star_name,oversampling,path=None,redo_convolution=0,\
-                 intrinsic=1,path_linefit='',absflux_err=0.2):
+                 intrinsic=1,path_linefit=''):
         
         '''
         Initializing an instance of Pacs().
@@ -323,17 +323,11 @@ class Pacs(Instrument):
                                
                                (default: '')
         @type path_linefit: string
-        @keyword absflux_err: The absolute flux calibration uncertainty of the
-                              instrument. 
-                               
-                              (default: 0.2)
-        @type absflux_err: float
         
         '''
         
         super(Pacs,self).__init__(star_name=star_name,code='GASTRoNOoM',\
                                   path_linefit=path_linefit,path=path,\
-                                  absflux_err=absflux_err,
                                   oversampling=oversampling,\
                                   instrument_name='PACS',intrinsic=intrinsic)
         self.data_wave_list = []
@@ -379,7 +373,7 @@ class Pacs(Instrument):
         wave_fit (micron), 
         line_flux (W/m2),
         line_flux_err (W/m2), 
-        line_flux_rel, 
+        line_flux_rel (%), 
         continuum (W/m2 m), 
         line_peak (W/m2 m), 
         fwhm_fit (micron),
@@ -400,7 +394,8 @@ class Pacs(Instrument):
             del dd[-1]
             del dd[-1]
             del dd[-10]
-        dd[-6] = [float(val.strip('%')) for val in dd[-6]]
+        #-- Convert relative error in % to ratio
+        dd[-6] = [float(val.strip('%'))/100. for val in dd[-6]]
         del dd[-8]
         #bands = []
         #obs_bands = set([(band,obsid) 

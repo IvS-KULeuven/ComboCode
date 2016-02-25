@@ -1048,8 +1048,8 @@ class Transition():
         try:
             tel_index = all_telescopes.index(telescope)
         except ValueError:
-            raise ValueError('Requested telescope not found in Telescope.dat.')
-        
+            raise ValueError('%s not found in Telescope.dat.'%self.telescope)
+                                     
         self.telescope_size = DataIO.getInputData(keyword='SIZE',start_index=5,\
                                                   filename='Telescope.dat',\
                                                   rindex=tel_index)

@@ -174,7 +174,6 @@ class ComboCode(object):
         oversampling = self.processed_input.pop('PACS_OVERSAMPLING','')
         intrinsic = self.processed_input.pop('PACS_INTRINSIC',1)
         linefit = self.processed_input.pop('PACS_LINEFIT','')
-        absflux_err = self.processed_input.pop('PACS_ABSFLUX_ERR',0.2)
         
         #-- If PACS is not requested, put self.spire to None. Still popping the
         #   PACS specific keywords to avoid clutter in the Star() objects.
@@ -188,8 +187,7 @@ class ComboCode(object):
                               redo_convolution=redo_convolution,\
                               oversampling=oversampling,\
                               intrinsic=intrinsic,\
-                              path_linefit=linefit,\
-                              absflux_err=absflux_err)
+                              path_linefit=linefit)
         self.pacs.setData(searchstring=searchstring)
 
 
@@ -208,7 +206,6 @@ class ComboCode(object):
         intrinsic = self.processed_input.pop('SPIRE_INTRINSIC',1)
         oversampling = self.processed_input.pop('SPIRE_OVERSAMPLING',0)
         linefit = self.processed_input.pop('SPIRE_LINEFIT','')
-        absflux_err = self.processed_input.pop('SPIRE_ABSFLUX_ERR',0.2)
         
         #-- If SPIRE is not requested, put self.spire to None. Still popping the
         #   SPIRE specific keywords to avoid clutter in the Star() objects.
@@ -222,8 +219,7 @@ class ComboCode(object):
                                  resolution=resolution,\
                                  intrinsic=intrinsic,\
                                  oversampling=oversampling,\
-                                 path_linefit=linefit,\
-                                 absflux_err=absflux_err)
+                                 path_linefit=linefit)
         self.spire.setData(searchstring=searchstring)
 
 
@@ -800,6 +796,7 @@ class ComboCode(object):
 
         self.pacsstats = None
         self.spirestats = None
+        self.unresostats = []
         self.resostats = None
         self.sedstats = None
         if self.statistics and self.pacs <> None:
@@ -811,11 +808,8 @@ class ComboCode(object):
             self.pacsstats.setInstrument(instrument_name='PACS',\
                                          instrument_instance=self.pacs,\
                                          stat_method=self.stat_method)
-            self.pacsstats.setModels(star_grid=self.star_grid)
-            self.pacsstats.setLineStrengths()
-            self.pacsstats.calcChiSquared(chi2_method=self.stat_chi2)
-            self.pacsstats.plotRatioWav(inputfilename=self.inputfilename)
-        
+            self.unresostats.append(self.pacsstats)
+                    
         if self.statistics and self.spire <> None:
             print '************************************************'
             print '**** Doing SPIRE statistics for %s.'%self.star_name
@@ -825,11 +819,14 @@ class ComboCode(object):
             self.spirestats.setInstrument(instrument_name='SPIRE',\
                                           instrument_instance=self.spire,\
                                           stat_method=self.stat_method)
-            self.spirestats.setModels(star_grid=self.star_grid)
-            #self.spirestats.setRatios(chi2_type=self.stat_chi2)
-            self.spirestats.setLineStrengths()
-            self.spirestats.calcChiSquared(chi2_method=self.stat_chi2)
-            self.spirestats.plotRatioWav(inputfilename=self.inputfilename)
+            self.unresostats.append(self.spirestats)
+        
+        for statsobj in self.unresostats:
+            statsobj.setModels(star_grid=self.star_grid)
+            statsobj.setLineStrengths()
+            statsobj.calcChiSquared(chi2_method=self.stat_chi2)
+            statsobj.plotRatioWav(inputfilename=self.inputfilename)
+
         
         if self.statistics and self.sed <> None:
             print '************************************************'
@@ -841,6 +838,7 @@ class ComboCode(object):
             self.sedstats.setModels(star_grid=self.star_grid)
             self.sedstats.setModelPhotometry()
             self.sedstats.calcChi2(chi2_method=self.stat_chi2)
+            
         if self.statistics and self.radio:
             trans_sel = Transition.extractTransFromStars(self.star_grid,\
                                                          dtype='resolved')

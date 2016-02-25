@@ -29,7 +29,6 @@ PACS_REDO_CONVOLUTION=0             # Re-do the convolution of sphinx output to 
 PACS_SEARCHSTRING=oversampling2     # searchstring used when looking for data, all data that include this string will be taken so make it unique
 PACS_OVERSAMPLING=2                 # The oversampling factor of the PACS data, this should also be included in the filenames of the data
 PACS_LINEFIT=                       # folder name in $PACS_PATH$/$STAR_NAME$/ of line fit results, done by Pierre (assumes his structure and syntax, as well as the presence of a file called 'lineFitResults')
-#PACS_ABSFLUX_ERR=0.2               # The absolute flux calibration uncertainty for PACS. Default is set at 20%. Used when calculating the line-strength uncertainty for line fit results.
 
 #-- SPIRE convolution and plotting. Location given in cc.path.home/usr/Path.dat
 SPIRE=0                             # Turn on the SPIRE module. 
@@ -37,7 +36,6 @@ SPIRE_SEARCHSTRING=oversampling2    # searchstring used when looking for data, a
 SPIRE_RESOLUTION=0.06               # The resolution of the apodized Spire spectrum in cm^-1. This is typically 1.5*0.04 cm-1, with 0.04 cm-1 the intrinsic SPIRE resolution
 SPIRE_OVERSAMPLING=6                # The oversampling factor of the apodized SPIRE spectrum. This is typically 6.
 SPIRE_LINEFIT=                      # folder name in $SPIRE_PATH$/$STAR_NAME$/ of line fit results, done in Hipe on the intrinsic UNAPODIZED spectra (using sinc functions) and with SPIRE resolution of 0.04 cm-1 and oversampling 5, as well as the presence of a file called 'lineFitResults'
-#SPIRE_ABSFLUX_ERR=0.1              # The absolute flux calibration uncertainty for PACS. Default is set at 10%. Used when calculating the line-strength uncertainty for line fit results.
 
 #-- RADIO data selection (including autosearch) and plotting (typically resolved lines in K vs km/s). Location given in cc.path.home/usr/Path.dat
 RADIO=0                             # Turn on the Radio mo
@@ -59,7 +57,7 @@ STAT_LLL_P=                         # RESO_STATS - The number of variable parame
 STAT_LLL_PARTIAL=0                  # RESO_STATS - Use a partial line profile rather than the entire profile. Set to 1 for larger than the cutoff value (vcut), set to -1 for smaller than the cutoff value.
 STAT_LLL_VCUT=0.0                   # RESO_STATS - The cut off value in km/s used by partial.
 STAT_METHOD=clipping                # UNRESO_STATS - (clipping or preset) The method used to determine the noise in an unresolved spectrum. Clipping determines the std/rms/... on the full continuum-subtracted spectrum, then determines std/rms/... after 1-sigma clipping based on the first estimate. 'preset' takes a wavelength range from Data.dat and determines the std/rms/... for a full band, without clipping. Line scans should best be treated with 'clipping'.
-STAT_CHI2=normal                    # UNRESO_STATS - type of chi2 calculation for integrated fluxes of unresolved lines. [normal or log]. log just takes the log of all int fluxes and the uncertainty.
+STAT_CHI2=diff                    # UNRESO_STATS - type of chi2 calculation for integrated fluxes of unresolved lines. [diff or log]. Diff is the normal chi-squared calculation, while log redistributes the data/model ratios on an absolute logarithmic scale before calculating the chi^2.
 
 #-- Various settings for this CC session
 REPLACE_DB_ENTRY=0                  # Be very careful with putting this keyword to 1! If a model in a database is found (usually cooling or mcmax), it is replaced by a newly calculated model (also with a new model_id). Any mline, sphinx or pacs models stemming from the same cooling id will also be deleted!!!! Now works with grids as well. Any new calculated model in the grid will NOT be deleted. (hence, if an MCMax model is the same for all models in the grid, it will not be calculated anew every single time)

@@ -25,7 +25,7 @@ class Instrument(object):
     
     """
         
-    def __init__(self,star_name,instrument_name,oversampling,absflux_err,\
+    def __init__(self,star_name,instrument_name,oversampling,\
                  code='GASTRoNOoM',path=None,intrinsic=1,path_linefit=''):        
         
         """ 
@@ -38,10 +38,7 @@ class Instrument(object):
         @param oversampling: The instrumental oversampling, for correct
                              convolution of the Sphinx output.
         @type oversampling: int                         
-        @param absflux_err: The absolute flux calibration uncertainty of the
-                            instrument. 
-        @type absflux_err: float
-        
+
         @keyword code: The radiative transfer code used to model the data
         
                        (default: 'GASTRoNOoM')
@@ -77,7 +74,6 @@ class Instrument(object):
         self.instrument = instrument_name.lower()
         self.path_instrument = getattr(cc.path,'d%s'%self.instrument)
         self.intrinsic = intrinsic
-        self.absflux_err = absflux_err
         self.oversampling = int(oversampling)
         self.data_filenames = []
         istar = DataIO.getInputData(keyword='STAR_NAME').index(star_name)
@@ -89,9 +85,39 @@ class Instrument(object):
             DataIO.testFolderExistence(os.path.join(pp,self.path,'stars'))
             DataIO.testFolderExistence(os.path.join(pp,self.path,'stars',\
                                                     self.star_name))
+                                                    
+        self.readTelescopeProperties()
         
 
+    
+    def readTelescopeProperties(self):
+    
+        """
+        Read the telescope properties from Telescope.dat. 
+        
+        This currently includes the telescope size in m, and the default 
+        absolute flux calibration uncertainty. 
+        
+        """
+        
+        all_telescopes = DataIO.getInputData(keyword='TELESCOPE',start_index=5,\
+                                             filename='Telescope.dat')
 
+        try:
+            tel_index = all_telescopes.index(self.instrument.upper())
+        except ValueError:
+            raise ValueError('%s not found in Telescope.dat.'\
+                             %self.instrument.upper())
+        
+        self.telescope_size = DataIO.getInputData(keyword='SIZE',start_index=5,\
+                                                  filename='Telescope.dat',\
+                                                  rindex=tel_index)
+        self.absflux_err = DataIO.getInputData(keyword='ABS_ERR',start_index=5,\
+                                               filename='Telescope.dat',\
+                                               rindex=tel_index)
+                                               
+                                               
+                                               
     def makeModelList(self,star_grid,id_type):
         
         '''
@@ -325,7 +351,7 @@ class Instrument(object):
             #      blend IN DATA: Check the ratio fitted FWHM/PACS FWHM. If
             #      larger by 30% or more, put the int int negative. 
             elif len(wf_blends[ii]) == 1:
-                err = sqrt((lf.line_flux_rel[ii]/100)**2+self.absflux_err**2)
+                err = sqrt((lf.line_flux_rel[ii])**2+self.absflux_err**2)
                 factor = lf.fwhm_rel[ii] >= 1.2 and -1 or 1
                 st.setIntIntUnresolved(fn,factor*lf.line_flux[ii],err,self.vlsr)
             #   8) If multiple matches, give a selection of strans included
@@ -336,7 +362,7 @@ class Instrument(object):
             #      The *OTHER* transitions found this way are not compared 
             #      with any data and get None. (see point 4) )
             else: 
-                err = sqrt((lf.line_flux_rel[ii]/100)**2+self.absflux_err**2)
+                err = sqrt((lf.line_flux_rel[ii])**2+self.absflux_err**2)
                 st.setIntIntUnresolved(fn,-1.*lf.line_flux[ii],err,self.vlsr,
                                        wf_blends[ii])
                 
