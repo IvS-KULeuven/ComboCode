@@ -15,7 +15,9 @@ import time
 import cc.path
 from cc.tools.io import DataIO
 from cc.tools.numerical import Gridding
-from cc.managers import ModelingManager, PlottingManager, Vic
+from cc.managers.ModelingManager import ModelingManager as MM
+from cc.managers.PlottingManager import PlottingManager as PM
+from cc.managers import Vic
 from cc.modeling.objects import Star, Transition
 from cc.statistics import UnresoStats, ResoStats, SedStats
 from cc.data.instruments import Pacs, Spire
@@ -60,7 +62,6 @@ class ComboCode(object):
         self.readInput()
         self.setGlobalPars()
         self.setOutputFolders()
-        self.setStarName()
         self.setPacs()
         self.setSpire()
         self.setSed()
@@ -68,7 +69,6 @@ class ComboCode(object):
         self.setPlotManager()
         self.setVarPars()
         self.createStarGrid()
-        self.addRadioData()
         #- Only the extra transition pars will differ across the grid, so grab
         #- the transition list from one of the Star() objects
         if self.update_spec:
@@ -135,6 +135,7 @@ class ComboCode(object):
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v))
                             for k,v in default_global])
         self.__dict__.update(global_pars)
+        self.__setStarName()
         self.vic = 0
         if not self.gastronoom or not self.mcmax: self.iterations = 1
         if (not self.path_mcmax and self.mcmax):
@@ -144,20 +145,25 @@ class ComboCode(object):
 
 
 
-    def setStarName(self):
+    def __setStarName(self):
 
         '''
-        Set star_name for the ComboCode object.
+        Set star_name for the ComboCode object as a tuple.
 
         Typically this is only one name for a standard modelling session, but
         can be made multiple names as well for a statistical study.
 
-        The ComboCode object keeps track of all the data in lists.
+        The ComboCode object keeps track of all the data in dicts.
 
         '''
-
-        pass
-
+        
+        if self.multiplicative_grid.has_key('STAR_NAME') \
+                or self.additive_grid.has_key('STAR_NAME'):
+            raise IOError('STAR_NAME incorrectly defined. Use & for grids.')
+        
+        if isinstance(self.star_name,str):
+            self.star_name = (self.star_name,)
+        
 
 
     def setPacs(self):
@@ -175,20 +181,21 @@ class ComboCode(object):
         intrinsic = self.processed_input.pop('PACS_INTRINSIC',1)
         linefit = self.processed_input.pop('PACS_LINEFIT','')
         
-        #-- If PACS is not requested, put self.spire to None. Still popping the
+        #-- If PACS is not requested, put self.pacs to None. Still popping the
         #   PACS specific keywords to avoid clutter in the Star() objects.
         #   In case of a pure model, no data are available anyway.
-        if not pacs or self.star_name == 'model':
-            self.pacs = None
-            return
-        
-        self.pacs = Pacs.Pacs(star_name=self.star_name,\
-                              path=self.path_gastronoom,\
-                              redo_convolution=redo_convolution,\
-                              oversampling=oversampling,\
-                              intrinsic=intrinsic,\
-                              path_linefit=linefit)
-        self.pacs.setData(searchstring=searchstring)
+        self.pacs = dict()
+        for sn in self.star_name: 
+            if not pacs or sn == 'model':
+                self.pacs[sn] = None
+                continue
+            self.pacs[sn] = Pacs.Pacs(star_name=sn,\
+                                      path=self.path_gastronoom,\
+                                      redo_convolution=redo_convolution,\
+                                      oversampling=oversampling,\
+                                      intrinsic=intrinsic,\
+                                      path_linefit=linefit)
+            self.pacs[sn].setData(searchstring=searchstring)
 
 
 
@@ -210,17 +217,18 @@ class ComboCode(object):
         #-- If SPIRE is not requested, put self.spire to None. Still popping the
         #   SPIRE specific keywords to avoid clutter in the Star() objects.
         #   In case of a pure model, no data are available anyway.
-        if not spire or self.star_name == 'model':
-            self.spire = None
-            return
-
-        self.spire = Spire.Spire(star_name=self.star_name,\
-                                 path=self.path_gastronoom,\
-                                 resolution=resolution,\
-                                 intrinsic=intrinsic,\
-                                 oversampling=oversampling,\
-                                 path_linefit=linefit)
-        self.spire.setData(searchstring=searchstring)
+        self.spire = dict()
+        for sn in self.star_name: 
+            if not spire or sn == 'model':
+                self.spire[sn] = None
+                continue
+            self.spire[sn] = Spire.Spire(star_name=sn,\
+                                         path=self.path_gastronoom,\
+                                         resolution=resolution,\
+                                         intrinsic=intrinsic,\
+                                         oversampling=oversampling,\
+                                         path_linefit=linefit)
+            self.spire[sn].setData(searchstring=searchstring)
 
 
 
@@ -234,18 +242,19 @@ class ComboCode(object):
         sed = self.processed_input.pop('SED',0)
         remove = self.processed_input.pop('SED_PHOT_REMOVE','')
         
-        #-- If SED is not requested, put self.spire to None. Still popping the
-        #   SED specific keywords to avoid clutter in the Star() objects.
-        #   In case of a pure model, no data are available anyway.
-        if not sed or self.star_name == 'model':
-            self.sed = None
-            return
-            
         if not remove: remove = []
         elif isinstance(remove,str): remove = [remove]
         else: remove = list(remove)
-
-        self.sed = Sed.Sed(star_name=self.star_name,remove=remove)
+        
+        #-- If SED is not requested, put self.spire to None. Still popping the
+        #   SED specific keywords to avoid clutter in the Star() objects.
+        #   In case of a pure model, no data are available anyway.
+        self.sed = dict()
+        for sn in self.star_name: 
+            if not sed or sn == 'model':
+                self.sed[sn] = None
+                continue
+            self.sed[sn] = Sed.Sed(star_name=sn,remove=remove)
 
 
 
@@ -265,45 +274,50 @@ class ComboCode(object):
         
         radio = self.processed_input.pop('RADIO',0)
         radio_autosearch = self.processed_input.pop('RADIO_AUTOSEARCH',0)
-    
-        #-- If RADIO is not requested, put self.spire to None. Still popping the
+
+        if not radio: 
+            self.radio = {sn: None for sn in self.star_name}
+            return
+            
+        #-- If RADIO is not requested, put self.radio to None. Still popping the
         #   RADIO specific keywords to avoid clutter in the Star() objects.
         #   In case of a pure model, the radio db doesn't have an entry anyway.
         radio_db = Radio.Radio()
-        if not radio or not radio_db.has_key(self.star_name):
-            self.radio = None
-            return
-            
-        self.radio = radio_db[self.star_name]
         
-        #-- Still check self.radio as bool, in case the dict is empty.
-        if self.radio and radio_autosearch:        
-            #-- Get the transition definitions (are in the correct format
-            #   automatically, due to the methods in Radio.py). Check entry info
-            #   is still ran, eg to get rid of bad 0 offset type sets.
-            #-- 11 entries, n_quad is added in the Star() object (to allow for
-            #   proper n_quad gridding). N_quad specification through manual
-            #   TRANSITION definition is still possible, but then overrides the 
-            #   default N_QUAD value.
-            radio_trans = sorted([tr.replace('TRANSITION=','',1)
-                                  for tr in self.radio.keys()])
-            radio_trans = DataIO.checkEntryInfo(radio_trans,11,'TRANSITION')
-            
-            #-- Doubles of transitions not possible from db. radio_trans always
-            #   a tuple.
-            #-- In case doubles after merge: they will be filtered out by Star()
-            if self.additive_grid.has_key('TRANSITION'):
-                otrl = self.additive_grid['TRANSITION'] 
-                ntrl = [tl + radio_trans for tl in otrl]
-                self.additive_grid['TRANSITION'] = ntrl
-            elif self.processed_input.has_key('TRANSITION'):
-                self.processed_input['TRANSITION'] += radio_trans
-            else:
-                self.processed_input['TRANSITION'] = radio_trans
+        self.radio = {sn: radio_db.get(sn, None) for sn in self.star_name}
+        self.radio_trans = {sn: None for sn in self.star_name}
+        
+        if not radio_autosearch:
+            return
+
+        #-- Get the transition definitions (are in the correct format
+        #   automatically, due to the methods in Radio.py). Check entry info
+        #   is still ran, eg to get rid of bad 0 offset type sets.
+        #-- 11 entries, n_quad is added in the Star() object (to allow for
+        #   proper n_quad gridding). N_quad specification through manual
+        #   TRANSITION definition is still possible, but then overrides the 
+        #   default N_QUAD value.
+        radio_trans = sorted(set([tr.replace('TRANSITION=','',1)
+                                  for sn in self.star_name
+                                  if self.radio[sn]
+                                  for tr in self.radio[sn].keys()]))
+        radio_trans = DataIO.checkEntryInfo(radio_trans,11,'TRANSITION')
+        
+        #-- Doubles of transitions not possible from db. radio_trans always
+        #   a tuple.
+        #-- In case doubles after merge: they will be filtered out by Star()
+        if self.additive_grid.has_key('TRANSITION'):
+            otrl = self.additive_grid['TRANSITION'] 
+            ntrl = [tl + radio_trans for tl in otrl]
+            self.additive_grid['TRANSITION'] = ntrl
+        elif self.processed_input.has_key('TRANSITION'):
+            self.processed_input['TRANSITION'] += radio_trans
+        else:
+            self.processed_input['TRANSITION'] = radio_trans
 
 
 
-    def addRadioData(self):
+    def addRadioData(self,sn):
 
         '''
         Add radio data to Transition() objects in all Star() objects.
@@ -311,15 +325,49 @@ class ComboCode(object):
         Only done if RADIO_PATH is given and if a file named radio_data.db is
         present in the given folder.
 
+        This method can be called multiple times per session for different stars
+        in which case the data in the transition objects will be replaced.
+        
+        self.radio_trans maintains a list of "sample transitions" that contain 
+        data. These function as data blueprints for transitions in the star_grid
+        
+        @param sn: The star name for which to add data to the transitions
+        @type sn: str
+        
         '''
-
-        if self.radio:
+    
+        #-- If not data available, reset all transitions so no data linger for a
+        #   different star.
+        if not self.radio[sn]:
             for star in self.star_grid:
-                for trans in star['GAS_LINES']:
-                    if trans:
-                        trstr = trans.getInputString(include_nquad=0)
-                        if trstr in self.radio.keys():
-                            trans.addDatafile(self.radio[trstr])
+                for tr in star['GAS_LINES']: 
+                    tr.resetData()
+            return
+        
+        #-- Extracted transitions (copies) are saved separately, so we only read
+        #   data once at most. Hence we can continuously swap between star as we
+        #   progress.
+        if not self.radio_trans[sn]:        
+            #-- First extract all transitions and add/read data for them.
+            trans_sel = Transition.extractTransFromStars(self.star_grid,\
+                                                         dtype='resolved')
+
+            #-- Note that this is a list of copied transitions. 
+            for trans in trans_sel: 
+                trstr = trans.getInputString(include_nquad=0)
+                if trstr in self.radio[sn].keys():
+                    #-- No need to replace. Trans extraction already resets data
+                    trans.addDatafile(self.radio[sn][trstr])
+                    trans.readData()
+                    
+            #-- self.radio_trans was defined in setRadio.
+            self.radio_trans[sn] = trans_sel
+
+        #-- We can now add these data to all Star() objects. 
+        for star in self.star_grid:
+            for trans in self.radio_trans[sn]:
+                mtrans = star.getTransition(trans)
+                if mtrans: mtrans.setData(trans,replace=1)
 
 
 
@@ -571,44 +619,45 @@ class ComboCode(object):
 
         '''
 
-        self.model_manager = ModelingManager.ModelingManager(\
-                                       iterations=self.iterations,\
-                                       processed_input=self.processed_input,\
-                                       var_pars=self.var_pars,\
-                                       path_gastronoom=self.path_gastronoom,\
-                                       mcmax=self.mcmax,\
-                                       gastronoom=self.gastronoom,\
-                                       sphinx=self.sphinx,\
-                                       iterative=self.plot_iterative,\
-                                       num_model_sessions=len(self.star_grid),\
-                                       vic_manager=self.vic_manager,\
-                                       replace_db_entry=self.replace_db_entry,\
-                                       path_mcmax=self.path_mcmax,\
-                                       skip_cooling=self.skip_cooling,\
-                                       recover_sphinxfiles=self.recover_sphinxfiles)
+        self.model_manager = MM(iterations=self.iterations,\
+                                processed_input=self.processed_input,\
+                                var_pars=self.var_pars,\
+                                path_gastronoom=self.path_gastronoom,\
+                                mcmax=self.mcmax,\
+                                gastronoom=self.gastronoom,\
+                                sphinx=self.sphinx,\
+                                iterative=self.plot_iterative,\
+                                num_model_sessions=len(self.star_grid),\
+                                vic_manager=self.vic_manager,\
+                                replace_db_entry=self.replace_db_entry,\
+                                path_mcmax=self.path_mcmax,\
+                                skip_cooling=self.skip_cooling,\
+                                recover_sphinxfiles=self.recover_sphinxfiles)
 
 
     def setPlotManager(self):
 
         '''
-        Set up the plot manager.
+        Set up the plot manager(s) for each star name.
 
         '''
 
         plot_pars = dict([(k,self.processed_input.pop(k))
                           for k,v in self.processed_input.items()
                           if k[0:5] == 'PLOT_' or k[0:4] == 'CFG_'])
-        self.plot_manager = PlottingManager.PlottingManager(\
-                                         star_name=self.star_name,\
-                                         gastronoom=self.gastronoom,\
-                                         mcmax=self.mcmax,\
-                                         path_gastronoom=self.path_gastronoom,\
-                                         path_mcmax=self.path_mcmax,\
-                                         inputfilename=self.inputfilename,\
-                                         pacs=self.pacs,\
-                                         spire=self.spire,\
-                                         sed=self.sed,\
-                                         plot_pars=plot_pars)
+        fn_add_star = plot_pars.pop('PLOT_FN_ADD_STAR',1)
+        self.plot_manager = {sn: PM(star_name=sn,\
+                                    gastronoom=self.gastronoom,\
+                                    mcmax=self.mcmax,\
+                                    path_gastronoom=self.path_gastronoom,\
+                                    path_mcmax=self.path_mcmax,\
+                                    inputfilename=self.inputfilename,\
+                                    pacs=self.pacs[sn],\
+                                    spire=self.spire[sn],\
+                                    sed=self.sed[sn],\
+                                    fn_add_star=fn_add_star,\
+                                    plot_pars=plot_pars)
+                             for sn in self.star_name}
 
 
 
@@ -675,21 +724,24 @@ class ComboCode(object):
 
         '''
 
-        if self.plot_iterative:
-            print '************************************************'
-            print '****** Plotting results for each iterative step of the SED.'
-            print '************************************************'
-            #- star_grid_old remembers all old models if iterative is on,
-            #- meaning that every list in star_grid_old consists of Star models
-            #- associated with one level of iteration. Following line plots all
-            #- iterative steps for one star immutable parameter set
-            [self.plot_manager.startPlotting(self.model_manager.star_grid_old[i],\
-                                             i+1)
-             for i in xrange(len(self.star_grid))]
         print '************************************************'
         print '****** Plotting final results.'
         print '************************************************'
-        self.plot_manager.startPlotting(self.star_grid)
+        for sn in self.star_name:
+            #-- Make sure resolved data files are correctly included. 
+            self.addRadioData(sn)
+            print '** Plots for %s:'%sn 
+            if self.plot_iterative:
+                print '** Plotting results for each iterative step.'
+                print '************'
+                #- star_grid_old remembers all old models if iterative is on,
+                #- meaning that every list in star_grid_old consists of Star models
+                #- associated with one level of iteration. Following line plots all
+                #- iterative steps for one star immutable parameter set
+                pm = self.plot_manager[sn]
+                for i in range(len(self.star_grid)):
+                    pm.startPlotting(self.model_manager.star_grid_old[i],i+1)
+            self.plot_manager[sn].startPlotting(self.star_grid)
 
 
 
@@ -794,71 +846,73 @@ class ComboCode(object):
 
         '''
 
-        self.pacsstats = None
-        self.spirestats = None
+        self.pacsstats = dict()
+        self.spirestats = dict()
         self.unresostats = []
-        self.resostats = None
-        self.sedstats = None
-        if self.statistics and self.pacs <> None:
-            print '************************************************'
-            print '**** Doing PACS statistics for %s.'%self.star_name
-            print '************************************************'
-            self.pacsstats = UnresoStats.UnresoStats(star_name=self.star_name,\
-                                            path_code=self.path_gastronoom)
-            self.pacsstats.setInstrument(instrument_name='PACS',\
-                                         instrument_instance=self.pacs,\
-                                         stat_method=self.stat_method)
-            self.unresostats.append(self.pacsstats)
-                    
-        if self.statistics and self.spire <> None:
-            print '************************************************'
-            print '**** Doing SPIRE statistics for %s.'%self.star_name
-            print '************************************************'
-            self.spirestats = UnresoStats.UnresoStats(star_name=self.star_name,\
-                                            path_code=self.path_gastronoom)
-            self.spirestats.setInstrument(instrument_name='SPIRE',\
-                                          instrument_instance=self.spire,\
-                                          stat_method=self.stat_method)
-            self.unresostats.append(self.spirestats)
+        self.resostats = dict()
+        self.sedstats = dict()
         
-        for statsobj in self.unresostats:
-            statsobj.setModels(star_grid=self.star_grid)
-            statsobj.setLineStrengths()
-            statsobj.calcChiSquared(chi2_method=self.stat_chi2)
-            statsobj.plotRatioWav(inputfilename=self.inputfilename)
+        #-- Data are handled by these objects themselves for unresolved lines.
+        for sn in self.star_name:
+            if self.statistics and self.pacs[sn] <> None:
+                ss = UnresoStats.UnresoStats(star_name=sn,\
+                                             path_code=self.path_gastronoom)
+                ss.setInstrument(instrument_name='PACS',\
+                                 instrument_instance=self.pacs[sn],\
+                                 stat_method=self.stat_method)
+                self.pacsstats[sn] = ss
+                self.unresostats.append(ss)
+            if self.statistics and self.spire[sn] <> None:
+                ss = UnresoStats.UnresoStats(star_name=sn,\
+                                             path_code=self.path_gastronoom)
+                ss.setInstrument(instrument_name='SPIRE',\
+                                 instrument_instance=self.spire[sn],\
+                                 stat_method=self.stat_method)
+                self.spirestats[sn] = ss
+                self.unresostats.append(ss)
         
-        if self.statistics and self.sed <> None:
+        for ss in self.unresostats:
+            instr = ss.instrument.instrument.upper()
             print '************************************************'
-            print '**** Doing SED statistics for %s.'%self.star_name
+            print '** %s statistics for %s.'%(instr,ss.star_name)
             print '************************************************'
-            self.sedstats = SedStats.SedStats(star_name=self.star_name,\
-                                              path_code=self.path_mcmax)
-            self.sedstats.setInstrument(sed=self.sed)
-            self.sedstats.setModels(star_grid=self.star_grid)
-            self.sedstats.setModelPhotometry()
-            self.sedstats.calcChi2(chi2_method=self.stat_chi2)
+            ss.setModels(star_grid=self.star_grid)
+            ss.setLineStrengths()
+            ss.calcChiSquared(chi2_method=self.stat_chi2)
+            ss.plotRatioWav(inputfilename=self.inputfilename)
+        
+        for sn in self.star_name:
+            if self.statistics and self.sed[sn] <> None:
+                print '************************************************'
+                print '** SED statistics for %s.'%sn
+                print '************************************************'
+                ss = SedStats.SedStats(star_name=sn,path_code=self.path_mcmax)
+                ss.setInstrument(sed=self.sed[sn])
+                ss.setModels(star_grid=self.star_grid)
+                ss.setModelPhotometry()
+                ss.calcChi2(chi2_method=self.stat_chi2)
+                self.sedstats[sn] = ss            
             
-        if self.statistics and self.radio:
-            trans_sel = Transition.extractTransFromStars(self.star_grid,\
-                                                         dtype='resolved')
-            if not trans_sel:
-                return
-            print '************************************************'
-            print '**** Doing statistics for spectrally resolved lines in %s.'\
-                  %self.star_name
-            print '**** Use cc_session.resostats for more interactive tools.'
-            print '************************************************'
-            self.resostats = ResoStats.ResoStats(star_name=self.star_name,\
-                                           path_code=self.path_gastronoom,\
-                                           lll_p=self.stat_lll_p)
-            self.resostats.setInstrument(trans_sel)
-            self.resostats.setModels(star_grid=self.star_grid)
-            self.resostats.setIntensities(partial=self.stat_lll_partial,\
-                                          vcut=self.stat_lll_vcut)
-            if self.stat_print:
-                self.resostats.printStats()
-            #bfms = self.resostats.selectBestFitModels(mode='int')
-            #self.plot_manager.plotTransitions(star_grid=bfms,fn_suffix='BFM',force=1)
+            if self.statistics and self.radio[sn]:
+                #-- Make sure all resolved data properties are set. 
+                self.addRadioData(sn)
+                if not self.radio_trans[sn]:
+                    return
+                print '************************************************'
+                print '** Statistics for spectrally resolved lines in %s.'%sn
+                print '** Use cc_session.resostats[sn] for interactive tools.'
+                print '************************************************'
+                ss = ResoStats.ResoStats(star_name=sn,\
+                                         path_code=self.path_gastronoom,\
+                                         lll_p=self.stat_lll_p)
+                ss.setInstrument(self.radio_trans[sn])
+                ss.setModels(star_grid=self.star_grid)
+                ss.setIntensities(partial=self.stat_lll_partial,\
+                                  vcut=self.stat_lll_vcut)
+                if self.stat_print: ss.printStats()
+                self.resostats[sn] = ss
+                #bfms = self.resostats.selectBestFitModels(mode='int')
+                #self.plot_manager.plotTransitions(star_grid=bfms,fn_suffix='BFM',force=1)
 
 
 

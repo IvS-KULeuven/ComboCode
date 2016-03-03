@@ -961,6 +961,9 @@ def checkEntryInfo(input_list,number_of_keys,info_type):
     
     '''
     
+    if not input_list:
+        return []
+    
     if not info_type in ('MOLECULE','R_POINTS_MASS_LOSS','TRANSITION'):
         raise KeyError('The info_type keyword is unknown. Should be ' + \
                        'MOLECULE, TRANSITION or R_POINTS_MASS_LOSS.')

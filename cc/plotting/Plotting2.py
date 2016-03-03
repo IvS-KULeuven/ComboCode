@@ -339,7 +339,7 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
         if type(cfg) is types.DictType:
             kwargs.update(cfg)
         else:
-            kwargs.update(DataIO.readDict(cfg,convert_lists=1,convert_floats=1))
+            kwargs.update(readCfg(cfg))
     filename=kwargs.get('filename',None)
     extension=kwargs.get('extension',None)
     figsize=kwargs.get('figsize',(20.*math.sqrt(2.), 20.))
@@ -1056,7 +1056,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
         if type(cfg) is types.DictType:
             kwargs.update(cfg)
         else:
-            kwargs.update(DataIO.readDict(cfg,convert_lists=1,convert_floats=1))
+            kwargs.update(readCfg(cfg))
     inputfiles=kwargs.get('inputfiles',[])
     filename=kwargs.get('filename',None)
     extension=kwargs.get('extension',None)

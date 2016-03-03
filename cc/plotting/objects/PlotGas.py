@@ -33,7 +33,7 @@ class PlotGas(PlottingSession):
     """    
     
     def __init__(self,star_name,path_gastronoom='Output2014',\
-                 inputfilename=None,pacs=None,spire=None):
+                 inputfilename=None,pacs=None,spire=None,fn_add_star=1):
         
         """ 
         Initializing an instance of PlotGas.
@@ -62,24 +62,27 @@ class PlotGas(PlottingSession):
                             
                         (default: None)
         @type spire: Spire()
+        @keyword fn_add_star: Add the star name to the requested plot filename.
+                              Only relevant if fn_plt is given in a sub method.
+                              
+                              (default: 1)
+        @type fn_add_star: bool
+                            
         
         """
         
         super(PlotGas, self).__init__(star_name=star_name,\
                                       path=path_gastronoom,\
                                       code='GASTRoNOoM',\
-                                      inputfilename=inputfilename)
+                                      inputfilename=inputfilename,\
+                                      fn_add_star=fn_add_star)
         #-- Convenience path
         cc.path.gout = os.path.join(cc.path.gastronoom,self.path)
         self.pacs = pacs
-        if self.pacs:
-            fn = os.path.join(cc.path.gout,'stars',self.star_name,\
-                              self.plot_id,'PACS_results')
-            DataIO.testFolderExistence(fn)
         self.spire = spire
         self.sphinx_flux_list = []
 
-        
+
         
     def makeStars(self,models):
         
@@ -106,7 +109,7 @@ class PlotGas(PlottingSession):
 
 
 
-    def plotVelocity(self,star_grid=[],models=[],cfg=''):
+    def plotVelocity(self,star_grid=[],models=[],fn_plt='',cfg=''):
         
         '''
         Plot velocity versus radius for every model in star_grid.
@@ -119,7 +122,12 @@ class PlotGas(PlottingSession):
         @keyword models: The model ids, only required if star_grid is []
         
                          (default: [])
-        @type models: list[string]        
+        @type models: list[string]    
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string        
         @keyword cfg: path to the Plotting2.plotCols config file. If default, 
                       the hard-coded default plotting options are used.
                           
@@ -135,6 +143,11 @@ class PlotGas(PlottingSession):
         elif (not models and not star_grid) or (models and star_grid):
             print '** Input is undefined or doubly defined. Aborting.'
             return
+        
+        cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg.pop('filename')
+        
         pfns = []
         for i,star in enumerate(star_grid):
             if star['LAST_GASTRONOOM_MODEL']:    
@@ -142,14 +155,18 @@ class PlotGas(PlottingSession):
                 vel = star.getGasVelocity()
                 vel = vel/10.**5
                 avgdrift = star.getAverageDrift()/10.**5
-                pfn = os.path.join(self.pplot,'velocity_%s_%i'\
-                                   %(star['LAST_GASTRONOOM_MODEL'],i))
+                
+                #-- Set filename for plot
+                pfn = fn_plt if fn_plt else 'velocity'
+                suff = '{}_{}'.format(star['LAST_GASTRONOOM_MODEL'],i)
+                pfn = self.setFnPlt(pfn,fn_suffix=suff)
+                
                 plot_title = '%s %s: Velocity Profile for Model %i (%s)'\
                              %(self.plot_id.replace('_','\_'),\
                                self.star_name_plots,i,\
                                star['LAST_GASTRONOOM_MODEL'].replace('_','\_'))
                 pfns.append(Plotting2.plotCols(x=rad,\
-                                        y=[vel,avgdrift],cfg=cfg,\
+                                        y=[vel,avgdrift],cfg=cfg_dict,\
                                         filename=pfn,\
                                         xaxis='R (R$_*$)',\
                                         yaxis=r'$v$ (km s$^{-1}$)',\
@@ -158,11 +175,12 @@ class PlotGas(PlottingSession):
                                         keytags=['Gas Velocity',\
                                                  'Grain-size Weighted Drift'],\
                                         xlogscale=1))
-        if plot_filenames and plot_filenames[0][-4:] == '.pdf':    
-            new_filename = os.path.join(self.pplot,'velocity_profiles.pdf')
-            DataIO.joinPdf(old=sorted(pfns),new=new_filename)
+        if pfns and pfns[0][-4:] == '.pdf':    
+            pfn = fn_plt if fn_plt else 'velocity_profiles'
+            pfn = self.setFnPlt(pfn) + '.pdf'
+            DataIO.joinPdf(old=sorted(pfns),new=pfn,del_old=0)
             print '** Plots can be found at:'
-            print new_filename
+            print pfn
             print '***********************************' 
         elif pfns:
             print '** Plots can be found at:'
@@ -175,7 +193,7 @@ class PlotGas(PlottingSession):
 
 
     
-    def plotTemp(self,star_grid=[],models=[],force_plot=0,cfg=''):
+    def plotTemp(self,star_grid=[],models=[],fn_plt='',force_plot=0,cfg=''):
         
         '''
         Plot temperature profiles of all models.
@@ -189,6 +207,11 @@ class PlotGas(PlottingSession):
         
                          (default: [])
         @type models: list[string]
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string    
         @keyword force_plot: force a plotting if more than models are requested
                              
                              (default: 0)
@@ -208,6 +231,10 @@ class PlotGas(PlottingSession):
         elif (not models and not star_grid) or (models and star_grid):
             print '** Input is undefined or doubly defined. Aborting.'
             return
+        
+        cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg.pop('filename')
         if len(star_grid) < 20 or force_plot:
             valid_sg = [star 
                         for star in star_grid 
@@ -227,15 +254,20 @@ class PlotGas(PlottingSession):
                                  for star in star_grid] \
                             or [star['LAST_GASTRONOOM_MODEL'].replace('_','\_')
                                 for star in valid_sg]
-                pfn = os.path.join(self.pplot,'temperature_profiles')
-                pfn_rstar=os.path.join(self.pplot,'temperature_profiles_rstar')
+                
+                #-- Set filenames
+                pfn = fn_plt if fn_plt else 'temperature_profiles'
+                pfn_rstar = self.setFnPlt(pfn,fn_suffix='rstar')
+                pfn = self.setFnPlt(pfn)
+                
+                #-- Run the two plots
                 pfn_rstar = Plotting2.plotCols(x=radii_rstar,y=temps,\
                             cfg=cfg,xaxis='R (R$_*$)',\
                             filename=pfn_rstar,yaxis='T (K)',\
                             xlogscale=1,ylogscale=1,keytags=keytags)
                 keys_cm = ['Model %i'%(i+1)
                            for i in xrange(len(star_grid))]
-                pfn = Plotting2.plotCols(x=radii,y=temps,cfg=cfg,\
+                pfn = Plotting2.plotCols(x=radii,y=temps,cfg=cfg_dict,\
                         filename=pfn,xaxis='$r$ (cm)',\
                         yaxis='$T_\mathrm{g}$ (K)',\
                         figsize=(12.5,8),fontsize_ticklabels=26,\
@@ -255,7 +287,7 @@ class PlotGas(PlottingSession):
     def plotTransitions(self,star_grid,cfg='',no_data=0,vg_factor=3,\
                         telescope_label=1,sort_freq=0,sort_molec=0,\
                         no_models=0,limited_axis_labels=0,date_tag=1,\
-                        n_max_models=10,fn_suffix='',fit_vlsr=1,\
+                        n_max_models=10,fn_plt='',fn_suffix='',fit_vlsr=1,\
                         plot_intrinsic=0,plot_unresolved=0,cont_subtract=1):
         
         """ 
@@ -305,6 +337,11 @@ class PlotGas(PlottingSession):
         
                                (default: 10)
         @type n_max_models: bool
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string        
         @keyword fn_suffix: A suffix that is appended to the filename. For 
                             instance, when running the plot command for a 
                             best fit subgrid of Star() models as to not 
@@ -376,9 +413,11 @@ class PlotGas(PlottingSession):
             fit_vlsr = int(cfg_dict['fit_vlsr'])
         if cfg_dict.has_key('cont_subtract'):
             cont_subtract = int(cfg_dict['cont_subtract'])
+        if fn_plt:
+            if not cfg_dict.has_key('filename'): cfg_dict['filename'] = fn_plt            
         if fn_suffix: 
             filename = cfg_dict.get('filename',None)
-            if filename <> None: filename = filename + '_%s'%fn_suffix
+            if filename <> None: filename = '_'.join(filename,fn_suffix)
             cfg_dict['filename'] = filename
         if cfg_dict.has_key('keytags'):
             keytags = cfg_dict['keytags']
@@ -393,12 +432,14 @@ class PlotGas(PlottingSession):
                          for trans in star['GAS_LINES']]))
                        for star in star_grid]
             unreso_keytags = list(keytags)
+        
         #-- Check how many resolved transitions there are (whether they have 
         #   data or not.
         trans_list = Transition.extractTransFromStars(star_grid,sort_freq,\
                                                       sort_molec,\
-                                                      dtype='resolved')
-                              
+                                                      dtype='resolved',\
+                                                      reset_data=0)
+
         #-- If plot_unresolved is requested, plot all modeled unresolved lines 
         #   (intrinsic)
         if plot_unresolved:
@@ -476,13 +517,14 @@ class PlotGas(PlottingSession):
             '''
             
             if cfg.has_key('filename'):
-                filename = cfg.pop('filename')
+                fn_plt = cfg.pop('filename')
+                mfn = 'models{}to{}'.format(indexi,indexf)
+                fn_suffix = '' if no_models else mfn
             else:
-                seg = '%slps_%smodels_%ito%i'\
-                      %(intrinsic and 'intrinsic_' or '',\
-                        no_data and 'nodata_' or '',\
-                        indexi,indexf)
-                filename = os.path.join(self.pplot,seg)
+                mfn = '' if no_models else 'models{}to{}'.format(indexi,indexf)
+                fn_suffix = '{}{}'.format(no_data and 'nodata_' or '',mfn)
+                fn_plt = '{}lps'.format(intrinsic and 'intrinsic_' or '')
+
             missing_trans = 0
             n_subplots = (x_dim*y_dim) - (keytags and 1 or 0)
             plot_filenames = []
@@ -514,6 +556,10 @@ class PlotGas(PlottingSession):
                             #   read again for other objects (same data files),
                             #   but simply set based on the already read data.
                             #   Same with the profile fit results
+                            #-- Note that ComboCode() already does this. This 
+                            #   line is in case the PlotGas object is ran 
+                            #   stand-alone. If data were already set, nothing 
+                            #   is done (so long as replace=0, the default)
                             trans.setData(current_trans)
                     ddict = dict()
                     ddict['x'] = []
@@ -606,11 +652,19 @@ class PlotGas(PlottingSession):
                     data.append(ddict)
                     if not trans_list:
                         break
-                cfg['filename'] = filename + '_trl%i'%(i)
+                
+                #-- Set plot filename for this selection of lines
+                if fn_suffix: 
+                    suff = fn_suffix+'_trl{}'.format(i)
+                else: 
+                    suff = 'trl{}'.format(i)
+                pfn = self.setFnPlt(fn_plt,fn_suffix=suff)
+                
                 #-- Copy the keytags list to append Data keys.
-                these_tags = list(keytags) + ['Data']*ndata
+                if no_models: these_tags = ['Data '+self.star_name_plots]*ndata
+                else: these_tags = keytags+['Data '+self.star_name_plots]*ndata
                 plot_filenames.append(Plotting2.plotTiles(extension='pdf',\
-                     data=data,filename=filename,keytags=these_tags,\
+                     data=data,keytags=these_tags,filename=pfn,\
                      xaxis=r'$v$ (km s$^{-1}$)',fontsize_axis=16,cfg=cfg,\
                      yaxis=intrinsic \
                             and r'$F_\nu$ (Jy)' \
@@ -625,8 +679,9 @@ class PlotGas(PlottingSession):
                     %(intrinsic and 'Intrinsic l' or 'L',\
                         no_data and 'without data ' or '')
             if plot_filenames and plot_filenames[0][-4:] == '.pdf':    
-                DataIO.joinPdf(old=plot_filenames,new=filename+'.pdf')
-                print filename+'.pdf'
+                pfn = self.setFnPlt(fn_plt)+'.pdf'
+                DataIO.joinPdf(old=plot_filenames,new=pfn)
+                print pfn
             else:
                 print '\n'.join(plot_filenames)
             print '***********************************' 
@@ -748,7 +803,7 @@ class PlotGas(PlottingSession):
     
     
     
-    def plotLineLists(self,star_grid,include_sphinx=1,cfg='',\
+    def plotLineLists(self,star_grid,include_sphinx=1,cfg='',fn_plt='',\
                       fn_trans_marker='',instrument='PACS'):
         
         '''
@@ -767,6 +822,11 @@ class PlotGas(PlottingSession):
                           
                           (default: '')
         @type cfg: string
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string        
         @keyword fn_trans_marker: A file that includes TRANSITION definitions.
                                   These transitions will be marked up in the 
                                   plot. For instance, when indicating a subset 
@@ -792,6 +852,8 @@ class PlotGas(PlottingSession):
         print '** Starting to plot line identifications for %s from databases.'\
               %self.star_name
         cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg.pop('filename')
         if cfg_dict.has_key('instrument'):
             instrument = cfg_dict['instrument']
         instrument = instrument.upper()
@@ -818,7 +880,6 @@ class PlotGas(PlottingSession):
                                                      fn_trans_marker,\
                                                  instrument=instrument)
         plot_filenames = []
-        DataIO.testFolderExistence(os.path.join(self.pplot,'LineLists'))
         if include_sphinx:
             if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) \
                             == set([0]) \
@@ -840,8 +901,12 @@ class PlotGas(PlottingSession):
                                for star in star_grid]
             else:
                 sphinx_flux = []
-            seg = 'line_id_'+os.path.split(filename)[1].replace('.dat','')
-            plot_filename = os.path.join(self.pplot,'LineLists',seg)
+            
+            #-- Set filename for plot
+            pfn = fn_plt if fn_plt else 'line_id'
+            suff = os.path.split(filename)[1].replace('.dat','')
+            pfn = self.setFnPlt(pfn,fn_suffix=suff,fn_subfolder='LineLists')
+
             keytags = ['%s %s'%(instrument,filename.replace('_','\_'))] + \
                       ['Model %i: %s'\
                        %(i+1,instrument=='PACS' \
@@ -851,22 +916,25 @@ class PlotGas(PlottingSession):
                        if star['LAST_GASTRONOOM_MODEL'] and include_sphinx]
             plot_filenames.append(Plotting2.plotCols(\
                     x=[wave]*(len(sphinx_flux)+1),y=[flux]+sphinx_flux,\
-                    cfg=cfg_dict,filename=plot_filename,keytags=keytags,\
+                    cfg=cfg_dict,filename=pfn,keytags=keytags,\
                     plot_title=self.star_name_plots,histoplot=[0],\
                     number_subplots=3,line_labels=lls,\
                     line_label_color=1,line_label_lines=1,\
                     line_label_spectrum=1))
-        seg = 'line_id_%s_%s.pdf'%(instrument.lower(),self.star_name)
-        new_filename = os.path.join(self.pplot,'LineLists',seg)
-        DataIO.joinPdf(old=sorted(plot_filenames),new=new_filename)
+        #-- Set filename for plot
+        pfn = fn_plt if fn_plt else 'line_id'
+        suff = instrument.lower()
+        pfn = self.setFnPlt(pfn,fn_suffix=suff,fn_subfolder='LineLists') 
+        pfn += '.pdf'
+        DataIO.joinPdf(old=sorted(plot_filenames),new=pfn)
         print '** Plots can be found at:'
-        print new_filename
+        print pfn
         print '***********************************'
 
                                                 
    
     def plotAbundanceProfiles(self,star_grid=[],models=[],cfg='',\
-                              per_molecule=0,unit='cm'):  
+                              fn_plt='',per_molecule=0,unit='cm'):  
         
         '''
         Plot abundance profiles for all molecules in every model.
@@ -885,6 +953,11 @@ class PlotGas(PlottingSession):
                           
                       (default: '')
         @type cfg: string
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string
         @keyword per_molecule: Plot one molecule for all models in one figure.
         
                                (default: 0)
@@ -905,6 +978,8 @@ class PlotGas(PlottingSession):
             return
         pfns = []
         cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg.pop('filename')
         if cfg_dict.has_key('per_molecule'):
             per_molecule = cfg_dict['per_molecule']
         if cfg_dict.has_key('unit'):
@@ -985,10 +1060,12 @@ class PlotGas(PlottingSession):
                 #-- Set the yaxis tag
                 yaxis = '$n_\mathrm{molec}/n_{\mathrm{H}_2}$'
                 
-                #-- Make filename
-                pfn = os.path.join(self.pplot,'abundance_profiles_%s'\
-                                              %'_'.join(list(set(ids))))
-                pfns.append(Plotting2.plotCols(x=radii,y=abuns,cfg=cfg,\
+                #-- Set filename
+                pfn = fn_plt if fn_plt else 'abundance_profiles'
+                suff = '_'.join(list(set(ids)))
+                pfn = self.setFnPlt(pfn,fn_suffix=suff)
+
+                pfns.append(Plotting2.plotCols(x=radii,y=abuns,cfg=cfg_dict,\
                                                filename=pfn,keytags=keytags,\
                                                yaxis=yaxis,**extra_pars))
         
@@ -1016,16 +1093,19 @@ class PlotGas(PlottingSession):
                 yaxis = '$n_\mathrm{%s}/n_{\mathrm{H}_2}$'%strmolec
 
                 #-- Make filename
-                pfn = os.path.join(self.pplot,'abundance_profiles_%s'%molec)
+                pfn = fn_plt if fn_plt else 'abundance_profiles'
+                pfn = self.setFnPlt(pfn,fn_suffix=molec)
+
                 pfns.append(Plotting2.plotCols(x=radii,y=abuns,yaxis=yaxis,\
                                                filename=pfn,keytags=keytags,\
-                                               cfg=cfg,**extra_pars))  
+                                               cfg=cfg_dict,**extra_pars))  
                 
         if not per_molecule and pfns and pfns[0][-4:] == '.pdf':    
-            newfn = os.path.join(self.pplot,'abundance_profiles.pdf')
-            DataIO.joinPdf(old=pfns,new=newfn)
+            pfn = fn_plt if fn_plt else 'abundance_profiles'
+            pfn = self.setFnPlt(pfn) + '.pdf'
+            DataIO.joinPdf(old=pfns,new=pfn)
             print '** Plots can be found at:'
-            print newfn
+            print pfn
             print '***********************************'
         else:
             print '** Plots can be found at:'
@@ -1034,8 +1114,8 @@ class PlotGas(PlottingSession):
             
             
 
-    def plotLineContributions(self,star_grid,normalized=1,cfg='',do_sort=1,\
-                              include_velocity=1):
+    def plotLineContributions(self,star_grid,fn_plt='',normalized=1,cfg='',\
+                              do_sort=1,include_velocity=1):
         
         '''
         Plot the source function as function of impact parameter for every 
@@ -1043,6 +1123,12 @@ class PlotGas(PlottingSession):
         
         @param star_grid: The model parameter sets
         @type star_grid: list[Star()]
+        
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                           
@@ -1069,13 +1155,15 @@ class PlotGas(PlottingSession):
         print '***********************************'
         print '** Plotting Line Contributions'
         cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg.pop('filename')
         if cfg_dict.has_key('do_sort'):
              do_sort = int(cfg_dict['do_sort'])
         if cfg_dict.has_key('normalized'):
              normalized = int(cfg_dict['normalized'])
         if cfg_dict.has_key('include_velocity'):
              include_velocity = int(cfg_dict['include_velocity'])
-        DataIO.testFolderExistence(os.path.join(self.pplot,'LCs'))
+
         normalized = int(normalized)
         for i,star in enumerate(star_grid):
             extra_pars = dict()
@@ -1102,8 +1190,12 @@ class PlotGas(PlottingSession):
                                 or list(trans.sphinx.getWeightedIntensity())
                              for trans in transitions]
             
-            pfn = os.path.join(self.pplot,'LCs','linecontrib_%s_%i'\
-                               %(star['LAST_GASTRONOOM_MODEL'],i))
+            #-- Set filename
+            pfn = fn_plt if fn_plt else 'linecontrib'
+            subf = 'LCs'
+            suff = '{}_{}'.format(star['LAST_GASTRONOOM_MODEL'],i)
+            pfn = self.setFnPlt(pfn,fn_suffix=suff,fn_subfolder=subf)
+
             extra_pars['filename'] = pfn
             extra_pars['keytags'] = ['$\mathrm{%s}:$ %s'\
                                       %(trans.molecule.molecule_plot,\
@@ -1215,7 +1307,8 @@ class PlotGas(PlottingSession):
           
         if star_grid:
             alltrans = Transition.extractTransFromStars(star_grid,\
-                                                        dtype=instrument)
+                                                        dtype=instrument,\
+                                                        reset_data=0)
         elif linelists:
             alltrans = [t   for ll in linelists
                             for t in ll.makeTransitions()]
@@ -1270,7 +1363,7 @@ class PlotGas(PlottingSession):
         
     def plotPacsLineScans(self,star_grid=[],models=[],exclude_data=0,cfg='',\
                           cont_subtracted=1,fn_trans_marker='',fn_plt='',\
-                          dimensions=(5,2),fn_add_star=1,mark_undetected=0,\
+                          dimensions=(5,2),mark_undetected=0,\
                           remove_axis_titles=1,include_band=1):
          
         '''
@@ -1295,10 +1388,6 @@ class PlotGas(PlottingSession):
                        
                       (default: '')
         @type cfg: string         
-        @keyword fn_add_star: Add the star name to the requested plot filename.
-        
-                              (default: 1)
-        @type fn_add_star: bool
         @keyword fn_plt: A plot filename for the tiled plot.
                          
                          (default: '')
@@ -1360,16 +1449,13 @@ class PlotGas(PlottingSession):
         self.setSphinxPacs(star_grid)
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict['filename']
-            del cfg_dict['filename']
+            fn_plt = cfg.pop('filename')
         if cfg_dict.has_key('exclude_data'):
             exclude_data = bool(cfg_dict['exclude_data'])
         if cfg_dict.has_key('fn_trans_marker'):
             fn_trans_marker = cfg_dict['fn_trans_marker']
         if cfg_dict.has_key('cont_subtracted'):
             cont_subtracted = cfg_dict['cont_subtracted']
-        if cfg_dict.has_key('fn_add_star'):
-            fn_add_star = cfg_dict['fn_add_star']
         if cfg_dict.has_key('mark_undetected'):
             mark_undetected = cfg_dict['mark_undetected']
         if cfg_dict.has_key('remove_axis_titles'):
@@ -1419,11 +1505,12 @@ class PlotGas(PlottingSession):
                 ddict['yaxis'] = idd%dimensions[0] == 0 \
                                     and r'$F_\nu$ (Jy)' or ''
             tiles.append(ddict)
-        if not fn_plt:
-            fn_plt = os.path.join(self.pplot,'PACS_results','PACS_linescans')
-        if fn_add_star:
-            fn_plt = '_'.join([fn_plt,self.star_name])
-        #tiles = sorted(tiles,key = lambda x: x['x'][0][0])
+        
+        #-- Set plot filename
+        pfn = fn_plt if fn_plt else 'PACS_linescans'
+        subf = 'PACS_results'
+        pfn = self.setFnPlt(pfn,fn_subfolder=subf)
+
         pfn = Plotting2.plotTiles(filename=fn_plt,data=tiles,cfg=cfg_dict,\
                                   line_label_color=1,fontsize_label=15,\
                                   line_label_lines=1,dimensions=dimensions)
@@ -1435,7 +1522,7 @@ class PlotGas(PlottingSession):
 
     def plotPacs(self,star_grid=[],models=[],exclude_data=0,fn_plt='',cfg='',\
                  fn_trans_marker='',include_band=1,number_subplots=3,\
-                 mark_undetected=0,fn_add_star=1):
+                 mark_undetected=0):
         
         '''
         Plot PACS data along with Sphinx results, one plot per band.
@@ -1478,21 +1565,15 @@ class PlotGas(PlottingSession):
                                   
                                   (default: '')
         @type fn_trans_marker: string
-        @keyword fn_add_star: Add the star name to the requested plot filename.
-                              Only relevant if fn_plt is given.
-                              
-                              (default: 1)
-        @type fn_add_star: bool
         @keyword mark_undetected: Mark the undetected transitions in the same
                                   way extra marked transitions would be marked
                                   by fn_trans_marker. 
                                   
                                   (default: 0)
         @type mark_undetected: bool
-        @keyword include_band: Include a name tag for the band order in 
-                                    the plot.
+        @keyword include_band: Include a name tag for the band order in plot.
                                     
-                                    (default: 1)
+                               (default: 1)
         @type include_band: bool
         @keyword line_label_dashedvib: Use dashed lines for vibrational 
                                        transitions in line label lines. 
@@ -1521,8 +1602,7 @@ class PlotGas(PlottingSession):
         
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict['filename']
-            del cfg_dict['filename']
+            fn_plt = cfg.pop('filename')
         if cfg_dict.has_key('exclude_data'):
             exclude_data = bool(cfg_dict['exclude_data'])
         if cfg_dict.has_key('fn_trans_marker'):
@@ -1531,8 +1611,6 @@ class PlotGas(PlottingSession):
             include_band = bool(cfg_dict['include_band'])
         if cfg_dict.has_key('mark_undetected'):
             mark_undetected = cfg_dict['mark_undetected']
-        if cfg_dict.has_key('fn_add_star'):
-            fn_add_star = cfg_dict['fn_add_star']
         if cfg_dict.has_key('labels'):
             labels = bool(cfg_dict['labels'])
         else:
@@ -1544,22 +1622,15 @@ class PlotGas(PlottingSession):
                                     instrument='PACS')
         
         plot_filenames = []
-        for wave,flux,sphinx_flux,filename,ordername in \
-                    zip(self.pacs.data_wave_list,\
-                        self.pacs.data_flux_list,\
-                        self.sphinx_flux_list,\
-                        self.pacs.data_filenames,\
-                        self.pacs.data_ordernames):
-            if fn_plt and not fn_add_star:
-                fn_plt = os.path.splitext(fn_plt)[0]
-                this_filename = '%s_%s'%(fn_plt,ordername)
-            elif fn_plt and fn_add_star:
-                fn_plt = os.path.splitext(fn_plt)[0]
-                this_filename = '%s_%s_%s'%(fn_plt,self.star_name,ordername)
-            else:    
-                this_filename = os.path.join(self.pplot,'PACS_results',\
-                                             os.path.split(filename)[1]\
-                                            .replace('.dat',''))
+        for wave,flux,sphinx_flux,dfn,band in zip(self.pacs.data_wave_list,\
+                                                  self.pacs.data_flux_list,\
+                                                  self.sphinx_flux_list,\
+                                                  self.pacs.data_filenames,\
+                                                  self.pacs.data_ordernames):
+            #-- Set plot filename
+            pfn = fn_plt if fn_plt else os.path.split(dfn)[1]
+            pfn = self.setFnPlt(pfn,fn_suffix=band,fn_subfolder='PACS_results')
+
             keytags = ['Model %i: %s'%(i+1,str(star['LAST_PACS_MODEL'])\
                                 .replace('_','\_')) 
                        for i,star in enumerate(star_grid)]
@@ -1571,25 +1642,21 @@ class PlotGas(PlottingSession):
                 y_list = [flux]+sphinx_flux
                 keytags = ['PACS Spectrum'] + keytags
             if include_band:
-                elabel = [(ordername,0.05,0.80)]
+                elabel = [(band,0.05,0.80)]
             else:
                 elabel = []
             plot_filenames.append(Plotting2.plotCols(x=x_list,y=y_list,\
                     keytags=keytags,number_subplots=3,\
                     plot_title='%s: %s - %s'%(self.plot_id.replace('_','\_'),\
-                    self.star_name_plots,ordername),cfg=cfg_dict,\
+                    self.star_name_plots,band),cfg=cfg_dict,\
                     line_labels=lls,\
                     histoplot=not exclude_data and [0] or [],\
-                    filename=this_filename,labels=labels+elabel,\
+                    filename=pfn,labels=labels+elabel,\
                     line_label_spectrum=1,line_label_color=1))
         if plot_filenames and plot_filenames[0][-4:] == '.pdf':
-            if not fn_plt:
-                newf = os.path.join(self.pplot,'PACS_results',\
-                                    'PACS_spectrum.pdf')
-            elif fn_plt and fn_add_star:
-                newf = '%s_%s.pdf'%(fn_plt,self.star_name)
-            else:
-                newf = '%s.pdf'%fn_plt
+            #-- Set merged plot filename
+            pfn = fn_plt if fn_plt else 'PACS_spectrum'
+            newf = self.setFnPlt(pfn) + '.pdf'
             DataIO.joinPdf(old=sorted(plot_filenames),new=newf,\
                            del_old=not fn_plt)
             print '** Your plots can be found at:'
@@ -1674,8 +1741,7 @@ class PlotGas(PlottingSession):
         if cfg_dict.has_key('include_sphinx'):
             include_sphinx = cfg_dict['include_sphinx']
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict['filename']
-            del cfg_dict['filename']
+            fn_plt = cfg.pop('filename')
         if cfg_dict.has_key('fn_trans_marker'):
             fn_trans_marker = cfg_dict['fn_trans_marker']
         if cfg_dict.has_key('exclude_data'):
@@ -1726,30 +1792,31 @@ class PlotGas(PlottingSession):
                             [f[abs(wave-((wmax+wmin)/2.))<=delta] 
                             for f in self.sphinx_flux_list[i_file] if list(f)]
                     wave = wave[abs(wave-((wmax+wmin)/2.))<=delta]
-                    if fn_plt:
-                        fn_plt = os.path.splitext(fn_plt)[0]
-                        plot_filename = '%s_%s_%.2f_%.2f'%(fn_plt,\
-                                                           mode,wmin,wmax)
-                    else:    
-                        folder = mode=='ll' and 'LineLists' or 'PACS_results'
-                        dfn_seg = os.path.split(filename)[1].replace('.dat','')
-                        pfn = '%s_segment_%.1f-%.1f_'%(mode,wmin,wmax)+dfn_seg
-                        plot_filename = os.path.join(self.pplot,folder,pfn)
+                    
+                    #-- Set plot filename
+                    pfn = fn_plt if fn_plt else 'PACS_spectrum'
+                    suff = '{}_segment_{:.2f}_{:.2f}'.format(mode,wmin,wmax)
+                    subf = mode=='ll' and 'LineLists' or 'PACS_results'
+                    pfn = self.setFnPlt(pfn,fn_suffix=suff,fn_subfolder=subf)
+                    
+                    #-- Additional plot settings
                     extra_stats = dict([('line_labels',lls),\
                                         ('histoplot',not exclude_data \
                                                         and [0] or []),\
-                                        ('filename',plot_filename)])
+                                        ('filename',pfn)])
+                    
+                    #-- Data to be plotted 
                     w = [wave]*(len(sphinx_flux)+(not exclude_data and 1 or 0))
                     f = exclude_data and sphinx_flux or [flux]+sphinx_flux
-                    plot_filename = Plotting2.plotCols(x=w,y=f,cfg=cfg_dict,\
-                                                       **extra_stats)
+                    
+                    pfn = Plotting2.plotCols(x=w,y=f,cfg=cfg_dict,**extra_stats)
                     print '** Segment finished and saved at:'
-                    print plot_filename
+                    print pfn
                     
                     
 
     def plotSpire(self,star_grid=[],models=[],exclude_data=0,fn_plt='',\
-                  fn_trans_marker='',number_subplots=3,cfg='',fn_add_star=1):
+                  fn_trans_marker='',number_subplots=3,cfg=''):
         
         '''
         Plot SPIRE data along with Sphinx results. In flux (Jy) vs wavelength
@@ -1793,11 +1860,6 @@ class PlotGas(PlottingSession):
                           
                       (default: '')
         @type cfg: string
-        @keyword fn_add_star: Add the star name to the requested plot filename.
-                              Only relevant if fn_plt is given.
-                              
-                              (default: 1)
-        @type fn_add_star: bool
         
         '''
         
@@ -1818,14 +1880,11 @@ class PlotGas(PlottingSession):
 
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict['filename']
-            del cfg_dict['filename']
+            fn_plt = cfg.pop('filename')
         if cfg_dict.has_key('exclude_data'):
             exclude_data = bool(cfg_dict['exclude_data'])
         if cfg_dict.has_key('fn_trans_marker'):
             fn_trans_marker = cfg_dict['fn_trans_marker']
-        if cfg_dict.has_key('fn_add_star'):
-            fn_add_star = cfg_dict['fn_add_star']
         self.spire.prepareSphinx(star_grid)
         lls = self.createLineLabels(star_grid,instrument='SPIRE')
 
@@ -1836,20 +1895,15 @@ class PlotGas(PlottingSession):
                                          ilabel=this_index,instrument='SPIRE')
             lls = lls + ells
         plot_filenames = []
-        for wave,flux,band,filename in zip(self.spire.data_wave_list,\
+        for wave,flux,band,dfn in zip(self.spire.data_wave_list,\
                                            self.spire.data_flux_list,\
                                            self.spire.data_ordernames,\
                                            self.spire.data_filenames):
-            if fn_plt and not fn_add_star:
-                fn_plt = os.path.splitext(fn_plt)[0]
-                this_filename = '%s_%s'%(fn_plt,band)
-            elif fn_plt and fn_add_star:
-                fn_plt = os.path.splitext(fn_plt)[0]
-                this_filename = '%s_%s_%s'%(fn_plt,self.star_name,band)
-            else:
-                pfn = 'spire_spectrum_%s'%band
-                this_filename = os.path.join(self.pplot,pfn)
-            sphinx_flux = [self.spire.getSphinxConvolution(star,filename)[1]
+            #-- Set plot filename
+            pfn = fn_plt if fn_plt else 'spire_spectrum'
+            pfn = self.setFnPlt(pfn,fn_suffix=band)
+
+            sphinx_flux = [self.spire.getSphinxConvolution(star,dfn)[1]
                            for star in star_grid]
             w = exclude_data \
                           and [wave]*(len(sphinx_flux)) \
@@ -1866,15 +1920,12 @@ class PlotGas(PlottingSession):
                 plot_title='%s: %s' %(self.plot_id.replace('_','\_'),\
                                       self.star_name_plots),\
                 histoplot= not exclude_data and [0] or [],\
-                filename=this_filename,cfg=cfg_dict,\
+                filename=pfn,cfg=cfg_dict,\
                 line_label_spectrum=1))
         if plot_filenames and plot_filenames[0][-4:] == '.pdf':
-            if not fn_plt:
-                newf = os.path.join(self.pplot,'SPIRE_spectrum.pdf')
-            elif fn_plt and fn_add_star:
-                newf = '%s_%s.pdf'%(fn_plt,self.star_name)
-            else:
-                newf = '%s.pdf'%fn_plt
+            #-- Set merged plot filename
+            pfn = fn_plt if fn_plt else 'SPIRE_spectrum'
+            newf = self.setFnPlt(pfn) + '.pdf'
             DataIO.joinPdf(old=sorted(plot_filenames,reverse=True),new=newf,\
                            del_old=not fn_plt)
             print '** Your plots can be found at:'
@@ -1886,7 +1937,8 @@ class PlotGas(PlottingSession):
             print '***********************************'
 
     
-    def plotIntTmb(self, star_grid = [], scale = 1, cfg = ''):
+    def plotIntTmb(self,star_grid=[],scale=1,fn_plt='',cfg = ''):
+        
         '''
         Plot of the integrated main beam temperature of the molecular data
         and that obtained from model(s). Jup vs K.
@@ -1900,6 +1952,11 @@ class PlotGas(PlottingSession):
                         
                         (default = 1)
         @type scale: bool
+        @keyword fn_plt: A plot filename to which an index is added for each
+                         subband.
+                         
+                         (default: '')
+        @type fn_plt: string
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                       
@@ -1907,12 +1964,17 @@ class PlotGas(PlottingSession):
         @type cfg: string
         
         '''
+        
         print '***********************************'   
         print '** Plotting integrated main beam temperatures'
         print '** Plots can be found at '
         
-        
-        S = len(star_grid)
+        #-- Read cfg file and retrieve sub plot method specific keywords.
+        cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg.pop('filename')
+        if cfg_dict.has_key('scale'):
+            scale = bool(cfg_dict['scale'])
 
         ### Data
         #-- Get the int. mean beam temp. and its error for the data, 
@@ -1938,7 +2000,7 @@ class PlotGas(PlottingSession):
             
             tra = [t for t in trans if t.molecule == molecs[jj]]
             
-           #-- Initialise labels and types for plotting
+            #-- Initialise labels and types for plotting
             types_data = ['ro','gs','bp']
             if len(jup_split)%3 != 0:
                 types_data = types_data + types_data[0:(len(jup_split)%3)]    
@@ -1952,7 +2014,7 @@ class PlotGas(PlottingSession):
             types_model = []
             colors = ['k', 'm', '0.50', 'c', 'y', 'r', 'g','b']
             C = len(colors)
-            for ii in range(S):
+            for ii in range(len(star_grid)):
                 trans = star_grid[ii]['GAS_LINES']
                 molecs = list(set([t.molecule for t in trans]))
                 intra = [t for t in trans if t.molecule == molecs[jj]]
@@ -1971,18 +2033,19 @@ class PlotGas(PlottingSession):
 
             ### Plotting
             #-- Initialise x, y, yerr, line types and labels
-            x_toplot = jup_split + [jup]*S 
+            x_toplot = jup_split + [jup]*len(star_grid) 
             y_toplot = data + data_model            
-            yerr_toplot = error + [None]*S
+            yerr_toplot = error + [None]*len(star_grid)
             types = types_data + types_model
             labels = tele + label_model
-            #-- Folder and filename
-            DataIO.testFolderExistence(os.path.join(self.pplot,'intTmb'))
-            pfn = os.path.join(self.pplot,'intTmb-%s-%s'\
-                                %(star_grid[0]['LAST_GASTRONOOM_MODEL'], \
-                                  molecs[jj].makeLabel()[2:-2]))
+            
+            #-- Set plot filename
+            pfn = fn_plt if fn_plt else 'intTmb'
+            suff = '_'.join([star_grid[0]['LAST_GASTRONOOM_MODEL'], \
+                             molecs[jj].makeLabel()[2:-2]])
+            pfn = self.setFnPlt(pfn,fn_suffix=suff)
+
             #-- Cfg and specific plotting settings
-            cfg_dict = Plotting2.readCfg(cfg)
             extra_pars = dict()
             extra_pars['xmin'] = min(jup)-0.5
             extra_pars['xmax'] = max(jup)+0.5
@@ -1991,12 +2054,10 @@ class PlotGas(PlottingSession):
             extra_pars['xaxis'] = '$J_{up}$'
             extra_pars['keytags'] = labels
             extra_pars['line_types'] = types
-            extra_pars.update(cfg_dict)
-            #-- The filename for now cannot be changed.
             extra_pars['filename'] = pfn
-            
+
             #-- Plot
-            pfn = Plotting2.plotCols(x=x_toplot,y=y_toplot,\
+            pfn = Plotting2.plotCols(x=x_toplot,y=y_toplot,cfg=cfg_dict,\
                                      yerr=yerr_toplot,**extra_pars)
             print pfn
         print '***********************************'

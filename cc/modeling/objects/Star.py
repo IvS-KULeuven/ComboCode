@@ -745,7 +745,7 @@ class Star(dict):
         '''
         Return a Transition() object that has the same parameters as sample. 
         
-        The actual model ids are not included in this comparison! 
+        The actual model ids or data are not included in this comparison! 
         
         None is returned if no match is found. 
         
@@ -753,21 +753,20 @@ class Star(dict):
                        transitions in this Star() object. If a match is found, 
                        it is returned.
         @type sample: Transition()
+        
         @return: If a match is found, this transition is returned.
         @rtype: Transition()
         
         '''
-         
-        i = 0
-        while i < len(self['GAS_LINES']) and sample != self['GAS_LINES'][i]:
-            i += 1
-        if i == len(self['GAS_LINES']):
-            return None
-        else:
-            return self['GAS_LINES'][i]
         
-    
-     
+        try: 
+            i = self['GAS_LINES'].index(sample)
+            return self['GAS_LINES'][i]
+        except ValueError: 
+            return None
+
+
+
     def getTransList(self,**kwargs):
         
         '''
