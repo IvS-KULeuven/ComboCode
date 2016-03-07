@@ -11,6 +11,7 @@ import os
 import re
 import scipy
 import subprocess
+import copy
 from glob import glob
 from scipy import pi, exp, linspace, argmin, array, diff, mean, isfinite
 from scipy.interpolate import interp1d
@@ -194,7 +195,8 @@ def getTransFromStarGrid(sg,criterion,mode='index'):
 
 
 
-def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,dtype='all'):
+def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,dtype='all',\
+                          reset_data=1):
     
     '''
     Extract a list a of unique transitions included in a list of Star() objects
@@ -204,10 +206,14 @@ def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,dtype='all'):
     instrument, or all, or all unresolved, or all resolved.
     
     The list of transitions is copied to make sure no funky references mess 
-    with the original transitions. list() and set() make sure of this.
+    with the original transitions. 
+    
+    The data can be reset, since data do not uniquely identify a transition 
+    object. However, in some cases it is useful to keep the data in the object 
+    if the extracted list will always work for the same Star() object.
     
     @param star_grid: The list of Star() objects from which all 'GAS_LINES' 
-                       keys are taken and collected in a set. 
+                      keys are taken and collected in a set. 
     @type star_grid: list[Star()]
     
     @keyword sort_freq: Sort the transitions according to their frequencies. 
@@ -229,6 +235,11 @@ def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,dtype='all'):
                     
                     (default: 'all')
     @type dtype: str
+    @keyword reset_data: Reset the data properties to default, so they have to 
+                         be read again. 
+                         
+                         (default: 1)
+    @type reset_data: bool
     
     @return: a list of unique transitions included in all Star() objects in
              star_grid
@@ -237,22 +248,28 @@ def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,dtype='all'):
     '''
     
     dtype = dtype.upper()
-    selection = list(sorted(set([trans 
-                                 for star in star_grid
-                                 for trans in star['GAS_LINES']]),\
-                            key=lambda x:sort_freq \
-                                and (sort_molec and x.molecule or '',\
-                                     x.frequency) \
-                                or  (sort_molec and x.molecule or '',\
-                                     x.wavelength)))
+    selection = sorted(set([trans 
+                            for star in star_grid
+                            for trans in star['GAS_LINES']
+                            if trans]),\
+                       key=lambda x:sort_freq \
+                                     and (sort_molec and x.molecule or '',\
+                                          x.frequency) \
+                                     or  (sort_molec and x.molecule or '',\
+                                          x.wavelength))
+   
     if dtype == 'UNRESOLVED':
-        return [trans for trans in selection if trans.unresolved]
+        selection = [trans for trans in selection if trans.unresolved]
     elif dtype == 'RESOLVED':
-        return [trans for trans in selection if not trans.unresolved]
-    elif dtype == 'ALL':
-        return selection
-    else:
-        return [trans for trans in selection if dtype in trans.telescope]
+        selection = [trans for trans in selection if not trans.unresolved]
+    elif not dtype == 'ALL':
+        selection = [trans for trans in selection if dtype in trans.telescope]
+    
+    selection = [copy.deepcopy(trans) for trans in selection]
+    if reset_data:
+        for t in selection: t.resetData()
+    
+    return selection
 
 
 
@@ -920,9 +937,12 @@ class Transition():
         self.sphinx = None
         self.path_gastronoom = path_gastronoom
         self.unresolved = 'PACS' in self.telescope or 'SPIRE' in self.telescope
+        
+        #-- Data lists and dicts. Reset when data are replaced. 
         self.datafiles = None
         self.lpdata = None 
         self.fittedlprof = None
+        
         self.radiat_trans = None
         if frequency is None:
              #-- sets frequency from GASTRoNOoM input in s^-1
@@ -933,11 +953,18 @@ class Transition():
         self.h = 6.62606957e-27         #in erg*s Planck constant
         self.k = 1.3806488e-16          #in erg/K Boltzmann constant
         self.wavelength = self.c/self.frequency #in cm
+        
         #-- The vlsr from Star.dat (set by the unresolved-data objects such as
-        #   Spire or Pacs)
+        #   Spire or Pacs). Also given by the resolved LPDataReader objects from
+        #   Star.dat if not found in the fits file, but then not accessed
+        #   through this:
         self.vlsr = None
+        
+        #-- Calculated by getBestVlsr(), reset when data are replaced
         self.best_vlsr = None
         self.best_mtmb = None
+        self.chi2_best_vlsr = None
+        
         #-- PACS and SPIRE spectra are handled differently (setIntIntUnresolved)
         if self.unresolved: 
             self.unreso = dict()
@@ -1601,7 +1628,24 @@ class Transition():
      
      
      
-    def addDatafile(self,datadict):
+    def resetData(self):
+    
+        '''
+        Reset the data read for this object. Datafiles will have to be added 
+        anew through addDataFile or setData.
+        
+        '''        
+
+        self.datafiles = None
+        self.lpdata = None
+        self.fittedlprof = None
+        self.best_vlsr = None
+        self.best_mtmb = None
+        self.chi2_best_vlsr = None
+    
+    
+    
+    def addDatafile(self,datadict,replace=0):
         
         '''
         Add a datadict for this transition. Includes filenames as keys, and 
@@ -1631,6 +1675,11 @@ class Transition():
         @param datadict: the filenames and associated fit results
         @type datadict: dict()
         
+        @keyword replace: Replace data if they had already been added before.
+        
+                          (default: 0)
+        @type replace: bool
+        
         '''
         
         #-- If datafile is nto a dict or an empty dict(), no data available, so
@@ -1642,6 +1691,10 @@ class Transition():
         if self.unresolved: 
             return
         
+        #-- Replace previously added/read data. (self.lpdata is always reset)
+        if replace: 
+            self.resetData()
+            
         #-- Check if fit results are available for the file. If not, remove it. 
         #   Check if the file path is defined in all cases. If not, add radio
         #   data folder to it. Save filenames in datafiles.
@@ -1662,6 +1715,7 @@ class Transition():
             self.datafiles, self.fittedlprof = None,None 
             print 'No data found for %s. If there should be data: '%str(self)+\
                   'Did you run fitLP() in the Radio db?'
+        
         #-- Datafiles have been updated, so reset the lpdata and fittedlprof 
         #   properties. Data will be read anew when next they are requested.
         self.lpdata = None
@@ -1690,12 +1744,12 @@ class Transition():
                     
     
     
-    def setData(self,trans):
+    def setData(self,trans,replace=0):
         
         """
         Set data equal to the data in a different Transition object, but for 
         the same transition. Does not erase data if they have already been set 
-        in this object. 
+        in this object, unless explicitly requested. 
         
         A check is ran to see if the transition in both objects really is the 
         same. Sphinx model id may differ! 
@@ -1707,10 +1761,20 @@ class Transition():
         
         @param trans: The other Transition() object, assumes the transition 
                       is the same, but possibly different sphinx models.
-        @type trans: Transition()        
+        @type trans: Transition()   
+        
+        @keyword replace: Replace data if they had already been added before.
+        
+                          (default: 0)
+        @type replace: bool     
         
         """
         
+        #-- Replace previously added/read data. (self.lpdata is always reset)
+        if replace: 
+            self.resetData()
+        
+        #-- Double check if the transitions match
         if self == trans: 
             if self.datafiles is None: 
                 self.datafiles = trans.datafiles
@@ -2079,7 +2143,7 @@ class Transition():
         
         self.readData()
         if self.fittedlprof is None:
-            return
+            return (None, None)
         if self.fittedlprof[index].has_key('abs_err'): 
             abs_err = self.fittedlprof[index]['abs_err']
         else:

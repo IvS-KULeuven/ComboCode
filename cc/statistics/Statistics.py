@@ -211,6 +211,8 @@ class Statistics(object):
             if not star_grid:
                 raise IOError('Statistics.setModels requires a ' + \
                               'star_grid to be defined for freq-resolved data.')
+            if set([s['LAST_GASTRONOOM_MODEL'] for s in star_grid]) == set(['']):
+                return
             if set([s['MOLECULE'] and 1 or 0 for s in star_grid]) == set([0]): 
                 return
             self.star_grid = star_grid

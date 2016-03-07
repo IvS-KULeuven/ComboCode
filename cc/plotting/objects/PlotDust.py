@@ -34,8 +34,8 @@ class PlotDust(PlottingSession):
     
     """
     
-    def __init__(self,star_name='model',sed=None,\
-                 path_mcmax='',inputfilename=None):
+    def __init__(self,star_name='model',sed=None,path_mcmax='',\
+                 inputfilename=None,fn_add_star=0):
         
         '''
         Initializing PlotDust session.
@@ -61,21 +61,27 @@ class PlotDust(PlottingSession):
                             
                       (default: None)
         @type sed: Sed()
+        @keyword fn_add_star: Add the star name to the requested plot filename.
+                              Only relevant if fn_plt is given in a sub method.
+                              
+                              (default: 0)
+        @type fn_add_star: bool
         
         '''
 
         super(PlotDust, self).__init__(star_name=star_name,\
                                        path=path_mcmax,\
                                        code='MCMax',\
-                                       inputfilename=inputfilename)
+                                       inputfilename=inputfilename,\
+                                       fn_add_star=fn_add_star)
         #-- Convenience path
         cc.path.mout = os.path.join(cc.path.mcmax,self.path)
         self.sed = sed
 
 
 
-    def plotSed(self,star_grid=[],cfg='',iterative=0,no_models=0,\
-                fn_add_star=0,show_phot_filter=0,**kwargs):
+    def plotSed(self,star_grid=[],fn_plt='',cfg='',iterative=0,no_models=0,\
+                show_phot_filter=0,**kwargs):
         
         """ 
         Creating an SED with 0, 1 or more models and data. 
@@ -90,6 +96,11 @@ class PlotDust(PlottingSession):
                             
                             (default: [])
         @type star_grid: list[Star()]
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string  
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                         
@@ -106,10 +117,6 @@ class PlotDust(PlottingSession):
                                   
                             (default: 0)
         @type no_models: bool
-        @keyword fn_add_star: Add the star name to the requested plot filename.
-        
-                              (default: 1)
-        @type fn_add_star: bool
         @keyword show_phot_filter: Show the wavelength band of the photometric
                                    filters as an x error bar on the model phot
                                    
@@ -127,15 +134,10 @@ class PlotDust(PlottingSession):
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('no_models'):
             no_models = cfg_dict['no_models']
-        if cfg_dict.has_key('fn_add_star'):
-            fn_add_star = bool(cfg_dict['fn_add_star'])
         if cfg_dict.has_key('show_phot_filter'):
             show_phot_filter = bool(cfg_dict['show_phot_filter'])
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict['filename']
-            del cfg_dict['filename']
-        else:
-            fn_plt = ''
+            fn_plt = cfg_dict.pop('filename')
         
         data_labels = dict([(dt,(n,ls))
                             for n,dt,ls in zip(DataIO.getInputData(path=cc.path.usr,\
@@ -148,20 +150,6 @@ class PlotDust(PlottingSession):
                                                DataIO.getInputData(path=cc.path.usr,\
                                                         keyword='LINE_TYPES',\
                                                         filename='Sed.dat'))])
-
-        #- filename settings and copying inputfiles to plot output folder
-        if not fn_plt:
-            fn_plt = os.path.join(self.pplot,'SED_%s'%self.star_name)
-        if fn_add_star:
-            fn_plt = '_'.join([fn_plt,self.star_name])
-        if iterative:
-            fn_plt = fn_plt + '_iterative_%i'%iterative
-        
-        if self.inputfilename <> None:
-            ipfn = os.path.split(self.inputfilename)[1]
-            subprocess.call(['cp ' + self.inputfilename + ' ' + \
-                             os.path.join(self.pplot,ipfn)],\
-                            shell=True)
 
         plot_title='SED %s'%self.star_name_plots
        
@@ -262,16 +250,21 @@ class PlotDust(PlottingSession):
         extra_pars['xerr_linewidth'] = 4
         extra_pars.update(cfg_dict)
         extra_pars.update(kwargs)
-        filename = Plotting2.plotCols(x=data_x,y=data_y,xerr=data_xerr,\
-                                      yerr=data_yerr,filename=fn_plt,\
-                                      **extra_pars)
+        
+        #-- Set filename plot
+        pfn = fn_plt if fn_plt else 'SED'
+        suff = 'iterative_{}'.format(iterative) if iterative else ''
+        pfn = self.setFnPlt(pfn,fn_suffix=suff)
+        
+        pfn = Plotting2.plotCols(x=data_x,y=data_y,xerr=data_xerr,\
+                                 yerr=data_yerr,filename=pfn,**extra_pars)
         print '** Your SED plots can be found at:'
-        print filename
+        print pfn
         print '***********************************'
          
          
          
-    def plotCorrflux(self,star_grid=[],cfg='',no_models=0,fn_add_star=0):
+    def plotCorrflux(self,star_grid=[],fn_plt='',cfg='',no_models=0):
         
         """ 
         Plot correlated fluxes with 0, 1 or more models and data. 
@@ -283,6 +276,11 @@ class PlotDust(PlottingSession):
                             
                             (default: [])
         @type star_grid: list[Star()]
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string  
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                         
@@ -292,11 +290,6 @@ class PlotDust(PlottingSession):
                                   
                             (default: 0)
         @type no_models: bool
-        @keyword fn_add_star: Add the star name to the requested plot filename.
-        
-                              (default: 1)
-        @type fn_add_star: bool
-
         
         """
         
@@ -308,26 +301,9 @@ class PlotDust(PlottingSession):
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('no_models'):
             no_models = cfg_dict['no_models']
-        if cfg_dict.has_key('fn_add_star'):
-            fn_add_star = bool(cfg_dict['fn_add_star'])
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict['filename']
-            del cfg_dict['filename']
-        else:
-            fn_plt = ''
+            fn_plt = cfg_dict.pop('filename')
         
-        #- filename settings and copying inputfiles to plot output folder
-        if not fn_plt:
-            fn_plt = os.path.join(self.pplot,'CorrFlux')
-        if fn_add_star:
-            fn_plt = '_'.join([fn_plt,self.star_name])
-        
-        if self.inputfilename <> None:
-            ipfn = os.path.split(self.inputfilename)[1]
-            subprocess.call(['cp ' + self.inputfilename + ' ' + \
-                             os.path.join(self.pplot,ipfn)],\
-                            shell=True)
-
         #-- Select MIDI data. Assumes baseline at the end of the filename.
         ssd = os.path.join(cc.path.dcflux,self.star_name,\
                            '_'.join([self.star_name,'MIDI','*.fits']))
@@ -415,15 +391,19 @@ class PlotDust(PlottingSession):
         kwargs['ws_top'] = 0.99
         kwargs['ws_left'] = 0.10
         kwargs['ws_right'] = 0.98
-        filename = Plotting2.plotTiles(data=data,filename=fn_plt,**kwargs)
+        
+        #-- Set filename plot
+        pfn = fn_plt if fn_plt else 'CorrFlux'
+        pfn = self.setFnPlt(pfn)
+        
+        pfn = Plotting2.plotTiles(data=data,filename=pfn,**kwargs)
         print '** Your Correlated Flux plots can be found at:'
-        print filename
+        print pfn
         print '***********************************'
                  
                  
                  
-    def plotVisibilities(self,star_grid=[],cfg='',no_models=0,\
-                         fn_add_star=0):
+    def plotVisibilities(self,star_grid=[],fn_plt='',cfg='',no_models=0):
         
         """ 
         Plot visibilities as a function of baseline.
@@ -441,6 +421,11 @@ class PlotDust(PlottingSession):
                             
                             (default: [])
         @type star_grid: list[Star()]
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string  
         @keyword cfg: path to the Plotting2.plotCols config file. If default,
                       the hard-coded default plotting options are used.
                         
@@ -469,25 +454,8 @@ class PlotDust(PlottingSession):
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('no_models'):
             no_models = cfg_dict['no_models']
-        if cfg_dict.has_key('fn_add_star'):
-            fn_add_star = bool(cfg_dict['fn_add_star'])
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict['filename']
-            del cfg_dict['filename']
-        else:
-            fn_plt = ''
-        
-        #- filename settings and copying inputfiles to plot output folder
-        if not fn_plt:
-            fn_plt = os.path.join(self.pplot,'Visibilities')
-        if fn_add_star:
-            fn_plt = '_'.join([fn_plt,self.star_name])
-        
-        if self.inputfilename <> None:
-            ipfn = os.path.split(self.inputfilename)[1]
-            subprocess.call(['cp ' + self.inputfilename + ' ' + \
-                             os.path.join(self.pplot,ipfn)],\
-                            shell=True)
+            fn_plt = cfg_dict.pop('filename')
 
         #-- Read the models. Wavelengths are taken from the ray-tracing output
         models = []
@@ -606,14 +574,18 @@ class PlotDust(PlottingSession):
         kwargs['ws_left'] = 0.10
         kwargs['ws_right'] = 0.98
 
-        filename = Plotting2.plotTiles(data=data,filename=fn_plt,**kwargs)
+        #-- Set filename plot
+        pfn = fn_plt if fn_plt else 'Visibilities'
+        pfn = self.setFnPlt(pfn)
+
+        pfn = Plotting2.plotTiles(data=data,filename=pfn,**kwargs)
         print '** Your Correlated Flux plots can be found at:'
-        print filename
+        print pfn
         print '***********************************'
 
                                    
 
-    def plotDens(self,star_grid=[],models=[],unit='cm',cfg=''):
+    def plotDens(self,star_grid=[],models=[],fn_plt='',unit='cm',cfg=''):
         
         """ 
         Plotting the temperature stratification of the dust.
@@ -630,6 +602,11 @@ class PlotDust(PlottingSession):
                          
                          (default: [])
         @type models: list[string]
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string  
         @keyword unit: The unit of the plotted radial grid. Can be 'cm','rstar',
                        'au', 'm'
         
@@ -650,14 +627,13 @@ class PlotDust(PlottingSession):
             return        
         elif not star_grid and models:
             star_grid = self.makeMCMaxStars(models=models)
+        
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('unit'):
             unit = cfg_dict['unit']
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict['filename']
-            del cfg_dict['filename']    
-        else:
-            fn_plt = os.path.join(self.pplot,'dens')
+            fn_plt = cfg_dict.pop('filename')
+
         rads = [s.getDustRad(unit=unit) for s in star_grid]
         denss = [s.getDustDensity() for s in star_grid]
         keys = [s['LAST_MCMAX_MODEL'].replace('_','\_') for s in star_grid]
@@ -670,16 +646,21 @@ class PlotDust(PlottingSession):
         else: ppars['xaxis'] = '$r\ \mathrm{(cm)}$'
         ppars['xlogscale'] = 1
         ppars['ylogscale'] = 1
-
-        filename = Plotting2.plotCols(x=rads,y=denss,filename=fn_plt,\
-                                      keytags=keys,cfg=cfg_dict,**ppars)
+            
+        #-- Set plot filename
+        pfn = fn_plt if fn_plt else 'dens'
+        pfn = self.setFnPlt(pfn)
+        
+        pfn = Plotting2.plotCols(x=rads,y=denss,filename=pfn,\
+                                 keytags=keys,cfg=cfg_dict,**ppars)
         print '** Your plot can be found at:'
-        print filename
+        print pfn
         print '***********************************'
             
 
                                     
-    def plotTemp(self,star_grid=[],models=[],power=[],unit='cm',cfg=''):
+    def plotTemp(self,star_grid=[],models=[],fn_plt='',power=[],unit='cm',\
+                 cfg=''):
         
         """ 
         Plotting the temperature stratification of the dust.
@@ -696,6 +677,11 @@ class PlotDust(PlottingSession):
                          
                          (default: [])
         @type models: list[string]
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string  
         @keyword power: A list of values for s in below formula. If [] no power
                         law is included. Power law parameters  are taken from 
                         star_grid[0].
@@ -732,10 +718,8 @@ class PlotDust(PlottingSession):
         if cfg_dict.has_key('unit'):
             unit = cfg_dict['unit']
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict['filename']
-            del cfg_dict['filename']    
-        else:
-            fn_plt = os.path.join(self.pplot,'Td_avg')
+            fn_plt = cfg_dict.pop('filename')
+
         rads = []
         temps = []
         keytags = []
@@ -767,18 +751,22 @@ class PlotDust(PlottingSession):
         ppars['plot_title'] = 'Average Dust Temperature Stratification for %s'\
                               %(self.star_name_plots)
         
-        filename = Plotting2.plotCols(x=rads,y=temps,filename=fn_plt,\
-                                      key_location=(0.05,0.05),cfg=cfg_dict,\
-                                      xlogscale=1,ylogscale=1,\
-                                      keytags=keytags,**ppars)
+        #-- Set plot filename
+        pfn = fn_plt if fn_plt else 'Td_avg'
+        pfn = self.setFnPlt(pfn)
+        
+        pfn = Plotting2.plotCols(x=rads,y=temps,filename=pfn,\
+                                 key_location=(0.05,0.05),cfg=cfg_dict,\
+                                 xlogscale=1,ylogscale=1,\
+                                 keytags=keytags,**ppars)
         print '** Your plots can be found at:'
-        print filename
+        print pfn
         print '***********************************'
             
 
 
-    def plotTempSpecies(self,star_grid=[],models=[],include_total=1,unit='cm',\
-                        power=[],cfg=''):
+    def plotTempSpecies(self,star_grid=[],models=[],fn_plt='',include_total=1,\
+                        unit='cm',power=[],cfg=''):
         
         """ 
         Plotting the temperature stratification of the dust for the species 
@@ -794,6 +782,11 @@ class PlotDust(PlottingSession):
                          
                          (default: [])
         @type models: list[string]
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string  
         @keyword include_total: Include the sum of all temperature profiles as 
                                 well for comparison. 
                                         
@@ -833,16 +826,15 @@ class PlotDust(PlottingSession):
                           ' list only, not yet implemented.')
             #- Requires star.dust_list and T_CONTACT to be taken from the log file. 
             #- It's possible, but needs some programming
+
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('power'):
             power = cfg_dict['power']
         if cfg_dict.has_key('unit'):
             unit = cfg_dict['unit']
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict['filename']
-            del cfg_dict['filename']    
-        else:
-            fn_plt = os.path.join(self.pplot,'Td_species')
+            fn_plt = cfg_dict.pop('filename')
+
         plot_filenames = []
         for star in star_grid:
             if not int(star['T_CONTACT']):
@@ -890,18 +882,24 @@ class PlotDust(PlottingSession):
             elif unit == 'm': ppars['xaxis'] = '$r\ \mathrm{(m)}$'
             else: ppars['xaxis'] = '$r\ \mathrm{(cm)}$'
             
-            filename = '_'.join([fn_plt,star['LAST_MCMAX_MODEL']])
+            #-- Set plot filename
+            pfn = fn_plt if fn_plt else 'Td_species'
+            suff = star['LAST_MCMAX_MODEL']
+            pfn = self.setFnPlt(pfn,fn_suffix=suff)
+
             plot_filenames.append(Plotting2.plotCols(x=rads,y=temps,\
-                                  cfg=cfg_dict,filename=filename,\
+                                  cfg=cfg_dict,filename=pfn,\
                                   keytags=keytags,xlogscale=1,ylogscale=1,\
                                   fontsize_key=16,**ppars))
+        
         if len(plot_filenames) != len(star_grid):
             print 'At least one of the models does not yet have a MCMax model.'        
         if plot_filenames[0][-4:] == '.pdf':
-            new_filename = fn_plt + '.pdf'
-            DataIO.joinPdf(old=plot_filenames,new=new_filename)
+            pfn = fn_plt if fn_plt else 'Td_species'
+            pfn = self.setFnPlt(pfn) + '.pdf'
+            DataIO.joinPdf(old=plot_filenames,new=pfn)
             print '** Your plots can be found at:'
-            print new_filename
+            print pfn
             print '***********************************'
         else:
             print '** Plots can be found at:'
@@ -910,7 +908,7 @@ class PlotDust(PlottingSession):
             
 
 
-    def plotOpacities(self,star_grid=[],scaling=0,species=['AMC'],\
+    def plotOpacities(self,star_grid=[],fn_plt='',scaling=0,species=['AMC'],\
                       cfg='',index=0,*args,**kwargs):
         
         """ 
@@ -929,6 +927,11 @@ class PlotDust(PlottingSession):
                                   
                             (default: [])
         @type star_grid: list(Star())
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string  
         @keyword scaling: allow species abundance scaling of opacities
                                 
                           (default: 0)
@@ -956,20 +959,15 @@ class PlotDust(PlottingSession):
         
         #-- Set the filename
         cfg_dict = Plotting2.readCfg(cfg)
-        ppars = dict()
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict['filename']
-            del cfg_dict['filename']
-        elif kwargs.has_key('filename'):
-            fn_plt = kwargs['filename']
-            del kwargs['filename']
-        elif not star_grid:
+            fn_plt = cfg_dict.pop('filename')
+        
+        if not star_grid and not fn_plt:
             fn_plt = os.path.join(cc.path.mopac,\
                                   'dust_opacities_%s'%'_'.join(species))
-        else:
-            fn_plt = os.path.join(self.pplot,'opacities_species')
-        
+
         #-- Set some plot parameters
+        ppars = dict()
         ppars['xaxis'] = '$\lambda$ ($\mu \mathrm{m}$)'
         ppars['yaxis'] = '$\kappa_\lambda$ ($\mathrm{cm}^2\mathrm{/g}$)'
         ppars['xlogscale'] = 1
@@ -985,10 +983,14 @@ class PlotDust(PlottingSession):
             q_list = [kr.getKappas(sp)[1] for sp in species]
             if not ppars.has_key('keytags'):
                 ppars['keytags'] = species
-            fn_plt = Plotting2.plotCols(x=wl_list,y=q_list,filename=fn_plt,\
-                                        *args,**ppars)
+            
+            #-- Set plot filename
+            pfn = fn_plt if fn_plt else 'opacities_species'
+            pfn = self.setFnPlt(pfn)
+            pfn = Plotting2.plotCols(x=wl_list,y=q_list,filename=pfn,\
+                                     *args,**ppars)
             print '** Your plot can be found at:'
-            print fn_plt
+            print pfn
         else:    
             fns = []
             for star in star_grid:        
@@ -1001,27 +1003,34 @@ class PlotDust(PlottingSession):
                 if scaling:
                     opacities = [op*star['A_%s'%sp]
                                  for op,sp in zip(opacities,star.getDustList())]
-                fn_mplt = '_'.join([fn_plt,star['LAST_MCMAX_MODEL']])
+                
+                #-- Set plot filename
+                pfn = fn_plt if fn_plt else 'opacities_species' 
+                suff = star['LAST_MCMAX_MODEL']
+                pfn = self.setFnPlt(pfn,fn_suffix=suff)
+                
                 keys = ['%s with $A$ = %s and $T_{des} = %i$ K'\
                          %(sp,str(star['A_%s'%sp]),int(star['T_DES_%s'%sp])) 
                         for sp in star.getDustList()]
                 fns.append(Plotting2.plotCols(x=wave,y=opacities,keytags=keys,\
-                                              filename=fn_mplt,*args,**ppars))
+                                              filename=pfn,*args,**ppars))
             if len(fns) != len(star_grid):
                 print 'At least one of the models requested does not yet ' + \
                       'have a MCMax model.'
             print '** Your plots can be found at:'
             if fns and fns[-1][-4] == '.pdf':
-                fn_plt = fn_plt+'.pdf'
-                DataIO.joinPdf(old=fns,new=fn_plt)
-                print fn_plt
+                pfn = fn_plt if fn_plt else 'opacities_species'
+                pfn = self.setFnPlt(pfn) + '.pdf'
+                DataIO.joinPdf(old=fns,new=pfn)
+                print pfn
             else:
                 print '\n'.join(fns)
         print '***********************************'
         
 
 
-    def plotExtinction(self,star_grid=[],models=[],plot_default=1,cfg=''):
+    def plotExtinction(self,star_grid=[],models=[],fn_plt='',plot_default=1,\
+                       cfg=''):
         
         """ 
         Plotting wavelength dependent extinction efficiencies wrt grain size.
@@ -1041,6 +1050,11 @@ class PlotDust(PlottingSession):
         
                          (default: [])
         @type models: list[string]
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string  
         @keyword cfg: path to the Plotting2.plotCols config file. If default, 
                       the hard-coded default plotting options are used.
                           
@@ -1056,6 +1070,11 @@ class PlotDust(PlottingSession):
             return      
         elif not star_grid and models:
             star_grid = self.makeMCMaxStars(models=models)
+        
+        cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg_dict.pop('filename')
+            
         x = []
         y = []
         keys = []
@@ -1069,17 +1088,20 @@ class PlotDust(PlottingSession):
                             %star['LAST_MCMAX_MODEL'].replace('_','\_'))
             except IOError: 
                 pass
-        filename = os.path.join(self.pplot,'gastronoom_opacities_%s'\
-                                %star['LAST_MCMAX_MODEL'])
+        
+        #-- Set plot filename
+        pfn = fn_plt if fn_plt else 'gastronoom_opacities'
+        pfn = self.setFnPlt(pfn)
+
         title = 'GASTRoNOoM Extinction Efficiencies in %s'\
                  %(self.star_name_plots)
-        filename = Plotting2.plotCols(x=x,y=y,cfg=cfg,filename=filename,\
-                                      xaxis='$\lambda$ ($\mu$m)',keytags=keys,\
-                                      yaxis='$Q_{ext}/a$ (cm$^{-1}$)',\
-                                      plot_title=title,key_location=(0.7,0.6),\
-                                      xlogscale=1,ylogscale=1,fontsize_key=20)
+        pfn = Plotting2.plotCols(x=x,y=y,cfg=cfg_dict,filename=pfn,\
+                                 xaxis='$\lambda$ ($\mu$m)',keytags=keys,\
+                                 yaxis='$Q_{ext}/a$ (cm$^{-1}$)',\
+                                 plot_title=title,key_location=(0.7,0.6),\
+                                 xlogscale=1,ylogscale=1,fontsize_key=20)
         print '** The extinction efficiency plot can be found at:'
-        print filename
+        print pfn
         print '***********************************'  
             
             

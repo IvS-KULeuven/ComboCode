@@ -23,7 +23,7 @@ class PlottingManager():
     
     def __init__(self,star_name,mcmax=False,gastronoom=False,pacs=None,\
                  path_gastronoom='codeJun2010',path_mcmax='codeJun2010',\
-                 inputfilename='inputComboCode.dat',spire=None,\
+                 inputfilename='inputComboCode.dat',spire=None,fn_add_star=1,\
                  plot_pars=dict(),sed=None):
                 
         """ 
@@ -71,6 +71,11 @@ class PlottingManager():
                           
                       (default: None)
         @type sed: Sed()
+        @keyword fn_add_star: Add the star name to the requested plot filename.
+                              Only relevant if fn_plt is given in a sub method.
+                              
+                              (default: 1)
+        @type fn_add_star: bool
         @keyword plot_pars: dictionary with all the plotting parameters that
                             turn on or off plotting modules. By default they
                             are all turned off.
@@ -99,7 +104,8 @@ class PlottingManager():
             self.plotter_dust = PlotDust.PlotDust(star_name=star_name,\
                                                   path_mcmax=path_mcmax,\
                                                   inputfilename=inputfilename,
-                                                  sed=sed)
+                                                  sed=sed,\
+                                                  fn_add_star=fn_add_star)
         else: 
             self.plotter_dust = None
         if self.gastronoom or self.gas_pars.has_key('PLOT_LINE_LISTS')\
@@ -107,7 +113,8 @@ class PlottingManager():
             self.plotter_gas = PlotGas.PlotGas(star_name=star_name,pacs=pacs,\
                                                path_gastronoom=path_gastronoom,\
                                                inputfilename=inputfilename,\
-                                               spire=spire)                                     
+                                               spire=spire,\
+                                               fn_add_star=fn_add_star)                                     
         else:
             self.plotter_gas = None
         

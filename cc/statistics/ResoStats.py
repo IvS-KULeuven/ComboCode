@@ -154,13 +154,14 @@ class ResoStats(Statistics):
         #   taken care of.
         if not sample_transitions:
             print 'WARNING! No sample transitions given for Statistics ' +\
-                    'module with instrument == FREQ_RESO. No stats will ' + \
-                    'be calculated.'
+                  'module with instrument == FREQ_RESO. No stats will ' + \
+                  'be calculated.'
         [t.readData() for t in sample_transitions]
         self.sample_trans = sample_transitions    
 
         
     def setIntensities(self,use_bestvlsr=1, partial = 0, vcut = 0):
+        
         """
         The data intensities are stored in the dictionary 
         self.dintint/self.dpeakint, the model intensities in 
@@ -183,6 +184,10 @@ class ResoStats(Statistics):
         @type use_bestvlsr: bool
         
         """
+        
+        if not self.star_grid:
+            return
+        
         self.vcut = vcut
         self.partial = partial
         
@@ -190,10 +195,6 @@ class ResoStats(Statistics):
             print 'Calculating loglikelihood statistics using a partial line profile.'
             print 'Cutoff velocity = '+str(vcut)
         
-        
-        tnodata = [t 
-                   for t in self.sample_trans
-                   if not t.lpdata]
         self.translist = [t 
                           for t in self.sample_trans
                           if t.lpdata]
@@ -238,6 +239,9 @@ class ResoStats(Statistics):
                 
             #-- Set all data according to the template transition, to avoid too
             #   much overhead reading, setting and fitting data.
+            #-- Note that ComboCode() already does this. This line is in case 
+            #   the Statistics object is ran stand-alone. If data were already
+            #   set, nothing is done (so long as replace=0, the default)
             for mt in self.trans_models[st]: 
                 mt.setData(st)
                 

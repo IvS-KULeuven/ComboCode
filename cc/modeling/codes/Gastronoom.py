@@ -535,7 +535,7 @@ class Gastronoom(ModelingSession):
                            for k,v in sorted(self.command_list.items())
                            if k != 'R_POINTS_MASS_LOSS'] + \
                           ['####'] + \
-                          ['%s=%s'%(k,co_dict['MOLECULE'])] + \
+                          ['%s=%s'%('MOLECULE',co_dict['MOLECULE'])] + \
                           ['%s=%s'%(k,h2o_dict[k]) 
                            for k in self.cooling_molec_keys + ['MOLECULE']
                            if h2o_dict.has_key(k)] + ['####']

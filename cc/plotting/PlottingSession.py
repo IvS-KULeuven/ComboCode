@@ -25,7 +25,7 @@ class PlottingSession(object):
     """
         
     def __init__(self,star_name='model',inputfilename=None,\
-                 path='',code='GASTRoNOoM'):
+                 path='',code='GASTRoNOoM',fn_add_star=1):
         
         """ 
         Initializing an instance of PlottingSession.
@@ -49,6 +49,11 @@ class PlottingSession(object):
         
                        (default: GASTRoNOoM)
         @type code: string
+        @keyword fn_add_star: Add the star name to the requested plot filename.
+                              Only relevant if fn_plt is given in a sub method.
+                              
+                              (default: 1)
+        @type fn_add_star: bool
         
         """
         
@@ -92,15 +97,12 @@ class PlottingSession(object):
                             'stars')
         pstar = os.path.join(pout,self.star_name)
         self.pplot = os.path.join(pstar,self.plot_id)
-        for pp in [pout,pstar,self.pplot]:
+        for pp in [pout,pstar]:
             DataIO.testFolderExistence(pp)
-        
-        if self.inputfilename <> None:
-            ipfn = os.path.split(self.inputfilename)[1]
-            newf = os.path.join(self.pplot,ipfn)
-            subprocess.call(['cp %s %s'%(self.inputfilename,newf)],shell=True)
-            
-            
+                
+        self.fn_add_star = fn_add_star
+    
+    
             
     def checkChangedPars(self,star_grid):
         
@@ -149,3 +151,66 @@ class PlottingSession(object):
                 for star in star_grid 
                 if star['LAST_'+id_type.upper()+'_MODEL']]
         
+    
+    
+    def setFnPlt(self,fn_plt,fn_suffix='',fn_subfolder=''):
+    
+        '''
+        Create a plot filename. The base filename (fn_plt) defines which of 3 
+        cases is requested:
+        
+        1) path is given, and the object has fn_add_star set to 1.
+        2) path is given, and the object has fn_add_star set to 0.
+        3) path is not given, in which case the star name is never added (it 
+        is included in the default folder name)
+        
+        In all cases, a base filename must be given, and a suffix can be defined
+        in addition. 
+        
+        @param fn_plt: A plot filename that can be given to each plotting sub
+                       method, or through the cfg file (managed by the sub 
+                       method). If not given, each sub method defines a 
+                       default. This includes the path if required.
+        @type fn_plt: string
+        @keyword fn_suffix: An optional suffix to be appended to the filename
+        
+                            (default: '')
+        @type fn_suffix: str
+        @keyword fn_subfolder: An additional subfolder in the default self.pplot
+                               can be added. Not used when path is included in 
+                               fn_plt.
+                               
+                               (default: '')
+        @type fn_subfolder: str
+        
+        @return: The full path + filename without extension is returned. 
+        @rtype: str
+        
+        '''
+        
+        #-- Split path and filename, remove extension. 
+        path, pfn = os.path.split(fn_plt)
+        pfn = os.path.splitext(fn_plt)[0]
+        
+        #-- Add extra filename segments
+        if path and self.fn_add_star: pfn = '_'.join([pfn,self.star_name])
+        if fn_suffix: pfn = '_'.join([pfn,fn_suffix])
+        
+        #-- Copy inputfilename over to the plot id folder if it is made.
+        if not path:
+            DataIO.testFolderExistence(self.pplot)
+            if self.inputfilename <> None:
+                ipfn = os.path.split(self.inputfilename)[1]
+                newf = os.path.join(self.pplot,ipfn)
+                if not os.path.isfile(newf):
+                    subprocess.call([' '.join(['cp',self.inputfilename,newf])],\
+                                    shell=True)
+        
+        #-- Define default path, check if the path exists
+        if not path and fn_subfolder: 
+            path = os.path.join(self.pplot,fn_subfolder)
+            DataIO.testFolderExistence(path)
+        elif not path: 
+            path = self.pplot   
+        
+        return os.path.join(path,pfn)

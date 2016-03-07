@@ -69,7 +69,7 @@ PRINT_MODEL_INFO=0                  # Print extra model info at the end of a CC 
 ####################
 #-- Stellar parameters
 ####################
-STAR_NAME=model                     # Stellar Name (lower cases, no spaces, only SIMBAD name is accepted, greek letters written in full, omicron = o)
+STAR_NAME=model                     # Stellar Name (lower cases, no spaces, only SIMBAD name is accepted, greek letters written in full, omicron = o). Multiple names can be added here, separated by '&'. Data for each star will be loaded and compared with models. 
 T_STAR=2400                         # Stellar temperature [K]
 M_STAR=1.0                          # Stellar mass [Msol]
 L_STAR=11000                        # Stellar luminosity [Lsol]
@@ -365,6 +365,9 @@ LL_MOLECULES=16O1H&1H12C14N         # List the molecules for line listing
 #-- The following plot input is not required to run. Only include those that you need, if you want to plot something.
 #   Any plot method can be activated by putting PLOT_GAS/DUST_[METHOD] to 1. 
 #   Customisation of the plot can be done by giving the cfg file for Plottin2.plotCols() to the CFG_GAS/DUST_[METHOD] parameter
+#-- General Plot input
+PLOT_FN_ADD_STAR=1                  # Add a star name to the plot output filename in case of non-default folder given as part of the filename key in the CFG file.
+
 #-- Plot input - Gas
 PLOT_GAS_TRANSITIONS=0              # Plot the transitions separately after convolution with the beam profile, in Tmb as calculated by sphinx. For PACS the intrinsic fluxes are plotted
 CFG_GAS_TRANSITIONS=                
