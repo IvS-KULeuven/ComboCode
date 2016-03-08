@@ -10,7 +10,7 @@ Author: R. Lombaert
 
 import os
 import subprocess
-import pyfits
+from astropy.io import fits as pyfits
 import glob
 from scipy import array
 import numpy as np
@@ -24,8 +24,6 @@ from cc.modeling.objects import Star
 from cc.modeling.codes import MCMax
 from cc.modeling.tools import Profiler,Reddening 
 
-from ivs.sed.model import synthetic_flux
-from ivs.units import conversions 
 
 class PlotDust(PlottingSession):
     

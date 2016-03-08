@@ -117,7 +117,7 @@ USE_COLLIS_RADIAT_SWITCH=0  !set to 1 if one wants to use the collision-radiativ
 USE_FRACTION_LEVEL_CORR=1 !set to 1 if one wants to put a limit on the level-population correction (BES3).
 FRACTION_LEVEL_CORR=0.8 ! user-defined fraction for maximum change in level-population correction; useful in case of H2O
 NUMBER_LEVEL_MAX_CORR=1d-12 ! user-defined level population. Only the level corrections for levels with a higher level population will be used to determine convergence criterion
-USE_NO_MASER_OPTION=1   ! set to 1 if one wants to omit masers occuring when solving the radiative transfer equation
+USE_NO_MASER_OPTION=0   ! set to 1 if one wants to omit masers occuring when solving the radiative transfer equation
 USE_MASER_IN_SPHINX=1       ! set to 1 if one wants to use the correct (masering) kappa's in sphinx
 
 TAU_MAX=12d0    ! maximum optical depth used for the calculation of the formal integral

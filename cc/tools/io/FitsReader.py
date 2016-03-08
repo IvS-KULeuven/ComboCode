@@ -9,7 +9,8 @@ Author: R. Lombaert
 
 import os
 from scipy import array,arange
-import pyfits
+#import pyfits
+from astropy.io import fits as pyfits
 
 import cc.path
 from cc.tools.io.LPDataReader import LPDataReader

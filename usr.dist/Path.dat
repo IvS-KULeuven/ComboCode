@@ -44,8 +44,10 @@ dphot=Data/SED/Raw/IvS_SEDTool
 #-- Correlated fluxes data folder (fits files with visibilities/flux) Data taken from $dcflux$/$star_name$/. 
 dcflux=Data/CorrFlux
 
+#-- Folder for IvS Repository data
+ivsdata=ComboCode/aux/ivsdata
 #-- Folder for model atmospheres. 
-atm=dev/ivsdata/sedtables/modelgrids
+atm=ComboCode/aux/ivsdata/sedtables/modelgrids
 
 #-- Folder for CDMS, JPL, LAMDA downloaded line lists.
 ll=LineLists

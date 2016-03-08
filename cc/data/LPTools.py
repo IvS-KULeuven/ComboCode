@@ -18,7 +18,7 @@ import cc.path
 from cc.tools.io import FitsReader, TxtReader, DataIO
 from cc.plotting import Plotting2
 
-from ivs.sigproc import fit, funclib
+from cc.ivs.sigproc import fit, funclib
 
 
 def readLineProfile(filename):

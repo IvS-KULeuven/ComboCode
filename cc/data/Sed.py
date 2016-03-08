@@ -17,10 +17,12 @@ import numpy as np
 from glob import glob
 import operator
 
-from ivs.sed import builder, filters
-import ivs.sed.reddening as ivs_red
-from ivs.sed.model import synthetic_flux
-from ivs.units import conversions
+from astropy import units as u
+
+from cc.ivs.sed import builder, filters
+import cc.ivs.sed.reddening as ivs_red
+from cc.ivs.sed.model import synthetic_flux
+#from ivs.units import conversions
 
 import cc.path
 from cc.tools.io import DataIO
@@ -217,11 +219,23 @@ def calcPhotometry(w,f,photbands):
     @rtype: array
     
     '''
+    
+    #-- Convert wavelength from micron to angstrom. astropy conversion module 
+    #   returns a "Quantity" that has properties "unit" and "value"
+    mlam = (w*u.micron).to(u.AA).value
+    
+    #-- Convert Jy flux density to erg/s/cm2/aa for windowed integration
+    #   Requires equivalency because conversion depends on the wavelength where
+    #   the flux is measured. Uses spectral_density equivalency.
+    mflam = (f*u.Jy).to(u.erg/u.s/u.cm**2/u.AA,\
+                        equivalencies=u.spectral_density(w*u.micron)).value
 
-    mflam = conversions.convert('Jy','erg/s/cm2/AA',f,wave=(w,'micron'))
-    mlam = conversions.convert('micron','AA',w)
+#    mflam = conversions.convert('Jy','erg/s/cm2/AA',f,wave=(w,'micron'))
+#    mlam = conversions.convert('micron','AA',w)
     mphot = synthetic_flux(mlam,mflam,photbands,units=['Fnu']*len(photbands))
-    mphot = conversions.convert('erg/s/cm2/Hz','Jy',mphot)
+    
+    mphot = (mphot*u.erg/u.s/u.Hz/u.cm**2).to(u.Jy).value
+#    mphot = conversions.convert('erg/s/cm2/Hz','Jy',mphot)
     return mphot
 
 

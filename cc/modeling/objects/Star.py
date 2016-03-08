@@ -18,6 +18,8 @@ from scipy import argmin,argmax, empty
 from scipy.interpolate import interp1d
 import operator
 from numpy import savetxt
+from astropy import units as u
+from astropy import constants as cst
 
 import cc.path
 from cc.data import Data
@@ -142,8 +144,8 @@ class Star(dict):
         self.Lsun = 3.846e33           #in erg/s
         self.year = 31557600.            #julian year in seconds
         self.au = 149598.0e8             #in cm
-        self.c = 2.99792458e10          #in cm/s
-        self.h = 6.62606957e-27         #in erg*s, Planck constant
+        self.c = cst.c.cgs.value          #in cm/s
+        self.h = cst.h.cgs.value         #in erg*s, Planck constant
         self.k = 1.3806488e-16          #in erg/K, Boltzmann constant
         self.sigma = 5.67040040e-5         #in erg/cm^2/s/K^4   Harmanec & Psra 2011
         self.pc = 3.08568025e16         #in cm
@@ -558,7 +560,6 @@ class Star(dict):
                 nl = Transition.makeTransitionsFromRadiat(molec=molec,\
                             telescope=telescope,ls_min=ls_min,ls_max=ls_max,\
                             n_quad=self['N_QUAD'],offset=self['LS_OFFSET'],\
-                            use_maser_in_sphinx=self['USE_MASER_IN_SPHINX'],\
                             path_gastronoom=self.path_gastronoom,\
                             ls_unit='micron',\
                             no_vib=molec.molecule in self['LS_NO_VIB'])
@@ -1296,7 +1297,7 @@ class Star(dict):
             pass
         
    
-    
+
     def calcUSE_MASER_IN_SPHINX(self):
         
         '''
@@ -1305,12 +1306,26 @@ class Star(dict):
         '''
         
         if not self.has_key('USE_MASER_IN_SPHINX'):
-            self['USE_MASER_IN_SPHINX']=0
+            self['USE_MASER_IN_SPHINX'] = 1
         else:
             pass
 
 
     
+    def calcUSE_NO_MASER_OPTION(self):
+        
+        '''
+        Set the default value of USE_NO_MASER_OPTION parameter.
+        
+        '''
+        
+        if not self.has_key('USE_NO_MASER_OPTION'):
+            self['USE_NO_MASER_OPTION'] = 0
+        else:
+            pass
+            
+            
+            
     def calcLOGG(self):
         
         """
@@ -2199,7 +2214,7 @@ class Star(dict):
         
         Default is the combination of the laws by Fitzpatrick et al. 2004 
         (Optical) and Chiar & Tielens 2006 (IR), see IvS repo for more details
-        at ivs.sed.reddening. 
+        at cc.ivs.sed.reddening. 
         
         Alternatives include cardelli1989, donnell1994, fitzpatrick1999,
         fitzpatrick2004, chiar2006.
@@ -2842,6 +2857,8 @@ class Star(dict):
                         change_fraction_filename=molec[16],\
                         set_keyword_change_temperature=int(molec[19]),\
                         new_temperature_filename=molec[18],\
+                        use_maser_in_sphinx=self['USE_MASER_IN_SPHINX'],\
+                        use_no_maser_option=self['USE_NO_MASER_OPTION'],\
                         starfile=starfile)
                      
                      for molec in self['MOLECULE']]
@@ -3526,10 +3543,12 @@ class Star(dict):
         
         '''
         
-        if not self.has_key('R_OH1612'):  
-            self['R_OH1612'] = Data.convertAngular(self['R_OH1612_AS'],\
-                                                   self['DISTANCE'])\
-                                    /self['R_STAR']/self.Rsun
+        if not self.has_key('R_OH1612'): 
+            #-- Get the angular size equivalency
+            equiv = Data.angularSize(self['DISTANCE'])
+            #-- Convert as to cm
+            rad = (self['R_OH1612_AS']*u.arcsec).to(u.cm,equivalencies=equiv)
+            self['R_OH1612'] = rad/self['R_STAR']/self.Rsun
         else:
             pass         
 

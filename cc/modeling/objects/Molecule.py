@@ -94,6 +94,7 @@ class Molecule():
                  n_impact_extra=0,abun_molec=1.0e-10,abun_molec_rinner=1.0e-10,\
                  abun_molec_re=1.0e-10,rmax_molec=1.,itera=0,lte_request=None,\
                  use_collis_radiat_switch=0,dust_to_gas_change_ml_sp=0,\
+                 use_no_maser_option=0,use_maser_in_sphinx=1,\
                  ratio_12c_to_13c=0,ratio_16o_to_17o=0,ratio_16o_to_18o=0,\
                  opr=0,r_outer=0,outer_r_mode='MAMON',abundance_filename=None,\
                  change_fraction_filename=None,set_keyword_change_abundance=0,\
@@ -247,6 +248,25 @@ class Molecule():
         
                                            (default: None)
         @type new_temperature_filename: string
+        @keyword use_no_maser_option: Do not allow masers (neg opacs) in mline
+                                      RT by setting negative line opacs to 1e-60
+                                      If use_maser_in_sphinx is on, mline 
+                                      will do a final run including masers 
+                                      anyway to see what would happen if they 
+                                      were inluded by allowing negative opacs
+                                      for the line profile calculations in 
+                                      sphinx (but not for the convergence in 
+                                      mline).
+                                      
+                                      (default: 0)
+        @type use_no_maser_option: bool
+        @keyword use_maser_in_sphinx: When on, does a final mline run including 
+                                      masers, allowing negative opacities. When 
+                                      off, sets the masing line opacities to 
+                                      1e-60 when writing out the ml3 file.
+                                     
+                                      (default: 1)
+        @type use_maser_in_sphinx: bool
         @keyword linelist: The molecule is created for the LineList module. No
                            radiative information is read from GASTRoNOoM input
                            files.
@@ -301,6 +321,8 @@ class Molecule():
         self.ratio_16o_to_18o = ratio_16o_to_18o
         self.opr = opr
         self.dust_to_gas_change_ml_sp = float(dust_to_gas_change_ml_sp)
+        self.use_no_maser_option = int(use_no_maser_option)
+        self.use_maser_in_sphinx = int(use_maser_in_sphinx)
         
         #-- Set the molecule inputfiles for abundance and temperature, applying
         #   the path from Path.dat if the file does not exist or the path to the
@@ -402,7 +424,9 @@ class Molecule():
                          ('LTE_REQUEST',self.lte_request),\
                          ('OUTER_R_MODE',self.outer_r_mode),\
                          ('USE_COLLIS_RADIAT_SWITCH',self.use_collis_radiat_switch),\
-                         ('R_OUTER',self.r_outer)])
+                         ('R_OUTER',self.r_outer),\
+                         ('USE_NO_MASER_OPTION',self.use_no_maser_option),\
+                         ('USE_MASER_IN_SPHINX',self.use_maser_in_sphinx)])
         for par,isot in [('RATIO_16O_TO_18O','18O'),\
                          ('RATIO_16O_TO_17O','17O'),\
                          ('RATIO_12C_TO_13C','13C'),\

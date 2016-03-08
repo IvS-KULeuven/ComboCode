@@ -18,7 +18,7 @@ from scipy.interpolate import interp1d
 from scipy.integrate import trapz
 import types
 
-from ivs.sigproc import funclib
+from cc.ivs.sigproc import funclib
 
 import cc.path
 from cc.modeling.objects import Molecule 
@@ -395,11 +395,9 @@ def makeTransition(trans,star=None,def_molecs=None):
     if star is None:
         molec = def_molecs.get(molec_short,None)
         path_gastronoom = None
-        umis = 0
         n_quad = 100
     else:
         molec = star.getMolecule(molec_short)
-        umis = star['USE_MASER_IN_SPHINX']
         n_quad = star['N_QUAD']
         path_gastronoom = star.path_gastronoom
     
@@ -414,13 +412,12 @@ def makeTransition(trans,star=None,def_molecs=None):
             pass
     
     if molec <> None:
-        return Transition(molecule=molec,\
+        return Transition(molecule=molec,n_quad=n_quad,\
                           vup=int(trans[1]),jup=int(trans[2]),\
                           kaup=int(trans[3]),kcup=int(trans[4]),\
                           vlow=int(trans[5]),jlow=int(trans[6]),\
                           kalow=int(trans[7]),kclow=int(trans[8]),\
                           telescope=trans[9],offset=float(trans[10]),\
-                          n_quad=n_quad,use_maser_in_sphinx=umis,\
                           path_gastronoom=path_gastronoom)
     else:
         return None    
@@ -469,8 +466,8 @@ def getModelIds(filepath):
 
 
 
-def makeTransitionFromSphinx(filename,use_maser_in_sphinx=0,\
-                             pull_keys_from_sphdb=1,mline_db=None):
+def makeTransitionFromSphinx(filename,mline_db=None):
+    
     '''
     Make a Transition() based on the filename of a Sphinx file.
     
@@ -482,19 +479,6 @@ def makeTransitionFromSphinx(filename,use_maser_in_sphinx=0,\
     @param filename: The sphinx file name, including path
     @type filename: string
     
-    @keyword pull_keys_from_sphdb: Pull keywords from the sphinx database
-    
-                                   (default: 1)
-    @type pull_keys_from_sphdb: bool
-    @keyword use_maser_in_sphinx: The value that is given to the keyword 
-                                  USE_MASER_IN_SPHINX for the the Transiton()
-                                  object. If different values are needed, you 
-                                  will have to change them manually. Only 
-                                  required if no information is taken from the 
-                                  sph db
-                                  
-                                  (default: 0)
-    @type use_maser_in_sphinx: bool
     @keyword mline_db: The mline database, which can be passed in case one 
                        wants to reduce overhead. Not required though.
                        
@@ -505,10 +489,6 @@ def makeTransitionFromSphinx(filename,use_maser_in_sphinx=0,\
     @rtype: Transition()
     
     '''
-    
-    if pull_keys_from_sphdb and save_in_sphdb:
-        raise IOError('Cannot pull keys from database as well as save to ' + \
-                       'the same database. Adapt input.')
     
     filepath,fn = os.path.split(filename)
     if not filepath:
@@ -538,15 +518,11 @@ def makeTransitionFromSphinx(filename,use_maser_in_sphinx=0,\
     numbers = [pattern.search(string).groups() for string in file_components]
     numbers = dict([(s.lower(),n) for s,n in numbers])
 
-    #-- If no sphinx database is available, get info from files where possible
-    #   or from input to this method
-    if not pull_keys_from_sphdb:
-        #-- Extract n_quad from sph2 file
-        sph2file = DataIO.readFile(filename=filename,delimiter=None)
-        i1 = sph2file[3].find('frequency points and ')
-        i2 = sph2file[3].find(' impact parameters')
-        numbers['n_quad'] = int(sph2file[3][i1+len('frequency points and '):i2])
-        numbers['use_maser_in_sphinx'] = use_maser_in_sphinx
+    #-- Extract n_quad from sph2 file
+    sph2file = DataIO.readFile(filename=filename,delimiter=None)
+    i1 = sph2file[3].find('frequency points and ')
+    i2 = sph2file[3].find(' impact parameters')
+    numbers['n_quad'] = int(sph2file[3][i1+len('frequency points and '):i2])
         
     #-- Make the transition object
     trans = Transition(molecule=molec,telescope=telescope,\
@@ -554,21 +530,12 @@ def makeTransitionFromSphinx(filename,use_maser_in_sphinx=0,\
     
     #-- Set the model id and return
     trans.setModelId(trans_id)
-    
-    #-- If keys are required to be pulled from sph database, do that now
-    if pull_keys_from_sphdb:
-        trans_db = Database.Database(os.path.join(cc.path.gastronoom,\
-                                                  path_gastronoom,\
-                                                'GASTRoNOoM_sphinx_models.db'))
-        trans_dict = trans_db[model_id][molec_id][trans_id][str(trans)].copy()
-        [setattr(trans,k.lower(),v) for k,v in trans_dict.items()
-                                    if k != 'TRANSITION']
-    
+        
     return trans
 
     
     
-def sphinxDbRecovery(path_gastronoom,use_maser_in_sphinx=0):
+def sphinxDbRecovery(path_gastronoom):
 
     '''    
     Reconstruct a sphinx database based on existing model_ids, presence of sph2
@@ -580,19 +547,10 @@ def sphinxDbRecovery(path_gastronoom,use_maser_in_sphinx=0):
     @param path_gastronoom: The path_gastronoom to the output folder
     @type path_gastronoom: string
     
-    @keyword use_maser_in_sphinx: The value that is given to the keyword 
-                                  USE_MASER_IN_SPHINX for the database entry. 
-                                  If different values are needed, you will have
-                                  to change them manually.
-                                  
-                                  (default: 0)
-    @type use_maser_in_sphinx: bool
-    
     '''
 
     #-- Convenience path
     cc.path.gout = os.path.join(cc.path.gastronoom,path_gastronoom)
-    umis = int(use_maser_in_sphinx)
     
     #-- Make a backup of the existing sphinx db if it exists.
     sph_db_path = os.path.join(cc.path.gout,'GASTRoNOoM_sphinx_models.db')
@@ -619,8 +577,6 @@ def sphinxDbRecovery(path_gastronoom,use_maser_in_sphinx=0):
         fp,filename = os.path.split(sph2)
         model_id,molec_id,trans_id,pg = getModelIds(fp)
         trans = makeTransitionFromSphinx(filename=sph2,\
-                                         use_maser_in_sphinx=umis,\
-                                         pull_keys_from_sphdb=0,\
                                          mline_db=mline_db)
         #-- if transition is returned as None, the associated mline model was 
         #   not found in the mline database. ie don't add this to sphinx db 
@@ -648,8 +604,8 @@ def sphinxDbRecovery(path_gastronoom,use_maser_in_sphinx=0):
     
     
 def makeTransitionsFromRadiat(molec,telescope,ls_min,ls_max,ls_unit='GHz',\
-                              n_quad=100,offset=0.0,use_maser_in_sphinx=0,\
-                              path_gastronoom=None,no_vib=0):
+                              n_quad=100,offset=0.0,path_gastronoom=None,\
+                              no_vib=0):
     
     '''
     Make Transition() objects from a Radiat file of a molecule, within a given
@@ -679,10 +635,6 @@ def makeTransitionsFromRadiat(molec,telescope,ls_min,ls_max,ls_unit='GHz',\
     
                      (default: 0.0)
     @type offset: float
-    @keyword use_maser_in_spinx: using maser calc in sphinx code
-                                     
-                                 (default: 0)
-    @type use_maser_in_spinx: bool
     @keyword path_gastronoom: model output folder in the GASTRoNOoM home
         
                               (default: None)
@@ -715,7 +667,6 @@ def makeTransitionsFromRadiat(molec,telescope,ls_min,ls_max,ls_unit='GHz',\
                          vlow=int(indices[l-1][1]),\
                          jlow=int(indices[l-1][2]),\
                          offset=offset,n_quad=n_quad,\
-                         use_maser_in_sphinx=use_maser_in_sphinx,\
                          path_gastronoom=path_gastronoom)
               for l,u,w in zip(low,up,wave)
               if w > ls_min and w < ls_max]
@@ -734,7 +685,6 @@ def makeTransitionsFromRadiat(molec,telescope,ls_min,ls_max,ls_unit='GHz',\
                                             int(indices[l-1][i])
                 nl.append(Transition(molecule=molec,n_quad=n_quad,\
                                      telescope=telescope,offset=offset,\
-                                     use_maser_in_sphinx=use_maser_in_sphinx,\
                                      path_gastronoom=path_gastronoom,\
                                      **quantum_dict))
     if no_vib:
@@ -787,8 +737,7 @@ class Transition():
     def __init__(self,molecule,telescope=None,vup=0,jup=0,kaup=0,kcup=0,\
                  nup=None,vlow=0,jlow=0,kalow=0,kclow=0,nlow=None,offset=0.0,\
                  frequency=None,exc_energy=None,int_intensity_log=None,\
-                 n_quad=100,use_maser_in_sphinx=0,vibrational='',\
-                 path_gastronoom=None):
+                 n_quad=100,vibrational='',path_gastronoom=None):
         
         '''
         
@@ -857,10 +806,6 @@ class Transition():
         
                          (default: 100)
         @type n_quad: int
-        @keyword use_maser_in_spinx: using maser calc in sphinx code
-                                     
-                                     (default: 0)
-        @type use_maser_in_spinx: bool
         @keyword frequency: if not None the frequency of the transition is 
                             taken to be this parameter in Hz, if None the 
                             frequency of this transition is derived from the 
@@ -924,7 +869,6 @@ class Transition():
         self.kclow = int(kclow)
         self.offset = float(offset)
         self.n_quad = int(n_quad)
-        self.use_maser_in_sphinx = int(use_maser_in_sphinx)
         self.__model_id = None
         if nup is None or nlow is None:
             self.nup = self.kaup            
@@ -1235,12 +1179,10 @@ class Transition():
         if int(in_progress):
             return dict([('TRANSITION',str(self).replace('TRANSITION=','')),\
                          ('N_QUAD',self.n_quad),\
-                         ('USE_MASER_IN_SPHINX',self.use_maser_in_sphinx),\
                          ('IN_PROGRESS',1)])
         else:
             return dict([('TRANSITION',str(self).replace('TRANSITION=','')),\
-                         ('N_QUAD',self.n_quad),\
-                         ('USE_MASER_IN_SPHINX',self.use_maser_in_sphinx)])
+                         ('N_QUAD',self.n_quad)])
  
 
 

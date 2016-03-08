@@ -443,10 +443,7 @@ class Pacs(Instrument):
                          'TRANSITION': \
                                 [db_entry[2]['TRANSITION'].split() + \
                                  [db_entry[2]['N_QUAD']] 
-                                 for db_entry in pacs_model['trans_list']],\
-                          'USE_MASER_IN_SPHINX': \
-                                pacs_model['trans_list'][0][2]\
-                                          ['USE_MASER_IN_SPHINX']})
+                                 for db_entry in pacs_model['trans_list']]})
             [trans.setModelId(db_entry[0]) 
              for trans,db_entry in zip(star['GAS_LINES'],\
                                        pacs_model['trans_list'])]

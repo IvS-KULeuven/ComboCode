@@ -314,8 +314,7 @@ class LineList():
         
 
 
-    def makeTransitions(self,telescope=None,offset=None,n_quad=None,\
-                        use_maser_in_sphinx=None):
+    def makeTransitions(self,telescope=None,offset=None,n_quad=None):
         
         '''
         Make a list of transitions from the line list that was read.
@@ -336,20 +335,14 @@ class LineList():
                          
                          (default: None)
         @type n_quad: int
-        @keyword use_maser_in_sphinx: Allow masering in sphinx calculations
-        
-                                      (default: None)
-        @type use_maser_in_sphinx: bool
+
         @return: The transitions
         @rtype: list[Transition]
         
         '''
-        pars = dict([(parname,par) 
-                     for par,parname in zip([telescope,offset,\
-                                             n_quad,use_maser_in_sphinx],\
-                                            ['telescope','offset',\
-                                             'n_quad','use_maser_in_sphinx']) 
-                     if par <> None])
+        pars = dict([(par,locals()[par]) 
+                     for par in ['telescope','offset','n_quad'] 
+                     if locals()[par] <> None])
         if self.molecule.spec_indices == 0 and self.cdms == 1:
             trans_list = [Transition.Transition(molecule=self.molecule,\
                                         frequency=float(trans[0])*10**6,\

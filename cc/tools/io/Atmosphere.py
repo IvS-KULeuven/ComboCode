@@ -8,8 +8,9 @@ Author: R. Lombaert
 """
 
 from glob import glob
-import pyfits, os
+from astropy.io import fits as pyfits
 from scipy import rec,array,argmin
+import os
 
 import cc.path
 

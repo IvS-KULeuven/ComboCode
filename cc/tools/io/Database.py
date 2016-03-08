@@ -11,10 +11,87 @@ import os
 import cPickle
 import time
 import subprocess
+import portalocker
 from glob import glob
 
 import cc.path
 from cc.tools.io import DataIO
+
+
+def convertDbMaserKeys(path_input=''):
+
+    '''
+    Convert your local databases such that the keywords relevant for inclusion
+    of masing in mline are in the correct database. 
+    
+    Moves USE_NO_MASER_OPTION from cooling to mline.
+    Moves USE_MASER_IN_SPHINX from sphinx to mline. Sets it to the default value
+    of 1, since it was never changed for mline. 
+    
+    Converts all cooling, mline, sphinx and pacs databases. 
+    
+    @keyword path_input: The location of your ComboCode inputfiles. Use empty
+                         string or None if you do not want to update your input-
+                         files automatically. Is directly inserted into glob so
+                         takes wildcards, eg /Users/robinl/ComboCode/input/*.dat
+    
+                         (default: '') 
+    @type path_input: str
+    
+    '''
+    
+    gpaths = sorted(glob(os.path.join(cc.path.gastronoom,'*','GASTRoNOoM*.db')))
+    gpaths = list(set([os.path.split(gp)[0] for gp in gpaths]))
+    #-- Add to Mline and rm from cooling databases
+    for gp in gpaths: 
+        cfn = os.path.join(gp,'GASTRoNOoM_cooling_models.db')
+        mfn = os.path.join(gp,'GASTRoNOoM_mline_models.db')
+        cdb = Database(cfn)
+        if not cdb.values()[-1].has_key('USE_NO_MASER_OPTION'):
+            print "Database at %s already converted."%gp
+            continue
+        mdb = addKeyMline(key='USE_MASER_IN_SPHINX',val=1,db_fn=mfn)
+        for cmid in cdb.keys():
+            unmo = cdb[cmid].pop('USE_NO_MASER_OPTION')
+            cdb.addChangedKey(cmid)
+            if mdb.has_key(cmid):
+                for l in mdb[cmid].keys():
+                    for mol in mdb[cmid][l].keys():
+                        mdb[cmid][l][mol]['USE_NO_MASER_OPTION'] = int(unmo)
+                        mdb.addChangedKey(cmid)
+        cdb.sync()
+        mdb.sync()
+        
+    #-- Remove from sphinx databases
+    for gp in gpaths:
+        sfn = os.path.join(gp,'GASTRoNOoM_sphinx_models.db')
+        sdb = rmKeySphinx(key='USE_MASER_IN_SPHINX',db_fn=sfn)
+        sdb.sync()
+    
+    #-- Remove from pacs datavases
+    ppaths = sorted(glob(os.path.join(cc.path.gastronoom,'*','stars','*',\
+                                          'GASTRoNOoM*.db')))
+    for pp in ppaths:
+        pdb = rmKeyPacs(key='USE_MASER_IN_SPHINX',db_fn=pp)
+        pdb.sync()
+        
+    #-- Add the proper default maser keys to inputfiles.
+    if not path_input: return
+    ifiles = glob(path_input)
+    comment = '# set to 1 if one wants to omit masers occuring when solving '+\
+              'the radiative transfer equation\n'
+    for ff in ifiles:
+        lines = DataIO.readFile(ff,None,replace_spaces=0)
+        ldict = DataIO.readDict(ff)
+        for i,l in enumerate(lines):
+            if l.find('USE_MASER_IN_SPHINX') != -1:
+                k = 'USE_MASER_IN_SPHINX=1                 '+l[l.find('#'):]
+                lines[i] = k
+                break
+        if not ldict.has_key('USE_NO_MASER_OPTION'):
+            lines[i:i] = ['USE_NO_MASER_OPTION=1                 '+comment]
+        DataIO.writeFile(ff,lines,mode='w',delimiter='')
+
 
 
 def updateDustMCMaxDatabase(filename):
@@ -208,44 +285,74 @@ def coolingDbRetrieval(path_gastronoom,r_outer=None):
     
     
 
-def addDefaultKeywordToDatabase(keyword,value,db_fn):
+def addKeyCooling(key,val,db_fn):
         
     '''
-    Add a default value for a new keyword to the database. 
+    Add a (key,value) pair to every entry in the cooling database. 
     
-    Does not work if keyword is already in present in the database!
+    Not added to a particular entry if already present.
     
-    @param keyword: The name of the keyword in the database for every model.
-    @type keyword: db key type (string mostly)
-    @param value: The default value for the keyword.
-    @type value: string/float/...
+    @param key: The name of the keyword to be added.
+    @type key: str
+    @param val: The default value for the keyword.
+    @type val: any
     @param db_fn: The filename and path of the database.
     @type db_fn: string
+    
+    @return: The new database, not yet synchronized.
+    @rtype: Database()
     
     '''
     
     db = Database(db_fn)
-    if db.keys() == []:
-        print 'Database has no keys. No default keyword is added.'
-        return
-    #-- Check if for the first model in the db the new keyword already exists.
-    if db[db.keys()[0]].has_key(keyword):
-        print 'Database models already have the new keyword. No new values are added.'
-        return
-    for k,v in db.items():
-        v[keyword] = value
-        db.addChangedKey(k)
-    db.sync()
+    for k in db.keys():
+        if not key in db[k].keys():
+            db[k][key] = val
+            db.addChangedKey(k)
+    return db
 
 
 
-def addUseStarfileToMline(db_fn):
+def rmKeyCooling(key,val,db_fn):
         
     '''
-    Add a USE_STARFILE to mline database.
+    Remove a key from every entry in the cooling database. 
     
+    @param key: The name of the keyword to be removed.
+    @type key: str
     @param db_fn: The filename and path of the database.
     @type db_fn: string
+    
+    @return: The new database, not yet synchronized.
+    @rtype: Database()
+    
+    '''
+    
+    db = Database(db_fn)
+    for k in db.keys():
+        if key in db[k].keys():
+            del db[k][key]
+            db.addChangedKey(k)
+    return db
+    
+
+
+def addKeyMline(key,val,db_fn):
+        
+    '''
+    Add a (key,value) pair to every entry in the mline database.
+    
+    Not added to a particular entry if already present.
+        
+    @param key: The keyword to be added
+    @type key: str
+    @param val: The default value of the keyword
+    @type val: any
+    @param db_fn: The filename and path of the database.
+    @type db_fn: string
+    
+    @return: The new database, not yet synchronized.
+    @rtype: Database()
     
     '''
     
@@ -253,9 +360,87 @@ def addUseStarfileToMline(db_fn):
     for k in db.keys():
         for l in db[k].keys():
             for mol in db[k][l].keys():
-                if 'STARFILE' in db[k][l][mol].keys():
-                    db[k][l][mol]['STARFILE'] = '"%s"'%db[k][l][mol]['STARFILE']
+                if not key in db[k][l][mol].keys():
+                    db[k][l][mol][key] = val
                     db.addChangedKey(k)
+    return db
+    
+    
+
+def rmKeyMline(key,db_fn):
+        
+    '''
+    Remove a key from every entry in the mline database.    
+    
+    @param key: The keyword to be removed
+    @type key: str
+    @param db_fn: The filename and path of the database.
+    @type db_fn: string
+    
+    @return: The new database, not yet synchronized.
+    @rtype: Database()
+    
+    '''
+    
+    db = Database(db_fn)
+    for k in db.keys():
+        for l in db[k].keys():
+            for mol in db[k][l].keys():
+                if key in db[k][l][mol].keys():
+                    del db[k][l][mol][key]
+                    db.addChangedKey(k)
+    return db
+    
+
+
+def rmKeySphinx(key,db_fn):
+
+    '''
+    Remove a key from the sphinx database entries. 
+    
+    @param key: They keyword to be removed
+    @type key: str
+    @param db_fn: The filename and path of the database.
+    @type db_fn: string
+    
+    @return: The new database, not yet synchronized.
+    @rtype: Database()
+    
+    '''
+    
+    db = Database(db_fn)
+    for k in db.keys():
+        for l in db[k].keys():
+            for o in db[k][l].keys():
+                for trans in db[k][l][o].keys():
+                    if key in db[k][l][o][trans].keys():
+                        del db[k][l][o][trans][key]
+                        db.addChangedKey(k)
+    return db
+    
+    
+    
+def rmKeyPacs(key,db_fn):
+
+    '''
+    Remove a key from the PACS database entries. 
+    
+    @param key: They keyword to be removed
+    @type key: str
+    @param db_fn: The filename and path of the database.
+    @type db_fn: string
+    
+    @return: The new database, not yet synchronized.
+    @rtype: Database()
+    
+    '''
+    
+    db = Database(db_fn)
+    for k in db.keys(): #- pacs id: dict
+        for l in db[k]['trans_list']: #- list of tuples
+            if key in l[2].keys():
+                del l[2][key]
+                db.addChangedKey(k)
     return db
     
     
@@ -570,6 +755,7 @@ class Database(dict):
         try:
             while True:
                 dbfile = open(self.path,'r')
+                portalocker.lock(dbfile, portalocker.LOCK_EX)
                 try:
                     try:
                         db = cPickle.load(dbfile)
@@ -676,6 +862,7 @@ class Database(dict):
                             shell=True)
         #-- Write the file, dump the object
         dbfile = open(self.path,'w')
+        portalocker.lock(dbfile, portalocker.LOCK_EX)
         cPickle.dump(self,dbfile)
         dbfile.close()
         return backup_file

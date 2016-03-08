@@ -792,7 +792,7 @@ class Gastronoom(ModelingSession):
         '''    
         
         keyword_int_list = ['ITERA_COOLING','LOG_DEPTH_STEP_POWER',\
-                            'USE_NO_MASER_OPTION','USE_MLINE_COOLING_RATE_CO',\
+                            'USE_MLINE_COOLING_RATE_CO',\
                             'USE_NEW_DUST_KAPPA_FILES','STEP_RIN_ROUT',\
                             'STEP_RS_RIN']
         exp_not_list = ['STEP_RIN_ROUT','STEP_RS_RIN']

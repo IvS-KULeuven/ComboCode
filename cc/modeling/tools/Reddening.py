@@ -71,8 +71,8 @@ import numpy as np
 import cc.path
 from cc.tools.io import DataIO
 
-import ivs.sed.reddening as red
-import ivs.sed.extinctionmodels as em
+import cc.ivs.sed.reddening as red
+import cc.ivs.sed.extinctionmodels as em
 
 
 def getAk(ll,bb,distance=None,map='marshall',law='fitz2004chiar2006',\

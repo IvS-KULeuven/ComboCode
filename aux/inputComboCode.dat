@@ -164,6 +164,10 @@ INCLUDE_SCAT_GAS=0                  # Include the scattering coefficients into t
 #TEMDUST_FILENAME=                  # Only relevant if USE_NEW_DUST_KAPPA_FILES=1, temdust.kappa for original (or leave open), other filename (micron | q_ext/a) for own kappa's (inverted wavelength, largest wavelength first). File has to be in the cc.path.gdata folder (given in Path.dat)
 #USE_NEW_DUST_KAPPA_FILES=          # Uncomment and put equal to 0 for original qpr.dat/temdust.kappa usage, otherwise leave out or put equal to 1
 
+#-- Radiative Transfer and Ray tracing keys:
+USE_NO_MASER_OPTION=0               # set to 1 if one wants to omit masers occuring when solving the radiative transfer equation
+USE_MASER_IN_SPHINX=1               # set to 1 if one wants to use the correct (masering) kappa's in sphinx. 
+
 ####################
 # DUST SHELL Parameters
 ####################
@@ -336,8 +340,6 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 N_QUAD=100                  # Number of impact par. in quadrature int(Inu pdp)         
                             # N_QUAD is always the same for all lines requested, unless they are defined explicitly in this inputfile
                             # If a grid over N_QUAD is requested, the n_quad in explicit definitions is overridden.
-USE_MASER_IN_SPHINX=0       # Use correct masering opacities in Sphinx
-
 
 #-- Use line selection for defining transitions here.
 LINE_SELECT=0               # Mode for selecting lines to be calculated in GASTRoNOoM
