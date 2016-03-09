@@ -723,7 +723,17 @@ class ComboCode(object):
         Run the plotting manager.
 
         '''
-
+        
+        #-- First check if any plots are requested at all
+        dds = [self.plot_manager[sn].gas_pars.keys()
+               for sn in self.star_name
+               if self.plot_manager[sn].gas_pars.keys()] + \
+              [self.plot_manager[sn].gas_pars.keys()
+               for sn in self.star_name
+               if self.plot_manager[sn].gas_pars.keys()]
+        if not dds: return
+        
+        #-- Continue with the plots
         print '************************************************'
         print '****** Plotting final results.'
         print '************************************************'

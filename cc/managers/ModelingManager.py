@@ -251,17 +251,20 @@ class ModelingManager():
                 if self.replace_db_entry:
                     self.new_entries_cooling.append(gas_session.model_id)
                 
-                #- If last iteration, run mline and sphinx. Note that the 
-                #- model_id cannot have changed: it's either the original 
-                #- cooling model_id or no model_id at all in case of total fail
+                #-- If last iteration, run mline and sphinx. Note that the 
+                #   model_id cannot have changed: it's either the original 
+                #   cooling model_id or no model_id at all in case of total fail
                 if (i+1 == self.iterations) and gas_session.model_id: 
-                    if gas_session.cool_done:
-                        self.ml_db.sync()
+                    #-- Only sync db is a cooling model was calced just before.
+                    if gas_session.cool_done: self.ml_db.sync()
                     gas_session.doMline(star)
-                    if gas_session.mline_done:
-                        self.mline_done = True
-                    #- Check if the model id is still valid after the mline run
+                    if gas_session.mline_done: self.mline_done = True
+                    
+                    #-- Check if the model id is still valid after the mline run
                     if gas_session.model_id:
+                        #-- Only sync the db if an mline model was calculated 
+                        #   just before
+                        if self.mline_done: self.sph_db.sync()
                         gas_session.doSphinx(star)
                 print '***********************************'
         

@@ -302,6 +302,13 @@ class Gastronoom(ModelingSession):
             return [False]*len(self.molec_list)
         model_bools = []
         new_molec_id = ''
+        
+        #-- Lock the mline database by opening it in read mode. It's closed
+        #   once the database check is finalised. Note that in a case of a crash
+        #   during the for loop, the python shell must be exited to unlock the 
+        #   sphinx database again. The sync() is now done only once at the very
+        #   end since the file on the disk will not change.
+        ml_dbfile = self.ml_db._open('r')
         for molec in self.molec_list:
             for molec_id in [k for k,v in sorted(self.ml_db[self.model_id].items())
                                if molec.molecule in v.keys()]:
@@ -332,11 +339,13 @@ class Gastronoom(ModelingSession):
                         self.copyOutput(molec,self.model_id,new_molec_id)
                         self.ml_db[self.model_id][new_molec_id] = dict()
                         self.ml_db.addChangedKey(self.model_id)
-                        self.ml_db.sync()
+                        #self.ml_db.sync()
                     molec.setModelId(new_molec_id)    
                 print 'Mline model for %s '%molec.molecule + \
                       'has not been calculated before. Calculate anew with '+ \
                       'ID %s.'%(molec.getModelId())
+        ml_dbfile.close()
+        self.ml_db.sync()
         return model_bools            
 
 
@@ -354,8 +363,16 @@ class Gastronoom(ModelingSession):
         if not self.sph_db.has_key(self.model_id):
             self.sph_db[self.model_id] = dict()
         new_trans_id = ''
-        #- Remember which molecules have been added to new id, if applicable
+
+        #-- Remember which molecules have been added to new id, if applicable
         molecules_copied_to_new_id = []    
+
+        #-- Lock the sphinx database by opening it in read mode. It's closed
+        #   once the database check is finalised. Note that in a case of a crash
+        #   during the for loop, the python shell must be exited to unlock the 
+        #   sphinx database again. The sync() is now done only once at the very
+        #   end since the file on the disk will not change.
+        sph_dbfile = self.sph_db._open('r')
         for trans in self.trans_list:
             molec_id = trans.molecule.getModelId()
             if not molec_id:
@@ -367,7 +384,7 @@ class Gastronoom(ModelingSession):
                     dict([(molec_id,dict([(str(trans),trans.makeDict(1))]))])
                 self.sph_db.addChangedKey(self.model_id)
                 self.trans_bools.append(False)
-                self.sph_db.sync()
+                #self.sph_db.sync()
             else:    
                 for trans_id in [k for k,v in sorted(self.sph_db[self.model_id]\
                                                         [molec_id].items())
@@ -421,7 +438,7 @@ class Gastronoom(ModelingSession):
                     #   was made or an existing one is used. It still needs to 
                     #   be checked if all mline and cooling info is available. 
                     #   You only want to do this once per session for each 
-                    #   molecule, because ls/ln checks adda lot of overhead. 
+                    #   molecule, because ls/ln checks add a lot of overhead. 
                     #   copyOutput double checks if links already exist
                     if trans.molecule not in molecules_copied_to_new_id:
                         self.copyOutput(trans,molec_id,trans.getModelId())
@@ -429,7 +446,10 @@ class Gastronoom(ModelingSession):
                     self.sph_db[self.model_id][molec_id][trans.getModelId()]\
                             [str(trans)] = trans.makeDict(1)
                     self.sph_db.addChangedKey(self.model_id)
-                    self.sph_db.sync()
+                    #self.sph_db.sync()
+        sph_dbfile.close()
+        self.sph_db.sync()
+        
 
 
     def copyOutput(self,entry,old_id,new_id):
@@ -577,6 +597,9 @@ class Gastronoom(ModelingSession):
         
         """
         
+        #-- Make sure to reset this in case an iteration between cooling and 
+        #   mline is happening
+        self.mline_done = False
         model_bools = self.checkMlineDatabase()
         del self.command_list['R_OUTER']
         del self.command_list['OUTER_R_MODE']
@@ -688,6 +711,14 @@ class Gastronoom(ModelingSession):
         #- check if at least one of the transitions was calculated: then 
         #- self.model_id doesnt have to be changed
         self.finalizeSphinx() 
+        
+        #-- Sync the sphinx db in case self.sphinx is False or 
+        #   self.recover_sphinxfiles is True, to make sure sph_db is up-to-date.
+        #   In case models are calculated or vic is ran this is done in other
+        #   places in the code.
+        if not self.sphinx or self.recover_sphinxfiles:
+            self.sph_db.sync()
+            
         mline_not_available = set([trans.molecule.getModelId() 
                                    for boolean,trans in zip(self.trans_bools,\
                                                             self.trans_list) 
@@ -829,6 +860,9 @@ class Gastronoom(ModelingSession):
         #   for the previous models, not the current one.(ie when iterations>1)
         if self.model_id: 
             self.new_entries.append(self.model_id)
+        
+        #-- Make sure to reset this in case an iteration between cooling and 
+        #   mline, cooling and mcmax is happening
         self.cool_done = False
         self.model_id = self.makeNewId()
         self.trans_list=star['GAS_LINES']    

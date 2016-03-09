@@ -754,8 +754,9 @@ class Database(dict):
         
         try:
             while True:
-                dbfile = open(self.path,'r')
-                portalocker.lock(dbfile, portalocker.LOCK_EX)
+                #dbfile = open(self.path,'r')
+                #portalocker.lock(dbfile, portalocker.LOCK_EX)
+                dbfile = self._open('r')
                 try:
                     try:
                         db = cPickle.load(dbfile)
@@ -861,12 +862,32 @@ class Database(dict):
             subprocess.call(['mv %s %s'%(self.path,backup_file)],\
                             shell=True)
         #-- Write the file, dump the object
-        dbfile = open(self.path,'w')
-        portalocker.lock(dbfile, portalocker.LOCK_EX)
+        #dbfile = open(self.path,'w')
+        #portalocker.lock(dbfile, portalocker.LOCK_EX)
+        dbfile = self._open('w')
         cPickle.dump(self,dbfile)
         dbfile.close()
         return backup_file
             
+    
+    
+    def _open(self,mode):
+    
+        '''
+        Open the database on the disk for writing, reading or appending access.
+        
+        A lock is added to the database, which remains in place until the file 
+        object is closed again. 
+        
+        @return: The opened file 
+        @rtype: file()
+        
+        '''
+        
+        dbfile = open(self.path,mode)
+        portalocker.lock(dbfile, portalocker.LOCK_EX)
+        return dbfile
+        
     
     
     def addChangedKey(self,key):
