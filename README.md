@@ -9,7 +9,7 @@ The functionality includes:
     - Allowing output of one code to be used as input for another
     - Automatic line selection based on available data and line listing
     - Databases for modeling output and easy parameter space searches
-    - Interaction with a supercomputer clusters built into the databases
+    - Interaction with supercomputer clusters built into the databases
     - Statistical analysis for samples and individual sources, and both resolved and unresolved emission lines
 * <b>Data</b>: 
     - Management of data files associated with radio data, SEDs and spectroscopic data
