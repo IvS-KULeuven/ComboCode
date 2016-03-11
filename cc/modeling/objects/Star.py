@@ -2388,7 +2388,7 @@ class Star(dict):
                     #   profiles in the Rayleigh limit, i.e. s=1
                     power = -2./(4+1)
                     #-- Take the reciprocal relation of the dust temperature
-                    #   profile (such as in Profiler.dustTemperaturePowerLaw())
+                    #   profile (such as in Profiler.tempPowerLawDust())
                     #   rmax is in Rstar!
                     rmax = (tmin/self['T_STAR'])**(1/power)/2.
                 self[missing_key] = rmax

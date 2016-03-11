@@ -8,8 +8,9 @@ Author: R. Lombaert
 """
 
 import pylab as pl
-import math
+import os
 import types
+import numpy as np
 from scipy import array, zeros
 from scipy import argmax
 
@@ -106,11 +107,11 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                         Multiple extensions can be requested at the same time 
                         through a list.
                         
-                        (default: None)
+                        (default: pdf)
     @type extension: string/list
     @keyword figsize: the size of the figure, default is A4 page ratio
                       
-                      (default: (20.*math.sqrt(2.), 20.) )
+                      (default: (20.*np.sqrt(2.), 20.) )
     @type figsize: tuple(float,float)
     @keyword show_plot: show fig before saving (hit enter to continue to save)
                    
@@ -341,8 +342,8 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
         else:
             kwargs.update(readCfg(cfg))
     filename=kwargs.get('filename',None)
-    extension=kwargs.get('extension',None)
-    figsize=kwargs.get('figsize',(20.*math.sqrt(2.), 20.))
+    extension=kwargs.get('extension','pdf')
+    figsize=kwargs.get('figsize',(20.*np.sqrt(2.), 20.))
     show_plot=kwargs.get('show_plot',0)
     xaxis=kwargs.get('xaxis',r'$\lambda$ ($\mu$m)')
     yaxis=kwargs.get('yaxis',r'$F_\nu$ (Jy)')
@@ -584,17 +585,7 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                 pl.ylim(ymin=ddict['ymin']) # min([min(xi) for xi in x])
             if ddict['ymax'] <> None:
                 pl.ylim(ymax=ddict['ymax'])
-    if filename <> None:
-        if extension is None:
-            extension = ['.eps','.png','.pdf']
-        elif type(extension) is types.StringType:
-            extension = [extension]
-        for iext,ext in enumerate(extension):
-            if ext[0] != '.': 
-                extension[iext] = '.' + ext
-        [pl.savefig(filename+ext,\
-                    orientation=(landscape and 'landscape' or 'portrait'))
-         for ext in extension]
+    if filename: filename = saveFig(filename,extension,landscape)
     if show_plot or filename is None:
         pl.subplots_adjust(bottom=0.45)
         pl.subplots_adjust(top=0.95)
@@ -603,7 +594,7 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
         pl.show()
     pl.close('all')
     
-    return filename <> None and filename+extension[0] or None
+    return filename
     
     
 
@@ -693,14 +684,14 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                         Multiple extensions can be requested at the same time 
                         through a list.
                         
-                        (default: None)
+                        (default: pdf)
     @type extension: string/list
     @keyword number_subplots: #subplots in which to plot in vertical direction
                               
                               (default: 1)
     @type number_subplots: int
     @keyword figsize: the size of the figure, A4 page ratio is 
-                      (20.*math.sqrt(2.), 20.). Default is other ratio.
+                      (20.*np.sqrt(2.), 20.). Default is other ratio.
                       
                       (default: (12.5,8) )
     @type figsize: tuple(float,float)
@@ -1059,7 +1050,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
             kwargs.update(readCfg(cfg))
     inputfiles=kwargs.get('inputfiles',[])
     filename=kwargs.get('filename',None)
-    extension=kwargs.get('extension',None)
+    extension=kwargs.get('extension','pdf')
     number_subplots=int(kwargs.get('number_subplots',1))
     figsize=kwargs.get('figsize',(12.5,8.))
     show_plot=kwargs.get('show_plot',0)
@@ -1478,26 +1469,49 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                            numpoints=legend_numpoints,prop=prop)
             lg.legendPatch.set_alpha(0.8)
             lg.set_zorder(max(zorder)+1)
-    if filename <> None:
-        if extension is None:
-            extension = ['.pdf','.png','.eps']
-        elif type(extension) is types.StringType:
-            extension = [extension]
-        for iext,ext in enumerate(extension):
-            if ext[0] != '.': 
-                extension[iext] = '.' + ext
-        [pl.savefig(filename+ext,\
-                    orientation=(landscape and 'landscape' or 'portrait'))
-         for ext in extension]
+    if filename: filename = saveFig(filename,extension,landscape)
     if show_plot or filename is None:
-        pl.subplots_adjust(bottom=0.45)
+        pl.subplots_adjust(bottom=0.05)
         pl.subplots_adjust(top=0.95)
-        pl.subplots_adjust(right=0.7)
-        pl.subplots_adjust(left=0.05)
+        pl.subplots_adjust(right=0.95)
+        pl.subplots_adjust(left=0.10)
         pl.show()
     pl.close('all')
-    return filename <> None and filename+extension[0] or None
+    return filename
+
+
+
+def saveFig(filename,extension='pdf',landscape=0):
     
+    '''
+    Save a figure to a filename for a given extension. 
+    
+    @param filename: The full path+filename of the figure, except the extension
+    @type filename: str
+    @keyword extension: The extension of the figure requested. Can be a list. If
+                        None, figures are saved in .pdf, .png, and .eps.
+    
+                        (default: pdf)
+    @type extension: list(str)
+    @keyword landscape: Save the figure in landscape mode. 
+                        
+                        (default: 0)
+    @type landscape: bool
+    
+    @return: The full filename with extension
+    @rtype: str
+    
+    '''
+    
+    if not extension:
+        extension = ['pdf','png','eps']
+    elif isinstance(extension,str):
+        extension = [extension]
+    for ext in extension:
+        fn = filename + os.path.extsep + ext.strip('.')
+        pl.savefig(fn,orientation=('landscape' if landscape else 'portrait'))
+    return fn
+
 
 
 def setLineTypes(n,line_types,extra_line_types=None):

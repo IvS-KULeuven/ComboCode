@@ -1,6 +1,5 @@
 import numpy as np
 from math import sin,cos,exp
-#from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import pylab as pl
 
@@ -15,36 +14,57 @@ def expDensFunc(r,rSw,exponent):
 
 
 @np.vectorize
-def densityFunc(r,theta,A,B,C,D,E,F,rmin,rSw):
+def densityFunc(r,theta,A,B,C,D,E,F,rMin,rSw):
 
     exponent = -B*(1+C*(sin(theta)**F)*(expDensFunc(r,rSw,D)/\
-                                        expDensFunc(rmin,rSw,D)))
-    rho = (r/rmin)**exponent
+                                        expDensFunc(rMin,rSw,D)))
+    rho = (r/rMin)**exponent
     rho = rho * (1+A*((1-cos(theta))**F)*(expDensFunc(r,rSw,E)/\
-                                          expDensFunc(rmin,rSw,E)))
+                                          expDensFunc(rMin,rSw,E)))
 
     return rho
 
 
 
 def plotDens(A,B,C,D,E,F,rPlot,rMin,rSw,nRad,nTheta,filename=None,\
-             extension=None,landscape=0,show=1):
+             extension='pdf',landscape=0,show=0,figsize=(5.5, 10)):
     
-
+    #-- Define the radial and angular grids
     R = np.logspace(np.log10(rMin), np.log10(rPlot), num=nRad, endpoint=True)
-    thetaArray = np.arange(0, np.pi/2.0+1.0/float(nTheta), (np.pi/2.0)/(nTheta))
-    R,thetaArray = np.meshgrid(R,thetaArray)
-    rho = densityFunc(R,thetaArray,A,B,C,D,E,F,rMin,rSw)
+    Theta = np.arange(0, np.pi/2.0+1.0/float(nTheta), (np.pi/2.0)/(nTheta))
+    R,Theta = np.meshgrid(R,Theta)
+    
+    #-- Calculate the Meixner density distribution
+    rho = densityFunc(R,Theta,A,B,C,D,E,F,rMin,rSw)
 
-    rho = rho/rho.max()
+    #-- Figure consists of two subplots, one with the density map, and one with
+    #   profiles at 0 and 90 degrees.
+    fig = plt.figure(figsize=figsize)
+    
+    #-- Make the color scale density plot
+    ax = fig.add_subplot(211)
+    pl.pcolor(R*np.sin(Theta),R*np.cos(Theta),np.log10(rho/rho.max()))
+    pl.pcolor(-R*np.sin(Theta),R*np.cos(Theta),np.log10(rho/rho.max()))
+    pl.pcolor(-R*np.sin(Theta),-R*np.cos(Theta),np.log10(rho/rho.max()))
+    pl.pcolor(R*np.sin(Theta),-R*np.cos(Theta),np.log10(rho/rho.max()))
+    fig.subplots_adjust(right=0.8)
+    fig.subplots_adjust(bottom=0.1)
+    cbar_ax = fig.add_axes([0.85, 0.54, 0.05, 0.36])
+    pl.colorbar(cax=cbar_ax)
+    
+    #-- Add density distribution at 0 and 90 degrees, and a r^-2 distribution
+    ax2 = fig.add_subplot(212)
+    ax2.plot(np.log10(R[0]),np.log10(rho[0]/rho[0].max()),'black',\
+             lw=2,marker='x',label=r'$\theta = 0^\circ$')
+    ax2.plot(np.log10(R[-1]),np.log10(rho[-1]/rho[-1].max()),'magenta',\
+             lw=2,marker='|', label=r'$\theta = 90^\circ$')
+    ax2.plot(np.log10(R[0]),np.log10(rMin*rMin/(R[0]*R[0])),'green',lw=2,\
+             lw=2,label=r'$r^{-2}$')
+    ax2.legend()
+    label = r'$\rho_0[r_{\rm min}] / \rho_{90}[r_{\rm min}] = $'+\
+             '{:10.3e}'.format(rho[0][0]/rho[-1][0])
+    ax2.text(0.25,1.02,label,transform=ax2.transAxes)
 
-    fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111)
-    pl.pcolor(R*np.sin(thetaArray),R*np.cos(thetaArray),np.log10(rho))
-    pl.pcolor(-R*np.sin(thetaArray),R*np.cos(thetaArray),np.log10(rho))
-    pl.pcolor(-R*np.sin(thetaArray),-R*np.cos(thetaArray),np.log10(rho))
-    pl.pcolor(R*np.sin(thetaArray),-R*np.cos(thetaArray),np.log10(rho))
-    pl.colorbar()
     
     if filename: filename = Plotting2.saveFig(filename,extension,landscape)
     if show: pl.show()
@@ -67,4 +87,4 @@ if __name__ == '__main__':
     nTheta = 50
     nRad = 50
 
-    plotDens(A,B,C,D,E,F,rPlot,rMin,rSw,nRad,nTheta,filename='test')
+    plotDens(A,B,C,D,E,F,rPlot,rMin,rSw,nRad,nTheta,show=1)

@@ -167,6 +167,8 @@ class PlottingSession(object):
         In all cases, a base filename must be given, and a suffix can be defined
         in addition. 
         
+        Returns empty string if fn_plt is not defined or empty.
+        
         @param fn_plt: A plot filename that can be given to each plotting sub
                        method, or through the cfg file (managed by the sub 
                        method). If not given, each sub method defines a 
@@ -187,6 +189,8 @@ class PlottingSession(object):
         @rtype: str
         
         '''
+        
+        if not fn_plt: return ''
         
         #-- Split path and filename, remove extension. 
         path, pfn = os.path.split(fn_plt)

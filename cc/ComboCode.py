@@ -728,9 +728,9 @@ class ComboCode(object):
         dds = [self.plot_manager[sn].gas_pars.keys()
                for sn in self.star_name
                if self.plot_manager[sn].gas_pars.keys()] + \
-              [self.plot_manager[sn].gas_pars.keys()
+              [self.plot_manager[sn].dust_pars.keys()
                for sn in self.star_name
-               if self.plot_manager[sn].gas_pars.keys()]
+               if self.plot_manager[sn].dust_pars.keys()]
         if not dds: return
         
         #-- Continue with the plots

@@ -825,7 +825,7 @@ class Gastronoom(ModelingSession):
         keyword_int_list = ['ITERA_COOLING','LOG_DEPTH_STEP_POWER',\
                             'USE_MLINE_COOLING_RATE_CO',\
                             'USE_NEW_DUST_KAPPA_FILES','STEP_RIN_ROUT',\
-                            'STEP_RS_RIN']
+                            'STEP_RS_RIN','N_FREQ']
         exp_not_list = ['STEP_RIN_ROUT','STEP_RS_RIN']
         make_int = comm_key in keyword_int_list
         
