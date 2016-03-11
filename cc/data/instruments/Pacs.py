@@ -72,7 +72,8 @@ def compareInts(pp1,pp2):
     
 
 
-def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
+def writeIntIntTable(filename,stars,trans,instrument='PACS',ddict=dict(),\
+                     searchstring='os2_us3',\
                      mark_trans=[],extra_marker=r'\tablefootmark{f}',\
                      blend_mark=r'\tablefootmark{$\star$}',print_summary=0,\
                      sort_freq=1):
@@ -91,18 +92,18 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
                   selected from the PACS line fit results of each star. 
     @type trans: list[Transition()]
     
-    @keyword path_pacs: full path to PACS data folder, excluding star_name
-                        Only needed when PACS data objects are created from 
-                        scratch.
-                        
-                        (default: ~/Data/PACS/)
-    @type path_pacs: string
-    @keyword dpacs: The data objects for PACS for each star. If not given, they
-                    are generated automatically with path_linefit 'lineFit', 
-                    oversampling 6 and given path_pacs.
+    @keyword instrument: The name of the instrument for which this is done. For
+                         now only 'PACS' and 'SPIRE'.
+                         
+                         (default: 'PACS')
+    @type instrument: str
+    @keyword ddict: The data objects for PACS or SPIRE for each star. If not 
+                    given, they are generated automatically with path_linefit 
+                    'lineFit', oversampling 6 (for PACS) or 4 (for SPIRE), and 
+                    resolution of 0.04 (for SPIRE).
                     
                     (default: None)
-    @type dpacs: dict(Pacs())
+    @type ddict: dict(Instrument())
     @keyword blend_mark: The marker used for blended lines.
     
                          (default: \tablefootmark{$\star$})
@@ -134,6 +135,15 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
     
     '''
     
+    #-- Check what instrument is requested
+    if ddict:
+        all_instr = [dd.instrument for dd in ddict.values()]
+        if len(set(all_instr)) > 1: 
+            print "Too many instruments defined. Make sure only PACS or SPIRE"+\
+                  " are requested."
+            return
+        instrument = all_instr[0].upper()
+        
     if type(stars) is types.StringType:
         stars = [stars]
     
@@ -157,11 +167,15 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
         tr.unreso_err = dict()
         tr.unreso_blends = dict()
     for star in stars:
-        if not dpacs.has_key(star):
-            dpacs[star] = Pacs(star,6,path_linefit='lineFit')
-        dpacs[star].setData(searchstring=searchstring)
-        for ifn in range(len(dpacs[star].data_filenames)):
-            dpacs[star].intIntMatch(trans,ifn)
+        if not ddict.has_key(star):
+            if instrument == 'PACS':
+                ddict[star] = Pacs(star,6,path_linefit='lineFit')
+            elif instrument == 'SPIRE':
+                ddict[star] = Spire(star,resolution=0.04,oversampling=4,\
+                                    path_linefit='lineFit')
+        ddict[star].setData(searchstring=searchstring)
+        for ifn in range(len(ddict[star].data_filenames)):
+            ddict[star].intIntMatch(trans,ifn)
     
     istars = [DataIO.getInputData().index(star) for star in stars]
     pstars = [DataIO.getInputData(keyword='STAR_NAME_PLOTS',rindex=istar)
@@ -174,7 +188,7 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
     inlines = []
     inlines.append('&'.join(['']*(no_vib and 4 or 5)+pstars[:-1]+\
                             [r'%s \\\hline'%pstars[-1]]))
-    line_els = ['PACS','Molecule']
+    line_els = [instrument,'Molecule']
     if not no_vib: 
         line_els.append('Vibrational')
     line_els.extend(['Rotational','$\lambda_0$',\
@@ -186,7 +200,7 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
     line_els.extend(['transition',r'$\mu$m',\
                      r'\multicolumn{%i}{c}{(W m$^-2$))} \\\hline'%len(pstars)])
     inlines.append('&'.join(line_els))
-    bands = ['R1B','R1A','B2B','B2A','B3A']
+    bands = ddict.values()[0].data_ordernames
     if not sort_freq: bands.reverse()
     line_counter = dict()
     for s in stars:
@@ -271,7 +285,7 @@ def writeIntIntTable(filename,stars,trans,dpacs=dict(),searchstring='os2_us3',\
     if print_summary:
         print('Summary')
         for s in stars:
-            print('%s: %i lines measured'%(s,len(dpacs[s].linefit.wave_fit))+\
+            print('%s: %i lines measured'%(s,len(ddict[s].linefit.wave_fit))+\
                   ', of which %i lines have been identified.'%line_counter[s])
 
 
