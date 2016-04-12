@@ -1,11 +1,9 @@
 # Welcome to the ComboCode User Manual
 ## Introduction
 ### What is this manual?
-- Manual gives instructions on running ComboCode
-- Includes some cookbooks for extracting information from ComboCode and using the additional modules
-- The difference with the extensive documentation that comes with ComboCode.
+This manual is meant as a guide to running ComboCode and its two numerical codes. This is not an all-inclusive, comprehensive manual for the ComboCode capabilities. However, in-depth, up-to-date documentation for the Python package is available on GitHub at <a href="https://IvS-KULeuven.github.io/ComboCode"> ComboCode Documentation</a>, as a collection of doc-strings. The source code is also available there. Together with the in-depth documentation and the cookbooks provided in this manual for extracting information and using the additional modules, you should be able to use the package to its full extent. For additional questions or remarks, please contact <a href="https://github.com/robinlombaert">R.~Lombaert</a>. 
 
-Up-to-date documentation that goes with the package is available on GitHub at: <a href="https://IvS-KULeuven.github.io/ComboCode"> ComboCode Documentation</a>
+For best results, it is recommended to use both radiative-transfer (RT) codes embedded in ComboCode: GASTRoNOoM (line RT) and MCMax (continuum RT), authored and maintained by L.~Decin and M.~Min, respectively. Both authors have to be contacted for use of the RT codes, also as part of ComboCode, and their contact details can be requested from <a href="https://github.com/robinlombaert">R.~Lombaert</a>.
 
 ## Goals of the ComboCode package
 ComboCode is a Python based package designed to work with radiative-transfer codes and the data they are meant to model. 
@@ -13,7 +11,7 @@ The radiative transfer is usually calculated for cool stellar winds of evolved s
 The functionality includes:
 * <b>Modeling</b>:
     - Currently works with GASTRoNOoM for gas radiative transfer, and with MCMax for dust radiative transfer
-    - Allowing output of one code to be used as input for another
+    - Allows output of one code to be used as input for another
     - Automatic gas line selection based on available data and line listing
     - Databases for modeling output and easy parameter space searches
     - Interaction with a supercomputer cluster built into the databases
