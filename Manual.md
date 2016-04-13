@@ -84,7 +84,7 @@ Filename convention.
 ### Combined dust and gas radiative transfer
 ComboCode is an interface that provides access to two numerical RT codes for dust and gas respectively. The way these codes are linked through ComboCode is illustrated in the schematic below. 
 
-![Testing](https://github.com/IvS-KULeuven/ComboCode/blob/dev/aux/flow_chart_codes.pdf?raw=true)
+![Testing](https://github.com/IvS-KULeuven/ComboCode/blob/dev/aux/flow_chart_codes.png?raw=true)
 
 ### Reading and using model output
 
