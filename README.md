@@ -59,7 +59,7 @@ The three executables that make up GASTRoNOoM (cooling, mline and sphinx) must b
     export PATH="/home/my_name/bin:$PATH"
 
 #### Installing MCMax
-If you intend to get consistent dust input, the use of MCMax is recommended (in conjunction with GASTRoNOoM through ComboCode). To install the code, you can contact Michiel Min. He will provide you with either the source code or an executable for your Mac OS X or Linux machine. The executable must be located or linked in your bin (binary) folder, see above.
+If you intend to get consistent dust input, the use of MCMax is recommended (in conjunction with GASTRoNOoM through ComboCode). To install the code, you can contact Michiel Min. He will provide you with either the source code or an executable for your Mac OS X or Linux machine. The executable must be located or linked in your bin (binary) folder, see above. You can find more information about MCMax on <a href="https://sites.google.com/site/manualmcmax/project-definition">its home page</a>.
 
 
 ## Installation
