@@ -24,7 +24,7 @@ The functionality includes:
     - Statistical analysis for samples and individual sources, and both resolved and unresolved emission lines
 
 ## Running ComboCode
-In what follows, you will set up your folder structure (much of which is done automatically) first. Then the ComboCode inputfile is described, and, finally, a few simple steps to run a model are given.
+In what follows, you will set up your folder structure first (much of which is done automatically). Then the ComboCode inputfile is described, and, finally, a few simple steps to run a model are given.
 
 ### Folder setup
 The folder setup for running ComboCode can be split up into three parts: the folders specific to ComboCode, and the two folders for the GASTRoNOoM and MCMax RT codes that must be installed separately. 

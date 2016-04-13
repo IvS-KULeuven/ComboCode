@@ -49,15 +49,14 @@ Lastly, ComboCode can be used to its fullest potential when working in tandem wi
 
 #### Installing GASTRoNOoM
 Retrieve the source code from either L. Decin or R. Lombaert. After unpacking, you will find a Makefile in src/exec/. You have to compile GASTRoNOoM. This assumes you have gfortran installed on your machine. If you unpacked the source code in ~/GASTRoNOoM/, compiling the code looks like this:
+
     - $ cd ~/GASTRoNOoM/src/exec
     - $ make cleaner
     - $ make
 
 The three executables that make up GASTRoNOoM (cooling, mline and sphinx) must be located or linked in your bin (binary) folder. The bin folder can be any folder, as long as it is included in the PATH variable in your .bash\_profile if you are a bash user. For example, you can include the following in your .bash\_profile:
 
-'''{r echo=FALSE,eval=FALSE}
-export PATH="/home/my_name/bin:$PATH"
-'''
+    - export PATH="/home/my_name/bin:$PATH"
 
 #### Installing MCMax
 If you intend to get consistent dust input, the use of MCMax is recommended (in conjunction with GASTRoNOoM through ComboCode). To install the code, you can contact Michiel Min. He will provide you with either the source code or an executable for your Mac OS X or Linux machine. The executable must be located or linked in your bin (binary) folder, see above.
@@ -83,7 +82,11 @@ Once the requirements are sorted out, you can get to work with ComboCode. You ca
 * Lastly, when running ComboCode in conjunction with the radiative-transfer codes listed above, ComboCode will write the output to folders for GASTRoNOoM and MCMax separately. You can choose these locations by adding them to usr/Path.dat.
 
 ## Documentation
-Up-to-date documentation that goes with the package is available on GitHub at:
+A user manual with cookbooks and an overview of the inputfiles is available on GitHub at (work in progress!):
+
+<a href="https://github.com/IvS-KULeuven/ComboCode/blob/dev/Manual.md">ComboCode Manual</a>.
+
+Up-to-date in-depth documentation comprised of the doc-strings that go with the source code is available on GitHub at:
 
 <a href="https://IvS-KULeuven.github.io/ComboCode"> ComboCode Documentation</a>
 
