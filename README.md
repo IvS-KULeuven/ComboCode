@@ -82,7 +82,7 @@ Once the requirements are sorted out, you can get to work with ComboCode. You ca
 * Lastly, when running ComboCode in conjunction with the radiative-transfer codes listed above, ComboCode will write the output to folders for GASTRoNOoM and MCMax separately. You can choose these locations by adding them to usr/Path.dat.
 
 ## Documentation
-A user manual with cookbooks and an overview of the inputfiles is available on GitHub at (work in progress!): 
+A user manual with cookbooks and an overview of the inputfiles is available on GitHub at (work in progress!):  
 <a href="https://github.com/IvS-KULeuven/ComboCode/blob/dev/Manual.md">ComboCode Manual</a>
 
 Up-to-date in-depth documentation comprised of the doc-strings that go with the source code is available on GitHub at:  
