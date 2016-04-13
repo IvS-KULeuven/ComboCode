@@ -30,6 +30,7 @@ In what follows, you will set up your folder structure (much of which is done au
 The folder setup for running ComboCode can be split up into three parts: the folders specific to ComboCode, and the two folders for the GASTRoNOoM and MCMax RT codes that must be installed separately. 
 
 Firstly, the folder setup that comes with ComboCode is set up when installing the git repository. Only the usr/ folder must be installed manually, as this folder contains the local user-specific settings. This is described in the <a href="https://github.com/IvS-KULeuven/ComboCode/blob/master/README.md">README</a> document. For completeness, these folders include:
+
 <ol>
 <li>cc -- Contains the Python modules.</li>
 <li>aux -- Contains auxiliary files that ComboCode requires, and they come as part of the repository. These files are not to be changed by the user.</li>
@@ -38,7 +39,8 @@ Firstly, the folder setup that comes with ComboCode is set up when installing th
 
 In the usr/ folder, a file called Path.dat is located. This file manages all other folder locations not installed by git. Take your time choosing the folder locations in this file, and checking whether these folders exist. Typically, you will want a GASTRoNOoM, MCMax, and Data home folder. Most of the other folders can be chosen at will but usually belong in one of these three home folders. The default Path.dat in usr.dist makes suggestions for all of these. Finally, the instructions for the syntax of the folders is explained at the top of the Path.dat file.
 
-Some of the folders contain data and files that must be provided for you by either the authors of MCMax or GASTRoNOoM, or by other users. These include (given by their path keys in Path.dat): 
+Some of the folders contain data and files that must be provided for you by either the authors of MCMax or GASTRoNOoM, or by other users. These include (given by their path keys in Path.dat):
+
 <ol>
 <li>ivsdata -- Data required by the cc.ivs module. They are available <a href="http://ster.kuleuven.be/~robinl/cc/ivsdata.tar.gz"> here</a> for download. These should not be changed by the user.</li>
 <li>atm -- Medium-resolution spectra of model stellar atmospheres. These are included as a subfolder of the ivsdata and the path should be adjusted accordingly.</li>
@@ -49,7 +51,8 @@ Some of the folders contain data and files that must be provided for you by eith
 </ol>
 
 ### User files in cc/usr
-The contents of the cc/usr.dist folder must be copied to cc/usr/. The default settings will work fine, but can be changed depending on the needs of the user.  
+The contents of the cc/usr.dist folder must be copied to cc/usr/. The default settings will work fine, but can be changed depending on the needs of the user.
+
 <ol>
 <li>Data.dat -- Contains wavelength regions for determining spectral RMS in separate bands of unresolved line observations such as PACS and SPIRE.</li>
 <li>Dust.dat -- Describes dust species in terms of specific density, molar weight, destruction temperature and coefficients (Kama et al. 2009), and the subfolder/filename of the opacity file. It doesn't matter if .opac or .particle is listed. ComboCode will select the relevant file if available in the same location. List .topac in case temperature-dependent opacities are wanted. The dust name tag (SPECIES_SHORT) is the handle used in the ComboCode inputfile to refer to these dust species.</li>
@@ -82,9 +85,9 @@ Filename convention.
 
 ## Model management
 ### Combined dust and gas radiative transfer
-ComboCode is an interface that provides access to two numerical RT codes for dust and gas respectively. The way these codes are linked through ComboCode is illustrated in the schematic below. 
+ComboCode is an interface that provides access to two numerical RT codes for dust and gas respectively. The way these codes are linked through ComboCode is illustrated in the schematic below. Note that this schematic currently does not include iteration between energy balance and line RT, as this functionality is not yet implemented in ComboCode. 
 
-![Testing](https://github.com/IvS-KULeuven/ComboCode/blob/dev/aux/flow_chart_codes.png?raw=true)
+![](https://github.com/IvS-KULeuven/ComboCode/blob/dev/aux/flow_chart_codes.png?raw=true)
 
 ### Reading and using model output
 

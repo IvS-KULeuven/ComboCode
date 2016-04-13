@@ -10,17 +10,17 @@ The functionality includes:
     - Automatic line selection based on available data and line listing
     - Databases for modeling output and easy parameter space searches
     - Interaction with a supercomputer clusters built into the databases
-    - Statistical analysis for samples and individual sources, and both resolved and unresolved emission lines
 * <b>Data</b>: 
     - Management of data files associated with radio data, SEDs and spectroscopic data
     - Fitting routines for resolved emission lines
+    - Statistical analysis for samples and individual sources, and both resolved and unresolved emission lines
 
 ### How do I run ComboCode?
 <ol>
 <li>First you have to install the package itself. See instructions below.</li>
 <li>You will need the radiative-transfer codes to be able to run ComboCode to its fullest potential. For this you will
 have to contact the authors of the codes.</li>
-<li>Examples of how to run ComboCode will be added at a later time.</li>
+<li>Examples of how to run ComboCode are available in the <a href="https://github.com/IvS-KULeuven/ComboCode/blob/dev/Manual.md">Manual</a>.</li>
 <li>ComboCode folder structure: 
 <ol>
 <li>cc -- Contains the Python modules.</li>
@@ -45,7 +45,23 @@ Thirdly, you require a recent installation of the gfortran compiler.
 
 Fourthly, you need the IvS repository, which can be installed as described in the readme.txt file located <a href="https://github.com/robinlombaert/IvSPythonRepository"> here</a>. With the IvS repository comes data that are used by the package. The bare minimum required to run ComboCode is available <a href="http://ster.kuleuven.be/~robinl/cc/ivsdata.tar.gz"> here</a>. Make sure to update the config.py file with the location of the unpacked ivsdata upon installation of the IvS repository. 
 
-Lastly, ComboCode can be used to its fullest potential when working in tandem with the radiative-transfer codes GASTRoNOoM and MCMax. To use these codes, permission is required from the owners listed above. You can contact them directly, or through me (robinlombaert on GitHub). Once installed, make sure the executables of each code are linked in your Bin folder, and you will be able to run the codes through ComboCode.
+Lastly, ComboCode can be used to its fullest potential when working in tandem with the radiative-transfer codes GASTRoNOoM and MCMax. To use these codes, permission is required from the owners listed above. You can contact them directly, or through me (robinlombaert on GitHub).
+
+#### Installing GASTRoNOoM
+Retrieve the source code from either L. Decin or R. Lombaert. After unpacking, you will find a Makefile in src/exec/. You have to compile GASTRoNOoM. This assumes you have gfortran installed on your machine. If you unpacked the source code in ~/GASTRoNOoM/, compiling the code looks like this:
+    - $ cd ~/GASTRoNOoM/src/exec
+    - $ make cleaner
+    - $ make
+
+The three executables that make up GASTRoNOoM (cooling, mline and sphinx) must be located or linked in your bin (binary) folder. The bin folder can be any folder, as long as it is included in the PATH variable in your .bash\_profile if you are a bash user. For example, you can include the following in your .bash\_profile:
+
+'''{r echo=FALSE,eval=FALSE}
+export PATH="/home/my_name/bin:$PATH"
+'''
+
+#### Installing MCMax
+If you intend to get consistent dust input, the use of MCMax is recommended (in conjunction with GASTRoNOoM through ComboCode). To install the code, you can contact Michiel Min. He will provide you with either the source code or an executable for your Mac OS X or Linux machine. The executable must be located or linked in your bin (binary) folder, see above.
+
 
 ## Installation
 Once the requirements are sorted out, you can get to work with ComboCode. You can download the code to your hard disk right away (or if you intend to submit code for this repository: fork the repo, and clone that -- see Developer's Manual below): 
