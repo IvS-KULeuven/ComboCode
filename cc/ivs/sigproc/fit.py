@@ -442,8 +442,8 @@ import re
 import copy
 import pylab as pl
 import matplotlib as mpl
-#from ivs.sigproc import lmfit
-import lmfit
+from cc.ivs.sigproc import lmfit
+#import lmfit
 
 logger = logging.getLogger('SP.FIT')
 

@@ -86,7 +86,7 @@ TEMPERATURE_MODE=cooling     ! Use temperature power law (cooling/epsilon)
 TEMPERATURE_EPSILON=0.5     ! EPSILON, for temperature power law
 #TEMPERATURE_EPSILON2=0.5    ! EPSILON, for second temperature power law
 #RADIUS_EPSILON2=10            ! in R_STAR, radius at which epsilon2 is used
-T_INPUT=40                  ! in case of TEYSSIER
+T_INPUT=40                  ! in case of TEMPERATURE_MODE = TEYSSIER
 COOL_ADIABATIC=1             ! adiabatic cooling, 0 or 1
 COOL_VIBRATIONAL_H2=1        ! cooling by vibr. exc. of H2, 0 or 1
 COOL_VIBRATIONAL_H2O=1       ! cooling by vibr. exc. of H2O, 0 or 1
@@ -101,27 +101,35 @@ COSMICS=1                    ! cosmic ray heating, 0 or 1
 
 #Numerical parameters
 LOG_DEPTH_STEP_POWER=1.00    ! power for the log(R) steps
-N_FREQ=30                    ! Number of frequency points in line profile
+N_IMPACT_EXTRA=0           ! Number of extra depth points in r-mesh, linearly distributed between N_IMPACT_EXTRA_RIN and N_IMPACT_EXTRA_ROUT
+N_IMPACT_EXTRA_RIN=100.       ! innermost point of extra r-mesh sampling [R*]
+N_IMPACT_EXTRA_ROUT=150.      ! outermost point of extra r-mesh sampling [R*]
 XMAX=4.70                    ! Maxmium Relative Line Width
-ITERA=200                    ! Maximum number of iterations in mline
-LTE_REQUEST=0                  !If you only want LTE in MLINE
-CHECK_TAU_STEP=0.01           ! check.par.in sphinx if step in tau not too large
-N_QUAD=100                    ! Number of impact par. in quadrature int(Inu pdp)
 STEP_RS_RIN=1e+12         ! Step in  radius in DLSODA from RSTAR to RINNER
 STEP_RIN_ROUT=1e+13        ! Step in  radius in DLSODA from RINNER to ROUT
 ITERA_COOLING=2           !set > 1 to iterate on dust-to-gas ratio to obtain requested vel_infinity
-START_APPROX=0             !set =0 when one wants to start with LTE-approx as starting n(NY,N_IMPACT); set =1 when starting from another model - with same NY, N_IMPACT, ...
 
-
-USE_COLLIS_RADIAT_SWITCH=0  !set to 1 if one wants to use the collision-radiative switching method of Hummer and Voels (1988)
-USE_FRACTION_LEVEL_CORR=1 !set to 1 if one wants to put a limit on the level-population correction (BES3).
-FRACTION_LEVEL_CORR=0.8 ! user-defined fraction for maximum change in level-population correction; useful in case of H2O
-NUMBER_LEVEL_MAX_CORR=1d-12 ! user-defined level population. Only the level corrections for levels with a higher level population will be used to determine convergence criterion
+#Numerical parameters mline specific
 USE_NO_MASER_OPTION=0   ! set to 1 if one wants to omit masers occuring when solving the radiative transfer equation
 USE_MASER_IN_SPHINX=1       ! set to 1 if one wants to use the correct (masering) kappa's in sphinx
+N_FREQ=30                    ! Number of frequency points in line profile
+START_APPROX=0             !set =0 when one wants to start with LTE-approx as starting n(NY,N_IMPACT); set =1 when starting from another model - with same NY, N_IMPACT, ...
+FEHLER=1e-4                  ! convergence criterium in mline
+ITERA=200                    ! Maximum number of iterations in mline
+LTE_REQUEST=0                  !If you only want LTE in MLINE
 
-TAU_MAX=12d0    ! maximum optical depth used for the calculation of the formal integral
-TAU_MIN=-6d0    ! minimum optical depth used for the calculation of the formal integral
+USE_COLLIS_RADIAT_SWITCH=0      !set to 1 if one wants to use the collision-radiative switching method of Hummer and Voels (1988)
+USE_FRACTION_LEVEL_CORR=1       ! set to 1 if one wants to put a limit on the level-population correction (BES3).
+FRACTION_LEVEL_CORR=0.8         ! user-defined fraction for maximum change in level-population correction; useful in case of H2O
+NUMBER_LEVEL_MAX_CORR=1e-12      ! user-defined level population. Only the level corrections for levels with a higher level population will be used to determine convergence criterion
+
+#Optical depth settings for sphinx
+TAU_MAX=12    ! maximum optical depth used for the calculation of the formal integral
+TAU_MIN=-6    ! minimum optical depth used for the calculation of the formal integral
+CHECK_TAU_STEP=1e-2           ! check.par.in sphinx if step in tau not too large
+FRACTION_TAU_STEP=1e-2       ! tau_total*fraction_tau_step gives min. delta_tau in strahl.f. If too low, min_tau_step will be used.
+MIN_TAU_STEP=1e-4           ! minimum of delta_tau in strahl.f
+N_QUAD=100                    ! Number of impact par. in quadrature int(Inu pdp)
 
 BACKGROUND_TEMPERATURE=2.80
 ILAM=0

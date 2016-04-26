@@ -20,7 +20,7 @@
 #-- GASTRoNOoM home folder
 gastronoom=GASTRoNOoM
 #-- GASTRoNOoM data folder, such as temdust, radiat, collis files
-gdata=GASTRoNOoM/src/data
+gdata=GASTRoNOoM/data
 
 #-- MCMax home folder
 mcmax=MCMax

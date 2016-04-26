@@ -95,6 +95,9 @@ class Molecule():
                  abun_molec_re=1.0e-10,rmax_molec=1.,itera=0,lte_request=None,\
                  use_collis_radiat_switch=0,dust_to_gas_change_ml_sp=0,\
                  use_no_maser_option=0,use_maser_in_sphinx=1,\
+                 fehler=1e-4,n_freq=30,start_approx=0,\
+                 use_fraction_level_corr=1,fraction_level_corr=0.8,\
+                 number_level_max_corr=1e-12,\
                  ratio_12c_to_13c=0,ratio_16o_to_17o=0,ratio_16o_to_18o=0,\
                  opr=0,r_outer=0,outer_r_mode='MAMON',abundance_filename=None,\
                  change_fraction_filename=None,set_keyword_change_abundance=0,\
@@ -164,6 +167,40 @@ class Molecule():
                                            
                                            (default: 0)
         @type use_collis_radiat_switch: bool
+        @keyword fehler: convergence criterium in mline
+        
+                         (default: 1e-4)
+        @type fehler: float
+        @keyword n_freq: Number of frequency points in line profile
+        
+                         (default: 30)
+        @type n_freq: int
+        @keyword start_approx: set to 0 when one wants to start with LTE-approx 
+                               as starting n(NY,N_IMPACT); set to 1 when 
+                               starting from another model - with same NY, 
+                               N_IMPACT, ...
+        
+                               (default: 0)
+        @type start_approx: bool
+        @keyword use_fraction_level_corr: set to 1 if one wants to put a limit 
+                                          on the level-population correction 
+                                          (BES3).
+        
+                                          (default: 1)
+        @type use_fraction_level_corr: bool
+        @keyword fraction_level_corr: user-defined fraction for maximum change 
+                                      in level-population correction; useful in 
+                                      case of H2O
+        
+                                      (default: 0.8)
+        @type fraction_level_corr: float
+        @keyword number_level_max_corr: user-defined level population. Only the 
+                                        level corrections for levels with a 
+                                        higher level population will be used to 
+                                        determine convergence criterion
+        
+                                        (default: 1e-12)
+        @type number_level_max_corr: float
         @keyword ratio_12c_to_13c: 12c/13c ratio, only relevant for 13co and 
                                    other molecules with that isotope
                                    
@@ -315,7 +352,7 @@ class Molecule():
         self.abun_molec_rinner = abun_molec_rinner
         self.abun_molec_re = abun_molec_re
         self.rmax_molec = rmax_molec
-        self.use_collis_radiat_switch = use_collis_radiat_switch
+        self.use_collis_radiat_switch = int(use_collis_radiat_switch)
         self.ratio_12c_to_13c = ratio_12c_to_13c
         self.ratio_16o_to_17o = ratio_16o_to_17o
         self.ratio_16o_to_18o = ratio_16o_to_18o
@@ -323,6 +360,12 @@ class Molecule():
         self.dust_to_gas_change_ml_sp = float(dust_to_gas_change_ml_sp)
         self.use_no_maser_option = int(use_no_maser_option)
         self.use_maser_in_sphinx = int(use_maser_in_sphinx)
+        self.fehler = fehler
+        self.n_freq = int(n_freq)
+        self.start_approx = int(start_approx)
+        self.use_fraction_level_corr = int(use_fraction_level_corr)
+        self.fraction_level_corr = fraction_level_corr
+        self.number_level_max_corr = number_level_max_corr
         
         #-- Set the molecule inputfiles for abundance and temperature, applying
         #   the path from Path.dat if the file does not exist or the path to the
@@ -364,7 +407,7 @@ class Molecule():
                     filename = os.path.join(cc.path.gdata,'indices_backup',f)
                 else:
                     filename = os.path.join(cc.path.gdata,\
-                                            '%s_indices.dat'%self.molecule)
+                                         '{}_indices.dat'.format(self.molecule))
                 rf = DataIO.readFile(filename,' ')
                 self.radiat_indices = [[int(i) for i in line] for line in rf]
         else:
@@ -380,9 +423,9 @@ class Molecule():
         
         '''
         
-        return 'MOLECULE=%s %i %i %i %i %i' %(self.molecule_full,self.ny_low,\
-                                             self.ny_up,self.nline,\
-                                             self.n_impact,self.n_impact_extra)
+        ll = [self.molecule_full,self.ny_low,self.ny_up,self.nline,\
+              self.n_impact,self.n_impact_extra]
+        return 'MOLECULE={} {:d} {:d} {:d} {:d} {:d}'.format(*ll)
 
 
 
@@ -401,7 +444,7 @@ class Molecule():
 
 
 
-    def makeDict(self,path=None):
+    def makeDict(self,path=None,in_progress=0):
         
         '''
         Return a dict with molecule string, and other relevant parameters.
@@ -412,76 +455,96 @@ class Molecule():
                       
                        (default: None)
         @type path: string
+        @keyword in_progress: add an extra dict entry "IN_PROGRESS" if the 
+                              molecule is still being calculated somewhere.
+                              
+                              (default: 0)
+        @type in_progress: bool
+        
+        @return: The molecule dictionary including all relevant, defining 
+                 information
+        @rtype: dict()
         
         '''
         
-        new_dict = dict([('MOLECULE',str(self).replace('MOLECULE=','')),\
-                         ('ITERA',self.itera),\
-                         ('ABUN_MOLEC',self.abun_molec),\
-                         ('ABUN_MOLEC_RINNER',self.abun_molec_rinner),\
-                         ('ABUN_MOLEC_RE', self.abun_molec_re),\
-                         ('RMAX_MOLEC',self.rmax_molec),\
-                         ('LTE_REQUEST',self.lte_request),\
-                         ('OUTER_R_MODE',self.outer_r_mode),\
-                         ('USE_COLLIS_RADIAT_SWITCH',self.use_collis_radiat_switch),\
-                         ('R_OUTER',self.r_outer),\
-                         ('USE_NO_MASER_OPTION',self.use_no_maser_option),\
-                         ('USE_MASER_IN_SPHINX',self.use_maser_in_sphinx)])
+        dd = dict([('MOLECULE',str(self).replace('MOLECULE=','')),\
+                   ('ITERA',self.itera),\
+                   ('ABUN_MOLEC',self.abun_molec),\
+                   ('ABUN_MOLEC_RINNER',self.abun_molec_rinner),\
+                   ('ABUN_MOLEC_RE', self.abun_molec_re),\
+                   ('RMAX_MOLEC',self.rmax_molec),\
+                   ('LTE_REQUEST',self.lte_request),\
+                   ('OUTER_R_MODE',self.outer_r_mode),\
+                   ('USE_COLLIS_RADIAT_SWITCH',self.use_collis_radiat_switch),\
+                   ('R_OUTER',self.r_outer),\
+                   ('USE_NO_MASER_OPTION',self.use_no_maser_option),\
+                   ('USE_MASER_IN_SPHINX',self.use_maser_in_sphinx),\
+                   ('FEHLER',self.fehler),\
+                   ('N_FREQ',self.n_freq),\
+                   ('START_APPROX',self.start_approx),\
+                   ('USE_FRACTION_LEVEL_CORR',self.use_fraction_level_corr),\
+                   ('FRACTION_LEVEL_CORR',self.fraction_level_corr),\
+                   ('NUMBER_LEVEL_MAX_CORR',self.number_level_max_corr)
+                   ])
+        
         for par,isot in [('RATIO_16O_TO_18O','18O'),\
                          ('RATIO_16O_TO_17O','17O'),\
                          ('RATIO_12C_TO_13C','13C'),\
                          ('OPR','p1H')]:
             if isot in self.molecule:
-                new_dict[par] = getattr(self,par.lower())
+                dd[par] = getattr(self,par.lower())
         if self.dust_to_gas_change_ml_sp:
-            new_dict['CHANGE_DUST_TO_GAS_FOR_ML_SP'] \
-                    = 1
-            new_dict['DUST_TO_GAS_CHANGE_ML_SP'] \
-                    = self.dust_to_gas_change_ml_sp
+            dd['CHANGE_DUST_TO_GAS_FOR_ML_SP'] = 1
+            dd['DUST_TO_GAS_CHANGE_ML_SP'] = self.dust_to_gas_change_ml_sp
+
         if self.enhance_abundance_factor:
-            new_dict['ENHANCE_ABUNDANCE_FACTOR'] \
-                    = self.enhance_abundance_factor
-            new_dict['NUMBER_INPUT_ABUNDANCE_VALUES'] \
-                    = len(DataIO.readCols(filename=self.abundance_filename)[0])
-            new_dict['KEYWORD_TABLE'] = 1
-            new_dict['MOLECULE_TABLE'] \
-                    = self.molecule_full[:self.molecule_full.index('.')]
-            new_dict['ISOTOPE_TABLE'] = self.molecule_full
+            dd['ENHANCE_ABUNDANCE_FACTOR'] = self.enhance_abundance_factor
+            niav = len(DataIO.readCols(filename=self.abundance_filename)[0])
+            dd['NUMBER_INPUT_ABUNDANCE_VALUES'] = niav
+            dd['KEYWORD_TABLE'] = 1
+            moltab = self.molecule_full[:self.molecule_full.index('.')]
+            dd['MOLECULE_TABLE'] = moltab 
+            dd['ISOTOPE_TABLE'] = self.molecule_full
             if path <> None:
-                 new_dict['ABUNDANCE_FILENAME'] \
-                    = '"%s"'%os.path.join(path,\
-                             os.path.split(self.abundance_filename)[1])
+                afn = os.path.join(path,\
+                                   os.path.split(self.abundance_filename)[1])
             else:
-                 new_dict['ABUNDANCE_FILENAME'] \
-                    = '"%s"'%self.abundance_filename
+                afn = self.abundance_filename
+            dd['ABUNDANCE_FILENAME'] = '"{}"'.format(afn)
+
         if self.set_keyword_change_abundance:
-            new_dict['SET_KEYWORD_CHANGE_ABUNDANCE'] \
-                    = self.set_keyword_change_abundance
+            dd['SET_KEYWORD_CHANGE_ABUNDANCE'] \
+                            = self.set_keyword_change_abundance
             if path <> None:
-                 new_dict['CHANGE_FRACTION_FILENAME'] \
-                    = '"%s"'%os.path.join(path,\
-                             os.path.split(self.change_fraction_filename)[1])
+                cffn = os.path.join(path,\
+                                os.path.split(self.change_fraction_filename)[1])
             else:
-                 new_dict['CHANGE_FRACTION_FILENAME'] \
-                    = '"%s"'%self.change_fraction_filename
+                cffn = self.change_fraction_filename
+            dd['CHANGE_FRACTION_FILENAME'] = '"{}"'.format(cffn)
+
         if self.set_keyword_change_temperature:
-            new_dict['SET_KEYWORD_CHANGE_TEMPERATURE'] \
-                    = self.set_keyword_change_temperature
+            dd['SET_KEYWORD_CHANGE_TEMPERATURE'] \
+                            = self.set_keyword_change_temperature
             if path <> None:
-                 new_dict['NEW_TEMPERATURE_FILENAME'] \
-                    = '"%s"'%os.path.join(path,\
-                             os.path.split(self.new_temperature_filename)[1])
+                tfn = os.path.join(path,\
+                                os.path.split(self.new_temperature_filename)[1])
             else:
-                 new_dict['NEW_TEMPERATURE_FILENAME'] \
-                    = '"%s"'%self.new_temperature_filename
+                tfn = self.new_temperature_filename
+            dd['NEW_TEMPERATURE_FILENAME'] = '"{}"'.format(tfn)
+
         if self.starfile:
-            new_dict['USE_STARFILE'] = 1
+            dd['USE_STARFILE'] = 1
             if path <> None:
-                starfile = os.path.join(path,os.path.split(self.starfile)[1])
-                new_dict['STARFILE'] = '"%s"'%starfile
+                sfn = os.path.join(path,os.path.split(self.starfile)[1])
+                
             else:
-                new_dict['STARFILE'] = '"%s"'%self.starfile
-        return new_dict        
+                sfn = self.starfile
+            dd['STARFILE'] = '"{}"'.format(sfn)
+        
+        if int(in_progress):
+            dd['IN_PROGRESS'] = 1   
+
+        return dd        
                          
 
 
@@ -510,7 +573,7 @@ class Molecule():
         
         '''
         
-        return '\ %s\ '%self.molecule_plot    
+        return '\ {}\ '.format(self.molecule_plot)    
             
 
 

@@ -8,7 +8,8 @@ Author: R. Lombaert
 """
 
 import os
-from scipy import array
+import numpy as np
+from numpy import array
 
 import cc.path
 from cc.tools.io import DataIO
@@ -40,7 +41,8 @@ class KappaReader(object):
         self.kappas = dict()
         self.qext_a = dict()
         self.waves = dict()
-    
+        self.fns = dict()
+        
 
 
     def readKappas(self,species):
@@ -79,18 +81,44 @@ class KappaReader(object):
             part_file = DataIO.readCols(filename=fn)
             wav = part_file[0]
             kappa = part_file[1:]
+        self.fns[species] = fn
         self.waves[species] = wav
         self.kappas[species] = kappa
         self.qext_a[species] = array(kappa) * 4/3. * sd
         
     
     
+    def getWavelength(self,species):
+    
+        """
+        Return the wavelength grid for a given species. 
+        
+        @param species: The dust species (from Dust.dat)
+        @type species: string
+        
+        @return: wavelength (micron)
+        @rtype: array
+        
+        
+        """
+        
+        self.readKappas(species)
+        if self.waves.has_key(species):
+            return self.waves[species]
+        else:
+            return np.empty(0)
+        
+        
+        
     def getKappas(self,species,index=0):
         
         """
         Return the kappas for given species.
         
-        The index determines if you want extinction, scattering or absorption.
+        The index determines if you want extinction, absorption or scattering.
+        
+        @param species: The dust species (from Dust.dat)
+        @type species: string
         
         @keyword index: The index of the kappas in the .opacity/.particle file. 
                         0: extinction, 1: absorption, 2: scattering
@@ -98,16 +126,16 @@ class KappaReader(object):
                         (default: 0)
         @type index: int
         
-        @return: (wavelength, kappas) [micron,cm2/g]
-        @rtype: (array,array)
+        @return: kappas (cm2/g)
+        @rtype: array
         
         """
         
         self.readKappas(species)
-        if self.waves.has_key(species):
-            return (self.waves[species],self.kappas[species][index])
+        if self.kappas.has_key(species):
+            return self.kappas[species][index]
         else:
-            return (None,None)
+            return np.empty(0)
         
     
     
@@ -124,14 +152,14 @@ class KappaReader(object):
                         (default: 0)
         @type index: int
         
-        @return: (wavelength, q_ext/a) [micron,cm-1]
-        @rtype: (array,array)
+        @return: q_ext/a [micron,cm-1]
+        @rtype: array
         
         """
         
         self.readKappas(species)
-        if self.waves.has_key(species):
-            return (self.waves[species],self.qext_a[species][index])
+        if self.qext_a.has_key(species):
+            return self.qext_a[species][index]
         else:
-            return (None,None)
+            return np.empty(0)
         

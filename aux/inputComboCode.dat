@@ -2,6 +2,11 @@
 ####################
 #-- General
 ####################
+#-- Database synchronisation and model checks printed to shell
+SINGLE_SESSION=0                    # If 1, runs the synchronisation of the databases only once at the end. Speeds up checking for models in databases. Especially useful when reloading large grids.
+PRINT_CHECK_T=1                     # Print the dust temperature check for each model after an MCMax calculation. Can still be ran manually if off. Greatly speeds up reloading models from the database if off.
+PRINT_MODEL_INFO=0                  # Print extra model info at the end of a CC session. Is off automatically for grids > 20 models
+
 #-- Which codes to run
 GASTRONOOM=0                        # Put to 0 if no GASTRoNOoM is needed
 MCMAX=0                             # Put to 0 if no MCMax is needed
@@ -64,7 +69,6 @@ REPLACE_DB_ENTRY=0                  # Be very careful with putting this keyword 
 UPDATE_SPEC=0                       # Update .spec files for GASTRoNOoM based on the available line lists
 APPEND_RESULTS=0                    # Append model ids of transitions in the grid to the inputfile, regardless if they've been calculated this run or not. By default this is off, since model ids are already appended if successfully calculated *this* run. This switch adds id's even if transitions are pulled from the database.
 WRITE_DUST_DENSITY=0                # Write away separate density files for MCMax models (see Star.writeDensity()) --- The opacity file is now written away fully as input for GASTRoNOoM, so can be read from there.
-PRINT_MODEL_INFO=0                  # Print extra model info at the end of a CC session. Is off automatically for grids > 20 models
 
 ####################
 #-- Stellar parameters
@@ -75,7 +79,7 @@ M_STAR=1.0                          # Stellar mass [Msol]
 L_STAR=11000                        # Stellar luminosity [Lsol]
 #LOGG=0.0                           # Only relevant if model atmospheres are used for MCMax (STARTYPE=ATMOSPHERE), default is 0.0
 DISTANCE=1300                       # Distance to object [pc]           
-STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody, ATMOSPHERE for a low-resolution model atmosphere spectrum in which case ATM_FILENAME has to be defined, TABLE for a custom file in which case STARTABLE has to be given, otherwise it's ignored)
+STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody, ATMOSPHERE for a low-resolution model atmosphere spectrum in which case ATM_FILENAME has to be defined, TABLE for a custom file in which case STARTABLE has to be given, otherwise it's ignored). Note that cooling always uses a blackbody. Only relevant for mline and sphinx.
 #STARTABLE=                         # Only relevant if STARTYPE=TABLE. Two columns - one with wavelength in micron, one with flux in Jy. If the full path is not given, the file is assumed to be in starf in Path.dat. The spectrum is assumed to be taken at the stellar surface, and is converted to intensity by GASTRoNOoM. It doesn't matter for MCMax, which scales the stellar spectrum based on requested distance and luminosity.
 #ATM_FILENAME=                      # The filename of the model atmosphere located in cc.path.home/usr/Path.dat (atm keyword)
 
@@ -243,10 +247,17 @@ A_NO_NORM=0                         # If you do not want CC to normalize abundan
 ####################
 # NUMERICAL & CODING & STABILITY PARAMETERS
 ####################
-#-- GASTRoNOoM numerical parametera
-CHECK_TAU_STEP=0.1                  # check.par.in sphinx if step in tau not too large                       
+#-- GASTRoNOoM numerical parameters: cooling
 STEP_RS_RIN=1.e+12                  # Step in  radius in DLSODA from RSTAR to RINNER                         
 STEP_RIN_ROUT=5.e+13                # Step in  radius in DLSODA from RINNER to ROUT                          
+
+#-- GASTRoNOoM numerical parameters: sphinx
+TAU_MAX=12                          # Maximum optical depth used for the calculation of the formal integral
+TAU_MIN=-6                          # Minimum optical depth used for the calculation of the formal integral
+CHECK_TAU_STEP=1e-2                 # Check.par.in sphinx if step in tau not too large
+FRACTION_TAU_STEP=1e-2              # tau_total*fraction_tau_step gives min. delta_tau in strahl.f. If too low, min_tau_step will be used.
+MIN_TAU_STEP=1e-4                   # minimum of delta_tau in strahl.f
+
 
 #-- MCMax radial and theta grid, grid refinement (modeling, not observation file output)
 NRAD=300                            # Number of radial grid points

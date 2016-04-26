@@ -23,7 +23,8 @@ class ModelingSession(object):
     
     """
       
-    def __init__(self,code,path,replace_db_entry=0,new_entries=[]):
+    def __init__(self,code,path,replace_db_entry=0,new_entries=[],\
+                 single_session=0):
         
         """ 
         Initializing an instance of ModelingSession.
@@ -46,7 +47,12 @@ class ModelingSession(object):
                                    
                               (default: [])
         @type new_entries: list[str]        
-          
+        @keyword single_session: If this is the only CC session. Speeds up db
+                                 check.
+                                 
+                                 (default: 0)
+        @type single_session: bool
+                  
         """
         
         self.path = path
@@ -54,6 +60,7 @@ class ModelingSession(object):
         self.model_id = ''
         self.replace_db_entry = replace_db_entry
         self.new_entries = new_entries
+        self.single_session = single_session
         mutablefile = os.path.join(cc.path.aux,\
                                    'Mutable_Parameters_%s.dat'%code)
         self.mutable = [line[0] 
@@ -144,7 +151,7 @@ class ModelingSession(object):
 
 
     def compareCommandLists(self,this_list,modellist,code,ignoreAbun=0,\
-                            extra_dict=None):
+                            extra_dict=None,check_keys=[]):
         
         """
         Comparing a command_list with a database entry.
@@ -168,6 +175,11 @@ class ModelingSession(object):
                              
                              (default: None)
         @type extra_dict: dict
+        @keyword check_keys: Only check keys given in this list. If empty, the
+                             standard keyword lists are used. 
+                             
+                             (default: [])
+        @type check_keys: list[str]
         
         @return: Comparison between the two parameter sets
         @rtype: bool
@@ -176,27 +188,33 @@ class ModelingSession(object):
         
         model_bool_list = []
         if extra_dict <> None: this_list.update(extra_dict)
-        if code == 'mcmax':
+        if check_keys:
+            keywords = check_keys
+        elif code == 'mcmax':
             keywords = set(this_list.keys()+modellist.keys())
             if 'dust_species' in keywords:
                 keywords.remove('dust_species')
+            if 'IN_PROGRESS' in keywords:
+                keywords.remove('IN_PROGRESS')
         else:
             keywords = getattr(self,code + '_keywords')
-        if code == 'mline' and ignoreAbun:
+        if code == 'mline' and ignoreAbun and not check_keys:
             keywords = [key 
                         for key in keywords 
                         if key not in ['ABUN_MOLEC','ABUN_MOLEC_RINNER',\
                                        'ABUN_MOLEC_RE','RMAX_MOLEC']]        
+        
         for keyword in keywords:
-            if keyword == 'STEP_RS_RIN':
-                if this_list.has_key(keyword) \
-                        and type(this_list[keyword]) is types.StringType:
-                    if 'd' in this_list[keyword]: 
-                        this_list[keyword] =this_list[keyword].replace('d','e')
-                if modellist.has_key(keyword) \
-                        and type(modellist[keyword]) is types.StringType:
-                    if 'd' in modellist[keyword]: 
-                        modellist[keyword] =modellist[keyword].replace('d','e')
+#--  All issues with "double" notation instead of exponential should be resolved
+#             if keyword == 'STEP_RS_RIN':
+#                 if this_list.has_key(keyword) \
+#                         and type(this_list[keyword]) is types.StringType:
+#                     if 'd' in this_list[keyword]: 
+#                         this_list[keyword] =this_list[keyword].replace('d','e')
+#                 if modellist.has_key(keyword) \
+#                         and type(modellist[keyword]) is types.StringType:
+#                     if 'd' in modellist[keyword]: 
+#                         modellist[keyword] =modellist[keyword].replace('d','e')
             try:
                 try:
                     try:
@@ -204,18 +222,32 @@ class ModelingSession(object):
                     except TypeError:
                         raise ValueError
                     delta = not val and 1e-10 or 0.001*val
-                    model_bool_list.append\
-                        (val - delta < float(modellist[keyword]) < val + delta)
+                    if val < 0: 
+                        tb = val-delta > float(modellist[keyword]) > val+delta
+                    else: 
+                        tb = val-delta < float(modellist[keyword]) < val+delta
                 except ValueError:
-                    model_bool_list.append\
-                        (this_list[keyword]==modellist[keyword])
+                    tb = this_list[keyword]==modellist[keyword]
             except KeyError:
                 if keyword not in this_list.keys() \
                         and keyword not in modellist.keys():
-                    model_bool_list.append(True)
+                    tb = True
                 else:
-                    model_bool_list.append(False)
+                    tb = False
+            model_bool_list.append(tb)
+        
         if False not in model_bool_list: 
             return True
         else: 
             return False
+    
+    
+    
+    def cCL(self,*args,**kwargs):
+        
+        ''' 
+        Short-hand helper function for compareCommandLists.
+        
+        '''
+        
+        return self.compareCommandLists(*args,**kwargs)

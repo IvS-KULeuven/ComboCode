@@ -245,7 +245,7 @@ class MCMax(ModelingSession):
     """
     
     def __init__(self,path_mcmax='runTest',replace_db_entry=0,db=None,\
-                 new_entries=[]):
+                 new_entries=[],single_session=0):
         
         """ 
         Initializing an instance of ModelingSession.
@@ -271,18 +271,28 @@ class MCMax(ModelingSession):
                                    
                                    (default: [])
         @type new_entries: list[str]     
-        
+        @keyword single_session: If this is the only CC session. Speeds up db
+                                 check.
+                                 
+                                 (default: 0)
+        @type single_session: bool
+                
         """
         
         super(MCMax, self).__init__(code='MCMax',path=path_mcmax,\
                                     replace_db_entry=replace_db_entry,\
-                                    new_entries=new_entries)
+                                    new_entries=new_entries,\
+                                    single_session=single_session)
         #-- Convenience path
         cc.path.mout = os.path.join(cc.path.mcmax,self.path)
         DataIO.testFolderExistence(os.path.join(cc.path.mout,\
                                                 'data_for_gastronoom'))
         self.db = db
         self.mcmax_done = False
+        
+        #-- If an mcmax model is in progress, the model manager will hold until
+        #   the other cc session is finished. 
+        self.in_progress = False
         
         #- Read standard input file with all parameters that should be included
         #- as well as some dust specific information
@@ -395,36 +405,88 @@ class MCMax(ModelingSession):
                     return True
         else:
             return False
+    
+    
+    
+    def cCL(self,*args,**kwargs):
         
+        ''' 
+        Short-hand helper function for compareCommandLists.
         
+        '''
+        
+        return self.compareCommandLists(*args,**kwargs) 
+    
+    
         
     def checkDatabase(self):
 
         """
-        Checking cooling database.
+        Checking MCMax database.
         
         @return: The presence of the MCMax model in the database
         @rtype: bool
         
         """
         
-        for model_id,cool_dict in sorted(self.db.items()):
+        #-- Lock the MCMax database by opening it in read mode. It's closed
+        #   once the database check is finalised. Note that in a case of a crash
+        #   during the for loop, the python shell must be exited to unlock the 
+        #   sphinx database again. The sync() is now done only once at the very
+        #   end since the file on the disk will not change.
+        if not self.single_session: self.db.sync()
+        mcm_dbfile = self.db._open('r')
+        db_ids = sorted(self.db.keys())
+        for i,model_id in enumerate(db_ids):
+            mcm_dict = self.db[model_id]
             model_bool = self.compareCommandLists(self.command_list.copy(),\
-                                                  cool_dict)
+                                                  mcm_dict)
             if model_bool:
-                if self.replace_db_entry \
+                if mcm_dict.has_key('IN_PROGRESS'):
+                    self.in_progress = True
+                    print 'MCMax model is currently being calculated in a ' +\
+                          'different CC modeling session with ID %s.'\
+                          %(model_id)
+                    self.model_id = model_id
+                    finished = 1
+                    break
+                elif self.replace_db_entry \
                         and model_id not in self.new_entries: 
                     print 'Replacing MCMax database entry for old ID %s.'\
                           %model_id
                     del self.db[model_id]
-                    return False
+                    finished = 0
+                    break
                 else:
                     print 'MCMax model has been calculated ' + \
                           'before with ID %s.'%model_id
                     self.model_id = model_id
-                    return True
-        print 'No match found in MCMax database. Calculating new model.'
-        return False
+                    finished = 1
+                    break
+        
+            #-- Reached the end of db without match. Make new entry in db, in
+            #   progress. Cant combine this with next line in case the last
+            #   model gives a match.
+            if i == len(self.db)-1:
+                print 'No match found in MCMax database. ' + \
+                      'Calculating new model.'
+                finished = 0
+        
+        #-- In case of an empty db, the above loop is not accessed.
+        if not self.db.keys():
+            print 'No match found in MCMax database. Calculating new model.'
+            finished = 0
+        
+        #-- Add the model in progress to the MCMax db
+        if finished == 0:    
+            self.model_id = self.makeNewId()
+            self.db[self.model_id] = self.command_list.copy()
+            self.db[self.model_id]['IN_PROGRESS'] = 1
+        
+        #-- Synchronize and unlock db.
+        mcm_dbfile.close()
+        if not self.single_session: self.db.sync()
+        return finished
         
         
             
@@ -563,7 +625,6 @@ class MCMax(ModelingSession):
         #-- if no match found in database, calculate new model with new model id 
         #-- if the calculation did not fail, add entry to database for new model
         if not modelbool:
-            self.model_id = self.makeNewId()
             input_dict = self.command_list.copy()
             del input_dict['photon_count']
             del input_dict['dust_species']
@@ -617,17 +678,15 @@ class MCMax(ModelingSession):
             testf2 = os.path.join(output_folder,'kappas.dat')
             if os.path.exists(testf1) and os.path.exists(testf2) and \
                     os.path.isfile(testf1) and os.path.isfile(testf2):
-                self.db[self.model_id] = self.command_list
-                self.db.sync()
+                del self.db[self.model_id]['IN_PROGRESS']
+                self.db.addChangedKey(self.model_id)
             else:
                 print '** Model calculation failed. No entry is added to ' + \
-                      'the database and LAST_MCMAX_MODEL in STAR dictionary '+\
-                      'is not updated.'
+                      'the database.'
+                del self.db[self.model_id]
                 self.model_id = ''
-                
-        #- add/change 'LAST_MCMAX_MODEL' entry
-        if self.model_id:
-            star['LAST_MCMAX_MODEL'] = self.model_id
+            if not self.single_session: self.db.sync()
+
         #- Note that the model manager now adds/changes MUTABLE input keys, 
         #- which MAY be overwritten by the input file inputComboCode.dat
         print '***********************************'

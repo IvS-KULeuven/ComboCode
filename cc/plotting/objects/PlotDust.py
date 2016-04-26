@@ -1064,7 +1064,8 @@ class PlotDust(PlottingSession):
                       (default: '')
         @type cfg: string
         @keyword index: The index of the kappas in the .opacity/.particle file. 
-                        0: extinction, 1: absorption, 2: scattering
+                        0: extinction, 1: absorption, 2: scattering. Only 
+                        relevant when plotting without Star() models.
                         
                         (default: 0)
         @type index: int
@@ -1077,11 +1078,14 @@ class PlotDust(PlottingSession):
         #-- Set the filename
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict.pop('filename')
-        
+            fn_plt = cfg_dict.pop('filename')        
         if not star_grid and not fn_plt:
             fn_plt = os.path.join(cc.path.mopac,\
                                   'dust_opacities_%s'%'_'.join(species))
+        
+        #-- Retrieve index keyword if in cfg.
+        if cfg_dict.has_key('index'):
+            index = cfg_dict.pop('index')
 
         #-- Set some plot parameters
         ppars = dict()
@@ -1096,8 +1100,8 @@ class PlotDust(PlottingSession):
         #-- Check if raw opacities or modeling results are requested
         if not star_grid:
             kr = KappaReader.KappaReader()
-            wl_list = [kr.getKappas(sp)[0] for sp in species]
-            q_list = [kr.getKappas(sp)[1] for sp in species]
+            wl_list = [kr.getWavelength(sp) for sp in species]
+            q_list = [kr.getKappas(sp,index) for sp in species]
             if not ppars.has_key('keytags'):
                 ppars['keytags'] = species
             
@@ -1115,8 +1119,14 @@ class PlotDust(PlottingSession):
                     wave,opacities = star.readKappas()
                 except IOError:
                     continue
-                opacities = [(opacities[i]+opacities[i+len(star.getDustList())]) 
-                             for i in range(len(star.getDustList()))]
+                if star['INCLUDE_SCAT_GAS']:
+                    n_species = len(star.getDustList())
+                    opacities = [opacities[i]+opacities[i+n_species]
+                                 for i in range(len(star.getDustList()))]
+                else: 
+                    opacities = [opacities[i] 
+                                 for i in range(len(star.getDustList()))]
+                
                 if scaling:
                     opacities = [op*star['A_%s'%sp]
                                  for op,sp in zip(opacities,star.getDustList())]

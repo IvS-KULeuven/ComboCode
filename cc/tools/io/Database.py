@@ -18,17 +18,34 @@ import cc.path
 from cc.tools.io import DataIO
 
 
-def convertDbMaserKeys(path_input=''):
+def convertDbKeys(path_input=''):
 
     '''
-    Convert your local databases such that the keywords relevant for inclusion
-    of masing in mline are in the correct database. 
+    Convert your local databases such that some keywords are shifted around 
+    according to their relevance for the different subcodes of GASTRoNOoM.
     
-    Moves USE_NO_MASER_OPTION from cooling to mline.
     Moves USE_MASER_IN_SPHINX from sphinx to mline. Sets it to the default value
     of 1, since it was never changed for mline. 
     
-    Converts all cooling, mline, sphinx and pacs databases. 
+    Moves USE_NO_MASER_OPTION, N_FREQ, START_APPROX, USE_FRACTION_LEVEL_CORR, 
+    FRACTION_LEVEL_CORR, NUMBER_LEVEL_MAX_CORR from cooling to mline.
+    
+    Moves WRITE_INTENSITIES, TAU_MAX, TAU_MIN, CHECK_TAU_STEP from cooling to 
+    sphinx. 
+    
+    Adds the new keywords N_IMPACT_EXTRA[_RIN/ROUT] to cooling.
+    
+    Adds the new keywords FRACTION_TAU_STEP, MIN_TAU_STEP to sphinx. 
+    
+    Adds the new keyword FEHLER to mline.
+    
+    Converts any 'double' notation in str format to the floats, e.g. 
+    TAU_MIN='-6d0' becomes TAU_MIN=-6.
+    
+    Converts all cooling, mline, sphinx and pacs databases found in the 
+    GASTRoNOoM home folder. 
+    
+    Can Update ComboCode input files for the maser keywords.
     
     @keyword path_input: The location of your ComboCode inputfiles. Use empty
                          string or None if you do not want to update your input-
@@ -40,41 +57,140 @@ def convertDbMaserKeys(path_input=''):
     
     '''
     
+    #-- Keys to be moved around or added as new. Given as (key,default) pairs
+    keys_cool_ml = [('USE_NO_MASER_OPTION',0,int),('N_FREQ',30,int),\
+                    ('START_APPROX',0,int),('USE_FRACTION_LEVEL_CORR',1,int),\
+                    ('FRACTION_LEVEL_CORR',0.8,float),\
+                    ('NUMBER_LEVEL_MAX_CORR',1e-12,float)]
+    keys_cool_sph = [('WRITE_INTENSITIES',0,int),('TAU_MAX',12,float),\
+                     ('TAU_MIN',-6,float),('CHECK_TAU_STEP',0.01,float)]
+
+    #-- USE_MASER_IN_SPHINX belongs here as it was never properly used in sphinx
+    #   If this was already corrected earlier, adding the key here will do 
+    #   nothing.
+    #-- Not adding USE_STARFILE. It's now in Input_Keywords_Mline for checking 
+    #   when it is 1 or 2. When it's 0, it's not even added (since STARFILE 
+    #   is not relevant either.)
+    new_keys_ml = [('FEHLER',1e-4,float),('USE_MASER_IN_SPHINX',1,int)]    
+    new_keys_sph = [('FRACTION_TAU_STEP',1e-2,float),\
+                    ('MIN_TAU_STEP',1e-4,float)]
+    new_keys_cool = [('N_IMPACT_EXTRA',0,int),\
+                     ('N_IMPACT_EXTRA_RIN',100.,float),\
+                     ('N_IMPACT_EXTRA_ROUT',150.,float)]
+    convert_double = ['TAU_MAX','TAU_MIN','NUMBER_LEVEL_MAX_CORR',\
+                      'STEP_RS_RIN','STEP_RIN_ROUT','FRACTION_TAU_STEP',\
+                      'MIN_TAU_STEP']
+
     gpaths = sorted(glob(os.path.join(cc.path.gastronoom,'*','GASTRoNOoM*.db')))
     gpaths = list(set([os.path.split(gp)[0] for gp in gpaths]))
+    print "New databases will be located at filename_old.db_dbConversion"
     #-- Add to Mline and rm from cooling databases
     for gp in gpaths: 
         cfn = os.path.join(gp,'GASTRoNOoM_cooling_models.db')
         mfn = os.path.join(gp,'GASTRoNOoM_mline_models.db')
-        cdb = Database(cfn)
-        if not cdb.values()[-1].has_key('USE_NO_MASER_OPTION'):
-            print "Database at %s already converted."%gp
-            continue
-        mdb = addKeyMline(key='USE_MASER_IN_SPHINX',val=1,db_fn=mfn)
+        sfn = os.path.join(gp,'GASTRoNOoM_sphinx_models.db')
+        pfns = sorted(glob(os.path.join(gp,'stars','*','GASTRoNOoM*.db')))
+
+        print "******************************"
+        print "Now converting databases from:"
+        print "\n".join([cfn,mfn,sfn]+pfns)
+        
+        #-- Make copies of the dbs, which will be changed. Avoids erroneous
+        #   changes and data loss.
+        for fn in [cfn,mfn,sfn]+pfns: 
+            os.system('cp %s %s'%(fn,fn+'_dbConversion'))
+        cdb = Database(cfn+'_dbConversion')
+        mdb = Database(mfn+'_dbConversion')
+        sdb = Database(sfn+'_dbConversion')
+        
+        #-- Add new cooling keys
+        for key,defval,valtype in new_keys_cool:
+            #-- If key was already moved previously, nothing will change
+            #   Method doesn't add anything if already present. 
+            cdb = addKeyCooling(key=key,val=defval,db=cdb)
+        
+        #-- Convert the "double" notations in the cooling db:
         for cmid in cdb.keys():
-            unmo = cdb[cmid].pop('USE_NO_MASER_OPTION')
-            cdb.addChangedKey(cmid)
-            if mdb.has_key(cmid):
-                for l in mdb[cmid].keys():
-                    for mol in mdb[cmid][l].keys():
-                        mdb[cmid][l][mol]['USE_NO_MASER_OPTION'] = int(unmo)
-                        mdb.addChangedKey(cmid)
+            for k,v in cdb[cmid].items():
+                if k in convert_double and isinstance(v,str):
+                    cdb[cmid][k] = v.replace('d','e')
+                    cdb.addChangedKey(cmid)
+                    
+        #-- Move keywords from cooling to mline. Include the new keywords in 
+        #   case they were already used by someone. If not, they won't be in the
+        #   cooling db either, and they'll just be added to sph db.
+        for key,defval,valtype in keys_cool_ml + new_keys_ml:
+            for cmid in cdb.keys():
+                if not key in cdb[cmid].keys():
+                    #-- If key was already moved previously, nothing will change
+                    #   Method doesn't add anything if already present. 
+                    mdb = addKeyMline(key=key,val=defval,db=mdb,id=cmid)
+                    continue
+                val = cdb[cmid].pop(key)
+                cdb.addChangedKey(cmid)
+                if key in convert_double:
+                    val = float(val.replace('d','e'))
+                mdb = addKeyMline(key=key,val=valtype(val),db=mdb,id=cmid)
+        
+        #-- Move keywords from cooling to sphinx. Include the new keywords in 
+        #   case they were already used by someone. If not, they won't be in the
+        #   cooling db either, and they'll just be added to sph db.
+        for key,defval,valtype in keys_cool_sph + new_keys_sph:
+            for cmid in cdb.keys():
+                if not key in cdb[cmid].keys():
+                    #-- If key was already moved previously, nothing will change
+                    #   Method doesn't add anything if already present. 
+                    sdb = addKeySphinx(key=key,val=defval,db=sdb,id=cmid)
+                    #-- Then add the key to all PACS dbs!
+                    for pp in pfns:
+                        pdb = addKeyPacs(key=key,val=defval,\
+                                         db_fn=pp+'_dbConversion',id=cmid)
+                        pdb.sync()
+                    continue
+                val = cdb[cmid].pop(key)
+                cdb.addChangedKey(cmid)
+                if key in convert_double:
+                    val = float(val.replace('d','e'))
+                sdb = addKeySphinx(key=key,val=valtype(val),db=sdb,id=cmid)                            
+                #-- Then add the key to all PACS dbs!
+                for pp in pfns:
+                    pdb = addKeyPacs(key=key,val=valtype(val),\
+                                     db_fn=pp+'_dbConversion',id=cmid)
+                    pdb.sync()
+                    
+        #-- Remove USE_MASER_IN_SPHINX from sphinx databases
+        sdb = rmKeySphinx(key='USE_MASER_IN_SPHINX',db=sdb)
+        #-- Remove from pacs databases
+        for pp in pfns:
+            pdb = rmKeyPacs(key='USE_MASER_IN_SPHINX',db_fn=pp+'_dbConversion')
+            pdb.sync()
+
         cdb.sync()
         mdb.sync()
-        
-    #-- Remove from sphinx databases
-    for gp in gpaths:
-        sfn = os.path.join(gp,'GASTRoNOoM_sphinx_models.db')
-        sdb = rmKeySphinx(key='USE_MASER_IN_SPHINX',db_fn=sfn)
         sdb.sync()
     
-    #-- Remove from pacs datavases
-    ppaths = sorted(glob(os.path.join(cc.path.gastronoom,'*','stars','*',\
-                                          'GASTRoNOoM*.db')))
-    for pp in ppaths:
-        pdb = rmKeyPacs(key='USE_MASER_IN_SPHINX',db_fn=pp)
-        pdb.sync()
-        
+    #-- Obsolete:
+    # -- Add old default value of USE_FRACTION_LEVEL_CORR
+#     if path_input:
+#         print "******************************"
+#         print "Now converting adding old defaults to inputfiles at:"
+#         print path_input
+#         ifiles = glob(path_input)
+#         comment = '# set to 1 if one wants to put a limit on the ' + \
+#                   'level-population correction (BES3).\n'
+#         for ff in ifiles:
+#             lines = DataIO.readFile(ff,None,replace_spaces=0)
+#             ldict = DataIO.readDict(ff)
+#             -- First find a good place to add the keyword. Just after 
+#               CHECK_TAU_STEP is good as it is present in all inputfiles.
+#             for i,l in enumerate(lines):
+#                 if l.find('CHECK_TAU_STEP') != -1:
+#                     break
+#             -- Then add the old default value.
+#             if not ldict.has_key('USE_FRACTION_LEVEL_CORR'):
+#                 lines[i:i] = ['USE_FRACTION_LEVEL_CORR=1              '+comment]
+#             DataIO.writeFile(ff,lines,mode='w',delimiter='')
+    
     #-- Add the proper default maser keys to inputfiles.
     if not path_input: return
     ifiles = glob(path_input)
@@ -206,32 +322,54 @@ def convertMCMaxDatabase(path_mcmax):
     print '** Done!'
     
     
-def cleanSphinxDatabase(db_path):
+def cleanDatabase(db_path):
     
     '''
-    Remove any transitions with a dictionary that includes the IN_PROGRESS key.
+    Remove any db entries with a dictionary that includes the IN_PROGRESS key.
+    
+    Works for cooling, mline and sphinx databases.
     
     @param db_path: full path to the database.
     @type db_path: string
     
     '''
     
-    if 'sphinx' not in db_path:
-        raise IOError('Database path is not related to a Sphinx database.')
-    sph_db = Database(db_path)
+    code = os.path.split(db_path)[1].split('_')[1]
+    if code not in ['cooling','mline','sphinx']:
+        raise IOError('Database path is not related to a GASTRoNOoM database.')
+    db = Database(db_path)
+    #-- Locking the database while this is done to avoid issues.
+    dbfile = db._open('r')
     print '****************************************************************'
-    print '** Checking Sphinx database for in progress transitions now...'
-    for cool_id,ml_id_dict in sph_db.items():
-        for ml_id,trans_id_dict in ml_id_dict.items():
-            for trans_id,trans_dict in trans_id_dict.items():
-                for trans,this_trans_dict in trans_dict.items():
-                    if this_trans_dict.has_key('IN_PROGRESS'):
-                        del sph_db[cool_id][ml_id][trans_id][trans]
-                        sph_db.addChangedKey(cool_id)
-                        print 'Removed in progress transition %s '%trans + \
-                              'with transid %s.'%trans_id
-    print '** Synchronizing the database...'
-    sph_db.sync()
+    print '** Checking {} database for in-progress models now...'.format(code)
+    for cool_id,vcool in db.items():
+        #-- For cooling IN PROGRESS entry is found in vcool
+        if code == 'cooling':
+            if vcool.has_key('IN_PROGRESS'):
+                del db[cool_id]
+                print 'Removed in-progress model with id {}.'.format(cool_id)
+            continue
+        for ml_id,vml in vcool.items():
+            for key,val in vml.items():
+                #-- For mline IN PROGRESS entry is found in the molecule dict.
+                if code == 'mline':
+                    if val.has_key('IN_PROGRESS'):
+                        del db[cool_id][ml_id][key]
+                        db.addChangedKey(cool_id)
+                        print 'Removed in-progress molecule {} '.format(key)+\
+                              'id {}.'.format(ml_id)
+                    continue
+                for trans,vsph in val.items():
+                    #-- For sphinx IN PROGRESS entry is found in the trans dict.
+                    #   No need to check code, it's the last possibility.
+                    if vsph.has_key('IN_PROGRESS'):
+                        del db[cool_id][ml_id][key][trans]
+                        db.addChangedKey(cool_id)
+                        print 'Removed in-progress transition '+ \
+                              '{} with id {}.'.format(trans,key)
+    print '** Unlocking and synchronizing the database...'
+    dbfile.close()
+    db.sync()
     print '** Done!'
     print '****************************************************************'
 
@@ -285,7 +423,7 @@ def coolingDbRetrieval(path_gastronoom,r_outer=None):
     
     
 
-def addKeyCooling(key,val,db_fn):
+def addKeyCooling(key,val,db_fn='',db=None):
         
     '''
     Add a (key,value) pair to every entry in the cooling database. 
@@ -296,15 +434,28 @@ def addKeyCooling(key,val,db_fn):
     @type key: str
     @param val: The default value for the keyword.
     @type val: any
-    @param db_fn: The filename and path of the database.
+    
+    @keyword db_fn: The filename and path of the database. Only required if db 
+                    is not given.
+                    
+                    (default: '')
     @type db_fn: string
+    @keyword db: The database. Is updated and returned. If not given, a filename
+                 is required.
+                 
+                 (default: None)
+    @type db: Database()
     
     @return: The new database, not yet synchronized.
     @rtype: Database()
     
     '''
     
-    db = Database(db_fn)
+    if db is None and not db_fn:
+        return
+        
+    if db is None:
+        db = Database(db_fn)
     for k in db.keys():
         if not key in db[k].keys():
             db[k][key] = val
@@ -313,22 +464,35 @@ def addKeyCooling(key,val,db_fn):
 
 
 
-def rmKeyCooling(key,val,db_fn):
+def rmKeyCooling(key,val,db_fn='',db=None):
         
     '''
     Remove a key from every entry in the cooling database. 
     
     @param key: The name of the keyword to be removed.
     @type key: str
-    @param db_fn: The filename and path of the database.
+    
+    @keyword db_fn: The filename and path of the database. Only required if db 
+                    is not given.
+                    
+                    (default: '')
     @type db_fn: string
+    @keyword db: The database. Is updated and returned. If not given, a filename
+                 is required.
+                 
+                 (default: None)
+    @type db: Database()
     
     @return: The new database, not yet synchronized.
     @rtype: Database()
     
     '''
     
-    db = Database(db_fn)
+    if db is None and not db_fn:
+        return
+        
+    if db is None:
+        db = Database(db_fn)
     for k in db.keys():
         if key in db[k].keys():
             del db[k][key]
@@ -337,7 +501,7 @@ def rmKeyCooling(key,val,db_fn):
     
 
 
-def addKeyMline(key,val,db_fn):
+def addKeyMline(key,val,db_fn='',db=None,id=''):
         
     '''
     Add a (key,value) pair to every entry in the mline database.
@@ -348,16 +512,40 @@ def addKeyMline(key,val,db_fn):
     @type key: str
     @param val: The default value of the keyword
     @type val: any
-    @param db_fn: The filename and path of the database.
+    
+    @keyword db_fn: The filename and path of the database. Only required if db 
+                    is not given.
+                    
+                    (default: '')
     @type db_fn: string
+    @keyword db: The database. Is updated and returned. If not given, a filename
+                 is required.
+                 
+                 (default: None)
+    @type db: Database()
+    @keyword id: If the (key,val) pair is only to be added to one cooling id, 
+                 give that id here. If not given, the pair is added to all ids
+                 If id not in db, nothing is done.
+                 
+                 (default: '')
+    @type id: str
     
     @return: The new database, not yet synchronized.
     @rtype: Database()
     
     '''
     
-    db = Database(db_fn)
-    for k in db.keys():
+    if db is None and not db_fn:
+        return
+        
+    if db is None:
+        db = Database(db_fn)
+    
+    if id and not db.has_key(id):
+        return db
+    
+    cids = db.keys() if not id else [id]
+    for k in cids:
         for l in db[k].keys():
             for mol in db[k][l].keys():
                 if not key in db[k][l][mol].keys():
@@ -367,23 +555,47 @@ def addKeyMline(key,val,db_fn):
     
     
 
-def rmKeyMline(key,db_fn):
+def rmKeyMline(key,db_fn='',db=None,id=''):
         
     '''
     Remove a key from every entry in the mline database.    
     
     @param key: The keyword to be removed
     @type key: str
-    @param db_fn: The filename and path of the database.
+    
+    @keyword db_fn: The filename and path of the database. Only required if db 
+                    is not given.
+                    
+                    (default: '')
     @type db_fn: string
+    @keyword db: The database. Is updated and returned. If not given, a filename
+                 is required.
+                 
+                 (default: None)
+    @type db: Database()
+    @keyword id: If the key is only to be removed from one cooling id, give that
+                 id here. If not given, the key is removed from all ids
+                 If id not in db, nothing is done.
+                 
+                 (default: '')
+    @type id: str
     
     @return: The new database, not yet synchronized.
     @rtype: Database()
     
     '''
     
-    db = Database(db_fn)
-    for k in db.keys():
+    if db is None and not db_fn:
+        return
+        
+    if db is None:
+        db = Database(db_fn)
+
+    if id and not db.has_key(id):
+        return db
+    
+    cids = db.keys() if not id else [id]
+    for k in cids:
         for l in db[k].keys():
             for mol in db[k][l].keys():
                 if key in db[k][l][mol].keys():
@@ -393,23 +605,47 @@ def rmKeyMline(key,db_fn):
     
 
 
-def rmKeySphinx(key,db_fn):
+def rmKeySphinx(key,db_fn='',db=None,id=''):
 
     '''
     Remove a key from the sphinx database entries. 
     
     @param key: They keyword to be removed
     @type key: str
-    @param db_fn: The filename and path of the database.
+    
+    @keyword db_fn: The filename and path of the database. Only required if db 
+                    is not given.
+                    
+                    (default: '')
     @type db_fn: string
+    @keyword db: The database. Is updated and returned. If not given, a filename
+                 is required.
+                 
+                 (default: None)
+    @type db: Database()
+    @keyword id: If the key is only to be removed from one cooling id, give that
+                 id here. If not given, the key is removed from all ids
+                 If id not in db, nothing is done.
+                 
+                 (default: '')
+    @type id: str
     
     @return: The new database, not yet synchronized.
     @rtype: Database()
     
     '''
     
-    db = Database(db_fn)
-    for k in db.keys():
+    if db is None and not db_fn:
+        return
+        
+    if db is None:
+        db = Database(db_fn)    
+
+    if id and not db.has_key(id):
+        return db
+    
+    cids = db.keys() if not id else [id]
+    for k in cids:
         for l in db[k].keys():
             for o in db[k][l].keys():
                 for trans in db[k][l][o].keys():
@@ -419,24 +655,103 @@ def rmKeySphinx(key,db_fn):
     return db
     
     
-    
-def rmKeyPacs(key,db_fn):
+
+def addKeySphinx(key,val,db_fn='',db=None,id=''):
 
     '''
-    Remove a key from the PACS database entries. 
+    Add a (key,value) pair to every entry of the sphinx database entries. 
     
-    @param key: They keyword to be removed
+    @param key: They keyword to be added
     @type key: str
-    @param db_fn: The filename and path of the database.
+    @param val: The default value of the keyword
+    @type val: any
+
+    @keyword db_fn: The filename and path of the database. Only required if db 
+                    is not given.
+                    
+                    (default: '')
     @type db_fn: string
+    @keyword db: The database. Is updated and returned. If not given, a filename
+                 is required.
+                 
+                 (default: None)
+    @type db: Database()
+    @keyword id: If the (key,val) pair is only to be added to one cooling id, 
+                 give that id here. If not given, the pair is added to all ids
+                 If id not in db, nothing is done.
+                 
+                 (default: '')
+    @type id: str
     
     @return: The new database, not yet synchronized.
     @rtype: Database()
     
     '''
     
-    db = Database(db_fn)
+    if db is None and not db_fn:
+        return
+        
+    if db is None:
+        db = Database(db_fn)    
+
+    if id and not db.has_key(id):
+        return db
+    
+    cids = db.keys() if not id else [id]
+    for k in cids:
+        for l in db[k].keys():
+            for o in db[k][l].keys():
+                for trans in db[k][l][o].keys():
+                    if not key in db[k][l][o][trans].keys():
+                        db[k][l][o][trans][key] = val
+                        db.addChangedKey(k)
+    return db
+       
+
+    
+def rmKeyPacs(key,db_fn='',db=None,id=''):
+
+    '''
+    Remove a key from the PACS database entries. 
+    
+    @param key: They keyword to be removed
+    @type key: str
+    
+    @keyword db_fn: The filename and path of the database. Only required if db 
+                    is not given.
+                    
+                    (default: '')
+    @type db_fn: string
+    @keyword db: The database. Is updated and returned. If not given, a filename
+                 is required.
+                 
+                 (default: None)
+    @type db: Database()
+    @keyword id: If the key is only to be removed from one cooling id, give that
+                 id here. Note this is the COOLING ID, not the pacs id. 
+                 Iteration over all pacs ids is always done. However, if id is 
+                 given it is cross checked with the cooling id in the entry and 
+                 only then added. If not given, the key is removed from all 
+                 pacs ids as well as cooling ids.
+                 If cooling id not in db, nothing is done.
+                 
+                 (default: '')
+    @type id: str
+    
+    @return: The new database, not yet synchronized.
+    @rtype: Database()
+    
+    '''
+    
+    if db is None and not db_fn:
+        return
+        
+    if db is None:
+        db = Database(db_fn)
+
     for k in db.keys(): #- pacs id: dict
+        #-- If cooling id does not match, do nothing and move on.
+        if id and db[k]['cooling_id'] != id: continue 
         for l in db[k]['trans_list']: #- list of tuples
             if key in l[2].keys():
                 del l[2][key]
@@ -444,6 +759,55 @@ def rmKeyPacs(key,db_fn):
     return db
     
     
+    
+def addKeyPacs(key,val,db_fn='',db=None,id=''):
+
+    '''
+    Add a (key,value) pair to every entry of the PACS database entries. 
+    
+    @param key: They keyword to be added
+    @type key: str
+    @param val: The default value of the keyword
+    @type val: any
+    
+    @keyword db_fn: The filename and path of the database. Only required if db 
+                    is not given.
+                    
+                    (default: '')
+    @type db_fn: string
+    @keyword db: The database. Is updated and returned. If not given, a filename
+                 is required.
+                 
+                 (default: None)
+    @type db: Database()
+    @keyword id: If the (key,val) pair is only to be added to one pacs id, 
+                 give that id here. If not given, the pair is added to all ids.
+                 If id not in db, nothing is done.
+                 
+                 (default: '')
+    @type id: str
+    
+    @return: The new database, not yet synchronized.
+    @rtype: Database()
+    
+    '''
+    
+    if db is None and not db_fn:
+        return
+        
+    if db is None:
+        db = Database(db_fn)
+
+    for k in db.keys(): #- pacs id: dict
+        #-- If cooling id does not match, do nothing and move on.
+        if id and db[k]['cooling_id'] != id: continue 
+        for l in db[k]['trans_list']: #- list of tuples
+            if not key in l[2].keys():
+                l[2][key] = val
+                db.addChangedKey(k)
+    return db    
+
+
     
 def replaceSubstring(db,oldss,newss):
 
@@ -834,7 +1198,11 @@ class Database(dict):
                     time.sleep(2)
             self.__deleted = []
             self.__changed = []
-    
+        
+        #-- Nothing changed in this instance of the db. Just read the db saved
+        #   to hard disk to update this instance to the real-time version. 
+        else:
+            self.read()
     
     
     def __save(self):

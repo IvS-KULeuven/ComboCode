@@ -1471,7 +1471,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
             lg.set_zorder(max(zorder)+1)
     if filename: filename = saveFig(filename,extension,landscape)
     if show_plot or filename is None:
-        pl.subplots_adjust(bottom=0.05)
+        pl.subplots_adjust(bottom=0.10)
         pl.subplots_adjust(top=0.95)
         pl.subplots_adjust(right=0.95)
         pl.subplots_adjust(left=0.10)

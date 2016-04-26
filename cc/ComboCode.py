@@ -130,8 +130,9 @@ class ComboCode(object):
                           ('show_contdiv',0),('skip_cooling',0),\
                           ('recover_sphinxfiles',0),('stat_print',0),\
                           ('stat_lll_p',None),('stat_method','clipping'),\
-                          ('star_name','model'),\
-                          ('stat_lll_partial',0),('stat_lll_vcut',0.0)]
+                          ('star_name','model'),('single_session',0),\
+                          ('stat_lll_partial',0),('stat_lll_vcut',0.0),\
+                          ('print_check_t',1)]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v))
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -531,7 +532,8 @@ class ComboCode(object):
 
         base_star = Star.Star(example_star=self.processed_input,\
                               path_gastronoom=self.path_gastronoom,\
-                              path_mcmax=self.path_mcmax)
+                              path_mcmax=self.path_mcmax,\
+                              print_check_t=self.print_check_t)
         if self.additive_grid:
             grid_lengths = [len(v) for v in self.additive_grid.values()]
             if len(set(grid_lengths)) != 1:
@@ -545,7 +547,8 @@ class ComboCode(object):
                 self.star_grid = [Star.Star(example_star=base_star,\
                                          path_gastronoom=self.path_gastronoom,\
                                          path_mcmax=self.path_mcmax,\
-                                         extra_input=d)
+                                         extra_input=d,\
+                                         print_check_t=self.print_check_t)
                                   for d in additive_dicts]
         else:
             self.star_grid = [base_star]
@@ -553,7 +556,8 @@ class ComboCode(object):
             self.star_grid = [Star.Star(path_gastronoom=self.path_gastronoom,\
                                         path_mcmax=self.path_mcmax,\
                                         example_star=star,\
-                                        extra_input=dict([(key,value)]))
+                                        extra_input=dict([(key,value)]),\
+                                        print_check_t=self.print_check_t)
                               for star in self.star_grid
                               for value in grid]
         for star in self.star_grid:
@@ -632,7 +636,8 @@ class ComboCode(object):
                                 replace_db_entry=self.replace_db_entry,\
                                 path_mcmax=self.path_mcmax,\
                                 skip_cooling=self.skip_cooling,\
-                                recover_sphinxfiles=self.recover_sphinxfiles)
+                                recover_sphinxfiles=self.recover_sphinxfiles,\
+                                single_session=self.single_session)
 
 
     def setPlotManager(self):
@@ -690,7 +695,13 @@ class ComboCode(object):
                     print self.vic_manager.getQueue()
                     self.vic_manager.checkProgress(wait_qstat=1)
 
-
+            if self.single_session:
+                self.model_manager.cool_db.sync()
+                self.model_manager.ml_db.sync()
+                self.model_manager.sph_db.sync()
+                self.model_manager.mcmax_db.sync()
+                
+                
 
     def finalizeVic(self):
 
@@ -715,8 +726,11 @@ class ComboCode(object):
                 vic_running = self.vic_manager.checkProgress()
             self.vic_manager.finalizeVic()
 
-
-
+            if self.single_session:
+                self.model_manager.sph_db.sync()
+                
+                
+                
     def runPlotManager(self):
 
         '''

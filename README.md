@@ -37,15 +37,15 @@ have to contact the authors of the codes.</li>
 ## Requirements
 Currently the code has been tested to run on Unix-based systems, more specifically Fedora and Mac OS X. In principle, any operating systems that fulfills the requirements listed below should be able to run ComboCode. The code runs ons machines with an internal memory of 8 GB, but less is likely fine as well. The memory requirements are primarily set by the numerical codes included in ComboCode.
 
-First and foremost, you require a Python 2.7 (not Python 3!) distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. Specific packages required to be installed in your python distribution are: PyPDF2, h5py, ephem, astropy and lmfit. (e.g., in case of Anaconda, run "pip install ephem" in the shell after Anaconda installation)
+First and foremost, you require a Python 2.7 (not Python 3!) distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. Specific packages required to be installed in your python distribution are: PyPDF2, h5py, ephem, and astropy. As an example, after installation of Anaconda, you can run the following command in the shell:
+
+    - $ pip install ephem
 
 Secondly, we are using git for the version control of the repository. Follow the instructions given <a href="https://help.github.com/articles/set-up-git/"> here</a> to set up git on your local machine, after you have created a user account at GitHub.
 
-Thirdly, you require a recent installation of the gfortran compiler. 
+Thirdly, ComboCode makes use of the so-called IvS repository, which is currently integrated with ComboCode, but some data files are needed. They are available <a href="http://ster.kuleuven.be/~robinl/cc/ivsdata.tar.gz"> here</a>. They can be unpacked in an arbitrary folder, but remember to include the folder name as ivsdata in usr/Path.dat (see below).
 
-Fourthly, you need the IvS repository, which can be installed as described in the readme.txt file located <a href="https://github.com/robinlombaert/IvSPythonRepository"> here</a>. With the IvS repository comes data that are used by the package. The bare minimum required to run ComboCode is available <a href="http://ster.kuleuven.be/~robinl/cc/ivsdata.tar.gz"> here</a>. Make sure to update the config.py file with the location of the unpacked ivsdata upon installation of the IvS repository. 
-
-Lastly, ComboCode can be used to its fullest potential when working in tandem with the radiative-transfer codes GASTRoNOoM and MCMax. To use these codes, permission is required from the owners listed above. You can contact them directly, or through me (robinlombaert on GitHub).
+Lastly, ComboCode can be used to its fullest potential when working in tandem with the radiative-transfer codes GASTRoNOoM and MCMax. To use these codes, permission is required from the owners listed above. You can contact them directly, or  <a href="https://github.com/robinlombaert">through me</a>. The codes require gfortran and ifort, respectively. On Linux systems, alternative compilers are possible for MCMax.
 
 #### Installing GASTRoNOoM
 Retrieve the source code from either L. Decin or R. Lombaert. After unpacking, you will find a Makefile in src/exec/. You have to compile GASTRoNOoM. This assumes you have gfortran installed on your machine. If you unpacked the source code in ~/GASTRoNOoM/, compiling the code looks like this:

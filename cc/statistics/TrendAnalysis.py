@@ -88,6 +88,7 @@ def makeDiagnosticPlot(sg,molec,scaling=[],escaling=[],combine_water=0,\
     
     #-- Select all CO line strengths for two typical transitions: 15-14, 30-29
     co = sg[0].getMolecule('12C16O')
+    #-- No need to define other pars. These only serve as a template.
     co1514 = Transition.Transition(molecule=co,telescope='PACS',jup=15,\
                                    jlow=14,path_gastronoom='codeJun2013')
     co3029 = Transition.Transition(molecule=co,telescope='PACS',jup=30,\

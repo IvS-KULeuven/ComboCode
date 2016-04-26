@@ -102,7 +102,7 @@ class Star(dict):
 
 
     def __init__(self,path_gastronoom='',path_mcmax='',extra_input=None,\
-                 example_star=dict()):
+                 example_star=dict(),print_check_t=1):
         
         """
         Initiate an instance of the STAR class.
@@ -126,6 +126,13 @@ class Star(dict):
         
                               (default: None)
         @type extra_input: dict or Star()
+        @keyword print_check_t: Print the dust temperature check automatically.
+                                Can still be done manually by running s.checkT
+                                or asking for any T_DES_%s or R_DES_%s keyword
+                                where %s is a dust species. 
+                                
+                                (default: 1)
+        @type print_check_t: bool
         
         @return: STAR object in the shape of a dictionary which includes all 
                  stellar data available, if None are passed for both options it
@@ -154,6 +161,7 @@ class Star(dict):
         
         self.path_gastronoom = path_gastronoom        
         self.path_mcmax = path_mcmax
+        self.print_check_t = print_check_t
         
         #-- Convenience paths
         cc.path.mout = os.path.join(cc.path.mcmax,self.path_mcmax)
@@ -427,16 +435,10 @@ class Star(dict):
         
         #- Check the effective destruction temperature of every species, and 
         #- see if max and min T's are as requested.
-        self.checkT()
+        if self.print_check_t:
+            self.checkT()
         
-        #- No point in keeping zeroes around for T_DES or T_MIN
-        for species in self.getDustList():
-            for par in ('T_DES_' + species, 'T_MIN_' + species):
-                if self.has_key(par):
-                    if not float(self[par]):
-                        del self[par]
-                    
-  
+
 
     def removeMutableGastronoom(self,mutable,var_pars):
         
@@ -557,12 +559,19 @@ class Star(dict):
                 elif telescope == 'SPIRE':
                     ls_min = 180
                     ls_max = 700
+                extra_pars = {'fraction_tau_step':self['FRACTION_TAU_STEP'],\
+                              'min_tau_step':self['MIN_TAU_STEP'],\
+                              'write_intensities':self['WRITE_INTENSITIES'],\
+                              'tau_max':self['TAU_MAX'],\
+                              'n_quad':self['N_QUAD'],\
+                              'offset':self['LS_OFFSET'],\
+                              'tau_min':self['TAU_MIN'],\
+                              'check_tau_step':self['CHECK_TAU_STEP']}
                 nl = Transition.makeTransitionsFromRadiat(molec=molec,\
                             telescope=telescope,ls_min=ls_min,ls_max=ls_max,\
-                            n_quad=self['N_QUAD'],offset=self['LS_OFFSET'],\
                             path_gastronoom=self.path_gastronoom,\
-                            ls_unit='micron',\
-                            no_vib=molec.molecule in self['LS_NO_VIB'])
+                            no_vib=molec.molecule in self['LS_NO_VIB'],\
+                            ls_unit='micron',**extra_pars)
                 #-- exclude transitions if they are already included. 
                 #   This is to avoid adding a double with a different n_quad, in 
                 #   case it was included manually. Can use GAS_LINES key, as it 
@@ -664,7 +673,13 @@ class Star(dict):
                   %(coldens.r_outer/self.Rsun/self['R_STAR'])
             print 'Note that if R_MAX is ~ the effective outer radius, the ' +\
                   'requested minimum temperature may not be reached.'
-        return
+        
+        #- No point in keeping zeroes around for T_DES or T_MIN
+        for species in self.getDustList():
+            for par in ('T_DES_' + species, 'T_MIN_' + species):
+                if self.has_key(par):
+                    if not float(self[par]):
+                        del self[par]
     
 
     
@@ -745,6 +760,9 @@ class Star(dict):
         
         '''
         Return a Transition() object that has the same parameters as sample. 
+        
+        The comparison is done based on the str representation of the trans. 
+        This excludes the dictionary entries of the transition!
         
         The actual model ids or data are not included in this comparison! 
         
@@ -1324,8 +1342,176 @@ class Star(dict):
         else:
             pass
             
-            
-            
+    
+    
+    def calcFEHLER(self):
+        
+        '''
+        Set the default value of FEHLER parameter.
+        
+        '''
+        
+        if not self.has_key('FEHLER'):
+            self['FEHLER'] = 1e-4
+        else:
+            pass
+
+
+
+    def calcN_FREQ(self):
+        
+        '''
+        Set the default value of N_FREQ parameter.
+        
+        '''
+        
+        if not self.has_key('N_FREQ'):
+            self['N_FREQ'] = 30
+        else:
+            pass
+
+
+
+    def calcSTART_APPROX(self):
+        
+        '''
+        Set the default value of START_APPROX parameter.
+        
+        '''
+        
+        if not self.has_key('START_APPROX'):
+            self['START_APPROX'] = 0
+        else:
+            pass
+
+
+
+    def calcUSE_FRACTION_LEVEL_CORR(self):
+        
+        '''
+        Set the default value of USE_FRACTION_LEVEL_CORR parameter.
+        
+        '''
+        
+        if not self.has_key('USE_FRACTION_LEVEL_CORR'):
+            self['USE_FRACTION_LEVEL_CORR'] = 1
+        else:
+            pass
+
+          
+
+    def calcFRACTION_LEVEL_CORR(self):
+        
+        '''
+        Set the default value of FRACTION_LEVEL_CORR parameter.
+        
+        '''
+        
+        if not self.has_key('FRACTION_LEVEL_CORR'):
+            self['FRACTION_LEVEL_CORR'] = 0.8
+        else:
+            pass
+
+          
+
+    def calcNUMBER_LEVEL_MAX_CORR(self):
+        
+        '''
+        Set the default value of NUMBER_LEVEL_MAX_CORR parameter.
+        
+        '''
+        
+        if not self.has_key('NUMBER_LEVEL_MAX_CORR'):
+            self['NUMBER_LEVEL_MAX_CORR'] = 1e-12
+        else:
+            pass
+
+
+
+    def calcFRACTION_TAU_STEP(self):
+        
+        '''
+        Set the default value of FRACTION_TAU_STEP parameter.
+        
+        '''
+        
+        if not self.has_key('FRACTION_TAU_STEP'):
+            self['FRACTION_TAU_STEP'] = 1e-2
+        else:
+            pass
+
+          
+
+    def calcMIN_TAU_STEP(self):
+        
+        '''
+        Set the default value of MIN_TAU_STEP parameter.
+        
+        '''
+        
+        if not self.has_key('MIN_TAU_STEP'):
+            self['MIN_TAU_STEP'] = 1e-4
+        else:
+            pass
+
+          
+
+    def calcWRITE_INTENSITIES(self):
+        
+        '''
+        Set the default value of WRITE_INTENSITIES parameter.
+        
+        '''
+        
+        if not self.has_key('WRITE_INTENSITIES'):
+            self['WRITE_INTENSITIES'] = 0
+        else:
+            pass
+
+
+
+    def calcTAU_MAX(self):
+        
+        '''
+        Set the default value of TAU_MAX parameter.
+        
+        '''
+        
+        if not self.has_key('TAU_MAX'):
+            self['TAU_MAX'] = 12.
+        else:
+            pass
+
+          
+
+    def calcTAU_MIN(self):
+        
+        '''
+        Set the default value of TAU_MIN parameter.
+        
+        '''
+        
+        if not self.has_key('TAU_MIN'):
+            self['TAU_MIN'] = -6.
+        else:
+            pass
+
+          
+
+    def calcCHECK_TAU_STEP(self):
+        
+        '''
+        Set the default value of CHECK_TAU_STEP parameter.
+        
+        '''
+        
+        if not self.has_key('CHECK_TAU_STEP'):
+            self['CHECK_TAU_STEP'] = 1e-2
+        else:
+            pass
+
+          
+
     def calcLOGG(self):
         
         """
@@ -2859,6 +3045,11 @@ class Star(dict):
                         new_temperature_filename=molec[18],\
                         use_maser_in_sphinx=self['USE_MASER_IN_SPHINX'],\
                         use_no_maser_option=self['USE_NO_MASER_OPTION'],\
+                        fehler=self['FEHLER'],n_freq=self['N_FREQ'],\
+                        start_approx=self['START_APPROX'],\
+                        use_fraction_level_corr=self['USE_FRACTION_LEVEL_CORR'],\
+                        fraction_level_corr=self['FRACTION_LEVEL_CORR'],\
+                        number_level_max_corr=self['NUMBER_LEVEL_MAX_CORR'],\
                         starfile=starfile)
                      
                      for molec in self['MOLECULE']]
@@ -3548,7 +3739,7 @@ class Star(dict):
             equiv = Data.angularSize(self['DISTANCE'])
             #-- Convert as to cm
             rad = (self['R_OH1612_AS']*u.arcsec).to(u.cm,equivalencies=equiv)
-            self['R_OH1612'] = rad/self['R_STAR']/self.Rsun
+            self['R_OH1612'] = rad.value/self['R_STAR']/self.Rsun
         else:
             pass         
 
@@ -3619,7 +3810,7 @@ class Star(dict):
         
         """
         Try to resolve a missing key.
-        
+                
         @param missing_key: the missing key for which an attempt will be made 
                             to calculate its value based on already present 
                             parameters

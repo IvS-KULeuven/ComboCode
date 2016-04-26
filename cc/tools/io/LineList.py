@@ -314,13 +314,16 @@ class LineList():
         
 
 
-    def makeTransitions(self,telescope=None,offset=None,n_quad=None):
+    def makeTransitions(self,telescope=None,offset=0.0,n_quad=100,\
+                        fraction_tau_step=1e-2,min_tau_step=1e-4,\
+                        write_intensities=0,tau_max=12.,tau_min=-6.,\
+                        check_tau_step=1e-2,):
         
         '''
         Make a list of transitions from the line list that was read.
         
-        If any of the extra transition parameters is None, the default in 
-        Transition.Transition.__init__() is used.
+        Default transitions parameters are the same as those used in
+        Transition.Transition.__init__().
         
         @keyword telescope: The telescope that observed given line 
         
@@ -333,16 +336,49 @@ class LineList():
         @keyword n_quad: The number of grid points in the formal integration 
                          when calculating the line profile in sphinx.
                          
-                         (default: None)
+                         (default: 100)
         @type n_quad: int
-
+        @keyword fraction_tau_step: tau_total*fraction_tau_step gives min. 
+                                    delta_tau in strahl.f. If too low, 
+                                    min_tau_step will be used.
+        
+                                    (default: 1e-2)
+        @type fraction_tau_step: float
+        @keyword min_tau_step: minimum of delta_tau in strahl.f
+        
+                               (default: 1e-4)
+        @type min_tau_step: float
+        @keyword write_intensities: set to 1 to write the intensities of first 
+                                    50 impact-parameters at the end of sphinx
+        
+                                    (default: 0)
+        @type write_intensities: bool
+        @keyword tau_max: maximum optical depth used for the calculation of the 
+                          formal integral
+        
+                          (default: 12.)
+        @type tau_max: float
+        @keyword tau_min: maximum optical depth used for the calculation of the
+                          formal integral
+        
+                          (default: -6.)
+        @type tau_min: float
+        @keyword check_tau_step: check.par.in sphinx if step in tau not too 
+                                 large
+        
+                                 (default: 0.01)
+        @type check_tau_step: float
+        
         @return: The transitions
         @rtype: list[Transition]
         
         '''
-        pars = dict([(par,locals()[par]) 
-                     for par in ['telescope','offset','n_quad'] 
-                     if locals()[par] <> None])
+
+        pars = {'fraction_tau_step':fraction_tau_step,\
+                'min_tau_step':min_tau_step,'tau_max':tau_max,\
+                'write_intensities':write_intensities,'tau_min':tau_min,\
+                'check_tau_step':check_tau_step,'n_quad':n_quad,\
+                "offset":offset,'telescope':telescope}
         if self.molecule.spec_indices == 0 and self.cdms == 1:
             trans_list = [Transition.Transition(molecule=self.molecule,\
                                         frequency=float(trans[0])*10**6,\

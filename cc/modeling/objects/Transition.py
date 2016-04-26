@@ -336,7 +336,7 @@ def updateLineSpec(trans_list):
                          new_spec+['\n######################################'])
  
 
-def makeTransition(trans,star=None,def_molecs=None):
+def makeTransition(trans,star=None,def_molecs=None,**kwargs):
     
     '''
     Create a Transition instance based on a Star object and a standard CC input 
@@ -368,6 +368,14 @@ def makeTransition(trans,star=None,def_molecs=None):
                          
                          (default: None)
     @type def_molecs: dict(string: Molecule())
+    @keyword kwargs: Any additional keywords given here are added to the 
+                     Transition object creation. If not valid there, an error 
+                     will be thrown. The keys given here will overwrite what is
+                     in star! Usually, only use this option when working with
+                     defaults (and star is not given)
+                     
+                     (default: {})
+    @type kwargs: dict
 
     @return: The transition object is returned with all info included
     @rtype: Transition()
@@ -393,13 +401,15 @@ def makeTransition(trans,star=None,def_molecs=None):
     
     #-- Put in default info if Star() is not given, otherwise take from Star()
     if star is None:
+        star = Star.Star()
         molec = def_molecs.get(molec_short,None)
         path_gastronoom = None
-        n_quad = 100
     else:
         molec = star.getMolecule(molec_short)
-        n_quad = star['N_QUAD']
         path_gastronoom = star.path_gastronoom
+    
+    #-- Set default n_quad value (or from the star object given)
+    n_quad = star['N_QUAD']
     
     #-- If more than 11 entries are present, n_quad may be given. Try it!
     #   This means manual definitions of n_quad may be different for transitions
@@ -411,6 +421,14 @@ def makeTransition(trans,star=None,def_molecs=None):
         except ValueError:
             pass
     
+    #-- Set the additional sphinx parameters, from the star object.
+    extra_pars = {'fraction_tau_step':star['FRACTION_TAU_STEP'],\
+                  'min_tau_step':star['MIN_TAU_STEP'],\
+                  'write_intensities':star['WRITE_INTENSITIES'],\
+                  'tau_max':star['TAU_MAX'],'tau_min':star['TAU_MIN'],\
+                  'check_tau_step':star['CHECK_TAU_STEP']}
+    extra_pars.update(kwargs)
+    
     if molec <> None:
         return Transition(molecule=molec,n_quad=n_quad,\
                           vup=int(trans[1]),jup=int(trans[2]),\
@@ -418,7 +436,8 @@ def makeTransition(trans,star=None,def_molecs=None):
                           vlow=int(trans[5]),jlow=int(trans[6]),\
                           kalow=int(trans[7]),kclow=int(trans[8]),\
                           telescope=trans[9],offset=float(trans[10]),\
-                          path_gastronoom=path_gastronoom)
+                          path_gastronoom=path_gastronoom,\
+                          **extra_pars)
     else:
         return None    
 
@@ -503,6 +522,7 @@ def makeTransitionFromSphinx(filename,mline_db=None):
     molec_name = file_components.pop(0)
     
     #-- Make the molecule
+    #   Will be rewritten to make molecule from mline results
     molec = Molecule.makeMoleculeFromDb(molecule=molec_name,molec_id=molec_id,\
                                         path_gastronoom=path_gastronoom,\
                                         mline_db=mline_db)
@@ -518,12 +538,21 @@ def makeTransitionFromSphinx(filename,mline_db=None):
     numbers = [pattern.search(string).groups() for string in file_components]
     numbers = dict([(s.lower(),n) for s,n in numbers])
 
-    #-- Extract n_quad from sph2 file
-    sph2file = DataIO.readFile(filename=filename,delimiter=None)
-    i1 = sph2file[3].find('frequency points and ')
-    i2 = sph2file[3].find(' impact parameters')
-    numbers['n_quad'] = int(sph2file[3][i1+len('frequency points and '):i2])
-        
+    #-- Extract other sphinx parameters from the log file
+    fn = os.path.join(filepath,'sphinx_parameters.log')
+    if not os.path.isfile(fn):
+        print 'File sphinx_parameters.log does not exist. Using default ' + \
+              'values for various sphinx parameters. THIS MAY BE INCORRECT. ' +\
+              'Currently only extracting n_quad. Talk to Robin Lombaert.'
+        sph2file = DataIO.readFile(filename=filename,delimiter=None)
+        i1 = sph2file[3].find('frequency points and ')
+        i2 = sph2file[3].find(' impact parameters')
+        ddict = {}
+        ddict['n_quad'] = int(sph2file[3][i1+len('frequency points and '):i2])
+    else:
+        ddict = DataIO.readDict(filename=fn,convert_floats=1,convert_ints=1)
+    numbers.update(ddict)
+            
     #-- Make the transition object
     trans = Transition(molecule=molec,telescope=telescope,\
                        path_gastronoom=path_gastronoom,**numbers)
@@ -605,7 +634,9 @@ def sphinxDbRecovery(path_gastronoom):
     
 def makeTransitionsFromRadiat(molec,telescope,ls_min,ls_max,ls_unit='GHz',\
                               n_quad=100,offset=0.0,path_gastronoom=None,\
-                              no_vib=0):
+                              no_vib=0,fraction_tau_step=1e-2,\
+                              write_intensities=0,tau_max=12.,tau_min=-6.,\
+                              check_tau_step=1e-2,min_tau_step=1e-4):
     
     '''
     Make Transition() objects from a Radiat file of a molecule, within a given
@@ -631,6 +662,36 @@ def makeTransitionsFromRadiat(molec,telescope,ls_min,ls_max,ls_unit='GHz',\
     
                      (default: 100)
     @type n_quad: int
+    @keyword fraction_tau_step: tau_total*fraction_tau_step gives min. 
+                                delta_tau in strahl.f. If too low, 
+                                min_tau_step will be used.
+    
+                                (default: 1e-2)
+    @type fraction_tau_step: float
+    @keyword min_tau_step: minimum of delta_tau in strahl.f
+    
+                           (default: 1e-4)
+    @type min_tau_step: float
+    @keyword write_intensities: set to 1 to write the intensities of first 
+                                50 impact-parameters at the end of sphinx
+    
+                                (default: 0)
+    @type write_intensities: bool
+    @keyword tau_max: maximum optical depth used for the calculation of the 
+                      formal integral
+    
+                      (default: 12.)
+    @type tau_max: float
+    @keyword tau_min: maximum optical depth used for the calculation of the
+                      formal integral
+    
+                      (default: -6.)
+    @type tau_min: float
+    @keyword check_tau_step: check.par.in sphinx if step in tau not too 
+                             large
+    
+                             (default: 0.01)
+    @type check_tau_step: float
     @keyword offset: The offset from center position for calculations in sphinx
     
                      (default: 0.0)
@@ -649,6 +710,12 @@ def makeTransitionsFromRadiat(molec,telescope,ls_min,ls_max,ls_unit='GHz',\
     
     '''
     
+    trkeys = dict= {'fraction_tau_step':fraction_tau_step,\
+                    'min_tau_step':min_tau_step,'tau_max':tau_max,\
+                    'write_intensities':write_intensities,'tau_min':tau_min,\
+                    'check_tau_step':check_tau_step,'n_quad':n_quad,\
+                    "offset":offset,'path_gastronoom':path_gastronoom,\
+                    'telescope':telescope,'molecule':molec}
     radiat = molec.radiat
     wave = radiat.getFrequency(unit=ls_unit)
     low = radiat.getLowerStates()
@@ -661,13 +728,11 @@ def makeTransitionsFromRadiat(molec,telescope,ls_min,ls_max,ls_unit='GHz',\
         n_vib = int(molec.ny_up/ny_low) + 1 
         indices = [[i+1,int(i/ny_low),i-ny_low*int(i/ny_low)]
                     for i in xrange(molec.ny_low*n_vib)]
-        nl = [Transition(molecule=molec,telescope=telescope,\
-                         vup=int(indices[u-1][1]),\
+        nl = [Transition(vup=int(indices[u-1][1]),\
                          jup=int(indices[u-1][2]),\
                          vlow=int(indices[l-1][1]),\
                          jlow=int(indices[l-1][2]),\
-                         offset=offset,n_quad=n_quad,\
-                         path_gastronoom=path_gastronoom)
+                         **trkeys)
               for l,u,w in zip(low,up,wave)
               if w > ls_min and w < ls_max]
     else:
@@ -683,10 +748,8 @@ def makeTransitionsFromRadiat(molec,telescope,ls_min,ls_max,ls_unit='GHz',\
                                             int(indices[u-1][i])
                     quantum_dict[quantum[i-1]+'low'] = \
                                             int(indices[l-1][i])
-                nl.append(Transition(molecule=molec,n_quad=n_quad,\
-                                     telescope=telescope,offset=offset,\
-                                     path_gastronoom=path_gastronoom,\
-                                     **quantum_dict))
+                trkeys.update(quantum_dict)
+                nl.append(Transition(**trkeys))
     if no_vib:
         nl = [line for line in nl if line.vup == 0]
     return nl
@@ -737,7 +800,9 @@ class Transition():
     def __init__(self,molecule,telescope=None,vup=0,jup=0,kaup=0,kcup=0,\
                  nup=None,vlow=0,jlow=0,kalow=0,kclow=0,nlow=None,offset=0.0,\
                  frequency=None,exc_energy=None,int_intensity_log=None,\
-                 n_quad=100,vibrational='',path_gastronoom=None):
+                 n_quad=100,fraction_tau_step=1e-2,min_tau_step=1e-4,\
+                 write_intensities=0,tau_max=12.,tau_min=-6.,\
+                 check_tau_step=1e-2,vibrational='',path_gastronoom=None):
         
         '''
         
@@ -806,6 +871,36 @@ class Transition():
         
                          (default: 100)
         @type n_quad: int
+        @keyword fraction_tau_step: tau_total*fraction_tau_step gives min. 
+                                    delta_tau in strahl.f. If too low, 
+                                    min_tau_step will be used.
+        
+                                    (default: 1e-2)
+        @type fraction_tau_step: float
+        @keyword min_tau_step: minimum of delta_tau in strahl.f
+        
+                               (default: 1e-4)
+        @type min_tau_step: float
+        @keyword write_intensities: set to 1 to write the intensities of first 
+                                    50 impact-parameters at the end of sphinx
+        
+                                    (default: 0)
+        @type write_intensities: bool
+        @keyword tau_max: maximum optical depth used for the calculation of the 
+                          formal integral
+        
+                          (default: 12.)
+        @type tau_max: float
+        @keyword tau_min: maximum optical depth used for the calculation of the
+                          formal integral
+        
+                          (default: -6.)
+        @type tau_min: float
+        @keyword check_tau_step: check.par.in sphinx if step in tau not too 
+                                 large
+        
+                                 (default: 0.01)
+        @type check_tau_step: float
         @keyword frequency: if not None the frequency of the transition is 
                             taken to be this parameter in Hz, if None the 
                             frequency of this transition is derived from the 
@@ -843,6 +938,8 @@ class Transition():
         '''
         
         self.molecule = molecule
+        
+        #-- Set the telescope
         if telescope is None:
             self.telescope = 'N.A.'
         else:
@@ -859,6 +956,8 @@ class Transition():
                 telescope = '%s-H2O'%telescope
             self.telescope = telescope
             self.readTelescopeProperties()
+
+        #-- Transition quantum numbers and offset
         self.vup = int(vup)
         self.jup = int(jup)
         self.kaup = int(kaup)
@@ -868,13 +967,24 @@ class Transition():
         self.kalow = int(kalow)
         self.kclow = int(kclow)
         self.offset = float(offset)
+        
+        #-- Numerical par either given as keyword or in TRANSITION definition
         self.n_quad = int(n_quad)
+        
+        #-- sphinx-only parameters. Numerical primarily.
+        self.fraction_tau_step = fraction_tau_step
+        self.min_tau_step = min_tau_step
+        self.write_intensities = write_intensities
+        self.tau_max = tau_max
+        self.tau_min = tau_min
+        self.check_tau_step = check_tau_step
+        
         self.__model_id = None
         if nup is None or nlow is None:
             self.nup = self.kaup            
             self.nlow = self.kalow
-            #- In case of SO/PO/OH, the quantum number is treated as Kaup/low but is
-            #- in fact Nup/low
+            #-- In case of SO/PO/OH, the quantum number is treated as 
+            #   Kaup/low but is in fact Nup/low
         self.exc_energy = exc_energy
         self.int_intensity_log = int_intensity_log
         self.vibrational = vibrational
@@ -918,9 +1028,9 @@ class Transition():
             self.unreso = None
             self.unreso_err = None
             self.unreso_blends = None
-        #
 
-        
+
+
     def __str__(self):
         
         '''
@@ -931,10 +1041,11 @@ class Transition():
         
         '''
         
-        return 'TRANSITION=%s %i %i %i %i %i %i %i %i %s %.2f' \
-               %(self.molecule.molecule_full,self.vup,self.jup,self.kaup,\
-                 self.kcup,self.vlow,self.jlow,self.kalow,self.kclow,\
-                 self.telescope,self.offset)
+        ll = [self.molecule.molecule_full,self.vup,self.jup,self.kaup,\
+              self.kcup,self.vlow,self.jlow,self.kalow,self.kclow,\
+              self.telescope,self.offset]
+        tstr = 'TRANSITION={} {:d} {:d} {:d} {:d} {:d} {:d} {:d} {:d} {} {:.2f}'
+        return tstr.format(*ll)
                     
 
 
@@ -952,7 +1063,7 @@ class Transition():
         '''
         
         try:        
-            if self.makeDict() == other.makeDict():
+            if str(self) == str(other):
                 return True
             else:
                 return False
@@ -975,7 +1086,7 @@ class Transition():
         '''
         
         try:
-            if self.makeDict() != other.makeDict():
+            if str(self) != str(other):
                 return True
             else:
                 return False
@@ -996,7 +1107,7 @@ class Transition():
         
         '''
         
-        return hash(str(self.makeDict()))
+        return hash(str(self))
 
 
 
@@ -1165,7 +1276,7 @@ class Transition():
         Return a dict with transition string, and other relevant parameters.
         
         @keyword in_progress: add an extra dict entry "IN_PROGRESS" if the 
-                              transition is still being calculated on Vic.
+                              transition is still being calculated.
                               
                               (default: 0)
         @type in_progress: bool
@@ -1176,14 +1287,19 @@ class Transition():
         
         '''
         
+        dd = dict([('TRANSITION',str(self).replace('TRANSITION=','')),\
+                   ('N_QUAD',self.n_quad),\
+                   ('FRACTION_TAU_STEP',self.fraction_tau_step),\
+                   ('MIN_TAU_STEP',self.min_tau_step),\
+                   ('WRITE_INTENSITIES',self.write_intensities),\
+                   ('TAU_MAX',self.tau_max),('TAU_MIN',self.tau_min),\
+                   ('CHECK_TAU_STEP',self.check_tau_step)])
+        
         if int(in_progress):
-            return dict([('TRANSITION',str(self).replace('TRANSITION=','')),\
-                         ('N_QUAD',self.n_quad),\
-                         ('IN_PROGRESS',1)])
-        else:
-            return dict([('TRANSITION',str(self).replace('TRANSITION=','')),\
-                         ('N_QUAD',self.n_quad)])
- 
+            dd['IN_PROGRESS'] = 1
+        
+        return dd 
+
 
 
     def makeSphinxFilename(self,number='*'):
@@ -1915,7 +2031,7 @@ class Transition():
         return self.best_vlsr
     
     
-    def getIntIntIntSphinx(self,units='si'):
+    def getIntIntIntSphinx(self,units='si',cont_subtract=1):
         
         """
         Calculate the integrated intrinsic intensity of the sphinx line profile
@@ -1923,7 +2039,13 @@ class Transition():
         integration.
         
         Returns None if no sphinx profile is available yet!
-
+        
+        @keyword cont_subtract: Subtract the continuum value outside the line
+                                from the whole line profile. 
+                                
+                                (default: 1)
+        @type cont_subtract: bool
+        
         @keyword units: The unit system in which the integrated intensity is 
                         returned. Can be 'si' or 'cgs'.
                         
@@ -1944,7 +2066,7 @@ class Transition():
         #-- Get the velocity grid of the line (without vlsr), convert to cm/s 
         mvel = self.sphinx.getVelocityIntrinsic()*10**5
         #-- Get the cont_subtracted intrinsic intensity in erg/s/cm2/Hz
-        mint = self.sphinx.getLPIntrinsic(cont_subtract=1)
+        mint = self.sphinx.getLPIntrinsic(cont_subtract=cont_subtract)
         
         #-- Convert velocity grid to frequency grid, with self.frequency as 
         #   zero point (the rest frequency of the line, without vlsr) in Hz
@@ -1969,7 +2091,7 @@ class Transition():
             
     
     
-    def getIntConIntSphinx(self):
+    def getIntConIntSphinx(self,cont_subtract=1):
         
         """
         Calculate the integrated convolved intensity of the sphinx line profile
@@ -1977,6 +2099,12 @@ class Transition():
         
         Returns None if no sphinx profile is available yet!
 
+        @keyword cont_subtract: Subtract the continuum value outside the line
+                                from the whole line profile. 
+                                
+                                (default: 1)
+        @type cont_subtract: bool
+        
         @return: The integrated convolved intensity of the line profile in
                  erg km/s/s/cm2
         @rtype: float
@@ -1988,19 +2116,25 @@ class Transition():
         if self.sphinx is None:
             return
         mvel = self.sphinx.getVelocity()
-        mcon = self.sphinx.getLPConvolved(cont_subtract=1)
+        mcon = self.sphinx.getLPConvolved(cont_subtract=cont_subtract)
         
         return trapz(x=mvel,y=mcon)
     
     
     
-    def getIntTmbSphinx(self):
+    def getIntTmbSphinx(self,cont_subtract=1):
         
         """
         Calculate the integrated Tmb of the sphinx line profile over velocity.
         
         Returns None if no sphinx profile is available yet!
-
+        
+        @keyword cont_subtract: Subtract the continuum value outside the line
+                                from the whole line profile. 
+                                
+                                (default: 1)
+        @type cont_subtract: bool
+        
         @return: The integrated model Tmb profile in K km/s
         @rtype: float
         
@@ -2011,7 +2145,7 @@ class Transition():
         if self.sphinx is None:
             return
         mvel = self.sphinx.getVelocity()
-        mtmb = self.sphinx.getLPTmb(cont_subtract=1)
+        mtmb = self.sphinx.getLPTmb(cont_subtract=cont_subtract)
         
         return trapz(x=mvel,y=mtmb)
     

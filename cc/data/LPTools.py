@@ -17,6 +17,7 @@ from matplotlib import pyplot as plt
 import cc.path
 from cc.tools.io import FitsReader, TxtReader, DataIO
 from cc.plotting import Plotting2
+from cc.data import Data
 
 from cc.ivs.sigproc import fit, funclib
 
@@ -289,6 +290,11 @@ def checkLPShape(vel,flux,vlsr,vexp,window=2.,show=0):
     filter the emission effects out. If an emission effect is stronger than 
     an absorption effect, it should also not detect any irregularities.
     
+    Currently checks whether a strong downward trend in the flux is associated
+    with a strong upward trend, within a window of 6 km/s. Broader "absorption
+    detections" are unlikely, since ISM absorption lines should not have a line
+    width that is broader than, e.g., 3 km/s (i.e. turbulent velocity).
+    
     Still being tested!
     
     @param vel: The velocity grid
@@ -318,6 +324,9 @@ def checkLPShape(vel,flux,vlsr,vexp,window=2.,show=0):
     
     """
     
+    #-- Grab the velocity resolution
+    velres = np.median(np.diff(vel))
+    
     #-- Get diff of flux to have a measure of change in slope throughout lprof
     fdf = np.diff(flux)
     velfdf = vel[1:]
@@ -325,11 +334,18 @@ def checkLPShape(vel,flux,vlsr,vexp,window=2.,show=0):
     #-- Select emission line. Use 0.8 as factor instead of 0.6 (results in 1.4 
     #   for window == 2), to take into account the possible underestimation of
     #   vexp
-    fdfwhereline = np.abs(velfdf-vlsr)<=window*0.8*vexp
+    #-- Difference on window factor stems from fact that when window==2, an 0.5
+    #   factor really cuts the window too close to the line. For all others, 0.5
+    #   is fine. 
+    if window == 2: window_factor = 0.8
+    else: window_factor = 0.5
+    fdfwhereline = np.abs(velfdf-vlsr)<=window*window_factor*vexp
     #-- create window for noise calculation:
     #       - close to the emission line
     #       - contains enough points to be statistically significant
-    i = 2
+    #   Note that i is determined based on the window: you want enough points, 
+    #   but not too many, and not less than the window's width. 
+    i = window
     fdfwindow = np.abs(velfdf-vlsr)<=i*vexp
     while len(velfdf[-fdfwhereline*fdfwindow]) < 60 and i != 6:
         i += 1
@@ -341,7 +357,7 @@ def checkLPShape(vel,flux,vlsr,vexp,window=2.,show=0):
     #-- Calc noise of diff in region where 'not emission line', but also not 
     #   too far out, and where no flux outliers are present
     noisedf = std(fdf[-fdfwhereline*fdfwindow*fdfcleanflux])
-
+    
     #-- Show the result
     if show:
         plt.clf()
@@ -359,8 +375,10 @@ def checkLPShape(vel,flux,vlsr,vexp,window=2.,show=0):
         plt.plot([velfdfplot[0],velfdfplot[-1]],[-noisedf*3,-noisedf*3],'--k',\
                  label='Lower df limit')
         ax = plt.gca()
-        ax.axvline(x=vlsr-window*0.8*vexp,linewidth=2, ls='--', color='k')
-        ax.axvline(x=vlsr+window*0.8*vexp,linewidth=2, ls='--', color='k')    
+        ax.axvline(x=vlsr-window*window_factor*vexp,linewidth=2, ls='--',\
+                   color='k')
+        ax.axvline(x=vlsr+window*window_factor*vexp,linewidth=2, ls='--',\
+                   color='k')
         leg = plt.legend(loc='best',fancybox=True)
         leg.get_frame().set_alpha(0.5)
         plt.show()
@@ -377,8 +395,11 @@ def checkLPShape(vel,flux,vlsr,vexp,window=2.,show=0):
             return None
         #-- If imin > imax, it's likely due to a very sharp profile: You do not 
         #   want to change these.
-        #   Onle select changes in profile when they are reversed!
-        if imin < imax: 
+        #   Only select changes in profile when they are reversed!
+        #-- Moreover, interstellar absorption lines are usually narrow, so limit
+        #   the maximum allowed line width in velocity to 6 km/s (ism turb vel ~
+        #   3 km/s max)
+        if imin < imax and (imax-imin)*velres < 5.: 
             #- The FWHM of the irregularity is roughly vel_imax - vel_imin
             #  as the max and min in df give the strongest decrease and increase of 
             #  the profile

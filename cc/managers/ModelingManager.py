@@ -7,7 +7,7 @@ Author: R. Lombaert
 
 """
 
-import os
+import os, time
 
 import cc.path
 from cc.modeling.codes.MCMax import MCMax
@@ -27,7 +27,7 @@ class ModelingManager():
                  mcmax=0,gastronoom=0,sphinx=0,iterative=0,\
                  num_model_sessions=1,vic_manager=None,replace_db_entry=0,\
                  path_gastronoom='runTest',path_mcmax='runTest',\
-                 skip_cooling=0,recover_sphinxfiles=0):
+                 skip_cooling=0,recover_sphinxfiles=0,single_session=0):
         
         """ 
         Initializing a ModelingManager instance.
@@ -95,6 +95,11 @@ class ModelingManager():
         
                                   (default: 'runTest')
         @type path_gastronoom: string
+        @keyword single_session: If this is the only CC session. Speeds up db
+                                 check.
+                                 
+                                 (default: 0)
+        @type single_session: bool
         
         """
         
@@ -115,6 +120,7 @@ class ModelingManager():
         self.path_mcmax = path_mcmax
         self.path_gastronoom = path_gastronoom
         self.recover_sphinxfiles = recover_sphinxfiles
+        self.single_session = single_session
         
         #-- Convenience paths
         cc.path.gout = os.path.join(cc.path.gastronoom,self.path_gastronoom)
@@ -178,30 +184,59 @@ class ModelingManager():
                 #-- Check if the previously calculated GASTRoNOoM model was
                 #   calculated. This means a lot of time has passed since
                 #   the last synchronisation of the mcmax db, so sync it
-                if self.mline_done:
-                    self.mcmax_db.sync()
+                #Not needed anymore. Sync happens before db check
+#                 if self.mline_done:
+#                     self.mcmax_db.sync()
                 #-- Initiate a dust session which is used for every iteration
                 if i == 0: 
                     dust_session = MCMax(path_mcmax=self.path_mcmax,\
                                          db=self.mcmax_db,\
                                          new_entries=self.new_entries_mcmax,\
-                                         replace_db_entry=self.replace_db_entry)
+                                         replace_db_entry=self.replace_db_entry,\
+                                         single_session=self.single_session)
                 self.mcmax_done = False
                 dust_session.doMCMax(star)
                 if dust_session.mcmax_done: 
                     self.mcmax_done = True
-                
-                #- If last iteration, ray trace.
+                    
+                #-- In case a cooling model was in progress, wait until 
+                #   finished. 
+                while dust_session.in_progress:
+                    self.mcmax_db.sync()
+                    if not self.mcmax_db.has_key(dust_session.model_id):
+                        print 'MCMax model calculation failed.'
+                        dust_session.model_id = ''
+                        break
+                    elif not self.mcmax_db[dust_session.model_id]\
+                            .has_key('IN_PROGRESS'):
+                        print 'MCMax model calculation finished.'
+                        break
+                    print 'MCMax still running in another CC session.'+\
+                          'Waiting 1 minute before checking again.'
+                    try:
+                        time.sleep(60)
+                    except KeyboardInterrupt:
+                        print 'Ending wait time, continuing with ' + \
+                              'progress check immediately.'
+                dust_session.in_progress = False
+                            
+                #-- add/change 'LAST_MCMAX_MODEL' entry. Only do this if model
+                #   was calculated successfully. In case of a failure, you want
+                #   to keep the model id of a previous iteration if available.
+                if dust_session.model_id:
+                    star['LAST_MCMAX_MODEL'] = dust_session.model_id
+
+                #-- If last iteration, ray trace.
                 if i+1 == self.iterations or self.iterative:
                     dust_session.rayTrace(star)
                      
-                #- Remember every iteration if iterative==True.
+                #-- Remember every iteration if iterative==True.
                 if self.iterative:
                     self.star_grid_old[star_index].append(star.copy())
                 
-                #- add/change MUTABLE input keys, which MAY be overwritten by
-                #- the input file inputComboCode.dat
-                #- Only relevant if a model match was found/calculated.
+                #-- add/change MUTABLE input keys, which MAY be overwritten by
+                #   the input file inputComboCode.dat
+                #   Only relevant if a model match was found/calculated.
                 if dust_session.model_id:
                     star.removeMutableMCMax(dust_session.mutable,self.var_pars)
                     star.update(self.input_dict)
@@ -220,13 +255,15 @@ class ModelingManager():
                                         skip_cooling=self.skip_cooling,\
                                         replace_db_entry=self.replace_db_entry,\
                                         new_entries=self.new_entries_cooling,\
-                                        recover_sphinxfiles=self.recover_sphinxfiles)
+                                        recover_sphinxfiles=self.recover_sphinxfiles,\
+                                        single_session=self.single_session)
                     self.mline_done = False
-                if self.mcmax_done:
+                #if self.mcmax_done:
                     #-- MCMax was ran successfully, in other words, quite a bit 
                     #   of time has passed, so update the cool database.
-                    self.cool_db.sync()
-                
+                    #self.cool_db.sync()
+                    #Not needed anymore. Sync happens before db check
+                    
                 #-- If last iteration and no mline is requested, don't run 
                 #   cooling. There is no point anyway (and means you don't have 
                 #   to wait for your MCMax model. 
@@ -240,6 +277,34 @@ class ModelingManager():
                 #-- Otherwise, run cooling and do the rest of the loop
                 gas_session.doGastronoom(star)
                 
+                #-- In case a cooling model was in progress, wait until 
+                #   finished. 
+                while gas_session.in_progress:
+                    self.cool_db.sync()
+                    if not self.cool_db.has_key(gas_session.model_id):
+                        print 'Cooling model calculation failed.'
+                        gas_session.model_id = ''
+                        break
+                    elif not self.cool_db[gas_session.model_id]\
+                            .has_key('IN_PROGRESS'):
+                        print 'Cooling model calculation finished.'
+                        break
+                    print 'Cooling still running in another CC session.'+\
+                          'Waiting 1 minute before checking again.'
+                    try:
+                        time.sleep(60)
+                    except KeyboardInterrupt:
+                        print 'Ending wait time, continuing with ' + \
+                              'progress check immediately.'
+                gas_session.in_progress = False
+                
+                #-- add/change 'LAST_GASTRONOOM_MODEL' entry. Only do this if 
+                #   model was calculated successfully. In case of a failure, you
+                #   wantto keep the model id of a previous iteration if 
+                #   available.
+                if gas_session.model_id:
+                    star['LAST_GASTRONOOM_MODEL'] = gas_session.model_id
+
                 #- add/change MUTABLE input keys, which MAY be overwritten by 
                 #- the input file inputComboCode.dat
                 star.removeMutableGastronoom(gas_session.mutable,self.var_pars)
@@ -255,16 +320,57 @@ class ModelingManager():
                 #   model_id cannot have changed: it's either the original 
                 #   cooling model_id or no model_id at all in case of total fail
                 if (i+1 == self.iterations) and gas_session.model_id: 
-                    #-- Only sync db is a cooling model was calced just before.
-                    if gas_session.cool_done: self.ml_db.sync()
+                    #-- Only sync db if a cooling model was calced just before.
+                    #   Not needed anymore sync happens before db check.
+                    #if gas_session.cool_done: self.ml_db.sync()
                     gas_session.doMline(star)
                     if gas_session.mline_done: self.mline_done = True
+                    
+                    #-- Now check if molecules still in progress have finished
+                    while gas_session.molec_in_progress:
+                        self.ml_db.sync()
+                        still_in_progress = []
+                        for molec in gas_session.molec_in_progress:
+                            cid = gas_session.model_id
+                            mid = molec.getModelId()
+                            md = self.ml_db[cid]
+                            mstr = molec.molecule
+                            #-- Check if molec id or molecule itself exists in 
+                            #   db. Id may also have been removed, in case all
+                            #   molecules failed. 
+                            if not md.has_key(mid) or not md[mid].has_key(mstr):
+                                print 'Mline model calculation failed.'
+                                molec.setModelId('')
+                            elif not md[mid][mstr].has_key('IN_PROGRESS'):
+                                print 'Mline model calculation finished for '+\
+                                      '%s.'%mstr
+                            else:
+                                print 'Mline still running in another CC '+\
+                                      'session for %s. '%mstr
+                                still_in_progress.append(molec)
+                        if not still_in_progress: 
+                            mls = set([molec.getModelId() 
+                                       for molec in gas_session.molec_list])
+                            if mls == set(['']):  
+                                #- no mline models calculated: stop GASTRoNOoM
+                                gas_session.model_id = ''
+                                print 'Mline model calculation failed for ' + \
+                                      'all requested molecules. Stopping ' + \
+                                      'GASTRoNOoM here!'
+                            break
+                        gas_session.molec_in_progress = still_in_progress                                
+                        print 'Waiting 1 minute before checking again.'
+                        try:
+                            time.sleep(60)
+                        except KeyboardInterrupt:
+                            print 'Ending wait time, continuing with ' + \
+                                  'progress check immediately.'
                     
                     #-- Check if the model id is still valid after the mline run
                     if gas_session.model_id:
                         #-- Only sync the db if an mline model was calculated 
-                        #   just before
-                        if self.mline_done: self.sph_db.sync()
+                        #   just before. Sync now always happens before db check
+                        #if self.mline_done: self.sph_db.sync()
                         gas_session.doSphinx(star)
                 print '***********************************'
         

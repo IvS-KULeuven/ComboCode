@@ -112,10 +112,11 @@ def getGastronoomOutput(filename,keyword='RADIUS',begin_index=0,\
     #- Data may end at EOF or before a new block of data (sphinx fi)
     data_j = findString(data_i,data_col_1)     
     if return_array:
-        return array([float(line[key_index]) 
-                      for line in data[data_i:data_j]])
+        dd = array([float(line[key_index].replace('D+','E+').replace('D-','E-')) 
+                    for line in data[data_i:data_j]])
+        return dd
     else:   
-        return [float(line[key_index]) 
+        return [float(line[key_index].replace('D+','E+').replace('D-','E-')) 
                 for line in data[data_i:data_j]]
 
 
@@ -803,7 +804,7 @@ def findFloat(index,vals):
         if index >= len(vals):
             return len(vals)
         try:
-            dummy = float(vals[index])
+            dummy = float(vals[index].replace('D+','E+').replace('D-','E-'))
             break
         except ValueError:
             index += 1
@@ -836,7 +837,7 @@ def findString(index,vals):
         if index >= len(vals):
             return len(vals)
         try:
-            dummy = float(vals[index])
+            dummy = float(vals[index].replace('D+','E+').replace('D-','E-'))
             index += 1
         except ValueError:
             break

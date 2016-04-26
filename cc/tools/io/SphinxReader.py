@@ -200,6 +200,8 @@ class SphinxReader(Reader):
         
         @keyword cont_subtract: Subtract the continuum value outside the line
                                 from the whole line profile. 
+                                
+                                (default: 1)
         @type cont_subtract: bool
         
         @return: The main beam temperature

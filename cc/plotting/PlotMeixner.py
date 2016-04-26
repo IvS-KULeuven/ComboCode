@@ -58,7 +58,7 @@ def plotDens(A,B,C,D,E,F,rPlot,rMin,rSw,nRad,nTheta,filename=None,\
              lw=2,marker='x',label=r'$\theta = 0^\circ$')
     ax2.plot(np.log10(R[-1]),np.log10(rho[-1]/rho[-1].max()),'magenta',\
              lw=2,marker='|', label=r'$\theta = 90^\circ$')
-    ax2.plot(np.log10(R[0]),np.log10(rMin*rMin/(R[0]*R[0])),'green',lw=2,\
+    ax2.plot(np.log10(R[0]),np.log10(rMin*rMin/(R[0]*R[0])),'green',\
              lw=2,label=r'$r^{-2}$')
     ax2.legend()
     label = r'$\rho_0[r_{\rm min}] / \rho_{90}[r_{\rm min}] = $'+\
