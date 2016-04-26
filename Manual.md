@@ -1,5 +1,5 @@
 # Welcome to the ComboCode User Manual
-## Introduction
+## 1. Introduction
 ### What is this manual?
 This manual is meant as a guide to running ComboCode and its two numerical codes. This is not an all-inclusive, comprehensive manual for the ComboCode capabilities. However, in-depth, up-to-date documentation for the Python package is available on <a href="https://IvS-KULeuven.github.io/ComboCode">on GitHub</a>, as a collection of doc-strings. The source code is also available there. Together with the in-depth documentation and the cookbooks provided in this manual for extracting information and using the additional modules, you should be able to use the package to its full extent. For additional questions or remarks, please <a href="https://github.com/robinlombaert">contact me</a>. 
 
@@ -10,7 +10,7 @@ This manual has been written by Robin Lombaert and revised by Marie Van de Sande
 ### Is this manual finished?
 No! This is very much a work in progress. Any comments, questions or clarifications can be requested <a href="https://github.com/robinlombaert">by contacting me</a>. We will try to keep the manual as up-to-date as possible, but for a while yet, it will not be complete. Bear with us!
 
-## Goals of the ComboCode package
+## 2. Goals of the ComboCode package
 ComboCode is a Python based package designed to work with radiative-transfer codes and the data they are meant to model. 
 The radiative transfer is usually calculated for cool stellar winds of evolved stars, such as AGB stars.
 The functionality includes:
@@ -25,7 +25,7 @@ The functionality includes:
     - Fitting routines for resolved emission lines
     - Statistical analysis for samples and individual sources, and both resolved and unresolved emission lines
 
-## Running ComboCode
+## 3. Running ComboCode
 In what follows, you will set up your folder structure first (much of which is done automatically). Then the ComboCode inputfile is described, and, finally, a few simple steps to run a model are given.
 
 ### Folder setup
@@ -74,7 +74,7 @@ The contents of the cc/usr.dist folder must be copied to cc/usr/. The default se
 
 
 
-## Data management
+## 4. Data management
 
 ### Resolved Molecular emission (Radio)
 
@@ -85,7 +85,7 @@ Filename convention.
 
 
 
-## Model management
+## 5. Model management
 ### Combined dust and gas radiative transfer
 ComboCode is an interface that provides access to two numerical RT codes for dust and gas respectively. The way these codes are linked through ComboCode is illustrated in the schematic below. Note that this schematic currently does not include iteration between energy balance and line RT, as this functionality is not yet implemented in ComboCode. 
 
@@ -98,9 +98,21 @@ ComboCode is an interface that provides access to two numerical RT codes for dus
 ### Database management
 
 
+#### Cleaning your databases
+The databases include a way to track which models are currently being calculated in *any* CC session (or, shell). This works through an "IN\_PROGRESS" entry in the keyword definition of a given cooling, mline, sphinx, or MCMax model, and regular synchronisation between the Database() instance in the CC session and the harddisk version of the database. 
+
+However, if for some reason a CC session is terminated and results in an error, it may be possible "IN\_PROGRESS" entries remain in the database, while no model is currently being calculated. You can clean databases off these left-over "IN\_PROGRESS" entries by doing the following.  Only do this if you are positive *no other CC session is currently running*! Imagine a CC session is waiting for an mline model to finish (and no other CC session is running), open an ipython shell and do the following (for PATH_GASTRONOOM=MyModels):
+
+    >>> from cc.tools.io import Database
+    >>> db_fn = ‘/Users/user_name/GASTRoNOoM/MyModels/GASTRoNOoM_mline_models.db’
+    >>> Database.cleanDatabase(db_fn)
+    >>> exit()
+
+This effectively removes all "IN\_PROGRESS" entries from the databases. It is possible you run a CC session, which ends up waiting for another CC session to finish, while no other CC session is currently running. This means such a left-over "IN\_PROGRESS" entry is encountered. Open a separate ipython shell, and runn the above script. Once finished, the CC session will continue (it will say the mline model failed, since it is no longer present in the database). You can re-run ComboCode if you want to re-try the model. You can run the exact same script for other databases, including cooling, sphinx and MCMax. 
 
 
-## Statistical methods
+
+## 6. Statistical methods
 
 ### Measuring goodness-of-fit
 
@@ -109,7 +121,7 @@ ComboCode is an interface that provides access to two numerical RT codes for dus
 
 
 
-## Additional modules
+## 7. Additional modules
 
 ### Line profile fitting
 
