@@ -13,7 +13,7 @@ from scipy.stats import tmean, tstd
 from scipy.optimize import leastsq
 from scipy.integrate import trapz
 from scipy.special import erf
-
+from astropy import units as u
 import numpy as np
 
 from cc.tools.numerical import Interpol
@@ -242,27 +242,35 @@ def convolveArray(xx, yy=None, sigma=3):
 
 
 
-def convertAngular(angrad,distance):
+def angularSize(distance): 
 
     '''
-    Convert an angular size measurement into an effictive distance.
-
-    @param angrad: The angular size in as
-    @type angrad: float
-    @param distance: The distance to the source in pc
+    Equivalency for the astropy.units module for converting angular size to 
+    physical length and vice versa. 
+    
+    Requires the distance to be given in pc.
+    
+    Can be used to convert angular sizes and lengths using the units module. 
+    >>> equiv = angularSize(1000.)
+    >>> rad = (0.001*u.arcsec).to(u.au,equivalencies=equiv)
+    gives the length in astronomical units.
+    
+    Note that you don't have to give arcsec or au. You can also ask for u.cm, 
+    u.arcminute, etc. The astropy unit conversion module takes care of these 
+    conversions as long as no equivalency is needed.
+    
+    @param distance: The distance to the object in parsec
     @type distance: float
-
-    @return: the real size is returned in cm
-    @rtype: float
-
+    
+    @return: list of (unit in, unit out, forward conversion, reverse conversion)
+    @rtype: list(tuple)
+    
     '''
-
-    au = 149598.0e8          #in cm
+    
     #- 1 AU at 1 pc is 1 as on the sky, hence 1 AU at x pc is 1/x as on the sky
     #- hence [real_rad/1 AU] = [angrad/1 as] * [distance/1 pc]
-    au_rad = float(angrad)*float(distance)
-    real_rad = au_rad * au
-    return real_rad
+    distance = float(distance)
+    return [(u.arcsec,u.au, lambda x: x*distance, lambda x: x/distance)]
 
 
 

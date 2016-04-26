@@ -10,7 +10,7 @@ Author: R. Lombaert
 
 import os
 import subprocess
-import pyfits
+from astropy.io import fits as pyfits
 import glob
 from scipy import array
 import numpy as np
@@ -18,14 +18,12 @@ import numpy as np
 import cc.path
 from cc.data import Sed
 from cc.plotting.PlottingSession import PlottingSession
-from cc.plotting import Plotting2
+from cc.plotting import Plotting2,PlotMeixner
 from cc.tools.io import DataIO, KappaReader
 from cc.modeling.objects import Star
 from cc.modeling.codes import MCMax
 from cc.modeling.tools import Profiler,Reddening 
 
-from ivs.sed.model import synthetic_flux
-from ivs.units import conversions 
 
 class PlotDust(PlottingSession):
     
@@ -585,6 +583,127 @@ class PlotDust(PlottingSession):
 
                                    
 
+    def plotDensMeixner(self,star_grid=[],fn_plt='',cfg='',**kwargs):
+    
+        """
+        A 2D color-scale plot to visualize the density structure of the Meixner
+        model. Requires the Star()[DENSTYPE] to be Meixner. 
+        
+        The method used for plotting is available in cc.plotting.PlotMeixner.py
+        and can be used standalone. It is called by this method as well, 
+        prepping the star_grid information to be used with PlotMeixner. 
+        
+        Alternatively, if star_grid is not defined, you can also pass the 
+        plotting input for PlotMeixner.plot() through this method. args is only
+        passed to the plotDens method in this case.
+        
+        For now the density is plotted in cgs with respect to cm. The density is
+        normalized to the maximum density in the grid. (rho=rho/rho_max)
+        
+        @keyword star_grid: parameter sets, if [], the parameter
+                            sets are determined from the model ids
+        
+                            (default: [])
+        @type star_grid: list[Star()]
+        @keyword fn_plt: A base plot filename. Includes folder. If not, a 
+                         default is added
+                         
+                         (default: '')
+        @type fn_plt: string  
+        @keyword cfg: Path to config file for this method. PlotMeixner.plotDens 
+                      settings can be changed in cfg. Can be used to update the 
+                      kwargs in case the density grid has to be adapted compared
+                      to what the star_grid indicates or what the kwargs 
+                      contain. Give fn_plt as filename in cfg.
+                          
+                      (default: '')
+        @type cfg: string
+        
+        """
+        
+        print '***********************************'
+        print '** Your Meixner density plots can be found at:'
+        cfg_dict = Plotting2.readCfg(cfg)
+        if cfg_dict.has_key('filename'):
+            fn_plt = cfg_dict.pop('filename')
+        kwargs.update(cfg_dict)
+        
+        pfns = []
+        if not star_grid:
+            ppars = dict()  
+            ppars['A'] = 100
+            ppars['B'] = 2
+            ppars['C'] = 1
+            ppars['D'] = 0.5
+            ppars['E'] = 0
+            ppars['F'] = 2
+            ppars['rSw'] = 5e13
+            ppars['nTheta'] = 50
+            ppars['nRad'] = 50
+            ppars['rPlot'] = 1e16
+            ppars['rMin'] = 1e13
+            ppars.update(kwargs)
+            
+            #-- Define a filename suffix based on combination of 
+            #   Meixner parameters from ppars. Only update ppars with kwargs 
+            #   after that.
+            suff = '_'.join(['-'.join([k,str(v)]) 
+                             for k,v in sorted(ppars.items())])
+            
+            #-- Set the filename
+            fn_plt = fn_plt if fn_plt else 'dens_meixner' 
+            ppars['filename'] = self.setFnPlt(fn_plt,fn_suffix=suff)
+            
+            #-- Make the plot
+            pfn = PlotMeixner.plotDens(**ppars)
+            pfns.append(pfn)
+            
+        alldds = []
+        star_grid = [s for s in star_grid if s['DENSTYPE'] == 'MEIXNER']
+        for star in star_grid:
+            #-- Set the Meixner density parameters from the Star() object.
+            ppars = dict() 
+            ppars['A'] = star['MEIXA']
+            ppars['B'] = star['MEIXB']
+            ppars['C'] = star['MEIXC']
+            ppars['D'] = star['MEIXD']
+            ppars['E'] = star['MEIXE']
+            ppars['F'] = star['MEIXF']
+            ppars['rSw'] = star['MEIXRSW']*star.au
+            ppars['nTheta'] = star['NTHETA']
+            ppars['nRad'] = star['NRAD']
+            ppars['rPlot'] = star['R_OUTER_DUST']*star['R_STAR']*star.Rsun
+            ppars['rMin'] = star['R_INNER_DUST']*star['R_STAR']*star.Rsun
+            
+            #-- Define a filename suffix based on combination of 
+            #   Meixner parameters from ppars. Only update ppars with kwargs 
+            #   after that.
+            suff = '_'.join(['-'.join([k,str(v)]) 
+                             for k,v in sorted(ppars.items())])
+            ppars.update(kwargs)
+
+            #-- Set the filename
+            fn_plt = fn_plt if fn_plt else 'dens_meixner' 
+            ppars['filename'] = self.setFnPlt(fn_plt,fn_suffix=suff)
+            
+            alldds.append(ppars)
+        
+        #-- Only make plots for unique Meixner density models.
+        pfns_noext = []
+        for ppars in alldds: 
+            if ppars['filename'] not in pfns_noext:
+                #-- Make the plot
+                pfn = PlotMeixner.plotDens(**ppars)
+                pfns.append(pfn)
+                pfns_noext.append(os.path.splitext(pfn)[0])
+        
+        print '\n'.join(pfns)
+        print '***********************************'
+        
+        
+        
+
+
     def plotDens(self,star_grid=[],models=[],fn_plt='',unit='cm',cfg=''):
         
         """ 
@@ -735,9 +854,8 @@ class PlotDust(PlottingSession):
             rad_rstar = star_grid[0].getDustRad(unit='rstar')
             rad = star_grid[0].getDustRad(unit=unit)
             tstar = star_grid[0]['T_STAR']
-            temp,key = Profiler.dustTemperaturePowerLaw(rad=rad_rstar,\
-                                                        add_key=1,\
-                                                        tstar=tstar,s=s)
+            temp,key = Profiler.tempPowerLawDust(rad=rad_rstar,add_key=1,\
+                                                 tstar=tstar,s=s)
             rads.append(rad)
             temps.append(temp)
             keytags.append(key)
@@ -868,9 +986,8 @@ class PlotDust(PlottingSession):
                 rad_rstar = star_grid[0].getDustRad(unit='rstar')
                 rad  = star_grid[0].getDustRad(unit=unit)
                 tstar = star_grid[0]['T_STAR']
-                temp,key = Profiler.dustTemperaturePowerLaw(rad=rad_rstar,\
-                                                            add_key=1,\
-                                                            tstar=tstar,s=s)
+                temp,key = Profiler.tempPowerLawDust(rad=rad_rstar,add_key=1,\
+                                                     tstar=tstar,s=s)
                 rads.append(rad)
                 temps.append(temp)
                 keytags.append(key)
@@ -947,7 +1064,8 @@ class PlotDust(PlottingSession):
                       (default: '')
         @type cfg: string
         @keyword index: The index of the kappas in the .opacity/.particle file. 
-                        0: extinction, 1: absorption, 2: scattering
+                        0: extinction, 1: absorption, 2: scattering. Only 
+                        relevant when plotting without Star() models.
                         
                         (default: 0)
         @type index: int
@@ -960,11 +1078,14 @@ class PlotDust(PlottingSession):
         #-- Set the filename
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict.pop('filename')
-        
+            fn_plt = cfg_dict.pop('filename')        
         if not star_grid and not fn_plt:
             fn_plt = os.path.join(cc.path.mopac,\
                                   'dust_opacities_%s'%'_'.join(species))
+        
+        #-- Retrieve index keyword if in cfg.
+        if cfg_dict.has_key('index'):
+            index = cfg_dict.pop('index')
 
         #-- Set some plot parameters
         ppars = dict()
@@ -979,8 +1100,8 @@ class PlotDust(PlottingSession):
         #-- Check if raw opacities or modeling results are requested
         if not star_grid:
             kr = KappaReader.KappaReader()
-            wl_list = [kr.getKappas(sp)[0] for sp in species]
-            q_list = [kr.getKappas(sp)[1] for sp in species]
+            wl_list = [kr.getWavelength(sp) for sp in species]
+            q_list = [kr.getKappas(sp,index) for sp in species]
             if not ppars.has_key('keytags'):
                 ppars['keytags'] = species
             
@@ -998,8 +1119,14 @@ class PlotDust(PlottingSession):
                     wave,opacities = star.readKappas()
                 except IOError:
                     continue
-                opacities = [(opacities[i]+opacities[i+len(star.getDustList())]) 
-                             for i in range(len(star.getDustList()))]
+                if star['INCLUDE_SCAT_GAS']:
+                    n_species = len(star.getDustList())
+                    opacities = [opacities[i]+opacities[i+n_species]
+                                 for i in range(len(star.getDustList()))]
+                else: 
+                    opacities = [opacities[i] 
+                                 for i in range(len(star.getDustList()))]
+                
                 if scaling:
                     opacities = [op*star['A_%s'%sp]
                                  for op,sp in zip(opacities,star.getDustList())]

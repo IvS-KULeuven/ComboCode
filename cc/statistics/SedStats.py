@@ -39,11 +39,11 @@ class SedStats(Statistics):
     
     Alternatively, you can take the SedStats object from a ComboCode object
     given that STATISTICS=1 in the inputfile for CC. Then the above is 
-    already done for you. 
+    already done for you. Assuming the star_name is 'rscl':
     
     >>> model = ComboCode.ComboCode('inputfile.dat')
     >>> model.startSession()
-    >>> sedstats = model.sedstats
+    >>> sedstats = model.sedstats['rscl']
     
     Now you can go ahead and calculate chi^2 values and write them to a 
     file:

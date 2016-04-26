@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
 
 """
-Module for calculating all sorts of grids.
+Tools for making coordinate grids.
 
 Author: R. Lombaert
 
 """
 
-from scipy import linspace
-from scipy import log10
+import numpy as np
 
 
-
-def makeGrid(minval,maxval,gridpoints=0,log=0,floatornot=0):
+def makeGrid(minval,maxval,gridpoints=0,log=0,make_int=0):
     
     """
     Make grid between max and min value.
@@ -31,43 +29,36 @@ def makeGrid(minval,maxval,gridpoints=0,log=0,floatornot=0):
 
                   (default: 0)
     @type log: bool
-    @keyword floatornot: 0 if final gridpoints should be rounded to nearest 
-                         integer
+    @keyword make_int: 0 if final gridpoints should be rounded to nearest 
+                       integer
                                 
-                         (default: 0)
-    @type floatornot: bool
+                       (default: 0)
+    @type make_int: bool
     
     @return: the grid points including the boundaries
     @rtype: array
 
     """
     
-    if gridpoints == 0:
+    #-- Make floats of in and out
+    minval = float(minval)
+    maxval = float(maxval)
+    
+    #-- Check validity of number of grid points.
+    if int(gridpoints) < 2:
         gridpoints = 2
     else:
         gridpoints = int(gridpoints)
-    final_grid = []
-    
+
+    #-- In case of logspace    
     if log:
-        minval = float(log10(minval))
-        maxval = float(log10(maxval))
-        grid = linspace(minval,maxval,gridpoints)
-        if floatornot:
-            for i in xrange(len(grid)):
-                final_grid.append(int(round(10**(grid[i]))))
-        else:
-            for i in xrange(len(grid)):
-                final_grid.append(10**(grid[i]))
-        
+        grid = np.logspace(np.log10(minval),np.log10(maxval),gridpoints)
+    #-- In case of linear space
     else:
-        minval = float(minval)
-        maxval = float(maxval)
-        grid = linspace(minval,maxval,gridpoints)
-        if floatornot:
-            for i in xrange(len(grid)):
-                final_grid.append(int(round(grid[i])))
-        else:
-            for i in xrange(len(grid)):
-                final_grid.append(grid[i])
-    return final_grid
+        grid = np.linspace(minval,maxval,gridpoints)
+    
+    #-- Round to the nearest integer if requested
+    if bool(make_int): grid = np.around(grid)
+        
+    return grid
     

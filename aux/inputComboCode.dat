@@ -2,6 +2,11 @@
 ####################
 #-- General
 ####################
+#-- Database synchronisation and model checks printed to shell
+SINGLE_SESSION=0                    # If 1, runs the synchronisation of the databases only once at the end. Speeds up checking for models in databases. Especially useful when reloading large grids. Recommended to be turned off when running new models. The extra overhead in time is more than worth it compared to the lost model calculations, were the code to crash before synchronising the database. 
+PRINT_CHECK_T=1                     # Print the dust temperature check for each model after an MCMax calculation. Can still be ran manually if off. Greatly speeds up reloading models from the database if off.
+PRINT_MODEL_INFO=0                  # Print extra model info at the end of a CC session. Is off automatically for grids > 20 models
+
 #-- Which codes to run
 GASTRONOOM=0                        # Put to 0 if no GASTRoNOoM is needed
 MCMAX=0                             # Put to 0 if no MCMax is needed
@@ -64,7 +69,6 @@ REPLACE_DB_ENTRY=0                  # Be very careful with putting this keyword 
 UPDATE_SPEC=0                       # Update .spec files for GASTRoNOoM based on the available line lists
 APPEND_RESULTS=0                    # Append model ids of transitions in the grid to the inputfile, regardless if they've been calculated this run or not. By default this is off, since model ids are already appended if successfully calculated *this* run. This switch adds id's even if transitions are pulled from the database.
 WRITE_DUST_DENSITY=0                # Write away separate density files for MCMax models (see Star.writeDensity()) --- The opacity file is now written away fully as input for GASTRoNOoM, so can be read from there.
-PRINT_MODEL_INFO=0                  # Print extra model info at the end of a CC session. Is off automatically for grids > 20 models
 
 ####################
 #-- Stellar parameters
@@ -75,7 +79,7 @@ M_STAR=1.0                          # Stellar mass [Msol]
 L_STAR=11000                        # Stellar luminosity [Lsol]
 #LOGG=0.0                           # Only relevant if model atmospheres are used for MCMax (STARTYPE=ATMOSPHERE), default is 0.0
 DISTANCE=1300                       # Distance to object [pc]           
-STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody, ATMOSPHERE for a low-resolution model atmosphere spectrum in which case ATM_FILENAME has to be defined, TABLE for a custom file in which case STARTABLE has to be given, otherwise it's ignored)
+STARTYPE=BB                         # The type of lambda-dependent luminosity input (BB for blackbody, ATMOSPHERE for a low-resolution model atmosphere spectrum in which case ATM_FILENAME has to be defined, TABLE for a custom file in which case STARTABLE has to be given, otherwise it's ignored). Note that cooling always uses a blackbody. Only relevant for mline and sphinx.
 #STARTABLE=                         # Only relevant if STARTYPE=TABLE. Two columns - one with wavelength in micron, one with flux in Jy. If the full path is not given, the file is assumed to be in starf in Path.dat. The spectrum is assumed to be taken at the stellar surface, and is converted to intensity by GASTRoNOoM. It doesn't matter for MCMax, which scales the stellar spectrum based on requested distance and luminosity.
 #ATM_FILENAME=                      # The filename of the model atmosphere located in cc.path.home/usr/Path.dat (atm keyword)
 
@@ -104,7 +108,7 @@ MDOT_DUST=1.6e-7                    # Dust mass-loss rate [Msol/yr]
 #-- These are standard values but can be changed here
 DUST_TO_GAS_INITIAL=2e-3            # Dust-to-gass mass ratio, initial guess only!                     
 USE_DENSITY_NON_CONSISTENT=0        # Change density according to your mass loss function, this is off by default
-#DENSTYPE=%                         # If commented, MASSLOSS is used in first iteration of MCMax, then in the 2nd the density distribution from GASTRoNOoM is used. Put to MASSLOSS if you do not want to use the density from GASTRoNOoM in MCMax. Put to SHELLFILE if you want to use a 1d custom density grid. Put to MEIXNER for the Meixner shell model. Note that MeixA => MeixF (See Meixner et al. 2002) and MeixSW (in AU) have to be defined as well. M_DUST can be defined (in Msun), but if not, it is calculated from the GASTRoNOoM model. 
+#DENSTYPE=%                         # If commented, MASSLOSS is used in first iteration of MCMax, then in the 2nd the density distribution from GASTRoNOoM is used. Put to MASSLOSS if you do not want to use the density from GASTRoNOoM in MCMax. Put to SHELLFILE if you want to use a 1d custom density grid. Put to MEIXNER for the Meixner shell model. Note that MEIXA => MEIXF (See Meixner et al. 2002) and MEIXSW (in AU) have to be defined as well. M_DUST can be defined (in Msun), but if not, it is calculated from the GASTRoNOoM model. 
 #DENSFILE=                          # In case DENSTYPE=SHELLFILE. Two columns: AU - g/cm3. If the path is not given, the file is assumed to be in densf in Path.dat.
 MDOT_MODE=CONSTANT                  # Modus of mass-loss prescription (CONSTANT/2STEP/SINUS/PERIODIC/OTHER)  -- Only CONSTANT and OTHER are implemented. If OTHER, still define MDOT_GAS and MDOT_DUST correctly for the first part of the wind. DUST_TO_GAS is calculated from this. That, or give DUST_TO_GAS_CHANGE_ML_SP.
 
@@ -121,8 +125,8 @@ MDOT_MODE=CONSTANT                  # Modus of mass-loss prescription (CONSTANT/
 # GAS SHELL Parameters
 ####################
 #-- Abundance values and isotopic ratios
-ABUN_C=6.0e-4                       # Carbon abundance                                               
-ABUN_O=4.0e-4                       # Oxygen abundance                                               
+ABUN_C=6.0e-4                       # Carbon abundance relative to Htot                                             
+ABUN_O=4.0e-4                       # Oxygen abundance relative to Htot                                             
 RATIO_12C_TO_13C=8                  # 12C/13C ratio                                                  
 RATIO_16O_TO_17O=600                # 16O/17O ratio
 RATIO_16O_TO_18O=200                # 16O/18O ratio
@@ -163,6 +167,10 @@ TEMPERATURE_EPSILON_GAS=0.5         # EPSILON, for GAS temperature power law, wh
 INCLUDE_SCAT_GAS=0                  # Include the scattering coefficients into the GASTRoNOoM modelling as an additional contribution to the absorption. This is technically not correct, but can give an idea of the wind acceleration influence of the scattering. Leave this off if you're not sure!
 #TEMDUST_FILENAME=                  # Only relevant if USE_NEW_DUST_KAPPA_FILES=1, temdust.kappa for original (or leave open), other filename (micron | q_ext/a) for own kappa's (inverted wavelength, largest wavelength first). File has to be in the cc.path.gdata folder (given in Path.dat)
 #USE_NEW_DUST_KAPPA_FILES=          # Uncomment and put equal to 0 for original qpr.dat/temdust.kappa usage, otherwise leave out or put equal to 1
+
+#-- Radiative Transfer and Ray tracing keys:
+USE_NO_MASER_OPTION=0               # set to 1 if one wants to omit masers occuring when solving the radiative transfer equation
+USE_MASER_IN_SPHINX=1               # set to 1 if one wants to use the correct (masering) kappa's in sphinx. 
 
 ####################
 # DUST SHELL Parameters
@@ -212,11 +220,11 @@ RT_OUTPUTFOLDER=                    # The output folder of the ray-traced model 
 #-- Abundances for common dust species
 A_AMSIL=0                           # Amorphous Silicates based on o Ceti's SED                              
 A_AL2O3=0                           # Amorphous Al2O3, Corundum at wl < 5 micron                             
-A_FE=0.05                           # Metallic Iron                                                                  
+A_FECDE=0.05                           # Metallic Iron                                                                  
 A_FORS=0                            # Crystalline Silicate  Forsterite                                           
 A_ENST=0                            # Crystalline Silicate  Enstatite                                            
 A_MELI=0                            # Crystalline Silicate  Melilite                                             
-A_AMC=0.47                          # Amorphous Carbon                                                               
+A_AMCCDEPREI=0.47                          # Amorphous Carbon                                                               
 A_MGS=0.18                          # Magnesium Sulfide                                                              
 A_SICB=0.3                           # Silicon Carbide                                                                
 A_GRAPH=0                           # Graphite                                                                           
@@ -239,10 +247,17 @@ A_NO_NORM=0                         # If you do not want CC to normalize abundan
 ####################
 # NUMERICAL & CODING & STABILITY PARAMETERS
 ####################
-#-- GASTRoNOoM numerical parametera
-CHECK_TAU_STEP=0.1                  # check.par.in sphinx if step in tau not too large                       
+#-- GASTRoNOoM numerical parameters: cooling
 STEP_RS_RIN=1.e+12                  # Step in  radius in DLSODA from RSTAR to RINNER                         
 STEP_RIN_ROUT=5.e+13                # Step in  radius in DLSODA from RINNER to ROUT                          
+
+#-- GASTRoNOoM numerical parameters: sphinx
+TAU_MAX=12                          # Maximum optical depth used for the calculation of the formal integral
+TAU_MIN=-6                          # Minimum optical depth used for the calculation of the formal integral
+CHECK_TAU_STEP=1e-2                 # Check.par.in sphinx if step in tau not too large
+FRACTION_TAU_STEP=1e-2              # tau_total*fraction_tau_step gives min. delta_tau in strahl.f. If too low, min_tau_step will be used.
+MIN_TAU_STEP=1e-4                   # minimum of delta_tau in strahl.f
+
 
 #-- MCMax radial and theta grid, grid refinement (modeling, not observation file output)
 NRAD=300                            # Number of radial grid points
@@ -336,8 +351,6 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 N_QUAD=100                  # Number of impact par. in quadrature int(Inu pdp)         
                             # N_QUAD is always the same for all lines requested, unless they are defined explicitly in this inputfile
                             # If a grid over N_QUAD is requested, the n_quad in explicit definitions is overridden.
-USE_MASER_IN_SPHINX=0       # Use correct masering opacities in Sphinx
-
 
 #-- Use line selection for defining transitions here.
 LINE_SELECT=0               # Mode for selecting lines to be calculated in GASTRoNOoM
@@ -352,7 +365,7 @@ LS_FILE=                    # if LINE_SELECT=2, otherwise it is ignored. Gives t
 #-- Plotting line lists from downloaded line lists. Data can be plotted as well according to the data settings in the general input.
 #   Does not calculate RT models.
 ###################
-LL_CDMS=1                           # Pull data from CDMS
+LL_CDMS=0                           # Pull data from CDMS
 LL_JPL=0                            # Pull data from JPL
 LL_LAMDA=0                          # Pull data from LAMDA
 LL_MIN_STRENGTH=0                   # Minimum integrated line intensity for inclusion in line list plot, in log10 scale, put to 0 to include ALL lines
@@ -412,6 +425,9 @@ CFG_DUST_VISIBILITIES=
 
 PLOT_DUST_DENS=0                    # Plot the dust density profile.
 CFG_DUST_DENS=
+
+PLOT_DUST_DENS_MEIXNER=0            # Plot the 2D color-scale density structure for the Meixner model. 
+CFG_DUST_DENS_MEIXNER=
 
 PLOT_DUST_TEMP=0                    # Plot the dust temperature profile, as well as the standard power law for dust temperature
 CFG_DUST_TEMP=

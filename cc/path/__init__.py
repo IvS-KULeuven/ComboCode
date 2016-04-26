@@ -22,7 +22,7 @@ def __readPaths():
                ('mcmax','MCMax'),('mobs','MCMax/Observation_Files'),\
                ('mopac','MCMax/Opacities'),('data',''),('dradio',''),\
                ('dpacs',''),('dspire',''),('dsed',''),('dphot',''),\
-               ('dcflux',''),('ll','LineLists'),('atm',''),\
+               ('dcflux',''),('ll','LineLists'),('ivsdata',''),('atm',''),\
                ('starf',''),('densf','')])
     filename = os.path.join(usr,'Path.dat')
     FILE = open(filename,'r')

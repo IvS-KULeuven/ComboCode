@@ -521,8 +521,8 @@ class Radio(Database):
             - star_name, trans: all lines for transition of star are fitted
             - star_name, filename: only this filename is fitted
 
-        The fit is redone by default, regardless of there being an entry in the
-        db already.
+        The fit is NOT redone by default, if there is an entry in db already. 
+        You can force a replacement fit by turning replace on.
 
         Note that this method does NOT automatically sync (ie save changes to
         the hard disk) the database. That must be done through an additional

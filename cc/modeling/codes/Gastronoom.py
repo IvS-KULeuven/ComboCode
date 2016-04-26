@@ -31,7 +31,7 @@ class Gastronoom(ModelingSession):
     def __init__(self,path_gastronoom='runTest',vic=None,sphinx=0,\
                  replace_db_entry=0,cool_db=None,ml_db=None,sph_db=None,\
                  skip_cooling=0,recover_sphinxfiles=0,\
-                 new_entries=[]):
+                 new_entries=[],single_session=0):
     
         """ 
         Initializing an instance of a GASTRoNOoM modeling session.
@@ -89,17 +89,22 @@ class Gastronoom(ModelingSession):
         
                          (default: None)
         @type sph_db: Database()
-        
+        @keyword single_session: If this is the only CC session. Speeds up db
+                                 check.
+                                 
+                                 (default: 0)
+        @type single_session: bool
+                
         """
         
         super(Gastronoom,self).__init__(code='GASTRoNOoM',\
                                         path=path_gastronoom,\
                                         replace_db_entry=replace_db_entry,\
-                                        new_entries=new_entries)
+                                        new_entries=new_entries,\
+                                        single_session=single_session)
         #-- Convenience path
         cc.path.gout = os.path.join(cc.path.gastronoom,self.path)
         self.vic = vic
-        self.trans_in_progress = []
         self.sphinx = sphinx
         cool_keys = os.path.join(cc.path.aux,'Input_Keywords_Cooling.dat')
         ml_keys = os.path.join(cc.path.aux,'Input_Keywords_Mline.dat')
@@ -117,6 +122,13 @@ class Gastronoom(ModelingSession):
         self.trans_bools = []
         self.mline_done = False
         self.cool_done = False
+        #-- If a cooling model is in progress, the model manager will hold until
+        #   the other cc session is finished. 
+        self.in_progress = False
+        #-- Same for molecules.
+        self.molec_in_progress = []
+        #-- Transitions in progress are simply ignored.
+        self.trans_in_progress = []
         self.cooling_molec_keys = ['ENHANCE_ABUNDANCE_FACTOR',\
                                    'ABUNDANCE_FILENAME',\
                                    'NUMBER_INPUT_ABUNDANCE_VALUES',\
@@ -141,8 +153,10 @@ class Gastronoom(ModelingSession):
     def addTransInProgress(self,trans):
         
         '''
-        Remember a transition in progress on VIC. They will be checked at the 
-        end of the VIC run to see if they have been correctly calculated.
+        Remember a transition in progress. They will be checked at the 
+        end of a VIC run to see if they have been correctly calculated. If being
+        calculated in another CC session, they will not be checked. But the user
+        can always reload.
         
         @param trans: The transition in progress
         @type trans: Transition()
@@ -153,6 +167,21 @@ class Gastronoom(ModelingSession):
 
 
 
+    def addMolecInProgress(self,molec):
+        
+        '''
+        Remember a molecule in progress. The model manager will wait until it 
+        is finished.
+        
+        @param trans: The molecule in progress
+        @type trans: Molecule()
+        
+        '''
+        
+        self.molec_in_progress.append(molec)
+        
+        
+        
     def execGastronoom(self,filename,subcode):
         
         '''
@@ -174,7 +203,7 @@ class Gastronoom(ModelingSession):
 
 
     
-    def makeIdLog(self, new_id,molec_id=None):
+    def makeIdLog(self,new_id,molec_id=None):
         
         '''
         Make a text file with the original cooling id in it.
@@ -264,25 +293,70 @@ class Gastronoom(ModelingSession):
         
         """
         
-        for model_id,cool_dict in sorted(self.cool_db.items()):
-            model_bool = self.compareCommandLists(self.command_list.copy(),\
-                                                  cool_dict,'cooling',\
-                                                  extra_dict=molec_dict)
+        #-- Lock the cooling database by opening it in read mode. It's closed
+        #   once the database check is finalised. Note that in a case of a crash
+        #   during the for loop, the python shell must be exited to unlock the 
+        #   sphinx database again. The sync() is now done only once at the very
+        #   end since the file on the disk will not change.
+        if not self.single_session: self.cool_db.sync()
+        cool_dbfile = self.cool_db._open('r')        
+        for i,model_id in enumerate(sorted(self.cool_db.keys())):
+            cool_dict = self.cool_db[model_id]
+            model_bool = self.cCL(self.command_list.copy(),cool_dict,'cooling',\
+                                  extra_dict=molec_dict)
             if model_bool:
-                if self.replace_db_entry \
-                        and model_id not in self.new_entries: 
+                if cool_dict.has_key('IN_PROGRESS'):
+                    self.in_progress = True
+                    print 'Cooling model is currently being calculated in a ' +\
+                          'different CC modeling session with ID %s.'\
+                          %(model_id)
+                    self.model_id = model_id
+                    self.updateModel()
+                    finished = 1
+                    break
+                elif self.replace_db_entry and model_id not in self.new_entries: 
                     self.deleteCoolingId(model_id)
-                    return False
+                    print 'Deleting cooling model with ID %s from database.'\
+                          %(model_id) + 'Calculating anew with id %s.'\
+                          %self.model_id
+                    finished = 0
+                    break
                 else:
                     print 'GASTRoNOoM cooling model has been calculated ' + \
                           'before with ID %s.'%model_id
                     self.model_id = model_id
                     self.updateModel()
-                    return True
-        print 'No match found in GASTRoNOoM cooling database. Calculating ' + \
-              'new model.'
-        return False
-
+                    finished = 1
+                    break
+            
+            #-- Reached the end of db without match. Make new entry in db, in
+            #   progress. Cant combine this with next line in case the last
+            #   model gives a match.
+            if i == len(self.cool_db)-1:
+                print 'No match found in GASTRoNOoM cooling database. ' + \
+                      'Calculating new model.'
+                finished = 0
+        
+        #-- In case of an empty db, the above loop is not accessed.
+        if not self.cool_db.keys():
+            print 'No match found in GASTRoNOoM cooling database. ' + \
+                  'Calculating new model.'
+            finished = 0
+        
+        #-- Add the model in progress to the cooling db
+        if finished == 0:    
+            #-- OK to update. molec_dict is a copy. Because have to
+            #   add the other input keywords for cooling to the H2O info. 
+            #   This is saved to the db
+            molec_dict.update(self.command_list)
+            molec_dict['IN_PROGRESS'] = 1
+            self.cool_db[self.model_id] = molec_dict
+        
+        #-- Synchronize and unlock db.
+        cool_dbfile.close()
+        if not self.single_session: self.cool_db.sync()
+        return finished
+                
 
 
     def checkMlineDatabase(self):
@@ -296,47 +370,125 @@ class Gastronoom(ModelingSession):
         
         """
         
+        #-- Lock the mline database by opening it in read mode. It's closed
+        #   once the database check is finalised. Note that in a case of a crash
+        #   during the for loop, the python shell must be exited to unlock the 
+        #   sphinx database again. The sync() is now done only once at the very
+        #   end since the file on the disk will not change.
+        if not self.single_session: self.ml_db.sync()
+        ml_dbfile = self.ml_db._open('r')
         if not self.ml_db.has_key(self.model_id):
-            [molec.setModelId(self.model_id) for molec in self.molec_list]
             self.ml_db[self.model_id] = dict([(self.model_id,dict())])
+            for molec in self.molec_list:
+                molec.setModelId(self.model_id)
+                #-- Add an in-progress entry to the db
+                md = molec.makeDict(in_progress=1)
+                self.ml_db[self.model_id][self.model_id][molec.molecule] = md
+            self.ml_db.addChangedKey(self.model_id)
+            ml_dbfile.close()
+            self.ml_db.sync()
             return [False]*len(self.molec_list)
+
         model_bools = []
-        new_molec_id = ''
         for molec in self.molec_list:
             for molec_id in [k for k,v in sorted(self.ml_db[self.model_id].items())
                                if molec.molecule in v.keys()]:
-                if self.compareCommandLists(this_list=molec.makeDict(),\
-                                         modellist=self.ml_db[self.model_id]\
-                                                             [molec_id]\
-                                                             [molec.molecule],\
-                                            code='mline',\
-                                            ignoreAbun=molec.molecule \
-                                                        in self.no_ab_molecs):
+                db_molec_dict = self.ml_db[self.model_id][molec_id]\
+                                          [molec.molecule]
+                if self.cCL(this_list=molec.makeDict(),\
+                            modellist=db_molec_dict,\
+                            code='mline',\
+                            ignoreAbun=molec.molecule in self.no_ab_molecs):
                     molec.setModelId(molec_id)
                     model_bools.append(True)
-                    print 'Mline model has been calculated before for %s'\
-                           %molec.molecule + \
-                           ' with ID %s.'%(molec.getModelId())         
+                    if db_molec_dict.has_key('IN_PROGRESS'):
+                        self.addMolecInProgress(molec)
+                        print 'Mline model is currently being ' + \
+                              'calculated in a different CC modeling '+\
+                              'session for %s with ID %s.'\
+                              %(molec.molecule,molec.getModelId())                     
+                    else:
+                        print 'Mline model has been calculated before for'\
+                              '%s with ID %s.'\
+                              %(molec.molecule,molec.getModelId())         
                     break
+                    
+            #-- No match found. Calculate molecule anew. Now give it an id
+            #   matching existing ids in terms of pars, or make a new one 
             if molec.getModelId() is None:
                 model_bools.append(False)
-                [molec.setModelId(k) 
-                 for k,v in sorted(self.ml_db[self.model_id].items())
-                 if molec.getModelId() is None \
-                    and molec.molecule not in v.keys()]
-                #- still not defined, so make new model_id
-                if molec.getModelId() is None:    
-                    if not new_molec_id:
-                        new_molec_id = self.makeNewId()
-                        self.makeIdLog(new_id=new_molec_id)
-                        self.copyOutput(molec,self.model_id,new_molec_id)
-                        self.ml_db[self.model_id][new_molec_id] = dict()
-                        self.ml_db.addChangedKey(self.model_id)
-                        self.ml_db.sync()
-                    molec.setModelId(new_molec_id)    
+                cool_dbd = self.ml_db[self.model_id]
+                for i,(k,v) in enumerate(sorted(cool_dbd.items())):
+                    #-- No molecule in this id yet. 
+                    #   This should NEVER occur! Raise error.
+                    #   Such empty dicts are removed upon fail/success check
+                    #   in doMline.
+                    if not v.keys(): 
+                        raise KeyError('Empty molec id found in the database'+\
+                                       'This should not be possible.')
+                    
+                    #-- molecule already in this id. Keep searching, unless it 
+                    #   is the last entry. Then we have to make a new id
+                    if molec.molecule in v.keys() \
+                                and i != len(cool_dbd.keys())-1: 
+                            continue
+                        
+                    #-- Now check if par dict is same except the molecule
+                    #   definition and some molecule specific parameters. Only
+                    #   check this specific keys list. If match, choose this ID
+                    #   Make sure molec is not in v.keys() already (to avoid
+                    #   the case of this being the last entry of the db)
+                    if not molec.molecule in v.keys():
+                        mm = v.keys()[0]
+                        cks = ['OUTER_R_MODE','CHANGE_DUST_TO_GAS_FOR_ML_SP',\
+                               'DUST_TO_GAS_CHANGE_ML_SP','STARFILE',\
+                               'USE_STARFILE','USE_NO_MASER_OPTION',\
+                               'USE_MASER_IN_SPHINX','FEHLER','N_FREQ',\
+                               'START_APPROX','USE_FRACTION_LEVEL_CORR',\
+                               'FRACTION_LEVEL_CORR','NUMBER_LEVEL_MAX_CORR']
+                        if self.cCL(this_list=molec.makeDict(),\
+                                    modellist=v[mm],code='mline',\
+                                    extra_dict=extra_dict,\
+                                    check_keys=cks):
+                            break
+                    
+                    #-- If end of dict is reached, no proper match was found
+                    #   Create new id and put it in k. 
+                    if i == len(cool_dbd.keys())-1: 
+                        #-- First check if the original model id is already
+                        #   in use (it may have been deleted if first use 
+                        #   failed). Never copy output for this though, 
+                        #   since it is the original 
+                        if not cool_dbd.has_key(self.model_id):
+                            k = self.model_id
+                        else:                         
+                            k = self.makeNewId()
+                            self.makeIdLog(new_id=k)
+                            self.copyOutput(molec,self.model_id,k)
+                        self.ml_db[self.model_id][k] = dict()
+                
+                #-- It is possible cool_dbd is actually empty. Then use the
+                #   model id as molec id. No need for an id log in this case
+                #   nor any copying of output.
+                if not cool_dbd.keys():
+                    k = self.model_id
+                    self.ml_db[self.model_id][self.model_id] = dict()
+                
+                #-- The last k value (or the new one in case end of dict was
+                #   reached) is set as the model id.
+                molec.setModelId(k)
+                
+                #-- Add an in-progress entry to the db
+                md = molec.makeDict(in_progress=1)
+                self.ml_db[self.model_id][k][molec.molecule] = md
+                self.ml_db.addChangedKey(self.model_id)
+                
+                #-- Inform the user
                 print 'Mline model for %s '%molec.molecule + \
                       'has not been calculated before. Calculate anew with '+ \
                       'ID %s.'%(molec.getModelId())
+        ml_dbfile.close()
+        if not self.single_session: self.ml_db.sync()
         return model_bools            
 
 
@@ -351,11 +503,18 @@ class Gastronoom(ModelingSession):
         
         """
         
+        #-- Remember which molecules have been added to new id, if applicable
+        molecs_copied_to_new_id = []    
+
+        #-- Lock the sphinx database by opening it in read mode. It's closed
+        #   once the database check is finalised. Note that in a case of a crash
+        #   during the for loop, the python shell must be exited to unlock the 
+        #   sphinx database again. The sync() is now done only once at the very
+        #   end since the file on the disk will not change.
+        if not self.single_session: self.sph_db.sync()
+        sph_dbfile = self.sph_db._open('r')
         if not self.sph_db.has_key(self.model_id):
             self.sph_db[self.model_id] = dict()
-        new_trans_id = ''
-        #- Remember which molecules have been added to new id, if applicable
-        molecules_copied_to_new_id = []    
         for trans in self.trans_list:
             molec_id = trans.molecule.getModelId()
             if not molec_id:
@@ -363,20 +522,19 @@ class Gastronoom(ModelingSession):
                 trans.setModelId('')
             elif not self.sph_db[self.model_id].has_key(molec_id):
                 trans.setModelId(molec_id)
-                self.sph_db[self.model_id][molec_id] = \
-                    dict([(molec_id,dict([(str(trans),trans.makeDict(1))]))])
+                nd = dict([(str(trans),trans.makeDict(1))])
+                self.sph_db[self.model_id][molec_id] = dict([(molec_id,nd)])
                 self.sph_db.addChangedKey(self.model_id)
                 self.trans_bools.append(False)
-                self.sph_db.sync()
             else:    
-                for trans_id in [k for k,v in sorted(self.sph_db[self.model_id]\
-                                                        [molec_id].items())
-                                   if str(trans) in v.keys()]:
+                tdb = self.sph_db[self.model_id][molec_id]
+                gd_ids = [k for k,v in sorted(tdb.items())
+                            if str(trans) in v.keys()]
+                for trans_id in gd_ids:
                     db_trans_dict = self.sph_db[self.model_id][molec_id]\
                                                [trans_id][str(trans)].copy()
-                    if self.compareCommandLists(this_list=trans.makeDict(),\
-                                                modellist=db_trans_dict,\
-                                                code='sphinx'):
+                    if self.cCL(this_list=trans.makeDict(),\
+                                modellist=db_trans_dict,code='sphinx'):
                         trans.setModelId(trans_id)
                         self.trans_bools.append(True)
                         if self.vic <> None \
@@ -400,36 +558,85 @@ class Gastronoom(ModelingSession):
                                   %(str(trans),trans.molecule.molecule,\
                                     trans.getModelId())
                         break
+                        
+                #-- No match found. Calculate trans anew. Now give it an id
+                #   matching existing ids in terms of pars, or make a new one 
                 if trans.getModelId() is None:
                     self.trans_bools.append(False)
-                    [trans.setModelId(k)
-                        for k,v in sorted(self.sph_db[self.model_id][molec_id]\
-                                        .items())
-                        if trans.getModelId() is None \
-                            and str(trans) not in v.keys()]
-                    if trans.getModelId() is None:
-                        if not new_trans_id:
-                            new_trans_id = self.makeNewId()
-                            self.makeIdLog(new_id=new_trans_id,\
-                                           molec_id=molec_id)
-                        if not self.sph_db[self.model_id][molec_id]\
-                                    .has_key(new_trans_id):
-                            self.sph_db[self.model_id][molec_id][new_trans_id]\
-                                    = dict()
-                        trans.setModelId(new_trans_id)
+                    molec_dbd = self.sph_db[self.model_id][molec_id]
+
+                    for i,(k,v) in enumerate(sorted(molec_dbd.items())):
+                        #-- No trans in this id yet.
+                        #   This should NEVER occur! Raise error.
+                        #   Such empty dicts are removed upon fail/success check
+                        #   in doSphinx/checkSphinxOutput.
+                        if not v.keys(): 
+                            raise KeyError('Empty trans id found in the ' + \
+                                           'database. This should not be ' + \
+                                           'possible.')
+
+                        #-- Trans already in this id. Keep searching, unless it 
+                        #   is the last entry. Then we have to make a new id
+                        if str(trans) in v.keys() \
+                                and i != len(molec_dbd.keys())-1: 
+                            continue         
+
+                        #-- Now check if par dict is same except the transition
+                        #   definition. Trick cCL by adding the db trans def to
+                        #   this trans' dict. If match, choose this ID
+                        #   Make sure trans is not in v.keys() already (to avoid
+                        #   the case of this being the last entry of the db)
+                        if not str(trans) in v.keys():
+                            tt = v.keys()[0]
+                            extra_dict={'TRANSITION':v[tt]['TRANSITION']}
+                            if self.cCL(this_list=trans.makeDict(),\
+                                        modellist=v[tt],code='sphinx',\
+                                        extra_dict=extra_dict):
+                                break
+                                
+                        #-- If end of dict is reached, no proper match was found
+                        #   Create new id and put it in k. 
+                        if i == len(molec_dbd.keys())-1: 
+                            #-- First check if the original molec id is already
+                            #   in use (it may have been deleted if first use 
+                            #   failed). Never copy output for this though, 
+                            #   since it is the original 
+                            if not molec_dbd.has_key(molec_id):
+                                k = molec_id
+                                molecs_copied_to_new_id.append(trans.molecule)
+                            else: 
+                                k = self.makeNewId()
+                                self.makeIdLog(new_id=k,molec_id=molec_id)
+                            self.sph_db[self.model_id][molec_id][k] = dict()
+                    
+                    #-- It is possible molec_dbd is actually empty. Then use the
+                    #   molec id as trans id. No need for an id log in this case
+                    #   nor any copying of output.
+                    if not molec_dbd.keys():
+                        k = molec_id
+                        molecs_copied_to_new_id.append(trans.molecule)
+                        self.sph_db[self.model_id][molec_id][molec_id] = dict()
+                        
+                    #-- The last k value (or the new one in case end of dict was
+                    #   reached) is set as the model id.
+                    trans.setModelId(k)
+                    
                     #-- When the trans is not yet calculated, either a new id
                     #   was made or an existing one is used. It still needs to 
                     #   be checked if all mline and cooling info is available. 
                     #   You only want to do this once per session for each 
-                    #   molecule, because ls/ln checks adda lot of overhead. 
+                    #   molecule, because ls/ln checks add a lot of overhead. 
                     #   copyOutput double checks if links already exist
-                    if trans.molecule not in molecules_copied_to_new_id:
+                    if trans.molecule not in molecs_copied_to_new_id:
                         self.copyOutput(trans,molec_id,trans.getModelId())
-                        molecules_copied_to_new_id.append(trans.molecule) 
+                        molecs_copied_to_new_id.append(trans.molecule) 
                     self.sph_db[self.model_id][molec_id][trans.getModelId()]\
                             [str(trans)] = trans.makeDict(1)
                     self.sph_db.addChangedKey(self.model_id)
-                    self.sph_db.sync()
+
+        sph_dbfile.close()
+        if not self.single_session: self.sph_db.sync()
+        
 
 
     def copyOutput(self,entry,old_id,new_id):
@@ -461,9 +668,10 @@ class Gastronoom(ModelingSession):
         if not entry.isMolecule():
             lsfile = [line 
                          for line in lsfile 
-                         if not (line[0:2] == 'ml' \
-                            and line.split('_')[-1].replace('.dat','') \
-                                            != entry.molecule.molecule)]
+                         if not ((line[0:2] == 'ml' \
+                                  and os.path.splitext(line)[0].split('_')[-1]\
+                                      != entry.molecule.molecule))]
+                                            
             lsfile = [line 
                          for line in lsfile 
                          if not (line[0:4] == 'cool' \
@@ -480,7 +688,7 @@ class Gastronoom(ModelingSession):
         for ls,nls in zip(lsfile,new_lsfile):
             if not nls in already_done:
                 subprocess.call(['ln -s %s %s'%(os.path.join(folder_old,ls),\
-                                               os.path.join(folder_new,nls))],\
+                                                os.path.join(folder_new,nls))],\
                                 shell=True)
 
 
@@ -525,7 +733,7 @@ class Gastronoom(ModelingSession):
 
         #-- Check database: only include H2O extra keywords if 
         #   abundance_filename is present. CO can't have this anyway.
-        model_bool = self.checkCoolingDatabase(molec_dict=molec_dict)    
+        model_bool = self.checkCoolingDatabase(molec_dict=molec_dict.copy())    
         
         #- Run cooling if above is False
         if not model_bool:
@@ -553,16 +761,19 @@ class Gastronoom(ModelingSession):
             if os.path.isfile(os.path.join(cc.path.gout,'models',\
                                            self.model_id,'coolfgr_all%s.dat'\
                                            %self.model_id)):
-                #-- Add the other input keywords for cooling to the H2O info. 
-                #   This is saved to the db
-                molec_dict.update(self.command_list)
-                self.cool_db[self.model_id] = molec_dict
-                self.cool_db.sync()
+                #-- Note that there is no need to create a log parameter file
+                #   since the inputfiles are still available, and they always
+                #   contain all cooling keywords. (maybe change for h2o cooling)
+                if self.cool_db[self.model_id].has_key('IN_PROGRESS'):
+                    del self.cool_db[self.model_id]['IN_PROGRESS']
+                    self.cool_db.addChangedKey(self.model_id)
             else:
                 print 'Cooling model calculation failed. No entry is added '+ \
                       'to the database.'
+                del self.cool_db[self.model_id]    
                 self.model_id = ''
-                    
+            if not self.single_session: self.cool_db.sync()                    
+
 
 
     def doMline(self,star):
@@ -577,6 +788,9 @@ class Gastronoom(ModelingSession):
         
         """
         
+        #-- Make sure to reset this in case an iteration between cooling and 
+        #   mline is happening
+        self.mline_done = False
         model_bools = self.checkMlineDatabase()
         del self.command_list['R_OUTER']
         del self.command_list['OUTER_R_MODE']
@@ -600,19 +814,44 @@ class Gastronoom(ModelingSession):
                 DataIO.writeFile(filename,commandfile)                
                 self.execGastronoom(subcode='mline',filename=filename)
                 self.mline_done=True
-                if len([f for f in glob(os.path.join(cc.path.gout,'models',\
-                                        molec.getModelId(),'ml*%s_%s.dat'\
-                                        %(molec.getModelId(),molec.molecule)))])\
-                        == 3:
-                    self.ml_db[self.model_id][molec.getModelId()]\
-                              [molec.molecule] = molec.makeDict()
-                    self.ml_db.addChangedKey(self.model_id)
-                    self.ml_db.sync()
+                path = os.path.join(cc.path.gout,'models',molec.getModelId())
+                fns = 'ml*{}_{}.dat'.format(molec.getModelId(),molec.molecule)
+                if len(glob(os.path.join(path,fns))) == 3:
+                    #-- Remove in-progress entry.
+                    if self.ml_db[self.model_id][molec.getModelId()]\
+                            [molec.molecule].has_key('IN_PROGRESS'):
+                        del self.ml_db[self.model_id][molec.getModelId()]\
+                                      [molec.molecule]['IN_PROGRESS']
+                    
+                    #-- Write mline keywords not included in sph files but used 
+                    #   in the database in an extra log file. Only do this if it
+                    #   doesn't already exist. The parameters should be the same
+                    #   for all transitions with this model id.
+                    mlfn = 'mline_parameters_{}.log'.format(molec.molecule)
+                    mlfn = os.path.join(path,mlfn)
+                    if not os.path.isfile(mlfn):
+                        #-- Add MOLECULE too. Cuz, why not. For TRANSITION, that
+                        #   info is recreated from sph files. Not so for mline.
+                        mlfile = ['{}={}'.format(k,v)
+                                  for k,v in sorted(molec.makeDict().items())]
+                        DataIO.writeFile(mlfn,mlfile)
                 else:
+                    del self.ml_db[self.model_id][molec.getModelId()]\
+                                  [molec.molecule] 
+                    #-- Remove the molecule id if it does not contain molecules
+                    #   anymore. The id is thus unused.
+                    if not self.ml_db[self.model_id][molec.getModelId()].keys():
+                        del self.ml_db[self.model_id][molec.getModelId()]
                     print 'Mline model calculation failed for'\
                           '%s. No entry is added to the database.'\
                           %(molec.molecule)
                     molec.setModelId('')
+                    
+                #-- Synchronize db: Both when successful or failure. 
+                self.ml_db.addChangedKey(self.model_id)
+                if not self.single_session: self.ml_db.sync()
+                
+                
         if set([molec.getModelId() for molec in self.molec_list]) == set(['']):  
             #- no mline models calculated: stop GASTRoNOoM here
             self.model_id = ''
@@ -683,11 +922,19 @@ class Gastronoom(ModelingSession):
                           %(i+1,len(self.trans_bools))
                     self.execGastronoom(subcode='sphinx',filename=filename)
                     self.checkSphinxOutput(trans)
-                    self.sph_db.sync()
+                    if not self.single_session: self.sph_db.sync()
                     
         #- check if at least one of the transitions was calculated: then 
         #- self.model_id doesnt have to be changed
         self.finalizeSphinx() 
+        
+        #-- Sync the sphinx db in case self.sphinx is False or 
+        #   self.recover_sphinxfiles is True, to make sure sph_db is up-to-date.
+        #   In case models are calculated or vic is ran this is done in other
+        #   places in the code.
+        if not self.sphinx or self.recover_sphinxfiles:
+            self.sph_db.sync()
+            
         mline_not_available = set([trans.molecule.getModelId() 
                                    for boolean,trans in zip(self.trans_bools,\
                                                             self.trans_list) 
@@ -737,26 +984,45 @@ class Gastronoom(ModelingSession):
         '''
         
         filename = trans.makeSphinxFilename(number='*')
+        path = os.path.join(cc.path.gout,'models',trans.getModelId())
         #- Sphinx puts out 2 files per transition
-        if len(glob(os.path.join(cc.path.gout,'models',trans.getModelId(),filename))) == 2:                    
+        if len(glob(os.path.join(path,filename))) == 2:                    
             if self.sph_db[self.model_id][trans.molecule.getModelId()]\
                           [trans.getModelId()][str(trans)]\
                           .has_key('IN_PROGRESS'):
                 del self.sph_db[self.model_id][trans.molecule.getModelId()]\
                                [trans.getModelId()][str(trans)]['IN_PROGRESS']
-            self.sph_db.addChangedKey(self.model_id)
+
+            #-- Write sphinx keywords not included in sph filenames but used in
+            #   the database in an extra log file. Only do this if it doesn't 
+            #   already exist. The parameters should be the same for all 
+            #   transitions with this model id.
+            sphfn = os.path.join(path,'sphinx_parameters.log')
+            if not os.path.isfile(sphfn):
+                sphfile = ['{}={}'.format(k,v)
+                           for k,v in sorted(trans.makeDict().items())
+                           if k != 'TRANSITION']
+                DataIO.writeFile(sphfn,sphfile)
+            
+            #-- Print to the shell that the line is finished.
             print 'Sphinx model calculated successfully for '+\
                   '%s of %s with id %s.'%(str(trans),trans.molecule.molecule,\
                                           trans.getModelId())                                                             
         else:
             del self.sph_db[self.model_id][trans.molecule.getModelId()]\
                            [trans.getModelId()][str(trans)]
-            self.sph_db.addChangedKey(self.model_id)            
+            #-- Remove the transition id if it does not contain transitions
+            #   anymore. The id is thus unused.
+            if not self.sph_db[self.model_id][trans.molecule.getModelId()]\
+                              [trans.getModelId()].keys():
+                del self.sph_db[self.model_id][trans.molecule.getModelId()]\
+                               [trans.getModelId()]
             print 'Sphinx model calculation failed for %s of %s with id %s.'\
                   %(str(trans),trans.molecule.molecule,trans.getModelId())
             print 'No entry is added to the Sphinx database.'
             trans.setModelId('')
         
+        self.sph_db.addChangedKey(self.model_id)
         
         
     def setCommandKey(self,comm_key,star,star_key=None,alternative=None):
@@ -792,7 +1058,7 @@ class Gastronoom(ModelingSession):
         '''    
         
         keyword_int_list = ['ITERA_COOLING','LOG_DEPTH_STEP_POWER',\
-                            'USE_NO_MASER_OPTION','USE_MLINE_COOLING_RATE_CO',\
+                            'USE_MLINE_COOLING_RATE_CO',\
                             'USE_NEW_DUST_KAPPA_FILES','STEP_RIN_ROUT',\
                             'STEP_RS_RIN']
         exp_not_list = ['STEP_RIN_ROUT','STEP_RS_RIN']
@@ -829,6 +1095,9 @@ class Gastronoom(ModelingSession):
         #   for the previous models, not the current one.(ie when iterations>1)
         if self.model_id: 
             self.new_entries.append(self.model_id)
+        
+        #-- Make sure to reset this in case an iteration between cooling and 
+        #   mline, cooling and mcmax is happening
         self.cool_done = False
         self.model_id = self.makeNewId()
         self.trans_list=star['GAS_LINES']    
@@ -895,8 +1164,7 @@ class Gastronoom(ModelingSession):
         add_keys = [k  
                     for k in self.standard_inputfile.keys() 
                     if not (self.command_list.has_key(k) \
-                        or k in self.mline_keywords + self.sphinx_keywords + \
-                                ['TEMPERATURE_EPSILON2','RADIUS_EPSILON2'])]
+                        or k in self.mline_keywords + self.sphinx_keywords)]
         [self.setCommandKey(k,star,alternative=self.standard_inputfile[k]) 
          for k in add_keys]
         print '** DONE!'
@@ -906,7 +1174,7 @@ class Gastronoom(ModelingSession):
         #- with database models
         #- Start the model calculation
         self.doCooling(star)
-        star['LAST_GASTRONOOM_MODEL'] = self.model_id
+
         #- Removing mutable input is done in ModelingManager now, as well as 
         #- starting up sphinx and mline...
         

@@ -1,3 +1,4 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ["tools", "modeling", "plotting", "data", "statistics","ComboCode","managers","path"]
+__all__ = ["tools", "modeling", "plotting", "data", "statistics",\
+           "ComboCode","managers","path","ivs"]

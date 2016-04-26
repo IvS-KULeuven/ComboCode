@@ -7,15 +7,42 @@ Author: R. Lombaert
 
 """
 
-from scipy import array 
-import scipy
+import numpy as np
+from numpy import array
 import os 
 
 import cc.path
 from cc.tools.io import DataIO
+    
 
 
-def dustTemperaturePowerLaw(rad,tstar,s=1,add_key=0):
+def tempPowerLaw(r,Ti,Ri,epsilon):
+
+    '''
+    Define a temperature power law.
+    
+    The functional form is: 
+    Tg(r) = Ti * (Ri/r)^epsilon
+        
+    @param r: The radial grid in cm
+    @type r: array
+    @param Ti: The initial temperature at Ri in K
+    @type Ti: float
+    @param Ri: The inner radius in cm
+    @type Ri: float
+    @param epsilon: The exponent of the temp law
+    @type epislon: float
+    
+    @return: The temperature grid
+    @rtype: array
+    
+    '''
+    
+    return Ti * (Ri/r)**epsilon
+    
+    
+
+def tempPowerLawDust(rad,tstar,s=1,add_key=0):
     
     '''
     Return a dust temperature power law of the form as suggested by 
@@ -86,8 +113,8 @@ def waterFraction1StepProfiler(model_id,path_gastronoom,fraction,rfrac):
                             model_id,'coolfgr_all%s.dat'%model_id)
     rad = Gastronoom.getGastronoomOutput(filename=filename,keyword='RADIUS',\
                                          return_array=1)
-    fraction_profile = scipy.ones(len(rad))
-    step_index = scipy.argmin(abs(rad-rfrac))
+    fraction_profile = np.ones(len(rad))
+    step_index = np.argmin(abs(rad-rfrac))
     fraction_profile[step_index:] = fraction
     output_filename = os.path.join(cc.path.gastronoom,path_gastronoom,\
                                    'profiles',\

@@ -146,7 +146,7 @@ class PlotGas(PlottingSession):
         
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg.pop('filename')
+            fn_plt = cfg_dict.pop('filename')
         
         pfns = []
         for i,star in enumerate(star_grid):
@@ -234,7 +234,7 @@ class PlotGas(PlottingSession):
         
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg.pop('filename')
+            fn_plt = cfg_dict.pop('filename')
         if len(star_grid) < 20 or force_plot:
             valid_sg = [star 
                         for star in star_grid 
@@ -679,7 +679,7 @@ class PlotGas(PlottingSession):
                     %(intrinsic and 'Intrinsic l' or 'L',\
                         no_data and 'without data ' or '')
             if plot_filenames and plot_filenames[0][-4:] == '.pdf':    
-                pfn = self.setFnPlt(fn_plt)+'.pdf'
+                pfn = self.setFnPlt(fn_plt,fn_suffix=fn_suffix)+'.pdf'
                 DataIO.joinPdf(old=plot_filenames,new=pfn)
                 print pfn
             else:
@@ -853,7 +853,7 @@ class PlotGas(PlottingSession):
               %self.star_name
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg.pop('filename')
+            fn_plt = cfg_dict.pop('filename')
         if cfg_dict.has_key('instrument'):
             instrument = cfg_dict['instrument']
         instrument = instrument.upper()
@@ -979,7 +979,7 @@ class PlotGas(PlottingSession):
         pfns = []
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg.pop('filename')
+            fn_plt = cfg_dict.pop('filename')
         if cfg_dict.has_key('per_molecule'):
             per_molecule = cfg_dict['per_molecule']
         if cfg_dict.has_key('unit'):
@@ -1156,7 +1156,7 @@ class PlotGas(PlottingSession):
         print '** Plotting Line Contributions'
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg.pop('filename')
+            fn_plt = cfg_dict.pop('filename')
         if cfg_dict.has_key('do_sort'):
              do_sort = int(cfg_dict['do_sort'])
         if cfg_dict.has_key('normalized'):
@@ -1201,7 +1201,7 @@ class PlotGas(PlottingSession):
                                       %(trans.molecule.molecule_plot,\
                                         trans.makeLabel())
                                      for trans in transitions]
-            extra_pars['key_location'] = 'lower right'
+            extra_pars['key_location'] = 'upper left'
             extra_pars['ymin'] = normalized and -0.01 or None
             extra_pars['ymax'] = normalized and 1.02 or None
             extra_pars['xmin'] = 1
@@ -1449,7 +1449,7 @@ class PlotGas(PlottingSession):
         self.setSphinxPacs(star_grid)
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg.pop('filename')
+            fn_plt = cfg_dict.pop('filename')
         if cfg_dict.has_key('exclude_data'):
             exclude_data = bool(cfg_dict['exclude_data'])
         if cfg_dict.has_key('fn_trans_marker'):
@@ -1602,7 +1602,7 @@ class PlotGas(PlottingSession):
         
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg.pop('filename')
+            fn_plt = cfg_dict.pop('filename')
         if cfg_dict.has_key('exclude_data'):
             exclude_data = bool(cfg_dict['exclude_data'])
         if cfg_dict.has_key('fn_trans_marker'):
@@ -1741,7 +1741,7 @@ class PlotGas(PlottingSession):
         if cfg_dict.has_key('include_sphinx'):
             include_sphinx = cfg_dict['include_sphinx']
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg.pop('filename')
+            fn_plt = cfg_dict.pop('filename')
         if cfg_dict.has_key('fn_trans_marker'):
             fn_trans_marker = cfg_dict['fn_trans_marker']
         if cfg_dict.has_key('exclude_data'):
@@ -1880,7 +1880,7 @@ class PlotGas(PlottingSession):
 
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg.pop('filename')
+            fn_plt = cfg_dict.pop('filename')
         if cfg_dict.has_key('exclude_data'):
             exclude_data = bool(cfg_dict['exclude_data'])
         if cfg_dict.has_key('fn_trans_marker'):
@@ -1972,7 +1972,7 @@ class PlotGas(PlottingSession):
         #-- Read cfg file and retrieve sub plot method specific keywords.
         cfg_dict = Plotting2.readCfg(cfg)
         if cfg_dict.has_key('filename'):
-            fn_plt = cfg.pop('filename')
+            fn_plt = cfg_dict.pop('filename')
         if cfg_dict.has_key('scale'):
             scale = bool(cfg_dict['scale'])
 
