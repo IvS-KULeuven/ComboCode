@@ -17,7 +17,6 @@ from matplotlib import pyplot as plt
 import cc.path
 from cc.tools.io import FitsReader, TxtReader, DataIO
 from cc.plotting import Plotting2
-from cc.data import Data
 
 from cc.ivs.sigproc import fit, funclib
 

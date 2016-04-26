@@ -334,9 +334,10 @@ def cleanDatabase(db_path):
     
     '''
     
-    code = os.path.split(db_path)[1].split('_')[1]
-    if code not in ['cooling','mline','sphinx']:
-        raise IOError('Database path is not related to a GASTRoNOoM database.')
+    code = os.path.split(db_path)[1].split('_')[-2]
+    if code not in ['cooling','mline','sphinx','MCMax']:
+        raise IOError('Database path is not related to a GASTRoNOoM or MCMax '+\
+                      'database.')
     db = Database(db_path)
     #-- Locking the database while this is done to avoid issues.
     dbfile = db._open('r')
@@ -344,7 +345,7 @@ def cleanDatabase(db_path):
     print '** Checking {} database for in-progress models now...'.format(code)
     for cool_id,vcool in db.items():
         #-- For cooling IN PROGRESS entry is found in vcool
-        if code == 'cooling':
+        if code in ['cooling','MCMax']:
             if vcool.has_key('IN_PROGRESS'):
                 del db[cool_id]
                 print 'Removed in-progress model with id {}.'.format(cool_id)

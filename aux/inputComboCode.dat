@@ -3,7 +3,7 @@
 #-- General
 ####################
 #-- Database synchronisation and model checks printed to shell
-SINGLE_SESSION=0                    # If 1, runs the synchronisation of the databases only once at the end. Speeds up checking for models in databases. Especially useful when reloading large grids.
+SINGLE_SESSION=0                    # If 1, runs the synchronisation of the databases only once at the end. Speeds up checking for models in databases. Especially useful when reloading large grids. Recommended to be turned off when running new models. The extra overhead in time is more than worth it compared to the lost model calculations, were the code to crash before synchronising the database. 
 PRINT_CHECK_T=1                     # Print the dust temperature check for each model after an MCMax calculation. Can still be ran manually if off. Greatly speeds up reloading models from the database if off.
 PRINT_MODEL_INFO=0                  # Print extra model info at the end of a CC session. Is off automatically for grids > 20 models
 
