@@ -712,26 +712,27 @@ class ResoStats(Statistics):
 
             
     def findLLLRange(self, includedTrans = 1):
+        
         '''
         Determines whether a model lies within a 95% confidence interval around 
         the best fitting model (per line). As the best fitting model is included
         in the arrays, at least one model within the range is to be expected.
         
-        Based on Decin et al. 2007: l_m \leq l \leq l_m - quant/2
-                                    l_m \leq l \leq lll_threshold
+        Based on Decin et al. 2007: 
+            - l_m \leq l \leq l_m - quant/2 
+            - l_m \leq l \leq lll_threshold
         
-        
-        @return confidenceLLL: dictionary containing the difference between the 
-        calculate loglikelihood and the threshold value
-        @rtype: dict(list[])
-        
-        @return confidenceLLL_verdict: dictionary containing the result (1 or 0) 
-        for every model per transition
-        @rtype: dict(list[])
-        
-        @return confidenceLLL_models: models that fit all included transitions
-        @rtype: array([])
         '''
+#         @return confidenceLLL: dictionary containing the difference between the 
+#         calculate loglikelihood and the threshold value
+#         @rtype: dict(list[])
+#         
+#         @return confidenceLLL_verdict: dictionary containing the result (1 or 0) 
+#         for every model per transition
+#         @rtype: dict(list[])
+        
+#         @return confidenceLLL_models: models that fit all included transitions
+#         @rtype: array([])
         
         self.confidenceLLL = dict()
         self.confidenceLLL_verdict = dict()
@@ -767,6 +768,7 @@ class ResoStats(Statistics):
 
 
     def selectBestFitperLine(self, use_lll = 1, excludevib = 1):
+        
         '''
         Checks which lines are fitted by which models, using all four selection
         criteria. For every criterion, a list 'ocurrences_bfmxxx' is made. This 
@@ -781,6 +783,7 @@ class ResoStats(Statistics):
         according to the criterion, len(list) = # models.
         
         '''
+        
         if self.no_stats: return
         print "Checking which model occurs most as a best fit per line..."
         
@@ -841,6 +844,7 @@ class ResoStats(Statistics):
         
 
     def selectBestFitperLineLLL(self, excludevib = 1, plot = 0):
+        
         '''
         Checks which lines are fitted by which models according to the loglikelihood
         statistic. A  list 'ocurrences_bfmlll' is made. This 
@@ -855,6 +859,7 @@ class ResoStats(Statistics):
         according to the criterion, len(list) = # models.
         
         '''
+        
         if self.no_stats: return
         print "Checking which model occurs most as a best fit per line..."
         
@@ -993,6 +998,7 @@ class ResoStats(Statistics):
         
     
     def calcRatioIntTmb(self, useNoisy = 1, useRms = 0, err = 0.2, err_noisy = 0.3, plot = 0):
+        
         '''
         Calculate the ratio of the integrated main beam intensity per transition.
         
@@ -1011,21 +1017,21 @@ class ResoStats(Statistics):
         @keyword plot: Plot the output
         @type plot: bool
         
-        @return self.verdict_ratioint: dictionary containing whether a line satisfies 
-                                       the condition or not. One list per transition,
-                                       each list containing the verdict per model.
-        @rtype verdictpermodel_int: dict(list[])
-        
-        @return self.model_ratioint: list containing the verdict per transition, per model.
-                                     Number of lists = number of models. Length of each 
-                                     list = number of transitions.                                    
-        @rtype self.model_ratioint: list[list[]]
-        
-        @return self.model_ratioint_verdict: list containing the total number of transitions
-                                             that satisfy the condition, per model. Number 
-                                             of lists = number of models. Each list contains
-                                             a single number.
         '''
+#         @return self.verdict_ratioint: dictionary containing whether a line satisfies 
+#                                        the condition or not. One list per transition,
+#                                        each list containing the verdict per model.
+#         @rtype verdictpermodel_int: dict(list[])
+#         
+#         @return self.model_ratioint: list containing the verdict per transition, per model.
+#                                      Number of lists = number of models. Length of each 
+#                                      list = number of transitions.                                    
+#         @rtype self.model_ratioint: list[list[]]
+#         
+#         @return self.model_ratioint_verdict: list containing the total number of transitions
+#                                              that satisfy the condition, per model. Number 
+#                                              of lists = number of models. Each list contains
+#                                              a single number.
         
         print 'Calculating ratios of integrated main beam intensities...'
         print 'Error on data = '+str(err)
@@ -1169,6 +1175,7 @@ class ResoStats(Statistics):
     
     
     def calcRatioPeakTmb(self, useNoisy = 1, useRms = 0, err = 0.2, err_noisy = 0.3, plot = 0):
+        
         '''
         Calculate the ratio of the peak main beam intensity per transition.
         
@@ -1184,21 +1191,21 @@ class ResoStats(Statistics):
         @keyword err_noisy: error on noisy data (only needed when useNoisy = 1)
         @type err_noisy: float
         
-        @return self.verdict_ratiopeak: dictionary containing whether a line satisfies 
-                                       the condition or not. One list per transition,
-                                       each list containing the verdict per model.
-        @rtype verdictpermodel_peak: dict(list[])
-        
-        @return self.model_ratiopeak: list containing the verdict per transition, per model.
-                                     Number of lists = number of models. Length of each 
-                                     list = number of transitions.                                    
-        @rtype self.model_ratiopeak: list[list[]]
-        
-        @return self.model_ratiopeak_verdict: list containing the total number of transitions
-                                             that satisfy the condition, per model. Number 
-                                             of lists = number of models. Each list contains
-                                             a single number.
         '''
+#         @return self.verdict_ratiopeak: dictionary containing whether a line satisfies 
+#                                        the condition or not. One list per transition,
+#                                        each list containing the verdict per model.
+#         @rtype verdictpermodel_peak: dict(list[])
+#         
+#         @return self.model_ratiopeak: list containing the verdict per transition, per model.
+#                                      Number of lists = number of models. Length of each 
+#                                      list = number of transitions.                                    
+#         @rtype self.model_ratiopeak: list[list[]]
+#         
+#         @return self.model_ratiopeak_verdict: list containing the total number of transitions
+#                                              that satisfy the condition, per model. Number 
+#                                              of lists = number of models. Each list contains
+#                                              a single number.
         
         print 'Calculating ratios of peak main beam intensities...'
         print 'Error on data = '+str(err)
@@ -1268,6 +1275,7 @@ class ResoStats(Statistics):
 
 
     def calcRatioComboTmb(self, useNoisy = 1, useRms = 0, err = 0.2, err_noisy = 0.3, plot = 0):
+        
         '''
         Combine the ratio of the integrated and peak main beam intensity per transition.
         
@@ -1283,21 +1291,21 @@ class ResoStats(Statistics):
         @keyword err_noisy: error on noisy data (only needed when useNoisy = 1)
         @type err_noisy: float
         
-        @return self.verdict_ratiocombo: dictionary containing whether a line satisfies 
-                                       the condition or not. One list per transition,
-                                       each list containing the verdict per model.
-        @rtype verdictpermodel_combo: dict(list[])
-        
-        @return self.model_ratiocombo: list containing the verdict per transition, per model.
-                                     Number of lists = number of models. Length of each 
-                                     list = number of transitions.                                    
-        @rtype self.model_ratiocombo: list[list[]]
-        
-        @return self.model_ratiocombo_verdict: list containing the total number of transitions
-                                             that satisfy the condition, per model. Number 
-                                             of lists = number of models. Each list contains
-                                             a single number.
         '''
+#         @return self.verdict_ratiocombo: dictionary containing whether a line satisfies 
+#                                        the condition or not. One list per transition,
+#                                        each list containing the verdict per model.
+#         @rtype verdictpermodel_combo: dict(list[])
+#         
+#         @return self.model_ratiocombo: list containing the verdict per transition, per model.
+#                                      Number of lists = number of models. Length of each 
+#                                      list = number of transitions.                                    
+#         @rtype self.model_ratiocombo: list[list[]]
+#         
+#         @return self.model_ratiocombo_verdict: list containing the total number of transitions
+#                                              that satisfy the condition, per model. Number 
+#                                              of lists = number of models. Each list contains
+#                                              a single number.
         
         print 'Calculating ratios of main beam intensities, combining int and peak... '
         print 'Error on data = '+str(err)
@@ -1376,6 +1384,7 @@ class ResoStats(Statistics):
     
     
     def calcChiSquared(self, P = 2, useTeleUncertainties = 1, useNoisy = 1, err = 0.2, err_noisy = 0.3):
+        
         '''
         Calculate the (reduced) chi squared of the integrated main beam intensities.
         
@@ -1394,20 +1403,21 @@ class ResoStats(Statistics):
         @keyword err_noisy: Uncertainty on noisy lines
         @type err_noisy: float 
         
-        @return chiSquared: Chi squared values of each model
-        @type chiSquared: list[]
-        
-        @return redChiSquared: Reduced chi squared values of each model
-        @type redChiSquared: list[]
-        
-        @return errRedChiSquared: Error on reduced chi squared 
-        @type errRedChiSquared: float
-        
-        @return redChiSquaredWithinThreeSigma: Models that have a reduced chi squared within
-                                               three sigma of the best model (ie the model with
-                                               the lowest reduced chi squared)
-        @type redChiSquaredWithinThreeSigma: list[]
         '''
+#         @return chiSquared: Chi squared values of each model
+#         @type chiSquared: list[]
+#         
+#         @return redChiSquared: Reduced chi squared values of each model
+#         @type redChiSquared: list[]
+#         
+#         @return errRedChiSquared: Error on reduced chi squared 
+#         @type errRedChiSquared: float
+#         
+#         @return redChiSquaredWithinThreeSigma: Models that have a reduced chi squared within
+#                                                three sigma of the best model (ie the model with
+#                                                the lowest reduced chi squared)
+#         @type redChiSquaredWithinThreeSigma: list[]
+        
         self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId() \
             for ii in range(len(self.star_grid))]
        
@@ -1473,11 +1483,13 @@ class ResoStats(Statistics):
     
     
     def plotBestFit(self, plot_int = 1, plot_peak = 0, plot_combo = 0):
+        
         '''
         Can only be perfomed after self.selectBestFitperLine().
         
         Visualization of self.occurences_bfm(mode), self,verdict_(mode)_soft,
         and self.occurences_bfmlll.        
+        
         '''
         
         jup = [t.jup for t in self.translist]
@@ -1617,8 +1629,10 @@ class ResoStats(Statistics):
     
         
     def printBestFitperLine(self, bfm_int = 1, bfm_peak = 0, bfm_combo = 0, bfm_lll = 1):
+        
         '''
         Print output of selectBestFitperLine(), using fittedLines_bfmxxx.
+        
         '''
         calcTrans = [str(self.translist[x]) for x in self.includedtrans]
 
@@ -1667,8 +1681,10 @@ class ResoStats(Statistics):
             
             
     def printBestFitperModel(self, bfm_int = 1, bfm_peak = 0, bfm_combo = 0, bfm_lll = 1):
+        
         '''
         Print output of selectBestFitperLine(), using fittedModels_bfmxxx.
+        
         '''
         if bfm_int == 1:
             print '---------------------------------------------------------------------'

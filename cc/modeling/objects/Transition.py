@@ -2197,9 +2197,11 @@ class Transition():
         strength.
         
         The uncertainty is also returned. Three options: 
-        - The default absolute flux calibration uncertainty from Telescope.dat
-        - The above + the fitting uncertainty [TBI]
-        - The abs flux cal uncertainty set in Radio.py + the fitting uncertainty [TBI]
+            - The default absolute flux calibration uncertainty from 
+              Telescope.dat
+            - The above + the fitting uncertainty [TBI]
+            - The abs flux cal uncertainty set in Radio.py + the fitting 
+              uncertainty [TBI]
         The fitting uncertainty is currently not yet implemented, nor the option
         to add the the flux calibration uncertainty to Radio.py. [TBI]
         

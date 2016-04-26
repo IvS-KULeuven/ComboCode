@@ -173,8 +173,8 @@ class Gastronoom(ModelingSession):
         Remember a molecule in progress. The model manager will wait until it 
         is finished.
         
-        @param trans: The molecule in progress
-        @type trans: Molecule()
+        @param molec: The molecule in progress
+        @type molec: Molecule()
         
         '''
         
