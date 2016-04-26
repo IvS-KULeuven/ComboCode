@@ -10,6 +10,8 @@ This manual has been written by Robin Lombaert and revised by Marie Van de Sande
 ### Is this manual finished?
 No! This is very much a work in progress. Any comments, questions or clarifications can be requested <a href="https://github.com/robinlombaert">by contacting me</a>. We will try to keep the manual as up-to-date as possible, but for a while yet, it will not be complete. Bear with us!
 
+### Table of Contents
+
 ## 2. Goals of the ComboCode package
 ComboCode is a Python based package designed to work with radiative-transfer codes and the data they are meant to model. 
 The radiative transfer is usually calculated for cool stellar winds of evolved stars, such as AGB stars.
