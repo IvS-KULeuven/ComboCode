@@ -84,7 +84,7 @@ Once the requirements are sorted out, you can get to work with ComboCode. You ca
 
 ## Documentation
 A user manual with cookbooks and an overview of the inputfiles is available on GitHub at (work in progress!):  
-<a href="https://github.com/IvS-KULeuven/ComboCode/blob/dev/Manual.md">ComboCode Manual</a>
+<a href="https://github.com/IvS-KULeuven/ComboCode/blob/master/Manual.md">ComboCode Manual</a>
 
 Up-to-date in-depth documentation comprised of the doc-strings that go with the source code is available on GitHub at:  
 <a href="https://IvS-KULeuven.github.io/ComboCode"> ComboCode Documentation</a>
