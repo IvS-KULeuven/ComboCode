@@ -73,6 +73,7 @@ Then the ComboCode inputfile is described, and a few simple steps to run a model
 
 ### How do I run ComboCode?
 Two steps, for an arbitrary input filename: 
+
 1. Create a ComboCode object: 
         
         >>> filename = '/Users/user_name/ComboCode/input/icc_rdor.dat'
