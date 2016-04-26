@@ -122,7 +122,10 @@ However, if for some reason a CC session is terminated and results in an error, 
 
 This effectively removes all "IN\_PROGRESS" entries from the databases. It is possible you run a CC session, which ends up waiting for another CC session to finish, while no other CC session is currently running. This means such a left-over "IN\_PROGRESS" entry is encountered. Open a separate ipython shell, and runn the above script. Once finished, the CC session will continue (it will say the mline model failed, since it is no longer present in the database). You can re-run ComboCode if you want to re-try the model. You can run the exact same script for other databases, including cooling, sphinx and MCMax. 
 
+Note that older versions of the databases may sometimes contain model\_ids for mline and sphinx (in their respective databases) that contain no molecules or transitions. These are not allowed anymore in the current version of ComboCode. Running this method also removes those empty model\_ids. This must be done in case you encounter one of the two following error messages: 
 
+    KeyError: 'Empty molec id found in the database. This should not be possible.'
+    KeyError: 'Empty trans id found in the database. This should not be possible.'
 
 ## 7. Statistical methods
 

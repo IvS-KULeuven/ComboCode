@@ -37,7 +37,7 @@ have to contact the authors of the codes.</li>
 ## Requirements
 Currently the code has been tested to run on Unix-based systems, more specifically Fedora and Mac OS X. In principle, any operating systems that fulfills the requirements listed below should be able to run ComboCode. The code runs ons machines with an internal memory of 8 GB, but less is likely fine as well. The memory requirements are primarily set by the numerical codes included in ComboCode.
 
-First and foremost, you require a Python 2.7 (not Python 3!) distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. Specific packages required to be installed in your python distribution are: PyPDF2, h5py, ephem, and astropy. As an example, after installation of Anaconda, you can run the following command in the shell:
+First and foremost, you require a Python 2.7 (not Python 3!) distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. Specific packages required to be installed in your python distribution are: PyPDF2, h5py, ephem, portalocker and astropy. As an example, after installation of Anaconda, you can run the following command in the shell:
 
     - $ pip install ephem
 
