@@ -25,8 +25,8 @@ The functionality includes:
     - Fitting routines for resolved emission lines
     - Statistical analysis for samples and individual sources, and both resolved and unresolved emission lines
 
-## 3. Running ComboCode
-In what follows, you will set up your folder structure first (much of which is done automatically). Then the ComboCode inputfile is described, and, finally, a few simple steps to run a model are given.
+## 3. Setting up ComboCode
+In what follows, you will set up your folder structure first (much of which is done automatically). 
 
 ### Folder setup
 The folder setup for running ComboCode can be split up into three parts: the folders specific to ComboCode, and the two folders for the GASTRoNOoM and MCMax RT codes that must be installed separately. 
@@ -44,7 +44,7 @@ In the usr/ folder, a file called Path.dat is located. This file manages all oth
 Some of the folders contain data and files that must be provided for you by either the authors of MCMax or GASTRoNOoM, or by other users. These include (given by their path keys in Path.dat):  
 
 <ol>
-<li>ivsdata -- Data required by the cc.ivs module. They are available <a href="http://ster.kuleuven.be/~robinl/cc/ivsdata.tar.gz"> here</a> for download. These should not be changed by the user.</li>
+<li>ivsdata -- Data required by the cc.ivs module. They are available <a href="http://ster.kuleuven.be/~robinl/cc/ivsdata.tar.gz"> here</a> for download (but you likely already downloaded these when installing the requirements of ComboCode). These should not be changed by the user.</li>
 <li>atm -- Medium-resolution spectra of model stellar atmospheres. These are included as a subfolder of the ivsdata and the path should be adjusted accordingly.</li>
 <li>gdata -- Data required by GASTRoNOoM, including collision rates and spectroscopic descriptions of the molecules, and the default dust opacity profile. These can be changed depending on user-specific needs but should only be done in dialogue with L. Decin. A set of molecules is available <a href="http://ster.kuleuven.be/~robinl/cc/GASTRoNOoM_data.zip">here</a>. Contact R. Lombaert or L. Decin for literature references or additional molecular species.</li>
 <li>mobs -- Observation output files defining the settings for ray tracing of the spectra, visibilities, etc. These can be changed by the user at will. Example observation output files are available <a href="http://ster.kuleuven.be/~robinl/cc/Observation_Files.tar.gz">here</a>. Instructions on the use of these files is available at the <a href="https://sites.google.com/site/manualmcmax/project-definition">MCMax home page</a>.</li>
@@ -66,15 +66,27 @@ The contents of the cc/usr.dist folder must be copied to cc/usr/. The default se
 <li>Telescope.dat -- Radio, submillimeter and far-infrared telescopes and/or instruments. Lists the telescope size and absolute flux calibration uncertainty for each. The name tag must be included in the filenames in the dradio folder in case of radio observations, see below under Data Management.</li>
 </ol>
 
+## 4. Running ComboCode
+Then the ComboCode inputfile is described, and a few simple steps to run a model are given.
+
 ### The ComboCode inputfile
 
 ### How do I run ComboCode?
+Two steps, for an arbitrary input filename: 
+1. Create a ComboCode object: 
+        >>> filename = '/Users/user_name/ComboCode/input/icc_rdor.dat'
+        >>> c1m = ComboCode.ComboCode(filename)
+    
+2. Start the ComboCode session:
+        >>> c1m.startSession()
+
+The c1m.startSession() command is essentially the body of the modeling calculation that is done. In what follows running this command is referred to as a "CC session". You cannot run this command twice. If you want to re-run a given filename, always create the ComboCode() object first (step 1) and then start the session (step 2).
+
+It is possible to have multiple such CC sessions running concurrently in different shells. <a href="Manual.md#cleaning-your-databases">The databases make sure no conflicts can happen</a> between models requested in one session and another session, in case they are identical. 
 
 
 
-
-
-## 4. Data management
+## 5. Data management
 
 ### Resolved Molecular emission (Radio)
 
@@ -85,7 +97,7 @@ Filename convention.
 
 
 
-## 5. Model management
+## 6. Model management
 ### Combined dust and gas radiative transfer
 ComboCode is an interface that provides access to two numerical RT codes for dust and gas respectively. The way these codes are linked through ComboCode is illustrated in the schematic below. Note that this schematic currently does not include iteration between energy balance and line RT, as this functionality is not yet implemented in ComboCode. 
 
@@ -99,12 +111,12 @@ ComboCode is an interface that provides access to two numerical RT codes for dus
 
 
 #### Cleaning your databases
-The databases include a way to track which models are currently being calculated in *any* CC session (or, shell). This works through an "IN\_PROGRESS" entry in the keyword definition of a given cooling, mline, sphinx, or MCMax model, and regular synchronisation between the Database() instance in the CC session and the harddisk version of the database. 
+The databases include a way to track which models are currently being calculated in **any** CC session (or, shell). This works through an "IN\_PROGRESS" entry in the keyword definition of a given cooling, mline, sphinx, or MCMax model, and regular synchronisation between the Database() instance in the CC session and the harddisk version of the database. 
 
-However, if for some reason a CC session is terminated and results in an error, it may be possible "IN\_PROGRESS" entries remain in the database, while no model is currently being calculated. You can clean databases off these left-over "IN\_PROGRESS" entries by doing the following.  Only do this if you are positive *no other CC session is currently running*! Imagine a CC session is waiting for an mline model to finish (and no other CC session is running), open an ipython shell and do the following (for PATH_GASTRONOOM=MyModels):
+However, if for some reason a CC session is terminated and results in an error, it may be possible "IN\_PROGRESS" entries remain in the database, while no model is currently being calculated. You can clean databases off these left-over "IN\_PROGRESS" entries by doing the following.  Only do this if you are positive **no other CC session is currently running**! Imagine a CC session is waiting for an mline model to finish (and no other CC session is running), open an ipython shell and do the following (for PATH_GASTRONOOM=MyModels):
 
     >>> from cc.tools.io import Database
-    >>> db_fn = ‘/Users/user_name/GASTRoNOoM/MyModels/GASTRoNOoM_mline_models.db’
+    >>> db_fn = '/Users/user_name/GASTRoNOoM/MyModels/GASTRoNOoM_mline_models.db'
     >>> Database.cleanDatabase(db_fn)
     >>> exit()
 
@@ -112,7 +124,7 @@ This effectively removes all "IN\_PROGRESS" entries from the databases. It is po
 
 
 
-## 6. Statistical methods
+## 7. Statistical methods
 
 ### Measuring goodness-of-fit
 
@@ -121,7 +133,7 @@ This effectively removes all "IN\_PROGRESS" entries from the databases. It is po
 
 
 
-## 7. Additional modules
+## 8. Additional modules
 
 ### Line profile fitting
 
