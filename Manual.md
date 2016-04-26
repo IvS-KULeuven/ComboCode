@@ -74,10 +74,12 @@ Then the ComboCode inputfile is described, and a few simple steps to run a model
 ### How do I run ComboCode?
 Two steps, for an arbitrary input filename: 
 1. Create a ComboCode object: 
+        
         >>> filename = '/Users/user_name/ComboCode/input/icc_rdor.dat'
         >>> c1m = ComboCode.ComboCode(filename)
     
 2. Start the ComboCode session:
+        
         >>> c1m.startSession()
 
 The c1m.startSession() command is essentially the body of the modeling calculation that is done. In what follows running this command is referred to as a "CC session". You cannot run this command twice. If you want to re-run a given filename, always create the ComboCode() object first (step 1) and then start the session (step 2).
