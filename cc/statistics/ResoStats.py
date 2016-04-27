@@ -160,7 +160,7 @@ class ResoStats(Statistics):
         self.sample_trans = sample_transitions    
 
         
-    def setIntensities(self,use_bestvlsr=1, partial = 0, vcut = 0):
+    def setIntensities(self,use_bestvlsr=1, partial = 0, vmin = 0, vmax = 0):
         
         """
         The data intensities are stored in the dictionary 
@@ -188,12 +188,13 @@ class ResoStats(Statistics):
         if not self.star_grid:
             return
         
-        self.vcut = vcut
+        self.vmin = vmin
+        self.vmax = vmax
         self.partial = partial
         
         if partial != 0:
             print 'Calculating loglikelihood statistics using a partial line profile.'
-            print 'Cutoff velocity = '+str(vcut)
+            print 'Cutoff velocities = '+str(vmin)+ ', '+str(vmax)
         
         self.translist = [t 
                           for t in self.sample_trans
@@ -262,7 +263,8 @@ class ResoStats(Statistics):
             
             #-- Collect the loglikelihoods for all models
             self.loglikelihood[st] = array([mt.getLoglikelihood(use_bestvlsr, \
-                                                partial = partial, vcut = vcut) \
+                                                partial = partial,\
+                                                vmin = vmin, vmax = vmax) \
                                                 for mt in self.trans_models[st]])
             
             #-- Calculate the ratios for integrated and peak Tmbs (model/data)
@@ -397,13 +399,43 @@ class ResoStats(Statistics):
         
             if use_fit == True:
                 if self.noisy[ist] == False:
-                    self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 1)
-                else:
                     self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 0)
+                else:
+                    self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 1)
                 self.ratioint[st] = self.minttmb[st]/self.dinttmb[st]
             else:
                 self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 0)
                 
+   
+   
+    def setUseFit(self, use_fit = True):
+        '''
+        Change criterion for noisy lines.  By default, the script checks if
+        the peak of the line profile is above 3 sigma in the dataset. 
+        With this method, the factor can be changed. 
+        
+        With use_fit, it is possible to use the gaussian or parabolic fit to 
+        the data to derive the integrated intensity instead of the line itself 
+        for noisy lines. 
+        
+        @keyword factor: Sigma level. If the peak intensity of a line is below
+                         this level, it is marked as noisy.
+        @type factor: int
+        
+        @keyword use_fit: Use gaussian or parabolic fit instead of the line
+                          to derive the integrated intensity of noisy lines
+        @type use_fit: bool
+        '''
+        
+        for ist,st in enumerate(self.translist):
+            if use_fit == True:
+                if self.noisy[ist] == False:
+                    self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 0)
+                else:
+                    self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 1)
+                self.ratioint[st] = self.minttmb[st]/self.dinttmb[st]
+            else:
+                self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 0)
 
         
     def includeTrans(self,ist):
@@ -973,8 +1005,8 @@ class ResoStats(Statistics):
             path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
             DataIO.testFolderExistence(os.path.join(path,'resostats'))
             #filename = os.path.join(path, 'resostats','LLL-%s_len_%s-%s'%(self.modellist[0],(len(self.modellist)),plot_id))
-            filename = os.path.join(path, 'resostats','LLL-%s_len_%s_partial_%s_vcut_%s-%s'\
-                %(self.modellist[0],(len(self.modellist)),self.partial,self.vcut,plot_id))
+            filename = os.path.join(path, 'resostats','LLL-%s_len_%s_partial_%s_vcut_%s-%s--%s'\
+                %(self.modellist[0],(len(self.modellist)),self.partial,self.vmin,self.vmax,plot_id))
 
             fig.savefig(filename+'.pdf')   
             print '*** Plot of stats can be found at:'
@@ -1192,8 +1224,8 @@ class ResoStats(Statistics):
             fig.suptitle('Models complying to integrated intensity and loglikelihood criteria \\ Error = '+str(err*100.)+'\%, error noisy lines = '+str(err_noisy*100.)+'\%', size = 18)
             path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
             DataIO.testFolderExistence(os.path.join(path,'resostats'))
-            filename = os.path.join(path, 'resostats','intLLL-%s_len_%s_partial_%s_vcut_%s-%s'\
-                %(self.modellist[0],(len(self.modellist)),self.partial,self.vcut,plot_id))
+            filename = os.path.join(path, 'resostats','intLLL-%s_len_%s_partial_%s_vcut_%s-%s--%s'\
+                %(self.modellist[0],(len(self.modellist)),self.partial,self.vmin,self.vmax,plot_id))
             fig.savefig(filename+'.pdf')   
             print '*** Plot of stats can be found at:'
             print filename+'.pdf'
