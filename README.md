@@ -10,6 +10,7 @@ The functionality includes:
     - Automatic line selection based on available data and line listing
     - Databases for modeling output and easy parameter space searches
     - Interaction with a supercomputer clusters built into the databases
+
 * <b>Data</b>: 
     - Management of data files associated with radio data, SEDs and spectroscopic data
     - Fitting routines for resolved emission lines
@@ -37,7 +38,7 @@ have to contact the authors of the codes.</li>
 ## Requirements
 Currently the code has been tested to run on Unix-based systems, more specifically Fedora and Mac OS X. In principle, any operating systems that fulfills the requirements listed below should be able to run ComboCode. The code runs ons machines with an internal memory of 8 GB, but less is likely fine as well. The memory requirements are primarily set by the numerical codes included in ComboCode.
 
-First and foremost, you require a Python 2.7 (not Python 3!) distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. Specific packages required to be installed in your python distribution are: PyPDF2, h5py, ephem, and astropy. As an example, after installation of Anaconda, you can run the following command in the shell:
+First and foremost, you require a Python 2.7 (not Python 3!) distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. Specific packages required to be installed in your python distribution are: PyPDF2, h5py, ephem, portalocker and astropy. As an example, after installation of Anaconda, you can run the following command in the shell:
 
     - $ pip install ephem
 
@@ -83,7 +84,7 @@ Once the requirements are sorted out, you can get to work with ComboCode. You ca
 
 ## Documentation
 A user manual with cookbooks and an overview of the inputfiles is available on GitHub at (work in progress!):  
-<a href="https://github.com/IvS-KULeuven/ComboCode/blob/dev/Manual.md">ComboCode Manual</a>
+<a href="https://github.com/IvS-KULeuven/ComboCode/blob/master/Manual.md">ComboCode Manual</a>
 
 Up-to-date in-depth documentation comprised of the doc-strings that go with the source code is available on GitHub at:  
 <a href="https://IvS-KULeuven.github.io/ComboCode"> ComboCode Documentation</a>

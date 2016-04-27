@@ -10,6 +10,8 @@ This manual has been written by Robin Lombaert and revised by Marie Van de Sande
 ### Is this manual finished?
 No! This is very much a work in progress. Any comments, questions or clarifications can be requested <a href="https://github.com/robinlombaert">by contacting me</a>. We will try to keep the manual as up-to-date as possible, but for a while yet, it will not be complete. Bear with us!
 
+### Table of Contents
+
 ## 2. Goals of the ComboCode package
 ComboCode is a Python based package designed to work with radiative-transfer codes and the data they are meant to model. 
 The radiative transfer is usually calculated for cool stellar winds of evolved stars, such as AGB stars.
@@ -73,11 +75,14 @@ Then the ComboCode inputfile is described, and a few simple steps to run a model
 
 ### How do I run ComboCode?
 Two steps, for an arbitrary input filename: 
+
 1. Create a ComboCode object: 
+        
         >>> filename = '/Users/user_name/ComboCode/input/icc_rdor.dat'
         >>> c1m = ComboCode.ComboCode(filename)
     
 2. Start the ComboCode session:
+        
         >>> c1m.startSession()
 
 The c1m.startSession() command is essentially the body of the modeling calculation that is done. In what follows running this command is referred to as a "CC session". You cannot run this command twice. If you want to re-run a given filename, always create the ComboCode() object first (step 1) and then start the session (step 2).
@@ -101,7 +106,7 @@ Filename convention.
 ### Combined dust and gas radiative transfer
 ComboCode is an interface that provides access to two numerical RT codes for dust and gas respectively. The way these codes are linked through ComboCode is illustrated in the schematic below. Note that this schematic currently does not include iteration between energy balance and line RT, as this functionality is not yet implemented in ComboCode. 
 
-![](https://github.com/IvS-KULeuven/ComboCode/blob/dev/aux/flow_chart_codes.png?raw=true)
+![](https://github.com/IvS-KULeuven/ComboCode/blob/master/aux/flow_chart_codes.png?raw=true)
 
 ### Reading and using model output
 
@@ -122,7 +127,10 @@ However, if for some reason a CC session is terminated and results in an error, 
 
 This effectively removes all "IN\_PROGRESS" entries from the databases. It is possible you run a CC session, which ends up waiting for another CC session to finish, while no other CC session is currently running. This means such a left-over "IN\_PROGRESS" entry is encountered. Open a separate ipython shell, and runn the above script. Once finished, the CC session will continue (it will say the mline model failed, since it is no longer present in the database). You can re-run ComboCode if you want to re-try the model. You can run the exact same script for other databases, including cooling, sphinx and MCMax. 
 
+Note that older versions of the databases may sometimes contain model\_ids for mline and sphinx (in their respective databases) that contain no molecules or transitions. These are not allowed anymore in the current version of ComboCode. Running this method also removes those empty model\_ids. This must be done in case you encounter one of the two following error messages: 
 
+    KeyError: 'Empty molec id found in the database. This should not be possible.'
+    KeyError: 'Empty trans id found in the database. This should not be possible.'
 
 ## 7. Statistical methods
 

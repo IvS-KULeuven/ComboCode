@@ -173,8 +173,8 @@ class Gastronoom(ModelingSession):
         Remember a molecule in progress. The model manager will wait until it 
         is finished.
         
-        @param trans: The molecule in progress
-        @type trans: Molecule()
+        @param molec: The molecule in progress
+        @type molec: Molecule()
         
         '''
         
@@ -408,7 +408,7 @@ class Gastronoom(ModelingSession):
                               'session for %s with ID %s.'\
                               %(molec.molecule,molec.getModelId())                     
                     else:
-                        print 'Mline model has been calculated before for'\
+                        print 'Mline model has been calculated before for '\
                               '%s with ID %s.'\
                               %(molec.molecule,molec.getModelId())         
                     break
@@ -425,7 +425,7 @@ class Gastronoom(ModelingSession):
                     #   in doMline.
                     if not v.keys(): 
                         raise KeyError('Empty molec id found in the database'+\
-                                       'This should not be possible.')
+                                       '. This should not be possible.')
                     
                     #-- molecule already in this id. Keep searching, unless it 
                     #   is the last entry. Then we have to make a new id

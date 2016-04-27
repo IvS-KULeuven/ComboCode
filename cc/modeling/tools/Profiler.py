@@ -31,7 +31,7 @@ def tempPowerLaw(r,Ti,Ri,epsilon):
     @param Ri: The inner radius in cm
     @type Ri: float
     @param epsilon: The exponent of the temp law
-    @type epislon: float
+    @type epsilon: float
     
     @return: The temperature grid
     @rtype: array

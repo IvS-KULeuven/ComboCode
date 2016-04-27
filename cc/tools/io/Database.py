@@ -352,11 +352,6 @@ def cleanDatabase(db_path):
                 print 'Removed in-progress model with id {}.'.format(cool_id)
             continue
         for ml_id,vml in vcool.items():
-            #-- Remove molec_ids that don't contain molecules.
-            if code == 'mline' and not vml:
-                del db[cool_id][ml_id]
-                db.addChangedKey(cool_id)
-                print 'Removed empty trans id {}.'.format(ml_id)                
             for key,val in vml.items():
                 #-- For mline IN PROGRESS entry is found in the molecule dict.
                 if code == 'mline':
@@ -366,11 +361,7 @@ def cleanDatabase(db_path):
                         print 'Removed in-progress molecule {} '.format(key)+\
                               'id {}.'.format(ml_id)
                     continue
-                #-- Remove trans_ids that don't contain transitions.
-                if code == 'sphinx' and not val:
-                    del db[cool_id][ml_id][key]
-                    db.addChangedKey(cool_id)
-                    print 'Removed empty trans id {}.'.format(key)
+
                 for trans,vsph in val.items():
                     #-- For sphinx IN PROGRESS entry is found in the trans dict.
                     #   No need to check code, it's the last possibility.
@@ -379,6 +370,21 @@ def cleanDatabase(db_path):
                         db.addChangedKey(cool_id)
                         print 'Removed in-progress transition '+ \
                               '{} with id {}.'.format(trans,key)
+                #-- Remove trans_ids that don't contain transitions. Run .keys()
+                #   again because maybe in-progress deletion removed all entries
+                #   from id
+                if code == 'sphinx' and not db[cool_id][ml_id][key].keys():
+                    del db[cool_id][ml_id][key]
+                    db.addChangedKey(cool_id)
+                    print 'Removed empty trans id {}.'.format(key)                    
+
+            #-- Remove molec_ids that don't contain molecules. Run .keys() again
+            #   because maybe in-progress deletion removed all entries from id
+            if code == 'mline' and not db[cool_id][ml_id].keys():
+                del db[cool_id][ml_id]
+                db.addChangedKey(cool_id)
+                print 'Removed empty trans id {}.'.format(ml_id)   
+                                    
     print '** Unlocking and synchronizing the database...'
     dbfile.close()
     db.sync()
