@@ -710,12 +710,12 @@ def makeTransitionsFromRadiat(molec,telescope,ls_min,ls_max,ls_unit='GHz',\
     
     '''
     
-    trkeys = dict= {'fraction_tau_step':fraction_tau_step,\
-                    'min_tau_step':min_tau_step,'tau_max':tau_max,\
-                    'write_intensities':write_intensities,'tau_min':tau_min,\
-                    'check_tau_step':check_tau_step,'n_quad':n_quad,\
-                    "offset":offset,'path_gastronoom':path_gastronoom,\
-                    'telescope':telescope,'molecule':molec}
+    trkeys = {'fraction_tau_step':fraction_tau_step,\
+              'min_tau_step':min_tau_step,'tau_max':tau_max,\
+              'write_intensities':write_intensities,'tau_min':tau_min,\
+              'check_tau_step':check_tau_step,'n_quad':n_quad,\
+              "offset":offset,'path_gastronoom':path_gastronoom,\
+              'telescope':telescope,'molecule':molec}
     radiat = molec.radiat
     wave = radiat.getFrequency(unit=ls_unit)
     low = radiat.getLowerStates()
