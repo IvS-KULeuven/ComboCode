@@ -504,7 +504,7 @@ class Gastronoom(ModelingSession):
         """
         
         #-- Remember which molecules have been added to new id, if applicable
-        molecs_copied_to_new_id = []    
+        copied_molecs = []    
 
         #-- Lock the sphinx database by opening it in read mode. It's closed
         #   once the database check is finalised. Note that in a case of a crash
@@ -517,6 +517,7 @@ class Gastronoom(ModelingSession):
             self.sph_db[self.model_id] = dict()
         for trans in self.trans_list:
             molec_id = trans.molecule.getModelId()
+            molec = trans.molecule
             if not molec_id:
                 self.trans_bools.append(False)
                 trans.setModelId('')
@@ -542,7 +543,7 @@ class Gastronoom(ModelingSession):
                             self.vic.addTransInProgress(trans)
                             print 'Sphinx model is currently being '+\
                                   'calculated for %s of %s with ID %s.'\
-                                  %(str(trans),trans.molecule.molecule,\
+                                  %(str(trans),molec.molecule,\
                                     trans.getModelId())                                 
                         elif self.vic is None \
                               and db_trans_dict.has_key('IN_PROGRESS'):
@@ -550,12 +551,12 @@ class Gastronoom(ModelingSession):
                             print 'Sphinx model is currently being ' + \
                                   'calculated in a different CC modeling '+\
                                   'session for %s of %s with ID %s.'\
-                                  %(str(trans),trans.molecule.molecule,\
+                                  %(str(trans),molec.molecule,\
                                     trans.getModelId())                     
                         else:
                             print 'Sphinx model has been calculated before '+ \
                                   'for %s of %s with ID %s.'\
-                                  %(str(trans),trans.molecule.molecule,\
+                                  %(str(trans),molec.molecule,\
                                     trans.getModelId())
                         break
                         
@@ -603,7 +604,7 @@ class Gastronoom(ModelingSession):
                             #   since it is the original 
                             if not molec_dbd.has_key(molec_id):
                                 k = molec_id
-                                molecs_copied_to_new_id.append(trans.molecule)
+                                copied_molecs.append((molec.molecule,k))
                             else: 
                                 k = self.makeNewId()
                                 self.makeIdLog(new_id=k,molec_id=molec_id)
@@ -614,7 +615,7 @@ class Gastronoom(ModelingSession):
                     #   nor any copying of output.
                     if not molec_dbd.keys():
                         k = molec_id
-                        molecs_copied_to_new_id.append(trans.molecule)
+                        copied_molecs.append((molec.molecule,k))
                         self.sph_db[self.model_id][molec_id][molec_id] = dict()
                         
                     #-- The last k value (or the new one in case end of dict was
@@ -627,11 +628,11 @@ class Gastronoom(ModelingSession):
                     #   You only want to do this once per session for each 
                     #   molecule, because ls/ln checks add a lot of overhead. 
                     #   copyOutput double checks if links already exist
-                    if trans.molecule not in molecs_copied_to_new_id:
-                        self.copyOutput(trans,molec_id,trans.getModelId())
-                        molecs_copied_to_new_id.append(trans.molecule) 
-                    self.sph_db[self.model_id][molec_id][trans.getModelId()]\
-                            [str(trans)] = trans.makeDict(1)
+                    if (molec.molecule,k) not in copied_molecs:
+                        self.copyOutput(trans,molec_id,k)
+                        copied_molecs.append((molec.molecule,k)) 
+                    td = trans.makeDict(1)
+                    self.sph_db[self.model_id][molec_id][k][str(trans)] = td
                     self.sph_db.addChangedKey(self.model_id)
 
         sph_dbfile.close()
@@ -883,7 +884,8 @@ class Gastronoom(ModelingSession):
         print '%i transitions out of %i not yet calculated.'\
               %(len([boolean for boolean in self.trans_bools if not boolean]),\
                 len(self.trans_bools))
-        for i,(trans_bool,trans) in enumerate(zip(self.trans_bools,self.trans_list)):
+        for i,(trans_bool,trans) in enumerate(zip(self.trans_bools,\
+                                                  self.trans_list)):
             if not trans_bool and trans.getModelId():
                 if not self.sphinx:
                     #- Only transitions with no db entry will get empty model id
