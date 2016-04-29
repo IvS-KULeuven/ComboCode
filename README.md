@@ -76,11 +76,14 @@ Once the requirements are sorted out, you can get to work with ComboCode. You ca
 
 * Add the ComboCode home folder you chose to the PYTHON\_PATH in your ~/.bash_profile.
 
+* Lastly, when running ComboCode in conjunction with the radiative-transfer codes listed above, ComboCode will write the output to folders for GASTRoNOoM and MCMax separately. You can choose these locations by adding them to usr/Path.dat.
+
+## Keeping ComboCode up-to-date
+ComboCode is a work in progress. New features and bug fixes are introduced regularly. Most of these changes will not affect how you use the code, unless explicitly stated. You can safely update your code without risk of losing any of your own files (such as your user settings in cc/aux/).
+
 * Updating your own clone of ComboCode to the most recent version can be done with:
     - $ cd ~/ComboCode/
     - $ git pull
-
-* Lastly, when running ComboCode in conjunction with the radiative-transfer codes listed above, ComboCode will write the output to folders for GASTRoNOoM and MCMax separately. You can choose these locations by adding them to usr/Path.dat.
 
 ## Documentation
 A user manual with cookbooks and an overview of the inputfiles is available on GitHub at (work in progress!):  
