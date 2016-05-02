@@ -2363,7 +2363,7 @@ class Transition():
                     self.unreso_err[fn],\
                     self.unreso_blends[fn])
         elif not fn and self.unreso.keys():
-            k = self.unreso.sorted(keys())[0]
+            k = sorted(self.unreso.keys())[0]
             return (self.unreso[k],\
                     self.unreso_err[k],\
                     self.unreso_blends[k])
