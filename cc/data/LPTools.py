@@ -562,9 +562,6 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
         flux = flux[-np.isnan(flux)]
         vlsr = lprof.getVlsr()
     
-    #-- Read the telescope properties
-    telescope_size,tel_abs_err = readTelescopeProperties(lprof.telescope)
-    
     if convert_ms_kms:
         vel = vel/1000.
     #-- Initial values: [peak tmb,vlsr,vexp,gamma] 
