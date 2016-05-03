@@ -42,13 +42,14 @@ class LPDataReader(Reader):
                 
         super(LPDataReader, self).__init__()
         self.filename = filename
+        fn = os.path.splitext(os.path.split(self.filename)[1])[0]
         if star_name <> None:
             self.star_name = star_name
         else:
-            self.star_name = os.path.split(self.filename)[1].split('_')[0]
+            self.star_name = fn.split('_')[0]
         self.c = 2.99792458e10          #in cm/s
         self.contents['vlsr'] = None
-    
+        self.telescope = fn.split('_')[-1]
 
     
     def getVelocity(self):

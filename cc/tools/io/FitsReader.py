@@ -93,6 +93,7 @@ class FitsReader(LPDataReader):
         '''
 
         super(FitsReader, self).__init__(filename=filename,star_name=star_name)
+        self.type = 'fits' 
         self.readFits()
 
 

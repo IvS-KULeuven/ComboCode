@@ -23,6 +23,7 @@ from astropy import constants as cst
 
 import cc.path
 from cc.data import Data
+from cc.tools.io import Equivalency as eq
 from cc.tools.io import Database
 from cc.tools.io import DataIO, Atmosphere
 from cc.tools.numerical import Interpol
@@ -153,7 +154,7 @@ class Star(dict):
         self.au = 149598.0e8             #in cm
         self.c = cst.c.cgs.value          #in cm/s
         self.h = cst.h.cgs.value         #in erg*s, Planck constant
-        self.k = 1.3806488e-16          #in erg/K, Boltzmann constant
+        self.k = cst.k_B.cgs.value          #in erg/K, Boltzmann constant
         self.sigma = 5.67040040e-5         #in erg/cm^2/s/K^4   Harmanec & Psra 2011
         self.pc = 3.08568025e16         #in cm
         self.mh = 1.672661e-24           #in g, mass hydrogen atom
@@ -3736,7 +3737,7 @@ class Star(dict):
         
         if not self.has_key('R_OH1612'): 
             #-- Get the angular size equivalency
-            equiv = Data.angularSize(self['DISTANCE'])
+            equiv = eq.angularSize(self['DISTANCE'])
             #-- Convert as to cm
             rad = (self['R_OH1612_AS']*u.arcsec).to(u.cm,equivalencies=equiv)
             self['R_OH1612'] = rad.value/self['R_STAR']/self.Rsun

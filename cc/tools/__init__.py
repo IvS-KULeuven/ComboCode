@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ["numerical", "io"]
+__all__ = ["numerical", "io","units"]
