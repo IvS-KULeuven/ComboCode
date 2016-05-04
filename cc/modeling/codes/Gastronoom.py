@@ -448,7 +448,6 @@ class Gastronoom(ModelingSession):
                                'FRACTION_LEVEL_CORR','NUMBER_LEVEL_MAX_CORR']
                         if self.cCL(this_list=molec.makeDict(),\
                                     modellist=v[mm],code='mline',\
-                                    #extra_dict=extra_dict,\
                                     check_keys=cks):
                             break
                     

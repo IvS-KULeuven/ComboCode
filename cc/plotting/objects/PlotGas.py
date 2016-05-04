@@ -636,8 +636,9 @@ class PlotGas(PlottingSession):
                                              for xi,yi in zip(ddict['x'],\
                                                               ddict['y'])
                                              if list(yi)])
-                        if noise <> None and ddict['ymin'] < -3*noise: 
-                            ddict['ymin'] = -3*noise
+                        #-- Just to put the labels in a reasonable position
+                        if abs(ddict['ymin']) > 2*ddict['ymax']: 
+                            ddict['ymax'] = 3*ddict['ymax']
                     if limited_axis_labels:
                         if j%x_dim == 0:
                             ddict['yaxis'] = intrinsic \

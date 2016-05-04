@@ -13,12 +13,52 @@ from scipy import mean,sqrt,log, std,median
 from scipy import argmin,argmax,array
 from scipy.integrate import trapz
 from matplotlib import pyplot as plt
+from astropy import units as u
 
 import cc.path
 from cc.tools.io import FitsReader, TxtReader, DataIO
 from cc.plotting import Plotting2
+from cc.tools.units import Equivalency as eq
 
 from cc.ivs.sigproc import fit, funclib
+
+
+
+def readTelescopeProperties(telescope):
+
+    """
+    Read the telescope properties from Telescope.dat. 
+    
+    This currently includes the telescope size in m, and the default 
+    absolute flux calibration uncertainty. 
+    
+    @param telescope: The telescope requested
+    @type telescope: str
+    
+    @return: The telescope size and absolute flux calibration uncertainty
+    @rtype: (float,float)
+    
+    """
+    
+    all_telescopes = DataIO.getInputData(keyword='TELESCOPE',start_index=5,\
+                                         filename='Telescope.dat')
+    if 'PACS' in telescope: 
+        telescope = 'PACS'
+    else:
+        telescope = telescope
+    try:
+        tel_index = all_telescopes.index(telescope)
+    except ValueError:
+        raise ValueError('%s not found in Telescope.dat.'%telescope)
+                                 
+    size = DataIO.getInputData(keyword='SIZE',start_index=5,\
+                               filename='Telescope.dat',\
+                               rindex=tel_index)
+    abs_err = DataIO.getInputData(keyword='ABS_ERR',start_index=5,\
+                                  filename='Telescope.dat',\
+                                  rindex=tel_index)
+    return (size,abs_err)
+
 
 
 def readLineProfile(filename):

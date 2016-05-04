@@ -45,6 +45,7 @@ class TxtReader(LPDataReader):
         '''
         
         super(TxtReader, self).__init__(filename=filename,star_name=star_name)
+        self.type = 'txt'
         self.readTxt()
         self.checkVlsr()
         

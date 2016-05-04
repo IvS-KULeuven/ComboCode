@@ -9,18 +9,20 @@ Author: R. Lombaert
 
 import os 
 import re
-import scipy
 import subprocess
 import copy
 from glob import glob
 from scipy import pi, exp, linspace, argmin, array, diff, mean, isfinite
 from scipy.interpolate import interp1d
 from scipy.integrate import trapz
+import numpy as np
+from astropy import units as u
 import types
 
 from cc.ivs.sigproc import funclib
 
 import cc.path
+from cc.ivs.sigproc import funclib
 from cc.modeling.objects import Molecule 
 from cc.tools.io import Database, DataIO
 from cc.tools.io import SphinxReader
@@ -28,6 +30,7 @@ from cc.tools.io import FitsReader, TxtReader
 from cc.tools.numerical import Interpol
 from cc.statistics import BasicStats as bs
 from cc.data import LPTools
+from cc.tools.units import Equivalency as eq
 
 
 def getLineStrengths(trl,mode='dint',nans=1,n_data=0,scale=0,**kwargs):
@@ -955,7 +958,10 @@ class Transition():
                       #'removing all LINE_SPEC lines.'
                 telescope = '%s-H2O'%telescope
             self.telescope = telescope
-            self.readTelescopeProperties()
+            props = LPTools.readTelescopeProperties(self.telescope)
+            self.telescope_size = props[0]
+            self.tel_abs_err = props[1]
+
 
         #-- Transition quantum numbers and offset
         self.vup = int(vup)
@@ -1109,35 +1115,6 @@ class Transition():
         
         return hash(str(self))
 
-
-
-    def readTelescopeProperties(self):
-    
-        """
-        Read the telescope properties from Telescope.dat. 
-        
-        This currently includes the telescope size in m, and the default 
-        absolute flux calibration uncertainty. 
-        
-        """
-        
-        all_telescopes = DataIO.getInputData(keyword='TELESCOPE',start_index=5,\
-                                             filename='Telescope.dat')
-        if 'PACS' in self.telescope: 
-            telescope = 'PACS'
-        else:
-            telescope = self.telescope
-        try:
-            tel_index = all_telescopes.index(telescope)
-        except ValueError:
-            raise ValueError('%s not found in Telescope.dat.'%self.telescope)
-                                     
-        self.telescope_size = DataIO.getInputData(keyword='SIZE',start_index=5,\
-                                                  filename='Telescope.dat',\
-                                                  rindex=tel_index)
-        self.tel_abs_err = DataIO.getInputData(keyword='ABS_ERR',start_index=5,\
-                                               filename='Telescope.dat',\
-                                               rindex=tel_index)
 
 
     def getInputString(self,include_nquad=1):
@@ -2072,7 +2049,8 @@ class Transition():
         #   zero point (the rest frequency of the line, without vlsr) in Hz
         #   Negative velocities increase the frequency (blueshift), positive 
         #   velocities decrease the frequency (redshift).
-        freqgrid = self.frequency*(1-mvel/self.c)
+        vel_to_freq = u.doppler_radio(self.frequency*u.Hz)
+        freqgrid = (mvel*u.cm/u.s).to(u.Hz,equivalencies=vel_to_freq).value
         
         #-- Integrate Fnu over frequency to get integrated intensity and 
         #   multiply by -1 due to a descending frequency grid rather than 
@@ -2175,7 +2153,7 @@ class Transition():
          
     
     
-    def getIntTmbData(self,index=0,use_fit=0):
+    def getIntTmbData(self,index=0,use_fit=0,units='tmb'):
         
         """
         Calculate the integrated Tmb of the data line profile over velocity.
@@ -2207,33 +2185,98 @@ class Transition():
         
         Returns None if no data are available. 
         
+        CGS or SI units can be requested as well, where the profile is converted
+        to Fnu before integration via Fnu = Tmb/(pi*tel_diameter**2/8/k_B).
+        
         This does not work for PACS or SPIRE data.
         
         @keyword index: The data list index of the requested noise value
         
                         (default: 0)
         @type index: int
+        @keyword use_fit: Force the use of the fitted line profile.
         
-        @return: The integrated data Tmb in K km/s and the relative uncertainty
+                          (default: 0)
+        @type use_fit: bool
+        @keyword units: The unit of the integrated line strength. Can be returned
+                       in K Km/s (tmb), erg/s/cm2 (cgs) or w/m2 (si). 
+                       
+                       (default: 'tmb')
+        @type units: str
+        
+        @return: The integrated line strength and the relative uncertainty in 
+                 the requested units.
         @rtype: (float,float)
         
         """
         
+        units = units.lower()
+        
+        #-- Make sure data are available
         self.readData()
+        
+        #-- If not data found, return None
         if self.fittedlprof is None:
             return (None, None)
+            
+        #-- Grab the absolute flux calibration uncertainty
         if self.fittedlprof[index].has_key('abs_err'): 
             abs_err = self.fittedlprof[index]['abs_err']
         else:
             abs_err = self.tel_abs_err 
+            
+        #-- Grab integration from radio database lp fit results if tmb is needed
+        if not units in ['si','cgs']:
+            if use_fit or self.fittedlprof[index]['fitabs'] <> None:
+                #-- Integrating the fitted SoftPar, rather than data
+                #   due to detected absorption component in the line profile.
+                return (self.fittedlprof[index]['fgintint'],abs_err)
+            else:
+                #-- Using broader integration window for data
+                #   due to a Gaussian-like profile, rather than a SP.
+                return (self.fittedlprof[index]['dintint'],abs_err)
+        
+        #-- Do the integration anew if si/cgs is needed (rest frequency of line
+        #   is needed, so cannot do it in fitLP
+        #-- Convert Tmb to Fnu for integration in cgs units.
+        #   Grab all velocity information
+        dvel = self.lpdata[index].getVelocity()
+        vlsr = self.lpdata[index].getVlsr()
+        vexp = self.fittedlprof[index]['vexp']
+
+        #-- Select integration window. Includes factor 0.6:
+        window = self.fittedlprof[index]['intwindow']
+        keep = np.abs(dvel-vlsr)<=(window*vexp)
+        dvel = dvel[keep]
+        
+        #-- Select the fitted profile if needed, otherwise read data
         if use_fit or self.fittedlprof[index]['fitabs'] <> None:
-            #-- Integrating the fitted SoftPar, rather than data
-            #   due to detected absorption component in the line profile.
-            return (self.fittedlprof[index]['fgintint'],abs_err)
+            functype = self.fittedlprof[index]['fitprof'][0]
+            pars = self.fittedlprof[index]['fitprof'][1]
+            dflux = funclib.evaluate(functype,dvel,pars)
         else:
-            #-- Using broader integration window for data
-            #   due to a Gaussian-like profile, rather than a SP.
-            return (self.fittedlprof[index]['dintint'],abs_err)
+            dflux = self.lpdata[index].getFlux()
+            dflux = dflux[keep]
+            dvel = dvel[-np.isnan(dflux)]
+            dflux = dflux[-np.isnan(dflux)]
+            
+        #-- Create conversion equivalencies and determine fnu(freq)
+        tmb = eq.Tmb(self.telescope_size)
+        fcgs = (dflux*u.K).to(u.erg/u.s/u.cm/u.cm/u.Hz,equivalencies=tmb).value
+        dop = u.doppler_radio(self.frequency*u.Hz)
+        freq = (dvel*u.km/u.s).to(u.Hz,equivalencies=dop).value
+        
+        #-- Do the integration:
+        #   multiply by -1 due to a descending frequency grid rather than 
+        #   ascending (causing the integrated value to be negative, ie
+        #   blue to red shifted compared to line center, neg v to pos v)
+        fint = -1*trapz(y=fcgs,x=freq)
+        
+        #-- If SI units, convert. Otherwise cgs is returned.
+        if units == 'si': 
+            fint = fint*10**-3
+        
+        return (fint,abs_err)
         
         
     
@@ -2363,7 +2406,7 @@ class Transition():
                     self.unreso_err[fn],\
                     self.unreso_blends[fn])
         elif not fn and self.unreso.keys():
-            k = self.unreso.sorted(keys())[0]
+            k = sorted(self.unreso.keys())[0]
             return (self.unreso[k],\
                     self.unreso_err[k],\
                     self.unreso_blends[k])
