@@ -23,7 +23,7 @@ from astropy import constants as cst
 
 import cc.path
 from cc.data import Data
-from cc.tools.io import Equivalency as eq
+from cc.tools.units import Equivalency as eq
 from cc.tools.io import Database
 from cc.tools.io import DataIO, Atmosphere
 from cc.tools.numerical import Interpol
