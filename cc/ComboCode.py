@@ -696,10 +696,12 @@ class ComboCode(object):
                     self.vic_manager.checkProgress(wait_qstat=1)
 
             if self.single_session:
-                self.model_manager.cool_db.sync()
-                self.model_manager.ml_db.sync()
-                self.model_manager.sph_db.sync()
-                self.model_manager.mcmax_db.sync()
+                if self.gastronoom: 
+                    self.model_manager.cool_db.sync()
+                    self.model_manager.ml_db.sync()
+                    self.model_manager.sph_db.sync()
+                if self.mcmax:    
+                    self.model_manager.mcmax_db.sync()
                 
                 
 
