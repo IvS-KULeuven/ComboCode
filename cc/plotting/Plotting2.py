@@ -18,7 +18,7 @@ from cc.tools.io import DataIO
 
 
 
-def plotTiles(data,dimensions,cfg='',**kwargs):
+def plotTiles(data,cfg='',**kwargs):
     
     '''
     Plot data in tiles in a single figure. 
@@ -87,8 +87,10 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
                  string
                  
     @type data: list[dict]
-    @param dimensions: The number of tiles in the x and y direction is given:
-                       (x-dim,y-dim)
+    @keyword dimensions: The number of tiles in the x and y direction is given:
+                         (x-dim,y-dim)
+                         
+                         (default: (1,len(data))
     @type dimensions: tuple(int)
     @keyword cfg: config filename read as a dictionary, can replace any keyword 
                   given to plotCols. Can also be a dictionary itself, in which
@@ -386,8 +388,12 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
     thick_lw_data = kwargs.get('thick_lw_data',0)
     markeredgewidth = kwargs.get('markeredgewidth',1)
     
-    xdim = dimensions[0]
-    ydim = dimensions[1]
+    #-- Set default dimensions to be one column, and #rows == #curves
+    nd = len(data)
+    dimensions=kwargs.get('dimensions',(1,nd+1 if keytags else nd))
+    
+    xdim = int(dimensions[0])
+    ydim = int(dimensions[1])
     if keytags:
         if not len(data) <= (xdim*ydim)-1:
             print 'Too many dicts in data to be accomodated by requested ' + \
@@ -418,6 +424,7 @@ def plotTiles(data,dimensions,cfg='',**kwargs):
         if len(ddict['x']) != len(ddict['y']):
             print 'Dictionary in data list with index %i does not '%i + \
                   'the same dimensions for the x and y lists. Aborting.'
+            return
         if not ddict.has_key('histoplot'):
             ddict['histoplot'] = []
         if not ddict.has_key('labels'):
