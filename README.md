@@ -38,9 +38,14 @@ have to contact the authors of the codes.</li>
 ## Requirements
 Currently the code has been tested to run on Unix-based systems, more specifically Fedora and Mac OS X. In principle, any operating systems that fulfills the requirements listed below should be able to run ComboCode. The code runs ons machines with an internal memory of 8 GB, but less is likely fine as well. The memory requirements are primarily set by the numerical codes included in ComboCode.
 
-First and foremost, you require a Python 2.7 (not Python 3!) distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. Specific packages required to be installed in your python distribution are: PyPDF2, h5py, ephem, portalocker and astropy. As an example, after installation of Anaconda, you can run the following command in the shell:
+First and foremost, you require a Python 2.7 (not Python 3!) distribution installed on your machine. I recommend Anaconda, which allows for very flexible package management. Specific packages required to be installed in your python distribution are: Image, PyPDF2, h5py, ephem, portalocker and astropy. As an example, after installation of Anaconda, you can run the following command in the shell:
 
     - $ pip install ephem
+
+I strongly recommend using pip (and not, e.g., MacPorts or similar) for installing these packages. For Mac OS X users, an issue can arise with the use of pip. If you get an error regarding the locale settings when running pip, add the following lines to your ~/.bash_profile:
+
+    export LC_ALL=en_US.UTF-8
+    export LANG=en_US.UTF-8
 
 Secondly, we are using git for the version control of the repository. Follow the instructions given <a href="https://help.github.com/articles/set-up-git/"> here</a> to set up git on your local machine, after you have created a user account at GitHub.
 
