@@ -1616,10 +1616,6 @@ class PlotGas(PlottingSession):
             labels = bool(cfg_dict['labels'])
         else:
             labels = []
-        if cfg_dict.has_key('keytags'):
-            keytags = bool(cfg_dict['keytags'])
-        else:
-            keytags = []
         
         lls = self.createLineLabels(star_grid=star_grid,\
                                     fn_trans_marker=fn_trans_marker,\
@@ -1651,7 +1647,7 @@ class PlotGas(PlottingSession):
             else:
                 elabel = []
             
-            plot_title = '{} - {}'%(self.star_name_plots,band)
+            plot_title = '{} - {}'.format(self.star_name_plots,band)
             plot_filenames.append(Plotting2.plotCols(x=x_list,y=y_list,\
                     keytags=keytags,number_subplots=2,\
                     plot_title=plot_title,\

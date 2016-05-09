@@ -930,11 +930,12 @@ class ComboCode(object):
                 print '************************************************'
                 ss = ResoStats.ResoStats(star_name=sn,\
                                          path_code=self.path_gastronoom,\
-                                         lll_p=self.stat_lll_p)
+                                         lll_p=self.stat_lll_p,\
+                                         vmin=self.stat_lll_vmin,\
+                                         vmax=self.stat_lll_vmax)
                 ss.setInstrument(self.radio_trans[sn])
                 ss.setModels(star_grid=self.star_grid)
-                ss.setIntensities(vmin=self.stat_lll_vmin,\
-                                  vmax=self.stat_lll_vmax)
+                ss.setIntensities()
                 if self.stat_print: ss.printStats()
                 self.resostats[sn] = ss
                 #bfms = self.resostats.selectBestFitModels(mode='int')

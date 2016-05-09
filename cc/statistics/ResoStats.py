@@ -34,7 +34,7 @@ class ResoStats(Statistics):
     """
         
     def __init__(self,star_name,code='GASTRoNOoM',path_code='codeJun2013',\
-                 lll_p=None,use_bestvlsr=1):        
+                 lll_p=None,use_bestvlsr=1,vmin=0.0,vmax=0.0):        
         
         """ 
         Initializing an instance of IntIntStats.
@@ -67,11 +67,38 @@ class ResoStats(Statistics):
                                
                                (default: 1)
         @type use_bestvlsr: bool
-        
+        @keyword vmin: The minimum value in km/s of the spectral line window. 
+                       Ideally this is the same for all lines under 
+                       consideration. If an invalid spectral window is given 
+                       (vmax==vmin, or vmin>vmax), the spectral window is taken
+                       from the line fit results. This leads to a different 
+                       window for each line under consideration, and is not 
+                       recommended for calculating the loglikelihood.
+                       
+                       (default: 0.0)
+        @type vmin: float        
+        @keyword vmax: The maximum value in km/s of the spectral line window. 
+                       Ideally this is the same for all lines under 
+                       consideration. If an invalid spectral window is given 
+                       (vmax==vmin, or vmin>vmax), the spectral window is taken
+                       from the line fit results. This leads to a different 
+                       window for each line under consideration, and is not 
+                       recommended for calculating the loglikelihood.
+                       
+                       (default: 0.0)
+        @type vmax: float       
+                
         """
         
         super(ResoStats,self).__init__(star_name=star_name,\
                                        code=code,path_code=path_code)
+
+        #-- Velocity window settings
+        self.use_bestvlsr = use_bestvlsr
+        self.vmin = vmin
+        self.vmax = vmax
+        print 'Calculating loglikelihood statistics using spectral window:'
+        print 'v_min = {} km/s, v_max = {} km/s.'.format(str(vmin),str(vmax))
         
         #-- List of template transitions
         self.translist = []
@@ -91,6 +118,7 @@ class ResoStats(Statistics):
         #   Star() object with the same index in self.star_grid.
         self.dinttmb = dict()
         self.dpeaktmb = dict()
+
         #-- Dicts keeping integrated and peak intensities of sphinx models, as 
         #   well as the loglikelihood measure of fitness between model and data
         #   The peak and integrated intensity ratio dicts follow same pattern
@@ -104,11 +132,13 @@ class ResoStats(Statistics):
         self.ratiopeak = dict()
         self.ratioint = dict()
         self.ratiocombo = dict()
+
         #-- Only set to True if something failed somewhere. Likely not yet 
         #   implemented/resolved issues.
         self.no_stats = False
         self.stats = dict([('peak',self.ratiopeak),('int',self.ratioint),\
                            ('combo',self.ratiocombo)])
+
         #-- Default Flux calibration uncertainties from Telescope.dat
         #   I suggest to change these values based on what you want to use 
         #   yourself, depending on the transition under consideration.
@@ -117,7 +147,6 @@ class ResoStats(Statistics):
         abs_errs = DataIO.getInputData(keyword='ABS_ERR',start_index=5,\
                                        filename='Telescope.dat')
         self.tele_uncertainties = dict(zip(telescopes,abs_errs))
-        self.use_bestvlsr = use_bestvlsr
         
         #-- The uncertainties and loglikelihoods for each template transition 
         #   is kept here, but the key is the INDEX of the template transition.
@@ -187,13 +216,7 @@ class ResoStats(Statistics):
         
         if not self.star_grid:
             return
-        
-        self.vmin = vmin
-        self.vmax = vmax
-        
-        print 'Calculating loglikelihood statistics using a partial line profile.'
-        print 'Cutoff velocities = '+str(vmin)+ ', '+str(vmax)
-        
+
         self.translist = [t 
                           for t in self.sample_trans
                           if t.lpdata]
@@ -257,11 +280,11 @@ class ResoStats(Statistics):
                 self.noisy[ist] = True
             else: 
                 self.noisy[ist] = False
-            self.dinttmb[st]= st.getIntTmbData(use_fit=self.noisy[ist])
+            self.dinttmb[st]= st.getIntTmbData(use_fit=self.noisy[ist])[0]
             
             #-- Collect the loglikelihoods for all models
-            llls = array([mt.getLoglikelihood(self.use_bestvlsr,\
-                                              vmin = vmin,vmax = vmax,\
+            llls = array([mt.getLoglikelihood(use_bestvlsr=self.use_bestvlsr,\
+                                              vmin=self.vmin,vmax=self.vmax,\
                                               use_fit=self.noisy[ist])\
                           for mt in self.trans_models[st]])
             self.loglikelihood[st] = llls
@@ -416,8 +439,8 @@ class ResoStats(Statistics):
             self.ratiocombo[st] = zip(self.ratiopeak[st],self.ratioint[st])            
 
             #-- Recalculate the loglikelihood with respect to the new int ls
-            llls = array([mt.getLoglikelihood(self.use_bestvlsr,\
-                                              vmin = vmin,vmax = vmax,\
+            llls = array([mt.getLoglikelihood(use_bestvlsr=self.use_bestvlsr,\
+                                              vmin=self.vmin,vmax=self.vmax,\
                                               use_fit=self.noisy[ist])\
                           for mt in self.trans_models[st]])
             self.loglikelihood[st] = llls
