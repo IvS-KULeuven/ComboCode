@@ -21,7 +21,7 @@ The functionality includes:
 <li>First you have to install the package itself. See instructions below.</li>
 <li>You will need the radiative-transfer codes to be able to run ComboCode to its fullest potential. For this you will
 have to contact the authors of the codes.</li>
-<li>Examples of how to run ComboCode are available in the <a href="https://github.com/IvS-KULeuven/ComboCode/blob/dev/Manual.md">Manual</a>.</li>
+<li>Examples of how to run ComboCode are available in the <a href="https://github.com/IvS-KULeuven/ComboCode/blob/master/Manual.md">Manual</a>.</li>
 <li>ComboCode folder structure: 
 <ol>
 <li>cc -- Contains the Python modules.</li>
