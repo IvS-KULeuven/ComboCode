@@ -175,6 +175,10 @@ class UnresoStats(Statistics):
         @type filename: string
         '''
         
+        if chi2_method not in ['diff','log']:
+            chi2_method = 'diff'
+            print "WARNING: STAT_CHI2 not recognized. Using default 'diff'."
+        
         #-- For now excluding blends
         inst = self.instrument
         all_dints = self.getRatios(sel_type='dint_bands',data_type='dint_bands',\

@@ -1636,28 +1636,25 @@ class PlotGas(PlottingSession):
             pfn = fn_plt if fn_plt else os.path.split(dfn)[1]
             pfn = self.setFnPlt(pfn,fn_suffix=band,fn_subfolder='PACS_results')
             
-            if not keytags:
-                kt = ['Model %i: %s'%(i+1,str(star['LAST_PACS_MODEL'])\
-                    .replace('_','\_')) for i,star in enumerate(star_grid)]
-            else:
-                kt = []
+            keytags = ['Model %i: %s'%(i+1,str(star['LAST_PACS_MODEL'])\
+                                               .replace('_','\_')) 
+                       for i,star in enumerate(star_grid)]
             if exclude_data:
                 x_list = [wave]*(len(sphinx_flux)) 
                 y_list = sphinx_flux
             else:
                 x_list = [wave]*(len(sphinx_flux)+1)
                 y_list = [flux]+sphinx_flux
-                kt = ['PACS Spectrum'] + kt
+                keytags = ['PACS Spectrum'] + keytags
             if include_band:
                 elabel = [(band,0.05,0.80)]
             else:
                 elabel = []
-
+            
+            plot_title = '{} - {}'%(self.star_name_plots,band)
             plot_filenames.append(Plotting2.plotCols(x=x_list,y=y_list,\
-                    keytags=kt,number_subplots=2,\
-                    #plot_title='%s: %s - %s'%(self.plot_id.replace('_','\_'),\
-                    #self.star_name_plots,band),\
-                    plot_title=' ' ,\
+                    keytags=keytags,number_subplots=2,\
+                    plot_title=plot_title,\
                     cfg=cfg_dict,\
                     line_labels=lls,\
                     histoplot=not exclude_data and [0] or [],\
@@ -2074,127 +2071,3 @@ class PlotGas(PlottingSession):
 
 
 
-    def plotIntTmbAll(self,star_grid=[],scale=1,fn_plt='',cfg = ''):
-        
-        '''
-        Plot of the integrated main beam temperature of the molecular data
-        and that obtained from model(s). Jup vs K.
-        
-        @keyword star_grid: star models to be included in
-        
-                            (default: [])
-        @type star_grid: list[Star()]
-        @keyword scale: scale int. Tmb to an antenna of 1 m**2,
-                        necesarry to compare data from different telescope_string
-                        
-                        (default = 1)
-        @type scale: bool
-        @keyword fn_plt: A plot filename to which an index is added for each
-                         subband.
-                         
-                         (default: '')
-        @type fn_plt: string
-        @keyword cfg: path to the Plotting2.plotCols config file. If default,
-                      the hard-coded default plotting options are used.
-                      
-                      (default: '')
-        @type cfg: string
-        
-        '''
-        
-        print '***********************************'   
-        print '** Plotting integrated main beam temperatures'
-        print '** Plots can be found at '
-        
-        #-- Read cfg file and retrieve sub plot method specific keywords.
-        cfg_dict = Plotting2.readCfg(cfg)
-        if cfg_dict.has_key('filename'):
-            fn_plt = cfg_dict.pop('filename')
-        if cfg_dict.has_key('scale'):
-            scale = bool(cfg_dict['scale'])
-
-        ### Data
-        #-- Get the int. mean beam temp. and its error for the data, 
-        #-- split up according to telescope
-        trans = star_grid[0]['GAS_LINES']
-        tele = list(set([t.telescope for t in trans]))
-        molecs = list(set([t.molecule for t in trans]))
-
-        for jj in range(len(molecs)):
-            jup_split = []
-            data = []
-            error = []
-            
-            for ii in range(len(tele)):
-                tr = [t for t in trans 
-                      if t.telescope == tele[ii] and t.molecule == molecs[jj]]
-                jup_split.append([t.jup for t in tr])
-                idata,ierror = Transition.getLineStrengths(tr,mode='dtmb',\
-                                                           scale=scale)
-                data.append(idata)
-                #-- Error is given in relative numbers.
-                error.append(idata*ierror)
-            
-            tra = [t for t in trans if t.molecule == molecs[jj]]
-            
-            #-- Initialise labels and types for plotting
-            types_data = ['ro','gs','bp']
-            if len(jup_split)%3 != 0:
-                types_data = types_data + types_data[0:(len(jup_split)%3)]    
-            if len(tele) == 2:
-                types_data = ['ro','gs']
-            
-            ### Models
-            #-- Get int. main beam temp. of model(s) and initialise plotting
-            data_model = []
-            label_model = []
-            types_model = []
-            colors = ['k', 'm', '0.50', 'c', 'y', 'r', 'g','b']
-            C = len(colors)
-            for ii in range(len(star_grid)):
-                trans = star_grid[ii]['GAS_LINES']
-                molecs = list(set([t.molecule for t in trans]))
-                intra = [t for t in trans if t.molecule == molecs[jj]]
-                mod = Transition.getLineStrengths(intra,mode='mtmb',scale=scale)
-                data_model.append(mod[0])
-                label_model.append(trans[0].getModelId().replace('_','\_'))
-                types_model.append("".join([colors[ii%C], '--x']))
-                
-            ##- Get jup, and sort data in order of increasing jup
-            jup = [t.jup for t in tra]
-            indices = np.argsort(jup)
-            jup.sort()
-            data_model = [list(data_model[x][indices]) 
-                          for x in range(len(data_model))]
-
-
-            ### Plotting
-            #-- Initialise x, y, yerr, line types and labels
-            x_toplot = jup_split + [jup]*len(star_grid) 
-            y_toplot = data + data_model            
-            yerr_toplot = error + [None]*len(star_grid)
-            types = types_data + types_model
-            labels = tele + label_model
-            
-            #-- Set plot filename
-            pfn = fn_plt if fn_plt else 'intTmb'
-            suff = '_'.join([star_grid[0]['LAST_GASTRONOOM_MODEL'], \
-                             molecs[jj].makeLabel()[2:-2]])
-            pfn = self.setFnPlt(pfn,fn_suffix=suff)
-
-            #-- Cfg and specific plotting settings
-            extra_pars = dict()
-            extra_pars['xmin'] = min(jup)-0.5
-            extra_pars['xmax'] = max(jup)+0.5
-            extra_pars['figsize'] = (15,9)
-            extra_pars['yaxis'] = '$\int T_\mathrm{mb}\ (\mathrm{K\ km/s})$'
-            extra_pars['xaxis'] = '$J_{up}$'
-            extra_pars['keytags'] = labels
-            extra_pars['line_types'] = types
-            extra_pars['filename'] = pfn
-
-            #-- Plot
-            pfn = Plotting2.plotCols(x=x_toplot,y=y_toplot,cfg=cfg_dict,\
-                                     yerr=yerr_toplot,**extra_pars)
-            print pfn
-        print '***********************************'
