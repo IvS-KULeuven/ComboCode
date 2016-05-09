@@ -26,7 +26,8 @@ class Instrument(object):
     """
         
     def __init__(self,star_name,instrument_name,oversampling,\
-                 code='GASTRoNOoM',path=None,intrinsic=1,path_linefit=''):        
+                 code='GASTRoNOoM',path=None,intrinsic=1,path_linefit='',\
+                 blend_factor=1.2):        
         
         """ 
         Initializing an instance of Instrument.
@@ -64,6 +65,13 @@ class Instrument(object):
                                
                                (default: '')
         @type path_linefit: string
+        @keyword blend_factor: The relative factor with respect to the intrinsic
+                               instrumental FWHM that is compared with the 
+                               fitted Gaussian FWHM to determine whether an
+                               emission line may be blended.
+                               
+                               (default: 1.2)
+        @type blend_factor: float
 
         """
         
@@ -75,6 +83,7 @@ class Instrument(object):
         self.path_instrument = getattr(cc.path,'d%s'%self.instrument)
         self.intrinsic = intrinsic
         self.oversampling = int(oversampling)
+        self.blend_factor = float(blend_factor)
         self.data_filenames = []
         istar = DataIO.getInputData(keyword='STAR_NAME').index(star_name)
         #-- Set relevant velocities in cm/s
@@ -352,7 +361,7 @@ class Instrument(object):
             #      larger by 30% or more, put the int int negative. 
             elif len(wf_blends[ii]) == 1:
                 err = sqrt((lf.line_flux_rel[ii])**2+self.absflux_err**2)
-                factor = lf.fwhm_rel[ii] >= 1.2 and -1 or 1
+                factor = lf.fwhm_rel[ii] >= self.blend_factor and -1 or 1
                 st.setIntIntUnresolved(fn,factor*lf.line_flux[ii],err,self.vlsr)
             #   8) If multiple matches, give a selection of strans included
             #      in the blend (so they can be used to select model 
