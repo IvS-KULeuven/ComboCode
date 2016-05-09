@@ -19,6 +19,8 @@ import numpy as np
 from astropy import units as u
 import types
 
+import numpy
+
 from cc.ivs.sigproc import funclib
 
 import cc.path
@@ -2415,7 +2417,7 @@ class Transition():
         
     
     
-    def getLoglikelihood(self,use_bestvlsr=1,index=0,partial=0,vcut=0.0):
+    def getLoglikelihood(self,use_bestvlsr=1,index=0,partial=0,vmin=0.0,vmax=0.0):
         
         """
         Calculate the loglikelihood of comparison between sphinx and dataset.
@@ -2482,9 +2484,10 @@ class Transition():
         #-- Select the line profile within the relevant window, and cut off 
         #   part in case partial lll is requested
         if partial > 0:
-            selection = (abs(vel-vlsr)<=window*vexp)*(vel>vcut)
-        elif partial < 0:
-            selection = (abs(vel-vlsr)<=window*vexp)*(vel<vcut)
+            selection = numpy.logical_and(vel>=vmin, vel<=vmax)
+            #selection = (abs(vel-vlsr)<=window*vexp)*(vel>vcut)
+        #elif partial < 0:
+            #selection = (abs(vel-vlsr)<=window*vexp)*(vel<vcut)
         else:
             selection = abs(vel-vlsr)<=window*vexp
 
@@ -2517,3 +2520,237 @@ class Transition():
             msel = mtmb_interp*shift_factor
         
         return bs.calcLoglikelihood(data=dsel,model=msel,noise=noise)
+
+
+
+
+    def getLoglikelihoodShift(self,index=0,partial=0,vmin=0.0,vmax=0.0):
+        
+        """
+        Calculate the loglikelihood of comparison between sphinx and dataset.
+        
+        Gives a measure for the goodness of the fit of the SHAPE of the 
+        profiles.
+        
+        Note that by default only the first of data profiles is used for this, 
+        if there are multiple profiles available for this transition. (i.e. 
+        multiple observations of the same transition with the same telescope)
+        
+        A different index than the default allows access to the other data 
+        objects.
+        
+        Done for the dataset with given index! Makes use of the interpolated 
+        sphinx profile for the best vlsr, see self.getBestVlsr() if use_bestvlsr 
+        is True. If this keyword is False, interpolates the sphinx model for the
+        vlsr from Star.dat or the fits file.
+        
+        Returns None if sphinx or data profile are not available. 
+        
+        Rescales the sphinx profile according to the difference in integrated
+        Tmb between dataset and sphinx profile.
+
+        @keyword partial: Use a partial profile rather than the entire profile. 
+                          Set to 1 for larger than the cutoff value (vcut), set 
+                          to -1 for smaller than the cutoff value.
+                          
+                          (default: 0)
+        @type partial: int
+        @keyword vcut: The cut off value in km/s used by partial.
+                       
+                       (default: 0.0)
+        @type vcut: float        
+        @keyword index: The data list index of the requested noise value
+        
+                        (default: 0)
+        @type index: int
+        
+        @return: The loglikelihood
+        @rtype: float
+        
+        """
+            
+        vel = self.lpdata[index].getVelocity()
+        noise = self.getNoise(index=index)
+        window = self.fittedlprof[index]['intwindow']
+        vexp = self.getVexp(index=index)
+        vlsr = self.getVlsr(index=index)
+        
+        #-- Select the line profile within the relevant window, and cut off 
+        #   part in case partial lll is requested
+        if partial > 0:
+            selection = numpy.logical_and(vel>=vmin, vel<=vmax)
+        else:
+            selection = abs(vel-vlsr)<=window*vexp
+
+        dsel = self.lpdata[index].getFlux()[selection]
+        
+        num,abs_err = self.getIntTmbData(index=index)
+        shift_factor = num/self.getIntTmbSphinx()
+        
+        msel = self.best_mtmb[selection]
+        msel = msel*shift_factor
+        
+        self.sels = []
+        self.sels.append(msel)
+        
+        #print 'Model shift'
+        factor = 1/self.getPeakTmbData()
+        
+        self.lll = []
+        shift = numpy.linspace(-1,1,201)
+        for ss in shift:
+            #velshift = vel+ss
+            if partial > 0:
+                selection = numpy.logical_and(vel+ss>=vmin, vel+ss<=vmax)
+            else:
+                selection = abs(vel+ss-vlsr)<=window*vexp
+            
+            #print velshift[selection]
+            msel = self.best_mtmb[selection]
+            self.sels.append(msel)
+            
+            if len(msel) < len(dsel):
+                datasel = dsel[:-1]
+            elif len(msel) > len(dsel):
+                msel = msel[:-1]
+                datasel = dsel
+            else:
+                datasel = dsel
+            
+            msel = msel*shift_factor
+            
+            self.lll.append(bs.calcLoglikelihood(data=datasel*factor,model=msel*factor,noise=noise))
+        
+        #print shift[numpy.where(self.lll == max(self.lll))[0][0]]
+        return max(self.lll), shift[numpy.where(self.lll == max(self.lll))[0][0]]
+        
+        
+    def getLoglikelihoodScaledPeak(self,use_bestvlsr=1,index=0,partial=0,vmin=0.0,vmax=0.0):
+        
+        if use_bestvlsr and self.best_vlsr is None:
+            self.getBestVlsr(index=index)
+        if use_bestvlsr and self.best_vlsr is None:
+            print 'Using standard v_lsr from Star.dat or fits file for LLL.'
+            use_bestvlsr = 0
+            
+        vel = self.lpdata[index].getVelocity()
+        noise = self.getNoise(index=index)
+        window = self.fittedlprof[index]['intwindow']
+        vexp = self.getVexp(index=index)
+        vlsr = self.getVlsr(index=index)
+        
+        #-- Select the line profile within the relevant window, and cut off 
+        #   part in case partial lll is requested
+        if partial > 0:
+            selection = numpy.logical_and(vel>=vmin, vel<=vmax)
+            #selection = (abs(vel-vlsr)<=window*vexp)*(vel>vcut)
+        #elif partial < 0:
+            #selection = (abs(vel-vlsr)<=window*vexp)*(vel<vcut)
+        else:
+            selection = abs(vel-vlsr)<=window*vexp
+
+        if self.fittedlprof[index]['fitabs'] <> None:
+            pars = array(self.fittedlprof[index]['fitprof'][1])
+            functype = self.fittedlprof[index]['fitprof'][0]
+            dsel = funclib.evaluate(functype,vel[selection],pars)
+        else:
+            dsel = self.lpdata[index].getFlux()[selection]
+        
+        factor = 1/self.getPeakTmbData()
+        
+        if self.getPeakTmbData(index=index) <= 5.*self.getNoise(index=index):
+            #-- If the data are very noisy, use the fitted line profile to 
+            #   determine the shift_factor, instead of the data themself.
+            num = self.fittedlprof[index]['fgintint']
+            shift_factor = num/self.getIntTmbSphinx()
+        else:
+            #-- Note that even if data are not noisy, the fitted lprof is still
+            #   used here, in case an absorption is detected. 
+            num,abs_err = self.getIntTmbData(index=index)
+            shift_factor = num/self.getIntTmbSphinx()
+        
+        if use_bestvlsr:
+            msel = self.best_mtmb[selection]
+            msel = msel*shift_factor
+        else:
+            mvel = self.sphinx.getVelocity()
+            mtmb = self.sphinx.getLPTmb()
+            interpolator = interp1d(x=mvel+self.getVlsr(index=index),y=mtmb,\
+                                    fill_value=0.0,bounds_error=False)
+            mtmb_interp = interpolator(vel[selection])
+            msel = mtmb_interp*shift_factor
+        
+        #print factor
+        return bs.calcLoglikelihood(data=dsel*factor,model=msel*factor,noise=noise*factor)
+
+        
+    def getLoglikelihoodScaled(self,use_bestvlsr=1,index=0,partial=0,vmin=0.0,vmax=0.0):
+        
+        if use_bestvlsr and self.best_vlsr is None:
+            self.getBestVlsr(index=index)
+        if use_bestvlsr and self.best_vlsr is None:
+            print 'Using standard v_lsr from Star.dat or fits file for LLL.'
+            use_bestvlsr = 0
+            
+        vel = self.lpdata[index].getVelocity()
+        noise = self.getNoise(index=index)
+        window = self.fittedlprof[index]['intwindow']
+        vexp = self.getVexp(index=index)
+        vlsr = self.getVlsr(index=index)
+        
+        #-- Select the line profile within the relevant window, and cut off 
+        #   part in case partial lll is requested
+        if partial > 0:
+            selection = numpy.logical_and(vel>=vmin, vel<=vmax)
+            #selection = (abs(vel-vlsr)<=window*vexp)*(vel>vcut)
+        #elif partial < 0:
+            #selection = (abs(vel-vlsr)<=window*vexp)*(vel<vcut)
+        else:
+            selection = abs(vel-vlsr)<=window*vexp
+
+        if self.fittedlprof[index]['fitabs'] <> None:
+            pars = array(self.fittedlprof[index]['fitprof'][1])
+            functype = self.fittedlprof[index]['fitprof'][0]
+            dsel = funclib.evaluate(functype,vel[selection],pars)
+        else:
+            dsel = self.lpdata[index].getFlux()[selection]
+        
+        factor = 1/self.getIntTmbData()[0]
+        dsel = dsel*factor
+        
+        if self.getPeakTmbData(index=index) <= 5.*self.getNoise(index=index):
+            #-- If the data are very noisy, use the fitted line profile to 
+            #   determine the shift_factor, instead of the data themself.
+            num = self.fittedlprof[index]['fgintint']
+            shift_factor = num/self.getIntTmbSphinx()
+        else:
+            #-- Note that even if data are not noisy, the fitted lprof is still
+            #   used here, in case an absorption is detected. 
+            num,abs_err = self.getIntTmbData(index=index)
+            shift_factor = num/self.getIntTmbSphinx()
+        
+        if use_bestvlsr:
+            msel = self.best_mtmb[selection]
+            msel = msel*shift_factor
+            msel = msel*factor
+        else:
+            mvel = self.sphinx.getVelocity()
+            mtmb = self.sphinx.getLPTmb()
+            interpolator = interp1d(x=mvel+self.getVlsr(index=index),y=mtmb,\
+                                    fill_value=0.0,bounds_error=False)
+            mtmb_interp = interpolator(vel[selection])
+            msel = mtmb_interp*shift_factor
+            msel = msel*factor
+        #print factor
+        return bs.calcLoglikelihood(data=dsel,model=msel,noise=noise)
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
