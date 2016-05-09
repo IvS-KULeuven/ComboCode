@@ -1618,7 +1618,8 @@ class PlotGas(PlottingSession):
             labels = []
         if cfg_dict.has_key('keytags'):
             keytags = bool(cfg_dict['keytags'])
-
+        else:
+            keytags = []
         
         lls = self.createLineLabels(star_grid=star_grid,\
                                     fn_trans_marker=fn_trans_marker,\
