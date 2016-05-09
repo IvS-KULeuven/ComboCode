@@ -123,7 +123,7 @@ class Pacs(Instrument):
         
         super(Pacs,self).__init__(star_name=star_name,code='GASTRoNOoM',\
                                   path_linefit=path_linefit,path=path,\
-                                  oversampling=oversampling,\
+                                  oversampling=oversampling,blend_factor=1.2,\
                                   instrument_name='PACS',intrinsic=intrinsic)
         self.data_wave_list = []
         self.data_flux_list = []

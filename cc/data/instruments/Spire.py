@@ -65,7 +65,7 @@ class Spire(Instrument):
         
         super(Spire,self).__init__(star_name=star_name,code='GASTRoNOoM',\
                                    path=path,oversampling=oversampling,\
-                                   path_linefit=path_linefit,\
+                                   path_linefit=path_linefit,blend_factor=1.3,\
                                    instrument_name='SPIRE',intrinsic=intrinsic)
         #- resolution is given in cm^-1
         self.resolution = float(resolution)
