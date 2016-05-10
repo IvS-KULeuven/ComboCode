@@ -134,7 +134,7 @@ def integrateLPData(vexp,filename=None,lprof=None,window=1.2):
     
 
 
-def getPeakLPData(filename=None,lprof=None,vlsr=None):
+def getPeakLPData(filename=None,lprof=None,vlsr=None,method='mean',npoints=5):
     
     """
     Calculate the peak value of a line profile read from a fits file or a txt 
@@ -161,14 +161,39 @@ def getPeakLPData(filename=None,lprof=None,vlsr=None):
                    
                    (default: None)
     @type vlsr: float
+    @keyword method: The method applied: either 'mean' or 'fit'. Mean derives
+                     the peak value from the mean of the npoints flux points 
+                     around the vlsr. Fit takes the central peak flux at from 
+                     the fit.
+                     
+                     (default: 'mean')
+    @type method: str
+    @keyword npoints: The number of points around vlsr used for deriving the 
+                      peak value via the mean method. 
+                      
+                      (default: 5)
+    @type npoints: int
     
     @return: The peak intensity of the profile
     @rtype: float
     
     """
     
+    method = method.lower()
+    if method not in ['mean','fit']:
+        method = 'mean'
+        
+    #-- Read line profile
     if lprof is None:
         lprof = readLineProfile(filename)
+    
+    #-- If fit method, fit the line profile, and estimate peak value at vlsr of 
+    #   the fit
+    if method == 'fit':
+        fit = fitLP(lprof=lprof)
+        return fit['peak']
+    
+    #-- If mean method, take the mean around vlsr given n_points.
     vel = lprof.getVelocity()
     flux = lprof.getFlux()
     if vlsr is None:
@@ -176,8 +201,15 @@ def getPeakLPData(filename=None,lprof=None,vlsr=None):
     else: 
         vlsr = float(vlsr)
     
-    i_mid = argmin(np.abs(vel-vlsr))
-    return mean(flux[i_mid-2:i_mid+3])
+    #-- Set number of points on each side of vlsr
+    if npoints%2.==0: 
+        npoints = int(npoints/2.)
+    else:
+        npoints = int(npoints/2.)
+    
+    #-- Determine mid point, return mean
+    imid = argmin(np.abs(vel-vlsr))
+    return mean(flux[imid-npoints:imid+npoints+1])
 
     
     
@@ -666,12 +698,12 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
         
     #-- If the relative error on vexp is larger than 30%, usually something 
     #   funky is going on in the emission line. Try a Gaussian instead.
-    fvlsr = finalfit.get_parameters()[0][1]
-    fevlsr = finalfit.get_parameters()[1][1]
+
     vexp = abs(finalfit.get_parameters()[0][2])
     evexp = abs(finalfit.get_parameters()[1][2])
     gamma = finalfit.get_parameters()[0][3]
     egamma = finalfit.get_parameters()[1][3]
+
     #-- Gamma has to be positive. If it isnt, dont bother with Gaussian
     #   (double peaked line profile will not be fitted well with a Gaussian!)
     if (evexp/vexp > 0.40 and gamma > 0) or (evexp/vexp > 0.20 and vexp> 30.) \
@@ -688,13 +720,17 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
                                   vary_window=1,vary=[True,True,True,False])
         vexp = abs(finalfit.get_parameters()[0][2])*(2.*sqrt(2.*log(2.)))/2.
         evexp = abs(finalfit.get_parameters()[1][2])*(2.*sqrt(2.*log(2.)))/2.
-        fvlsr = finalfit.get_parameters()[0][1]
-        fevlsr = finalfit.get_parameters()[1][1]
         gamma, egamma = None,None
         window = 3.
         print 'Improved fit, using a gaussian instead of soft parabola:'
         print finalfit.param2str(accuracy=5)
-        
+    
+    #-- Extract some shared parameters between the gauss and sp.    
+    peak = finalfit.get_parameters()[0][0]
+    epeak = finalfit.get_parameters()[1][0]
+    fvlsr = finalfit.get_parameters()[0][1]
+    fevlsr = finalfit.get_parameters()[1][1]
+    
     #-- Compute numerical integrations.
     #   After fitting, window for integration should be 0.6*window. vexp is
     #   not expected to be too small anymore as in checkLPShape
@@ -718,6 +754,7 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
     if gamma <> None:
         print('Final gamma guess: %.4f +/- %.4f'%(gamma,egamma))
     print('Final vlsr guess: %.4f +/- %.4f'%(fvlsr,fevlsr))
+    print('Final peak Tmb guess at v_lsr: %.4f +/- %.4f K'%(peak,epeak))
     fwhm = getLPDataFWHM(lprof)
     print('The FWHM is %.2f km/s.'%(fwhm))
 
@@ -773,6 +810,9 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
     results['vexp'] = vexp
     results['evexp'] = evexp
     results['fwhm'] = fwhm
+    results['peak'] = peak
+    results['epeak'] = epeak
+    
     #-- Gamma is None if no soft parabola was fitted
     results['gamma'] = gamma
     results['egamma'] = egamma

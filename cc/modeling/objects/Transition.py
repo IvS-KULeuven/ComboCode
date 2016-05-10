@@ -2280,7 +2280,7 @@ class Transition():
         
         
     
-    def getPeakTmbData(self,index=0):
+    def getPeakTmbData(self,index=0,method='mean',**kwargs):
     
         """
         Get the peak Tmb of the data line profile. 
@@ -2304,19 +2304,40 @@ class Transition():
         
                         (default: 0)
         @type index: int
+        @keyword method: The method applied: either 'mean' or 'fit'. Mean 
+                         derives the peak value from the mean of the npoints  
+                         flux points around the vlsr. Fit takes the central peak
+                         flux at from the fit.
+                     
+                         (default: 'mean')
+        @type method: str        
+        @keyword kwargs: Extra keywords passed on to the LPTools method for peak
+                         determination. 
+                         
+                         (default: {})
+        @type kwargs: dict
         
         @return: The peak Tmb of the sphinx line profile
         @rtype: float        
         
         """
         
+        method = method.lower()
+        if method not in ['mean','fit']:
+            method = 'mean'
+        
         self.readData()
         if self.fittedlprof is None:
             return None
         
-        #-- Do not use the best vlsr for the data peak determination. This 
+        #-- In case the fit peak value is requested, take it from the fit
+        #   results
+        if method == 'fit': return self.fittedlprof[index]['peak']
+        
+        #-- If not fit, just call the LPTools method and get the mean of the 
+        #   points around vlsr. Do not use the best vlsr. This 
         #   should be model independent.
-        return LPTools.getPeakLPData(lprof=self.lpdata[index])
+        return LPTools.getPeakLPData(lprof=self.lpdata[index],**kwargs)
     
     
     
