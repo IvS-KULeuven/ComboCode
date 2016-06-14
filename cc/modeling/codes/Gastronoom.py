@@ -16,7 +16,7 @@ from scipy import array
 import cc.path
 from cc.tools.io import DataIO
 from cc.tools.io import Atmosphere
-from cc.modeling.ModelingSession import ModelingSession
+from cc.modeling.codes.ModelingSession import ModelingSession
 from cc.modeling.objects.Molecule import Molecule
 
 

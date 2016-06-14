@@ -17,12 +17,13 @@ import numpy as np
 
 import cc.path
 from cc.data import Sed
-from cc.plotting.PlottingSession import PlottingSession
+from cc.plotting.objects.PlottingSession import PlottingSession
 from cc.plotting import Plotting2,PlotMeixner
 from cc.tools.io import DataIO, KappaReader
 from cc.modeling.objects import Star
 from cc.modeling.codes import MCMax
-from cc.modeling.tools import Profiler,Reddening 
+from cc.modeling.tools import Reddening 
+from cc.modeling.profilers import Temperature
 
 
 class PlotDust(PlottingSession):
@@ -851,11 +852,12 @@ class PlotDust(PlottingSession):
         
         #-- Add power laws if requested
         for s in power:
-            rad_rstar = star_grid[0].getDustRad(unit='rstar')
             rad = star_grid[0].getDustRad(unit=unit)
             tstar = star_grid[0]['T_STAR']
-            temp,key = Profiler.tempPowerLawDust(rad=rad_rstar,add_key=1,\
-                                                 tstar=tstar,s=s)
+            rstar = star_grid[0]['R_STAR']
+            key = '$T_\mathrm{d}(r) = %i \\left(\\frac{2r}'%int(tstar) + \
+                  '{\mathrm{R}_\star}\\right)^{\\frac{2}{4+%i}}$'%int(s)
+            temp = Temperature.Tdust(r=rad,T0=tstar,r0=rstar,s=s)
             rads.append(rad)
             temps.append(temp)
             keytags.append(key)
@@ -983,11 +985,12 @@ class PlotDust(PlottingSession):
         
             #-- Add power laws if requested
             for s in power:
-                rad_rstar = star_grid[0].getDustRad(unit='rstar')
                 rad  = star_grid[0].getDustRad(unit=unit)
                 tstar = star_grid[0]['T_STAR']
-                temp,key = Profiler.tempPowerLawDust(rad=rad_rstar,add_key=1,\
-                                                     tstar=tstar,s=s)
+                rstar = star_grid[0]['R_STAR']
+                key = '$T_\mathrm{d}(r) = %i \\left(\\frac{2r}'%int(tstar) + \
+                      '{\mathrm{R}_\star}\\right)^{\\frac{2}{4+%i}}$'%int(s)
+                temp = Temperature.Tdust(r=rad,T0=tstar,r0=rstar,s=s)
                 rads.append(rad)
                 temps.append(temp)
                 keytags.append(key)

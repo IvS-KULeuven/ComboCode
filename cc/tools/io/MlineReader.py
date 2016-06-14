@@ -24,8 +24,7 @@ class MlineReader(Reader):
     
     '''
     
-    def __init__(self,filename,ny_up=None,ny_low=None,nline=None,n_impact=None,\
-                 n_impact_extra=None):
+    def __init__(self,filename):
         
         '''
         Creating an Mline object ready for reading Mline output.
@@ -40,10 +39,35 @@ class MlineReader(Reader):
         
         '''
         
-        super(SphinxReader, self).__init__()
+        super(MlineReader, self).__init__()
         self.molecule = os.path.splitext(filename)[0].split('_')[-1]
         self.filename = filename.replace('ml1','ml*').replace('ml2','ml*')\
                                 .replace('ml3','ml*')
+        self.readMoleculeSettings()
+        self.readMlineParameters()
         
 
 
+    def readMoleculeSettings(self):
+    
+        '''
+        Read molecule spectroscopy settings from the ml1 file.
+        
+        This includes ny_up, ny_low, nline, n_impact and n_impact_extra.
+        
+        '''
+
+
+
+    def readMlineParameters(self):
+        
+        '''
+        Read the extra mline parameters from the mline log file written by CC.
+        
+        Only when this file is available!
+        
+        Nothing is read from the database. This method is standalone, similar to
+        SphinxReader. 
+        
+        '''
+        

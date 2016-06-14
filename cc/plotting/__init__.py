@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ["Plotting2","PlottingSession","PlotMeixner","objects"]
+__all__ = ["Plotting2","PlotMeixner","objects"]

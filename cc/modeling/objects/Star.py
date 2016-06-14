@@ -145,20 +145,18 @@ class Star(dict):
             
         super(Star, self).__init__(example_star)
         if extra_input <> None: self.update(extra_input)
-        self.Rsun = 6.95508e10         #in cm  Harmanec & Prsa 2011
+        self.Rsun = cst.R_sun.cgs.value         #in cm  Harmanec & Prsa 2011
         self.Msun = 1.98547e33      #in g   Harmanec & Prsa 2011
-        self.Mearth = 5.97237e27        # in g
+        self.Mearth = cst.M_earth.cgs.value   # in g
         self.Tsun = 5779.5747            #in K   Harmanec & Psra 2011
-        self.Lsun = 3.846e33           #in erg/s
-        self.year = 31557600.            #julian year in seconds
+        self.Lsun = cst.L_sun.cgs.value           #in erg/s
         self.au = 149598.0e8             #in cm
         self.c = cst.c.cgs.value          #in cm/s
         self.h = cst.h.cgs.value         #in erg*s, Planck constant
         self.k = cst.k_B.cgs.value          #in erg/K, Boltzmann constant
-        self.sigma = 5.67040040e-5         #in erg/cm^2/s/K^4   Harmanec & Psra 2011
-        self.pc = 3.08568025e16         #in cm
-        self.mh = 1.672661e-24           #in g, mass hydrogen atom
-        self.G = 6.674e-8               # in cm^3 g^-1 s^-2
+        self.sigma = cst.sigma_sb.cgs.value         #in erg/cm^2/s/K^4  = g / (K^4 s^3) Stefan_boltzmann constant
+        self.mh = cst.m_p.cgs.value           #in g, mass hydrogen atom
+        self.G = cst.G.cgs.value           # in cm^3 g^-1 s^-2
         
         self.path_gastronoom = path_gastronoom        
         self.path_mcmax = path_mcmax
@@ -2575,7 +2573,7 @@ class Star(dict):
                     #   profiles in the Rayleigh limit, i.e. s=1
                     power = -2./(4+1)
                     #-- Take the reciprocal relation of the dust temperature
-                    #   profile (such as in Profiler.tempPowerLawDust())
+                    #   profile (as in profilers.Temperature.Tdust())
                     #   rmax is in Rstar!
                     rmax = (tmin/self['T_STAR'])**(1/power)/2.
                 self[missing_key] = rmax
@@ -2731,8 +2729,6 @@ class Star(dict):
         """
         
         if not self.has_key('SHELLMASS'):
-            #self['SHELLMASS'] = float(self['MDOT_GAS'])*self.Msun\
-                                  #/((self['VEL_INFINITY_GAS']*10**5)*self.year)
             self['SHELLMASS'] = self['MDOT_GAS']/self['VEL_INFINITY_GAS']
         else:
             pass
@@ -2746,9 +2742,10 @@ class Star(dict):
         """
         
         if not self.has_key('SHELLDENS'):
-            self['SHELLDENS'] = float(self['MDOT_GAS'])*self.Msun\
-                                  /((self['VEL_INFINITY_GAS']*10**5)*self.year\
-                                    *(self['R_STAR']*self.Rsun)**2*4.*pi)
+            
+            mdot_cgs = (float(self['MDOT_GAS'])*u.M_sun/u.yr).to(u.g/u.s).value
+            self['SHELLDENS'] = mdot_cgs/((self['VEL_INFINITY_GAS']*10**5)\
+                                         *(self['R_STAR']*self.Rsun)**2*4.*pi)
         else:
             pass
         
@@ -3786,24 +3783,6 @@ class Star(dict):
         bb = 2*self.h*freq**3/self.c**2 * \
              (1/(exp((self.h*freq)/(self.k*self['T_STAR']))-1))
         return w*10**(4),bb*10**(23)
-    
-    
-    
-    def getObservedBlackBody(self):
-        
-        '''
-        Scale the blackbody intensity following the distance and stellar radius.
-        
-        This is not the flux!
-        
-        @return: The wavelength grid and rescaled blackbody intensity
-        @rtype: (array,array)
-        
-        '''
-        
-        w,bb = self.getBlackBody()
-        return w,bb*(self['R_STAR']*self.Rsun)**2\
-                   /(self['DISTANCE']*self.pc)**2
         
 
 

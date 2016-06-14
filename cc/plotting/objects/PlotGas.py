@@ -15,7 +15,7 @@ from scipy.interpolate import interp1d
 import numpy as np
 
 import cc.path
-from cc.plotting.PlottingSession import PlottingSession
+from cc.plotting.objects.PlottingSession import PlottingSession
 from cc.tools.io import DataIO
 from cc.modeling.objects import Transition
 from cc.plotting import Plotting2

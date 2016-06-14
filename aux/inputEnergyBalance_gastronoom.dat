@@ -1,0 +1,38 @@
+#-- Coordinate grids: radius, grain size (can be single value), wavelength
+r = [2e13,5e15,1000,1]
+a = [0.005e-4,0.25e-4,200,1]
+l = [0.1e-4,1000e-4,1000,1]
+
+#-- Set basic profiles: gas velocity, initial temperature, opacity, mass loss, dust temperature
+v         = [vbeta,2e13,2.5e5,15e5,1.0]
+Tinit     = [Teps,1500.,2e13,0.6]
+opac      = [KappaReader,AMCDHSPREI,1,5]
+mdot      = 1e-5
+mdot_dust = 1e-8
+Td        = [Tdust,2500.,1e13,1]
+
+#-- Stellar parameters: Tstar, rstar, Ltype
+Tstar = 2500.
+rstar = 1e13
+Ltype = blackbody
+
+#-- Fractional atomic hydrogen and helium abundance
+fH  = 0.0
+fHe = 0.0
+
+#-- Grain specific density, porosity, and size distribution (only if a.size > 1)
+sd  = 1.8
+P   = 0.0
+GSD = MRN
+
+#-- Cooling and heating terms. Adiabatic cooling always included. Hdt/Hdg mode (gs2014 or classical).
+cterms = []
+hterms = []
+heatmode = classical
+
+#-- Cooling parameters: adiabatic coefficient (value, h2, or h2_mcp)
+gamma = 1.66667
+
+#-- Heating parameters: thermal term in drift (none,kwok,mean,rms,prob), sticking coefficient
+v_thermal = kwok
+alpha = 0.0
