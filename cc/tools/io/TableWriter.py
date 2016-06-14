@@ -150,7 +150,6 @@ def writeIntIntTable(filename,stars,trans,instrument='PACS',ddict=dict(),\
     bands = set([ib for v in ddict.values() for ib in v.data_ordernames])
     bands = [ib for ib in all_bands if ib in bands]
     if not sort_freq: bands.reverse()
-    print bands
     line_counter = dict()
     for s in stars:
         line_counter[s] = 0

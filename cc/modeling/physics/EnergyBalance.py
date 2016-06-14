@@ -433,7 +433,8 @@ class EnergyBalance(object):
         #-- Set the velocity profile: r, func, dfunc, order interp dfunc, pars
         self.v = Velocity.Velocity(self.r,v[0],None,3,*v[1:])
         
-        #-- func will be the only element in opac if KappaReader is requested
+        #-- Set the opacity profile: l, func, dfunc, order, pars (if 
+        #   read_opacity: species, index, order)
         self.opac = Opacity.Opacity(self.l,opac[0],None,3,*opac[1:])
         
         #-- Set the mass-loss-rate profiles. Check if these are constant.
