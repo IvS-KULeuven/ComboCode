@@ -3763,27 +3763,7 @@ class Star(dict):
                                         /self['R_STAR']/self.Rsun
         else:
             pass         
-    
-    
-    
-    def getBlackBody(self):
-        
-        '''
-        Calculate the black body intensity profile.
-        
-        @return: The wavelength and black body intensity grid
-        @rtype: (array,array)
-        
-        '''
-        
-        #- Define wavelength grid in cm
-        w = 10**(linspace(-9,2,5000))
-        freq = self.c/w
-        #- Calculate the blackbody
-        bb = 2*self.h*freq**3/self.c**2 * \
-             (1/(exp((self.h*freq)/(self.k*self['T_STAR']))-1))
-        return w*10**(4),bb*10**(23)
-        
+
 
 
     def missingInput(self,missing_key):

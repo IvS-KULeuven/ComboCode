@@ -16,16 +16,18 @@ from cc.modeling.profilers import Density
 from cc.tools.io import KappaReader as KR
 
 
-def read_opacity(species,index=1,order=3): 
+def read_opacity(x,species,index=1,order=3): 
 
     '''
-    
-    NYI : this doesn't work yet. You'd want the Profiler to allow these functions
-    to create an interpolator once, and then keep using it rather than recreate
-    it every single time. For now EnergyBalance does use this function to create
-    an interpolator.
-    
     Read the opacities with the KappaReader and interpolate. 
+    
+    Returns a tuple with the original grid, and the interpolation object. Used 
+    by the Opacity class to set an interpolation object for a .opac/.particle
+    file through species given in usr/Dust.dat.
+    
+    @param x: The x grid requested for the interpolation. Note that this is a 
+              dummy variable to allow Profiler to work with this function. 
+    @type x: array
     
     @param species: The dust species (from Dust.dat)
     @type species: string
@@ -47,7 +49,8 @@ def read_opacity(species,index=1,order=3):
     '''
     
     kr = KR.KappaReader()
-    return kr.interpolate(species,index,order)
+    return (kr.getWavelength(species),kr.getKappas(species,index),
+            kr.interpolate(species,index,order))
     
 
 

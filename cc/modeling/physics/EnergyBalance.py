@@ -55,11 +55,17 @@ def dTdr(T,r,v,gamma,rates=None,warn=1):
     @type gamma: Profiler()
     
     @keyword rates: The heating and cooling rates, summed up (erg/s/cm3, H-C). 
-                    Default if only adiabatic cooling is taken into account
+                    Includes the density factor, without the velocity component.
+                    This speeds up iteration, limiting the radial grid 
+                    evaluation where possible. Default if only adiabatic cooling
+                    is taken into account.
               
                     (default: None)
     @type rates: Profiler()
-    @keyword warn: Warn when extrapolation occurs.
+    @keyword warn: Warn when extrapolation occurs in an interpolation object. 
+                   Not applicable to functional evaluation, or gamma in which 
+                   case the extrapolation is deemed safe (constant value at 
+                   low and high end temperatures consistent with diatomic gases)
     
                    (default: 1)
     @type warn: bool    
@@ -426,13 +432,6 @@ class EnergyBalance(object):
                 
         #-- Set the velocity profile: r, func, dfunc, order interp dfunc, pars
         self.v = Velocity.Velocity(self.r,v[0],None,3,*v[1:])
-        
-        #-- Set the opacity profile:
-        #   Check if KappaReader is requested for opacities. opac then contains
-        #   the parameters for the KappaReader interpolator.
-        if opac.pop(0) == 'KappaReader':
-            #-- Reads the requested opacity with index + order, and interpolates
-            opac = [Opacity.read_opacity(*opac)]
         
         #-- func will be the only element in opac if KappaReader is requested
         self.opac = Opacity.Opacity(self.l,opac[0],None,3,*opac[1:])
