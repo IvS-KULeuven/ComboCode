@@ -61,12 +61,15 @@ class ModelingSession(object):
         self.replace_db_entry = replace_db_entry
         self.new_entries = new_entries
         self.single_session = single_session
-        mutablefile = os.path.join(cc.path.aux,\
-                                   'Mutable_Parameters_%s.dat'%code)
-        self.mutable = [line[0] 
-                        for line in DataIO.readFile(mutablefile,delimiter=' ')
-                        if ' '.join(line)]
-        self.mutable = [line for line in self.mutable if line[0] != '#']
+        if code == 'Chemistry':
+            self.mutable = []
+        else:
+            mutablefile = os.path.join(cc.path.aux,\
+                                    'Mutable_Parameters_%s.dat'%code)
+            self.mutable = [line[0] 
+                            for line in DataIO.readFile(mutablefile,delimiter=' ')
+                            if ' '.join(line)]
+            self.mutable = [line for line in self.mutable if line[0] != '#']
         fout = os.path.join(getattr(cc.path,self.code.lower()),self.path)
         DataIO.testFolderExistence(os.path.join(fout,'models'))
         

@@ -12,6 +12,7 @@ import os
 import subprocess
 import time
 
+
 import cc.path
 from cc.tools.io import DataIO
 from cc.tools.numerical import Gridding
@@ -23,6 +24,8 @@ from cc.statistics import UnresoStats, ResoStats, SedStats
 from cc.data.instruments import Pacs, Spire
 from cc.data import Sed, Radio
 from cc.modeling.tools import ColumnDensity, ContinuumDivision
+from cc.modeling.codes import Chemistry
+from cc.tools.io import Database
 
 class ComboCode(object):
 
@@ -101,6 +104,7 @@ class ComboCode(object):
             self.finalizeVic()
             self.runPlotManager()
             self.runStatistics()
+            self.runChemistry()
             self.doContDiv()
             #self.appendResults()
             if self.write_dust_density:
@@ -125,6 +129,7 @@ class ComboCode(object):
                           ('append_results',0),('write_dust_density',0),\
                           ('replace_db_entry',0),('update_spec',0),\
                           ('path_gastronoom',''),('path_mcmax',''),\
+                          ('path_chemistry',''),\
                           ('print_model_info',1),('stat_chi2','diff'),\
                           ('contdiv_features',[]),('cfg_contdiv',''),\
                           ('show_contdiv',0),('skip_cooling',0),\
@@ -132,7 +137,8 @@ class ComboCode(object):
                           ('stat_lll_p',None),('stat_method','clipping'),\
                           ('star_name','model'),('single_session',0),\
                           ('stat_lll_partial',0),('stat_lll_vmin',0.0),\
-                          ('stat_lll_vmax',0.0), ('print_check_t',1)]
+                          ('stat_lll_vmax',0.0), ('print_check_t',1),\
+                          ('chemistry',0)]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v))
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -593,9 +599,10 @@ class ComboCode(object):
 
         cc.path.gout = os.path.join(cc.path.gastronoom,self.path_gastronoom)
         cc.path.mout = os.path.join(cc.path.mcmax,self.path_mcmax)
+        cc.path.cout = os.path.join(cc.path.chemistry,self.path_chemistry)
         DataIO.testFolderExistence(cc.path.gout)
         DataIO.testFolderExistence(cc.path.mout)
-
+        DataIO.testFolderExistence(cc.path.cout)
 
     def setVicManager(self):
 
@@ -637,7 +644,8 @@ class ComboCode(object):
                                 path_mcmax=self.path_mcmax,\
                                 skip_cooling=self.skip_cooling,\
                                 recover_sphinxfiles=self.recover_sphinxfiles,\
-                                single_session=self.single_session)
+                                single_session=self.single_session,\
+                                )
 
 
     def setPlotManager(self):
@@ -942,7 +950,38 @@ class ComboCode(object):
                 #self.plot_manager.plotTransitions(star_grid=bfms,fn_suffix='BFM',force=1)
 
 
+    
+    def runChemistry(self):
+        if self.chemistry:
+            chemistry_db_path = os.path.join(cc.path.cout,'Chemistry_models.db')
+            self.chem_db = Database.Database(db_path=chemistry_db_path)
 
+            ch = Chemistry.Chemistry(path_chemistry=self.path_chemistry,\
+                                    replace_db_entry = self.replace_db_entry,\
+                                    db = self.chem_db,\
+                                    single_session=self.single_session)
+            for star in self.star_grid:
+                print '************************************************'
+                print '** Running Chemistry'
+                print '************************************************'
+                
+                
+                
+                #star['R_STAR'] = numpy.sqrt(star['L_STAR']/ \
+                    #(star.sigma*4*numpy.pi*star['T_STAR']**4))*star.Rsun
+                
+                #star['R_INNER_CHEM_CM'] = star['R_INNER_CHEM']*star['R_STAR']*star.Rsun
+                #star['FIN_RADIUS_CHEM'] 
+                # in doChemistry
+                
+
+            
+            
+            
+            
+            
+            
+    
     def doContDiv(self):
 
         '''
