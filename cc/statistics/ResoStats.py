@@ -34,7 +34,7 @@ class ResoStats(Statistics):
     """
         
     def __init__(self,star_name,code='GASTRoNOoM',path_code='codeJun2013',\
-                 lll_p=None):        
+                 lll_p=None,use_bestvlsr=1,vmin=0.0,vmax=0.0):        
         
         """ 
         Initializing an instance of IntIntStats.
@@ -60,11 +60,45 @@ class ResoStats(Statistics):
         
                         (default: None)
         @type lll_p: int
-        
+        @keyword use_bestvlsr: Use the fitted best-guess for the v_lsr when 
+                               determining the velocity grid for the model. If 
+                               not, the vlsr from the Star.dat file or the fits
+                               file is used. 
+                               
+                               (default: 1)
+        @type use_bestvlsr: bool
+        @keyword vmin: The minimum value in km/s of the spectral line window. 
+                       Ideally this is the same for all lines under 
+                       consideration. If an invalid spectral window is given 
+                       (vmax==vmin, or vmin>vmax), the spectral window is taken
+                       from the line fit results. This leads to a different 
+                       window for each line under consideration, and is not 
+                       recommended for calculating the loglikelihood.
+                       
+                       (default: 0.0)
+        @type vmin: float        
+        @keyword vmax: The maximum value in km/s of the spectral line window. 
+                       Ideally this is the same for all lines under 
+                       consideration. If an invalid spectral window is given 
+                       (vmax==vmin, or vmin>vmax), the spectral window is taken
+                       from the line fit results. This leads to a different 
+                       window for each line under consideration, and is not 
+                       recommended for calculating the loglikelihood.
+                       
+                       (default: 0.0)
+        @type vmax: float       
+                
         """
         
         super(ResoStats,self).__init__(star_name=star_name,\
                                        code=code,path_code=path_code)
+
+        #-- Velocity window settings
+        self.use_bestvlsr = use_bestvlsr
+        self.vmin = vmin
+        self.vmax = vmax
+        print 'Calculating loglikelihood statistics using spectral window:'
+        print 'v_min = {} km/s, v_max = {} km/s.'.format(str(vmin),str(vmax))
         
         #-- List of template transitions
         self.translist = []
@@ -84,6 +118,7 @@ class ResoStats(Statistics):
         #   Star() object with the same index in self.star_grid.
         self.dinttmb = dict()
         self.dpeaktmb = dict()
+
         #-- Dicts keeping integrated and peak intensities of sphinx models, as 
         #   well as the loglikelihood measure of fitness between model and data
         #   The peak and integrated intensity ratio dicts follow same pattern
@@ -97,11 +132,13 @@ class ResoStats(Statistics):
         self.ratiopeak = dict()
         self.ratioint = dict()
         self.ratiocombo = dict()
+
         #-- Only set to True if something failed somewhere. Likely not yet 
         #   implemented/resolved issues.
         self.no_stats = False
         self.stats = dict([('peak',self.ratiopeak),('int',self.ratioint),\
                            ('combo',self.ratiocombo)])
+
         #-- Default Flux calibration uncertainties from Telescope.dat
         #   I suggest to change these values based on what you want to use 
         #   yourself, depending on the transition under consideration.
@@ -160,7 +197,7 @@ class ResoStats(Statistics):
         self.sample_trans = sample_transitions    
 
         
-    def setIntensities(self,use_bestvlsr=1, partial = 0, vmin = 0, vmax = 0):
+    def setIntensities(self,vmin = 0, vmax = 0):
         
         """
         The data intensities are stored in the dictionary 
@@ -175,27 +212,11 @@ class ResoStats(Statistics):
 
         In addition, the loglikelihoods are calculated.
 
-        @keyword use_bestvlsr: Use the fitted best-guess for the v_lsr when 
-                               determining the velocity grid for the model. If 
-                               not, the vlsr from the Star.dat file or the fits
-                               file is used. 
-                               
-                               (default: 1)
-        @type use_bestvlsr: bool
-        
         """
         
         if not self.star_grid:
             return
-        
-        self.vmin = vmin
-        self.vmax = vmax
-        self.partial = partial
-        
-        if partial != 0:
-            print 'Calculating loglikelihood statistics using a partial line profile.'
-            print 'Cutoff velocities = '+str(vmin)+ ', '+str(vmax)
-        
+
         self.translist = [t 
                           for t in self.sample_trans
                           if t.lpdata]
@@ -253,19 +274,20 @@ class ResoStats(Statistics):
                                        for mt in self.trans_models[st]])
             
             #-- Set the data integrated and peak Tmb for this dataset
-            self.dinttmb[st],abs_err = st.getIntTmbData()
             self.dpeaktmb[st] = st.getPeakTmbData() 
             
             if self.dpeaktmb[st] <= 3*noise:
                 self.noisy[ist] = True
             else: 
                 self.noisy[ist] = False
+            self.dinttmb[st]= st.getIntTmbData(use_fit=self.noisy[ist])[0]
             
             #-- Collect the loglikelihoods for all models
-            self.loglikelihood[st] = array([mt.getLoglikelihood(use_bestvlsr, \
-                                                partial = partial,\
-                                                vmin = vmin, vmax = vmax) \
-                                                for mt in self.trans_models[st]])
+            llls = array([mt.getLoglikelihood(use_bestvlsr=self.use_bestvlsr,\
+                                              vmin=self.vmin,vmax=self.vmax,\
+                                              use_fit=self.noisy[ist])\
+                          for mt in self.trans_models[st]])
+            self.loglikelihood[st] = llls
             
             #-- Calculate the ratios for integrated and peak Tmbs (model/data)
             self.ratioint[st] = self.minttmb[st]/self.dinttmb[st]
@@ -370,23 +392,20 @@ class ResoStats(Statistics):
 
 
 
-    def resetNoisy(self, factor, use_fit = True):
+    def resetNoisy(self, factor):
+        
         '''
         Change criterion for noisy lines.  By default, the script checks if
         the peak of the line profile is above 3 sigma in the dataset. 
         With this method, the factor can be changed. 
         
-        With use_fit, it is possible to use the gaussian or parabolic fit to 
-        the data to derive the integrated intensity instead of the line itself 
-        for noisy lines. 
+        The integrated line strengths are also recalculated based on the new
+        criterion.
         
         @keyword factor: Sigma level. If the peak intensity of a line is below
                          this level, it is marked as noisy.
         @type factor: int
         
-        @keyword use_fit: Use gaussian or parabolic fit instead of the line
-                          to derive the integrated intensity of noisy lines
-        @type use_fit: bool
         '''
         
         for ist,st in enumerate(self.translist):
@@ -396,48 +415,38 @@ class ResoStats(Statistics):
             else:
                 self.noisy[ist] = False
 
-        
-            if use_fit == True:
-                if self.noisy[ist] == False:
-                    self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 0)
-                else:
-                    self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 1)
-                self.ratioint[st] = self.minttmb[st]/self.dinttmb[st]
-            else:
-                self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 0)
-                
-   
-   
-    def setUseFit(self, use_fit = True):
-        '''
-        Change criterion for noisy lines.  By default, the script checks if
-        the peak of the line profile is above 3 sigma in the dataset. 
-        With this method, the factor can be changed. 
-        
-        With use_fit, it is possible to use the gaussian or parabolic fit to 
-        the data to derive the integrated intensity instead of the line itself 
-        for noisy lines. 
-        
-        @keyword factor: Sigma level. If the peak intensity of a line is below
-                         this level, it is marked as noisy.
-        @type factor: int
-        
-        @keyword use_fit: Use gaussian or parabolic fit instead of the line
-                          to derive the integrated intensity of noisy lines
-        @type use_fit: bool
-        '''
-        
-        for ist,st in enumerate(self.translist):
-            if use_fit == True:
-                if self.noisy[ist] == False:
-                    self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 0)
-                else:
-                    self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 1)
-                self.ratioint[st] = self.minttmb[st]/self.dinttmb[st]
-            else:
-                self.dinttmb[st],abs_err = st.getIntTmbData(use_fit = 0)
+        self.resetLineStrengths()
 
+
+
+    def resetLineStrengths(self):
         
+        '''
+        Reset the line strengths of the data and calculate the ratio with model
+        line strengths. Also recalculate the loglikelihood in this case.
+        
+        The fitted line profile is used in case the line is flagged as noisy by
+        setting use_fit. The fit is either a gaussian or a parabolic fit as 
+        determined by LPTools.fitLP
+        
+        '''
+        
+        for ist,st in enumerate(self.translist):            
+            #-- Set the data integrated for this dataset and calculate ratio
+            #   Fit is used when noisy.
+            self.dinttmb[st] = st.getIntTmbData(use_fit = self.noisy[ist])[0]
+            self.ratioint[st] = self.minttmb[st]/self.dinttmb[st]
+            self.ratiocombo[st] = zip(self.ratiopeak[st],self.ratioint[st])            
+
+            #-- Recalculate the loglikelihood with respect to the new int ls
+            llls = array([mt.getLoglikelihood(use_bestvlsr=self.use_bestvlsr,\
+                                              vmin=self.vmin,vmax=self.vmax,\
+                                              use_fit=self.noisy[ist])\
+                          for mt in self.trans_models[st]])
+            self.loglikelihood[st] = llls
+
+
+
     def includeTrans(self,ist):
         
         '''
@@ -723,15 +732,10 @@ class ResoStats(Statistics):
         self.modellist = [self.star_grid[ii]['GAS_LINES'][0].getModelId() \
             for ii in range(len(self.star_grid))]
         stars = array(self.modellist)
-        
-        self.lll_test = dict()
-        
+
         bfbools = ones(len(stars),dtype='bool')
         for ist,st in enumerate(self.translist):
             if ist in self.includedtrans:
-                
-                self.lll_test[st] = []
-                
                 lll_thresh = self.lll_threshold[ist]
                 for i,lll in enumerate(self.loglikelihood[st]):
                     ##-- Loglikelihood is maximized by best fitting model
@@ -741,9 +745,6 @@ class ResoStats(Statistics):
                     if lll_thresh <> None  \
                             and lll < lll_thresh:
                         bfbools[i] = False
-                        self.lll_test[st].append(0)
-                    else:
-                        self.lll_test[st].append(1)
                         
         self.bfmlll = stars[bfbools]      
         self.bfmlll = list(self.bfmlll)
@@ -1010,8 +1011,8 @@ class ResoStats(Statistics):
             path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
             DataIO.testFolderExistence(os.path.join(path,'resostats'))
             #filename = os.path.join(path, 'resostats','LLL-%s_len_%s-%s'%(self.modellist[0],(len(self.modellist)),plot_id))
-            filename = os.path.join(path, 'resostats','LLL-%s_len_%s_partial_%s_vcut_%s-%s--%s'\
-                %(self.modellist[0],(len(self.modellist)),self.partial,self.vmin,self.vmax,plot_id))
+            filename = os.path.join(path, 'resostats','LLL-%s_len_%s_vcut_%s-%s--%s'\
+                %(self.modellist[0],(len(self.modellist)),self.vmin,self.vmax,plot_id))
 
             fig.savefig(filename+'.pdf')   
             print '*** Plot of stats can be found at:'
@@ -1230,8 +1231,8 @@ class ResoStats(Statistics):
             fig.suptitle('Models complying to integrated intensity and loglikelihood criteria \\ Error = '+str(err*100.)+'\%, error noisy lines = '+str(err_noisy*100.)+'\%', size = 18)
             path = os.path.join(getattr(cc.path,self.code.lower()), self.path_code,'stars', self.star_name)
             DataIO.testFolderExistence(os.path.join(path,'resostats'))
-            filename = os.path.join(path, 'resostats','intLLL-%s_len_%s_partial_%s_vcut_%s-%s--%s'\
-                %(self.modellist[0],(len(self.modellist)),self.partial,self.vmin,self.vmax,plot_id))
+            filename = os.path.join(path, 'resostats','intLLL-%s_len_%s_vcut_%s-%s--%s'\
+                %(self.modellist[0],(len(self.modellist)),self.vmin,self.vmax,plot_id))
             fig.savefig(filename+'.pdf')   
             print '*** Plot of stats can be found at:'
             print filename+'.pdf'

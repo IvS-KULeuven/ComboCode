@@ -136,9 +136,8 @@ class ComboCode(object):
                           ('recover_sphinxfiles',0),('stat_print',0),\
                           ('stat_lll_p',None),('stat_method','clipping'),\
                           ('star_name','model'),('single_session',0),\
-                          ('stat_lll_partial',0),('stat_lll_vmin',0.0),\
-                          ('stat_lll_vmax',0.0), ('print_check_t',1),\
-                          ('chemistry',0)]
+                          ('stat_lll_vmin',0.0),('chemistry',0),\
+                          ('stat_lll_vmax',0.0), ('print_check_t',1)]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v))
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -938,12 +937,12 @@ class ComboCode(object):
                 print '************************************************'
                 ss = ResoStats.ResoStats(star_name=sn,\
                                          path_code=self.path_gastronoom,\
-                                         lll_p=self.stat_lll_p)
+                                         lll_p=self.stat_lll_p,\
+                                         vmin=self.stat_lll_vmin,\
+                                         vmax=self.stat_lll_vmax)
                 ss.setInstrument(self.radio_trans[sn])
                 ss.setModels(star_grid=self.star_grid)
-                ss.setIntensities(partial=self.stat_lll_partial,\
-                                  vmin=self.stat_lll_vmin,\
-                                  vmax=self.stat_lll_vmax)
+                ss.setIntensities()
                 if self.stat_print: ss.printStats()
                 self.resostats[sn] = ss
                 #bfms = self.resostats.selectBestFitModels(mode='int')

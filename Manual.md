@@ -69,12 +69,17 @@ The contents of the cc/usr.dist folder must be copied to cc/usr/. The default se
 </ol>
 
 ## 4. Running ComboCode
-Then the ComboCode inputfile is described, and a few simple steps to run a model are given.
+In this section, the ComboCode inputfile is described, and a few simple steps to run a model are given.
 
 ### The ComboCode inputfile
+WiP. See the inputfile for detailed description of the input parameters.
 
 ### How do I run ComboCode?
-Two steps, for an arbitrary input filename: 
+ComboCode is ran easily from a Python or iPython shell. Open one, and take the following steps, for an arbitrary input filename: 
+
+0. Import ComboCode into the Python shell:
+    
+        >>> from cc import ComboCode
 
 1. Create a ComboCode object: 
         
@@ -89,7 +94,7 @@ The c1m.startSession() command is essentially the body of the modeling calculati
 
 It is possible to have multiple such CC sessions running concurrently in different shells. <a href="Manual.md#cleaning-your-databases">The databases make sure no conflicts can happen</a> between models requested in one session and another session, in case they are identical. 
 
-
+Note that ComboCode, GASTRoNOoM and MCMax all print output to the shell. ComboCode-specific output typically concerns information about whether model calculation was successful, some information about the model output, etc. and is denoted with asterisks '*'. GASTRoNOoM and MCMax print output in their own formats and are preceded by an indication of which code is about to be called, and followed by "DONE!", so it is generally easy to tell which code is giving you information at any given time. Running the same ComboCode inputfile again after successful calculation will reload the models without calculating them, in which case no GASTRoNOoM or MCMax output will be printed to the shell. 
 
 ## 5. Data management
 

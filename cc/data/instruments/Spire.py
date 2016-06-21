@@ -27,7 +27,7 @@ class Spire(Instrument):
     """
     
     def __init__(self,star_name,resolution,oversampling,\
-                 path='codeSep2010',intrinsic=1,path_linefit=''):
+                 path=None,intrinsic=1,path_linefit=''):
         
         '''
         Initializing an instance of Spire().
