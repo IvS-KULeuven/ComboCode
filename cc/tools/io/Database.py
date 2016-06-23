@@ -51,7 +51,7 @@ def updateAllDbs(func,db_name,*args,**kwargs):
         print fn
         
         #-- Call requested function
-        db = func(db_fn=fn,*args,*kwargs)
+        db = func(db_fn=fn,*args,**kwargs)
         db.sync()
 
 
