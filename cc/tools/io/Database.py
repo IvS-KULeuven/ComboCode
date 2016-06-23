@@ -19,6 +19,43 @@ from cc.tools.io import DataIO
 
 
 
+def updateAllDbs(func,db_name,*args,**kwargs):
+
+    ''' 
+    Update all databases located in any of your modeling folders in 
+    cc.path.gastronoom. 
+    
+    Choose the method to run as well as the database to update, and add the args
+    and kwargs for that method. 
+    
+    This method synchronizes the databases, so run with care. 
+    
+    @param func: The method to use for updating a database
+    @type func: function
+    @param db_name: Name of the database to be updated
+    @type db_name: str
+    
+    '''
+
+    #-- Select all model folders in cc.path.gastronoom
+    gpaths = sorted(glob(os.path.join(cc.path.gastronoom,'*','GASTRoNOoM*.db')))
+    gpaths = list(set([os.path.split(gp)[0] for gp in gpaths]))
+    
+    #-- Run db update method for all databases
+    for gp in gpaths: 
+    
+        #-- Set filename
+        fn = os.path.join(gp,db_name)
+        print "******************************"
+        print "Now converting database at:"
+        print fn
+        
+        #-- Call requested function
+        db = func(db_fn=fn,*args,*kwargs)
+        db.sync()
+
+
+
 def convertDbKeys(path_input=''):
 
     '''

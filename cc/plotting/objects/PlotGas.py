@@ -1034,7 +1034,7 @@ class PlotGas(PlottingSession):
                     frac_interpol = 1
                 #-- GASTRoNOoM output already takes into account enhance_abundance_factor
                 #   abun_factor only takes into account isotope ratios and OPR
-                abun = nmol/nh2*frac_interpol*molec.abun_factor     
+                abun = nmol/nh2*frac_interpol/molec.abun_factor     
                 ddata[istar][molec.molecule]['abun'] = abun
                 ddata[istar][molec.molecule]['key'] = molec.molecule_plot
                 ddata[istar][molec.molecule]['id'] = mid
@@ -1074,6 +1074,7 @@ class PlotGas(PlottingSession):
             #-- Collect all data
             molecs = list(set([molec for istar in ddata.keys()
                                      for molec in ddata[istar].keys()]))
+            mplot = ddata[0][molec.molecule]['key']
             for molec in molecs: 
                 #-- Collect data
                 radii = [dmol['rad']
@@ -1090,8 +1091,7 @@ class PlotGas(PlottingSession):
                            if molec == imolec]
 
                 #-- Set the y axis tag
-                strmolec = ddata[0][molec]['key']
-                yaxis = '$n_\mathrm{%s}/n_{\mathrm{H}_2}$'%strmolec
+                yaxis = '$n_\mathrm{%s}/n_{\mathrm{H}_2}$'%mplot.replace('$','')
 
                 #-- Make filename
                 pfn = fn_plt if fn_plt else 'abundance_profiles'
@@ -1199,7 +1199,8 @@ class PlotGas(PlottingSession):
 
             extra_pars['filename'] = pfn
             extra_pars['keytags'] = ['$\mathrm{%s}:$ %s'\
-                                      %(trans.molecule.molecule_plot,\
+                                      %(trans.molecule.molecule_plot\
+                                             .replace('$',''),\
                                         trans.makeLabel())
                                      for trans in transitions]
             extra_pars['key_location'] = 'upper left'

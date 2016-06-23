@@ -200,7 +200,9 @@ class PlotDust(PlottingSession):
         fmodels = []
         for model_id,s in zip(model_ids_mcm,star_grid):
             dpath = os.path.join(cc.path.mout,'models',model_id)
-            fn_spec = 'spectrum{:04.1f}.dat'.format(s['RT_INCLINATION'])
+            fn_spec = 'spectrum{:04.1f}'.format(s['RT_INCLINATION'])
+            if s['RT_NOSOURCE']: fn_spec += 'NOSTAR'
+            fn_spec += '.dat'
             w,f = MCMax.readModelSpectrum(dpath,s['RT_SPEC'],fn_spec)
             if s['REDDENING']:
                 print 'Reddening models to correct for interstellar extinction.'
@@ -316,7 +318,9 @@ class PlotDust(PlottingSession):
             for s in star_grid:
                 model_id = s['LAST_MCMAX_MODEL']
                 dpath = os.path.join(cc.path.mout,'models',model_id)
-                fn_vis = 'visibility{:04.1f}.dat'.format(s['RT_INCLINATION'])
+                fn_vis = 'visibility{:04.1f}'.format(s['RT_INCLINATION'])
+                if s['RT_NOSOURCE']: fn_vis += 'NOSTAR'
+                fn_vis += '.dat'              
                 model = MCMax.readVisibilities(dpath=dpath,fn_vis=fn_vis)
                 models.append(model)
             real_models = [model for model in models if model]

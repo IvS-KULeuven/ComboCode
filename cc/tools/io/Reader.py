@@ -24,17 +24,18 @@ class Reader(object):
     def __init__(self):
         
         ''' 
-        Initialize an OutputReader object by setting the contents dict.
+        Initialize an Reader object by setting the contents dict.
         
         '''
         
         self.contents = dict()
         
     
+    
     def readFile(self, filename, delimiter = ' ', replace_spaces=1):
         
         '''
-        Read a filename and store its contents in the OutputReader.
+        Read a filename and store its contents in the Reader object.
         
         The contents are stored in a dictionary, with the filename as key.
         
@@ -60,6 +61,7 @@ class Reader(object):
         except IOError:
             self.contents[filename] = None
             
+    
     
     def getFile(self,filename):
         

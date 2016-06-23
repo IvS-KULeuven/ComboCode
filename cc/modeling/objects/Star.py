@@ -1343,6 +1343,20 @@ class Star(dict):
             
     
     
+    def calcXDEX(self):
+        
+        '''
+        Set the default value of XDEX parameter.
+        
+        '''
+        
+        if not self.has_key('XDEX'):
+            self['XDEX'] = 2.
+        else:
+            pass
+            
+            
+            
     def calcFEHLER(self):
         
         '''
@@ -3044,7 +3058,7 @@ class Star(dict):
                         use_maser_in_sphinx=self['USE_MASER_IN_SPHINX'],\
                         use_no_maser_option=self['USE_NO_MASER_OPTION'],\
                         fehler=self['FEHLER'],n_freq=self['N_FREQ'],\
-                        start_approx=self['START_APPROX'],\
+                        start_approx=self['START_APPROX'],xdex=self['XDEX'],\
                         use_fraction_level_corr=self['USE_FRACTION_LEVEL_CORR'],\
                         fraction_level_corr=self['FRACTION_LEVEL_CORR'],\
                         number_level_max_corr=self['NUMBER_LEVEL_MAX_CORR'],\
@@ -3395,7 +3409,7 @@ class Star(dict):
         else:
             pass
 
-
+    
 
     def calcSTARFILE(self):
         

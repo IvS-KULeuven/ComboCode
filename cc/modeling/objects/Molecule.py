@@ -95,7 +95,7 @@ class Molecule():
                  abun_molec_re=1.0e-10,rmax_molec=1.,itera=0,lte_request=None,\
                  use_collis_radiat_switch=0,dust_to_gas_change_ml_sp=0,\
                  use_no_maser_option=0,use_maser_in_sphinx=1,\
-                 fehler=1e-4,n_freq=30,start_approx=0,\
+                 fehler=1e-4,xdex=2.,n_freq=30,start_approx=0,\
                  use_fraction_level_corr=1,fraction_level_corr=0.8,\
                  number_level_max_corr=1e-12,\
                  ratio_12c_to_13c=0,ratio_16o_to_17o=0,ratio_16o_to_18o=0,\
@@ -171,6 +171,11 @@ class Molecule():
         
                          (default: 1e-4)
         @type fehler: float
+        @keyword xdex: Controls the distribution of the impact parameters in the
+                       interval between R_STAR and R_OUTER. 
+                       
+                       (default: 2.)
+        @type xdex: float 
         @keyword n_freq: Number of frequency points in line profile
         
                          (default: 30)
@@ -361,6 +366,7 @@ class Molecule():
         self.use_no_maser_option = int(use_no_maser_option)
         self.use_maser_in_sphinx = int(use_maser_in_sphinx)
         self.fehler = fehler
+        self.xdex = xdex
         self.n_freq = int(n_freq)
         self.start_approx = int(start_approx)
         self.use_fraction_level_corr = int(use_fraction_level_corr)
@@ -480,6 +486,7 @@ class Molecule():
                    ('USE_NO_MASER_OPTION',self.use_no_maser_option),\
                    ('USE_MASER_IN_SPHINX',self.use_maser_in_sphinx),\
                    ('FEHLER',self.fehler),\
+                   ('XDEX',self.xdex),\
                    ('N_FREQ',self.n_freq),\
                    ('START_APPROX',self.start_approx),\
                    ('USE_FRACTION_LEVEL_CORR',self.use_fraction_level_corr),\

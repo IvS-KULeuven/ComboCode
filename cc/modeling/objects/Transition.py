@@ -1197,14 +1197,9 @@ class Transition():
                 else:
                     return Interpol.linInterpol(wav[-2:],beam[-2:],\
                                                 self.wavelength)
-        #filename = os.path.join(cc.path.gdata,self.telescope+'.spec')
-        #telescope_diameter = [float(line.split('=')[1][0:line.split('=')[1]\
-        #                            .index('!')].strip())
-        #                      for line in DataIO.readFile(filename)
-        #                      if line.find('TELESCOPE_DIAM') == 0][0] * 100.
-        
-        #- 1.22 is diffraction limited specification, 
-        #- last factor is conversion to arcseconds
+
+        #-- 1.22 is diffraction limited specification, 
+        #   last factor is conversion to arcseconds
         telescope_diameter = self.telescope_size * 100
         return 1.22*self.wavelength/telescope_diameter*60.*60.*360./(2.*pi)  
         

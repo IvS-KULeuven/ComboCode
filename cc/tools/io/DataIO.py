@@ -250,7 +250,8 @@ def readFile(filename,delimiter=None,replace_spaces=1):
 
 
 def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
-             convert_floats=0,convert_ints=0,multi_keys=[]):
+             convert_floats=0,convert_ints=0,multi_keys=[],start_index=0,\
+             end_index=None):
      
     '''
     Read a file as a dictionary.
@@ -291,6 +292,16 @@ def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
                           
                          (default: [])
     @type multi_keys: list(string)
+    @keyword start_index: Limit the text file to lines starting from this index.
+    
+                          (default: 0)
+    @type start_index: int
+    @keyword end_index: Limit the text file to lines ending before this index
+                        (ie last line is end_index - 1). Default includes up to
+                        the last line of the file.
+                        
+                        (default: None)
+    @type end_index: int
     
     @return: the dictionary with the info from the file.
     @rtype: dict
@@ -298,6 +309,7 @@ def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
     '''
      
     lines = readFile(filename)
+    lines = lines[start_index:end_index]
     lines, comments = removeComments(lines,comment_chars=comment_chars)
     #- Make sure the final character in a value definition doesn't drop off
     #- when splitting the line, in case there's no comment character on the line.
@@ -516,7 +528,7 @@ def removeComments(lines,comment_chars=['#','!',';']):
 
 def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
              nans=0,start_from_keyword='',return_comments=0,\
-             comment_chars=['#','!',';']):
+             comment_chars=['#','!',';'],start_index=0,end_index=None):
     
     '''
     Read columns, remove comments and turn into floats.
@@ -561,6 +573,16 @@ def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
      
                             (default: ['#','!',';'])
     @type comment_chars: list[str]
+    @keyword start_index: Limit the text file to lines starting from this index.
+    
+                          (default: 0)
+    @type start_index: int
+    @keyword end_index: Limit the text file to lines ending before this index
+                        (ie last line is end_index - 1). Default includes up to
+                        the last line of the file.
+                        
+                        (default: None)
+    @type end_index: int
     
     @return: The columns are returned, with in addition the comments if 
              requested
