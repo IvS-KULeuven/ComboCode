@@ -1324,7 +1324,8 @@ class PlotGas(PlottingSession):
 
         used_indices = list(set([ll[-2] for ll in lls]))
         if fn_trans_marker:
-            def_molecs = dict([(m.molecule,m) for m in molecules])
+            all_molecs = set([t.molecule for t in all_trans])
+            def_molecs = dict([(m.molecule,m) for m in all_molecs])
             if star_grid: star = star_grid[0]
             else: star = None
             trl = DataIO.readDict(fn_trans_marker,multi_keys=['TRANSITION'])

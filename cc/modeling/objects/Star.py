@@ -1312,7 +1312,7 @@ class Star(dict):
                                        for molec in self['LL_MOLECULES']]
             keys = ['LL_CAT','LL_MAX_EXC','LL_MIN_STRENGTH']
             for k in keys: 
-                if not isinstance(self[k],collections.Iterable):
+                if not isinstance(self[k],tuple):
                     self[k] = [self[k]]*len(self['LL_GAS_LIST'])
         else:
             pass
