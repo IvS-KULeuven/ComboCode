@@ -25,14 +25,19 @@ sd  = 1.8
 P   = 0.0
 GSD = MRN
 
-#-- Cooling and heating terms. Adiabatic cooling always included. Hdt/Hdg mode (gs2014 or classical).
+#-- Cooling and heating terms. Adiabatic cooling always included. Hdt/Hdg heating mode (gs2014 or Classical). adiabatic coefficient (value, h2, or h2_mcp)
 cterms = []
 hterms = []
 heatmode = classical
-
-#-- Cooling parameters: adiabatic coefficient (value, h2, or h2_mcp)
 gamma = h2_mcp
 
+#-- Line Cooling parameters: code/molecules/collis/pop files
+rtcode = ali
+molecules = []
+collis = []
+pop = []
+
 #-- Heating parameters: thermal term in drift (none,kwok,mean,rms,prob), sticking coefficient
-v_thermal = none
+w_thermal = none
 alpha = 0.0
+

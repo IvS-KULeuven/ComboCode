@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-A class for reading and managing FITS files.
+A module for reading and managing fits-based line profile data files. 
 
 Author: R. Lombaert
 
@@ -13,7 +13,7 @@ from scipy import array,arange
 from astropy.io import fits as pyfits
 
 import cc.path
-from cc.tools.io.LPDataReader import LPDataReader
+from cc.tools.readers.LPDataReader import LPDataReader
 from cc.tools.io import DataIO
 
 
@@ -70,19 +70,22 @@ def changeFitsHeader(fn_old,fn_new,key,value,comment=None,**kwargs):
 class FitsReader(LPDataReader):
 
     '''
-    A FITS file reader for line profiles.
+    A FITS file reader for line profile data.
 
     '''
 
-    def __init__(self,filename,star_name=None):
+    def __init__(self,fn,star_name=None,*args,**kwargs):
 
         '''
-        A FITS file reader for line profiles.
+        A FITS file reader for line profile data.
 
         Filename of the FITS file is passed to the object upon creation.
-
-        @param filename: The FITS filename, including filepath.
-        @type filename: string
+        
+        Additional args/kwargs are used for the dict creation of the parent of 
+        Reader.
+        
+        @param fn: The FITS filename, including filepath.
+        @type fn: string
 
         @keyword star_name: The star name if the filename doesn't follow naming
                             conventions. None otherwise.
@@ -92,7 +95,8 @@ class FitsReader(LPDataReader):
 
         '''
 
-        super(FitsReader, self).__init__(filename=filename,star_name=star_name)
+        super(FitsReader, self).__init__(fn=fn,star_name=star_name,\
+                                         *args,**kwargs)
         self.type = 'fits' 
         self.readFits()
 
@@ -111,7 +115,7 @@ class FitsReader(LPDataReader):
         '''
 
         #- get header, number of grid points and stepsize
-        hdr = pyfits.getheader(self.filename)
+        hdr = pyfits.getheader(self.fn)
         self.contents['hdr'] = hdr
         n_points = hdr.get('naxis1')
         if n_points is None or n_points == 1:
@@ -120,9 +124,9 @@ class FitsReader(LPDataReader):
 
         #- load the data
         #try:
-        lp = pyfits.getdata(self.filename)
+        lp = pyfits.getdata(self.fn)
         #except MemoryError:
-            #print 'WARNING! Reading %s results in a '%self.filename + \
+            #print 'WARNING! Reading %s results in a '%self.fn + \
                   #'MemoryError. Ignoring datafile for now.'
             #self.contents['flux'] = []
             #self.contents['velocity'] = []

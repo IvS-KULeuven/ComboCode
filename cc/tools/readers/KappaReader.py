@@ -22,6 +22,9 @@ class KappaReader(object):
     """
     An interface for reading opacities of multiple dust species.
     
+    Does not inherit from the Reader object, because the files are structured 
+    too differently from common input/output data.
+    
     """
     
     def __init__(self):
@@ -173,11 +176,13 @@ class KappaReader(object):
     
     
     
-    def interpolate(self,species,index=0,order=3):  
+    def interpolate(self,species,index=0,*args,**kwargs):  
     
         """
         Create an interpolation object for the mass extinction/absorption/
         scattering coefficients.
+        
+        Additional arguments can be passed to the interpolation object.
         
         @param species: The dust species (from Dust.dat)
         @type species: string
@@ -187,10 +192,6 @@ class KappaReader(object):
                         
                         (default: 0)
         @type index: int
-        @keyword order: Order of the spline interpolation. Default is cubic.
-                        
-                        (default: 3)
-        @type order: int
                 
         @return: The interpolator for the mass extinction/absorption/scattering
                  coefficients. (in cgs!)
@@ -201,4 +202,4 @@ class KappaReader(object):
         #-- Note that the wavelength is given in micron, but the interpolator 
         #   convers to cgs.
         return spline1d(x=self.getWavelength(species)*1e-4,\
-                        y=self.getKappas(species,index),k=order)
+                        y=self.getKappas(species,index),*args,**kwargs)

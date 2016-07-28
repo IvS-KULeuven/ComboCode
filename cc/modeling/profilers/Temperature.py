@@ -51,10 +51,12 @@ def Tdust(r,T0,r0,s=1):
     and s is typically 1 in the Rayleigh limit and optically thin case, with
     T_eff = T0, R_STAR = r0.
     
-    @param rad: The radial grid for the power law in Rstar
-    @type rad: array
-    @param tstar: The stellar effective temperature
-    @type tstar: float
+    @param r: The radial grid for the power law in Rstar
+    @type r: array
+    @param T0: The stellar effective temperature
+    @type T0: float
+    @param r0: The initial value for the radius, typically the stellar radius.
+    @type r0
     
     @keyword s: The s parameter in the power law T(r) given above.
     

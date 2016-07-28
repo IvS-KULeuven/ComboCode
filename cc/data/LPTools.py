@@ -16,7 +16,8 @@ from matplotlib import pyplot as plt
 from astropy import units as u
 
 import cc.path
-from cc.tools.io import FitsReader, TxtReader, DataIO
+from cc.tools.readers import FitsReader, TxtReader
+from cc.tools.io import DataIO
 from cc.plotting import Plotting2
 from cc.tools.units import Equivalency as eq
 
@@ -78,9 +79,9 @@ def readLineProfile(filename):
     '''
     
     if filename[-5:] == '.fits':
-        lprof = FitsReader.FitsReader(filename=filename)
+        lprof = FitsReader.FitsReader(fn=filename)
     else:
-        lprof = TxtReader.TxtReader(filename=filename)
+        lprof = TxtReader.TxtReader(fn=filename)
     return lprof
     
     

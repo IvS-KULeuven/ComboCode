@@ -102,18 +102,18 @@ class Density(Profiler.Profiler):
        
         @param r: The radial points (cm)
         @type r: array
+        
         @keyword func: The function for calculating the density profile. 
         
                        (default: dens_mdot)
         @type func: func
-        
         @keyword dfunc: The function that describes the derivative of the  
                         profile with respect to r. Can be given as an interp1d 
                         object. If None, a generic central difference is taken  
                         and interpolated.
         
                         (default: None)
-        @type func: function/interp1d object
+        @type dfunc: function/interp1d object
         @keyword order: Order of the spline interpolation. Only relevant if 
                         spline is requested instead of linear. Default is cubic
                         interpolation.
@@ -199,12 +199,12 @@ class Density(Profiler.Profiler):
                      
                      (default: 0)
         @type fH: float/array
-        @keyword fH: The fractional abundance of helium with respect to total 
-                     hydrogen number density. fHe = n(He)/(n(H)+2*n(H2)). Can be
-                     a constant or a radially dependent value.
-                     
-                     (default: 0)
-        @type fH: float/array
+        @keyword fHe: The fractional abundance of helium with respect to total 
+                      hydrogen number density. fHe = n(He)/(n(H)+2*n(H2)). Can be
+                      a constant or a radially dependent value.
+                      
+                      (default: 0)
+        @type fHe: float/array
         @keyword sd: The average specific density of the dust grains in g/cm3.
                      Only relevant if this is a dust density profile. 
                      

@@ -13,7 +13,7 @@ import re
 import cc.path
 from cc.tools.io import DataIO
 from cc.tools.io.Database import Database
-from cc.tools.io import Radiat
+from cc.tools.readers import RadiatReader
 
 
 
@@ -403,8 +403,15 @@ class Molecule():
                                 str(self.ny_up),str(self.nline)])
                 i = DataIO.getInputData(start_index=4,keyword='MOLECULE',\
                                         filename='Indices.dat').index(tag)
-                self.indices_index = i
-            self.radiat = Radiat.Radiat(molecule=self)
+                fn = DataIO.getInputData(path=cc.path.usr,keyword='RADIAT',\
+                                         filename='Indices.dat',start_index=4,\
+                                         rindex=i)
+                fn = os.path.join(cc.path.gdata,'radiat_backup',fn)
+            else: 
+                fn = os.path.join(cc.path.gdata,'%s_radiat.dat'%self.molecule)
+
+            self.radiat = RadiatReader.RadiatReader(fn=fn,nline=self.nline,
+                                                    ny=self.ny_up+self.ny_low)
             if self.spec_indices:
                 if self.use_indices_dat:
                     f = DataIO.getInputData(path=cc.path.usr,start_index=4,\

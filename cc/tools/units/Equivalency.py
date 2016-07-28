@@ -28,14 +28,13 @@ def Tmb(diameter):
     u.arcminute, etc. The astropy unit conversion module takes care of these 
     conversions as long as no equivalency is needed.
     
-    @param distance: The distance to the object in parsec
-    @type distance: float
+    @param diameter: The telescope dish size (diameter in m)
+    @type diameter: float
     
     @return: list of (unit in, unit out, forward conversion, reverse conversion)
     @rtype: list(tuple)
     
     '''
-    
     
     d = float(diameter)*u.m
     factor = np.pi*d**2/8./cst.k_B

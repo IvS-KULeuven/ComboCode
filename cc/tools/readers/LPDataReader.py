@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-A class for reading and managing line profile data files.
+A module for reading and managing line profile data files.
 
 Author: R. Lombaert
 
@@ -10,7 +10,7 @@ Author: R. Lombaert
 import os
 from scipy import std
 
-from cc.tools.io.Reader import Reader
+from cc.tools.readers.Reader import Reader
 from cc.data import Data
 from cc.tools.io import DataIO
 
@@ -18,19 +18,22 @@ from cc.tools.io import DataIO
 class LPDataReader(Reader):
     
     '''
-    A data reader for line profiles.
+    A data reader for line profile data.
     
     '''
     
-    def __init__(self,filename,star_name=None):
+    def __init__(self,fn,star_name=None,*args,**kwargs):
         
         '''
         A data reader for line profiles.
         
         Filename of the data file is passed to the object upon creation.
         
-        @param filename: The data filename, including filepath.
-        @type filename: string
+        Additional args/kwargs are used for the dict creation of the parent of 
+        Reader.
+        
+        @param fn: The data filename, including filepath.
+        @type fn: string
         
         @keyword star_name: The star name if the filename doesn't follow naming
                             conventions. None otherwise.
@@ -40,9 +43,9 @@ class LPDataReader(Reader):
         
         '''
                 
-        super(LPDataReader, self).__init__()
-        self.filename = filename
-        fn = os.path.splitext(os.path.split(self.filename)[1])[0]
+        super(LPDataReader, self).__init__(fn,*args,**kwargs)
+        self.fn = fn
+        fn = os.path.splitext(os.path.split(self.fn)[1])[0]
         if star_name <> None:
             self.star_name = star_name
         else:
@@ -165,7 +168,7 @@ class LPDataReader(Reader):
                                             .index(self.star_name)
             vlsr = DataIO.getInputData(keyword='V_LSR',rindex=star_index)
         except KeyError,ValueError: 
-            print 'Star not found in Star.dat for %s. '%(self.filename) + \
+            print 'Star not found in Star.dat for %s. '%(self.fn) + \
                   'Add star to Star.dat!'
             raise IOError()
         if self.getVlsr() is None: 

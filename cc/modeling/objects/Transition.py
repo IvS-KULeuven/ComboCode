@@ -25,8 +25,8 @@ import cc.path
 from cc.ivs.sigproc import funclib
 from cc.modeling.objects import Molecule 
 from cc.tools.io import Database, DataIO
-from cc.tools.io import SphinxReader
-from cc.tools.io import FitsReader, TxtReader
+from cc.tools.readers import SphinxReader
+from cc.tools.readers import FitsReader, TxtReader
 from cc.tools.numerical import Interpol
 from cc.statistics import BasicStats as bs
 from cc.data import LPTools
@@ -337,7 +337,8 @@ def updateLineSpec(trans_list):
 
         DataIO.writeFile(os.path.join(cc.path.gdata,telescope+'.spec'),\
                          new_spec+['\n######################################'])
- 
+
+
 
 def makeTransition(trans,star=None,def_molecs=None,**kwargs):
     
@@ -720,9 +721,9 @@ def makeTransitionsFromRadiat(molec,telescope,ls_min,ls_max,ls_unit='GHz',\
               "offset":offset,'path_gastronoom':path_gastronoom,\
               'telescope':telescope,'molecule':molec}
     radiat = molec.radiat
-    wave = radiat.getFrequency(unit=ls_unit)
-    low = radiat.getLowerStates()
-    up = radiat.getUpperStates()
+    wave = radiat.getTFrequency(unit=ls_unit)
+    low = radiat.getTLower()
+    up = radiat.getTUpper()
     if not molec.spec_indices:
         #- molec.ny_low is the number of levels in gs vib state
         #- molec.ny_up is the number of levels above gs vib state
@@ -1003,7 +1004,6 @@ class Transition():
         self.lpdata = None 
         self.fittedlprof = None
         
-        self.radiat_trans = None
         if frequency is None:
              #-- sets frequency from GASTRoNOoM input in s^-1
             self.__setIndices()  
@@ -1330,20 +1330,19 @@ class Transition():
         
 
 
-    def getEnergyUpper(self,unit='cm-1'):
+    def getEnergyUpper(self,unit=1./u.cm):
          
         '''
         Return the energy level of the upper state of this transition.
-        
-        You can choose the unit. Options: ['cm-1','K','erg'] Default is taken
-        if the unit is not recognized.
     
-        @keyword unit: The unit of the returned value. ['cm-1','K','erg']
-        
-                       (default: cm-1)
-        @type unit: str
+        @keyword unit: The unit of the returned values. Can be any valid units 
+                       str from the astropy units module (energy), or the unit 
+                       itself. 'cm-1' and 'cm^-1' are accepted as well.
+                        
+                       (default: 1./u.cm)
+        @type unit: string/unit
 
-        @return: energy level in cm^-1
+        @return: energy level in chosen unit
         @rtype: float
     
         '''
@@ -1352,33 +1351,24 @@ class Transition():
             print '%s_radiat.dat not found. Cannot find energy levels.'\
                   %self.molecule.molecule
             return
-        if unit.lower() not in ['cm-1','k','erg']:
-            print('WARNING: unit not recognized. Returning cm-1.')
         
-        energy = self.molecule.radiat.getEnergyLevels()
-        
-        if unit.upper() == 'K':
-            return float(energy[self.up_i-1])*self.c*self.h/self.k
-        elif unit.lower() == 'erg':
-            return float(energy[self.up_i-1])*self.c*self.h
-        else:
-            return float(energy[self.up_i-1])
+        return self.molecule.radiat.getLEnergy(index=self.lup,unit=unit)[0]
 
     
     
-    def getEnergyLower(self,unit='cm-1'):
+    def getEnergyLower(self,unit=1./u.cm):
 
         '''
         Return the energy level of the lower state of this transition.
-        
-        You can choose the unit. Options: ['cm-1','K','erg']
     
-        @keyword unit: The unit of the returned value. ['cm-1','K','erg']
-        
-                       (default: cm-1)
-        @type unit: str
+        @keyword unit: The unit of the returned values. Can be any valid units 
+                       str from the astropy units module (energy), or the unit 
+                       itself. 'cm-1' and 'cm^-1' are accepted as well.
+                        
+                       (default: 1./u.cm)
+        @type unit: string/unit
 
-        @return: energy level in cm^-1
+        @return: energy level in chosen unit
         @rtype: float
     
         '''
@@ -1387,62 +1377,64 @@ class Transition():
             print '%s_radiat.dat not found. Cannot find energy levels.'\
                   %self.molecule.molecule
             return
-        if unit.lower() not in ['cm-1','k','erg']:
-            print('WARNING: unit not recognized. Returning cm-1.')
             
-        energy = self.molecule.radiat.getEnergyLevels()
-        
-        if unit.upper() == 'K':
-            return  float(energy[self.low_i-1])*self.c*self.h/self.k
-        elif unit.lower() == 'erg':
-            return  float(energy[self.low_i-1])*self.c*self.h
-        else:
-            return  float(energy[self.low_i-1])
+        return self.molecule.radiat.getLEnergy(index=self.llow,unit=unit)[0]
 
 
 
     def __setIndices(self):
          
         '''
-        Set the index of this transition in the radiat file of GASTRoNOoM.
+        Set the transition index of this transition from the spectroscopy file.
         
-        The index from the indices file for lower and upper state are set.
+        The level indices for lower and upper level are also set.
         
         '''
-        #- For 12C16O and 13C16O:
-        #- indices = [i<60 and [i+1,0,i] or [i+1,1,i-60] for i in range(120)]
-        #- As shown in above line, the first 60 (0-59) j's are associated with
-        #- index (1-60) and v=0, the next 60 (60-119) j's are associated with 
-        #- index (61-120) and v=1 
-
+        #-- For 12C16O-type molecules (spec_index == 0):
+        #   indices = [i<60 and [i+1,0,i] or [i+1,1,i-60] for i in range(120)]
+        #   As shown in above line, the first 60 (0-59) j's are associated with
+        #   index (1-60) and v=0, the next 60 (60-119) j's are associated with 
+        #   index (61-120) and v=1
         if not self.molecule.spec_indices:
-            self.up_i = self.jup + self.vup*self.molecule.ny_low + 1
-            self.low_i = self.jlow + self.vlow*self.molecule.ny_low + 1
+            self.lup = self.jup + self.vup*self.molecule.ny_low + 1
+            self.llow = self.jlow + self.vlow*self.molecule.ny_low + 1
         else:
             indices = self.molecule.radiat_indices
-            #- some molecules have only 2 or 3 relevant quantum numbers
+            #-- some molecules have only 2 or 3 relevant quantum numbers
             quantum_up = [q 
-                            for i,q in enumerate([self.vup,self.jup,\
-                                                    self.kaup,self.kcup]) 
-                            if i<len(indices[0])-1]  
+                          for i,q in enumerate([self.vup,self.jup,\
+                                                self.kaup,self.kcup]) 
+                          if i<len(indices[0])-1]  
             quantum_low = [q 
-                                for i,q in enumerate([self.vlow,self.jlow,\
-                                                    self.kalow,self.kclow]) 
-                                if i<len(indices[0])-1]
-            #- Get index of the transition quantum numbers in the indices list
-            #- If not present in list, ValueError is raised: probably caused 
-            #- by using a linelist that doesn't include this transition.
-            self.up_i  = indices[[i[1:] 
+                           for i,q in enumerate([self.vlow,self.jlow,\
+                                                 self.kalow,self.kclow]) 
+                           if i<len(indices[0])-1]
+            
+            #-- Get index of the transition quantum numbers in the indices list
+            #   If not present in list, ValueError is raised: probably caused 
+            #   by using a linelist that doesn't include this transition.
+            self.lup  = indices[[i[1:] 
                                 for i in indices].index(quantum_up)][0]
-            self.low_i = indices[[i[1:] 
+            self.llow = indices[[i[1:] 
                                 for i in indices].index(quantum_low)][0]
-        self.radiat_trans = self.molecule.radiat.getTransInfo(low_i=self.low_i,\
-                                                              up_i=self.up_i)
-        if self.radiat_trans is False:
-            raw_input('Something fishy is going on in Transition.py... '+\
-                      'non-unique transition indices for %s! Abort!'\
-                      %self.getInputString(include_nquad=0))
-        self.frequency = float(self.radiat_trans['frequency'])
+        
+        #-- Retrieve the transition index based on the level indices. Check if 
+        #   only a single index is returned. If not, something is wrong with the
+        #   lower/upper level indices or with the spectroscopy file.
+        tindex = self.molecule.radiat.getTI(lup=self.lup,llow=self.llow)
+        if tindex.shape != (1,):
+            msg = 'Something fishy is going on in Transition.py... '+\
+                  'non-unique or invalid transition indices for %s!'\
+                  %self.getInputString(include_nquad=0)
+            raise(IndexError(msg))
+        
+        #-- Make sure self.tindex is just a float, not an array.
+        self.tindex = tindex[0]
+        
+        #-- Get the transition frequency
+        freq = self.molecule.radiat.getTFrequency(index=self.tindex,unit='Hz')
+        self.frequency = freq
+        
 
 
     def makeAxisLabel(self,include_mol=1):
@@ -1766,9 +1758,9 @@ class Transition():
                 self.lpdata = []
                 for idf,df in enumerate(self.datafiles):
                     if df[-5:] == '.fits':
-                        lprof = FitsReader.FitsReader(filename=df)
+                        lprof = FitsReader.FitsReader(fn=df)
                     else:
-                        lprof = TxtReader.TxtReader(filename=df)
+                        lprof = TxtReader.TxtReader(fn=df)
                     lprof.setNoise(self.getVexp(idf))
                     self.lpdata.append(lprof)            
                     

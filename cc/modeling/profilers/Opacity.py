@@ -13,10 +13,10 @@ from astropy import constants as cst
 
 from cc.modeling.profilers import Profiler
 from cc.modeling.profilers import Density    
-from cc.tools.io import KappaReader as KR
+from cc.tools.readers import KappaReader as KR
 
 
-def read_opacity(x,species,index=1,order=3): 
+def read_opacity(x,species,index=1,order=3,*args,**kwargs): 
 
     '''
     Read the opacities with the KappaReader and interpolate. 
@@ -24,6 +24,8 @@ def read_opacity(x,species,index=1,order=3):
     Returns a tuple with the original grid, and the interpolation object. Used 
     by the Opacity class to set an interpolation object for a .opac/.particle
     file through species given in usr/Dust.dat.
+    
+    Additional args and kwargs can be passed to the interpolate method.
     
     @param x: The x grid requested for the interpolation. Note that this is a 
               dummy variable to allow Profiler to work with this function. 
@@ -37,10 +39,6 @@ def read_opacity(x,species,index=1,order=3):
                     
                     (default: 1)
     @type index: int
-    @keyword order: Order of the spline interpolation. Default is cubic.
-                    
-                    (default: 3)
-    @type order: int
             
     @return: The interpolator for the mass extinction/absorption/scattering
              coefficients. (in cgs!)
@@ -50,7 +48,7 @@ def read_opacity(x,species,index=1,order=3):
     
     kr = KR.KappaReader()
     return (kr.getWavelength(species),kr.getKappas(species,index),
-            kr.interpolate(species,index,order))
+            kr.interpolate(species,index,*args,**kwargs))
     
 
 

@@ -7,9 +7,10 @@ Author: R. Lombaert
 
 """
 
-import os, collections
+import os, collections, functools
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline as spline1d
+from scipy.interpolate import interp1d
 from scipy.integrate import odeint, trapz 
 from astropy import constants as cst
 from astropy import units as u
@@ -21,6 +22,7 @@ from cc.tools.numerical import Operators as op
 from cc.tools.numerical import Gridding
 from cc.modeling.profilers import Velocity, Density, Profiler, Grainsize
 from cc.modeling.profilers import Mdot, Radiance, Opacity, Temperature
+from cc.tools.readers import CollisReader, PopReader, LamdaReader, MlineReader
 import cc.path
 
 #-- Define a few global constants. Calling cst inside the functions slows them
@@ -188,6 +190,10 @@ class EnergyBalance(object):
         
         Third set includes: gas temperature, gas/dust density, drift velocity.
         
+        Note that for now line cooling parameters are fixed. Hence after a new 
+        RT model was calculated, a new energy balance must be calculated. In the 
+        future, the level pops will be updateable. 
+        
         @keyword fn: The parameter inputfile filename. If not given, a default
                      inputfile is read from aux/inputEnergyBalance.dat.
         
@@ -285,6 +291,33 @@ class EnergyBalance(object):
         #-- Adiabatic cooling is always calculated
         self.C['ad'] = {}
         
+        #-- Add the molecules for line cooling if applicable, and set the 
+        #   containers for collision rates, level pops, spectroscopy, and 
+        #   abundances. Spectroscopy dict will refer to either collis or pop
+        #   depending on the code (LamdaReader or MlineReader, respectively)
+        if self.pars['molecules']:
+            self.collis = {}
+            self.pop = {}
+            self.mol = {}
+            self.abun = {}
+            
+            #-- Set the dict entries for each molecule. Also add a decorated 
+            #   function for each molecule that adds the molecule as an 
+            #   argument by default, so Clc can be called without arguments.
+            for m in self.pars['molecules']: 
+                fname = 'lc_{}'.format(m)
+                self.C[fname] = {}
+                self.pars['cterms'].append(fname)
+                setattr(self,'C'+fname,functools.partial(self.Clc,m))
+                
+            #-- And also set the proper readers depending on the code. 
+            if self.pars['rtcode'].lower() == 'gastronoom':
+                self.colread = CollisReader.CollisReader
+                self.popread = MlineReader.MlineReader
+            else:
+                self.colread = LamdaReader.LamdaReader
+                self.popread = PopReader.PopReader
+            
     
     
     def setGrids(self,r=None,a=None,l=None):
@@ -434,7 +467,7 @@ class EnergyBalance(object):
         self.v = Velocity.Velocity(self.r,v[0],None,3,*v[1:])
         
         #-- Set the opacity profile: l, func, dfunc, order, pars (if 
-        #   read_opacity: species, index, order)
+        #   read_opacity: species, index, additional args/kwargs)
         self.opac = Opacity.Opacity(self.l,opac[0],None,3,*opac[1:])
         
         #-- Set the mass-loss-rate profiles. Check if these are constant.
@@ -543,6 +576,7 @@ class EnergyBalance(object):
         self.rates = {}
     
     
+    
     def __next_iter(self):
     
         '''
@@ -560,7 +594,7 @@ class EnergyBalance(object):
                
         #-- Recalculate the dust velocity. Drift will be done as well.
         self.setVdust() 
-        
+    
     
     
     def setDrift(self):
@@ -668,6 +702,55 @@ class EnergyBalance(object):
         
     
     
+    def setLineCooling(self,m):
+    
+        '''
+        Set the line cooling parameters.    
+        
+        This includes reading the collision rates, level populations and 
+        abundance profiles.
+        
+        This is done per molecule.
+        
+        A distinction is made between the source of the spectroscopy/level pops:
+          - GASTRoNOoM: The info is taken from the MlineReader and CollisReader
+          - ALI: The info is taken from the LamdaReader, PopReader and .par 
+                 output file
+        
+        @param m: The molecule name from the input molecules list.
+        @type m: str
+        
+        '''
+        
+        if not self.collis.has_key(m):
+            #-- Select the files and read them with the Reader objects.
+            imol = self.pars['molecules'].index(m)
+            self.collis[m] = self.colread(self.pars['collis'][imol])
+            self.pop[m] = self.popread(self.pars['pop'][imol])
+            
+            #-- Extract the abundance profile, depending on the rt code.
+            if self.pars['rtcode'].lower() == 'gastronoom': 
+                #-- Refer the spectroscopy to the mline file for later use
+                self.mol[m] = self.pop[m]
+                p = self.pop[m].getP()
+                abun = self.pop[m].getProp('amol')
+            else:
+                #-- Refer the spectroscopy to the lamda file for later use
+                self.mol[m] = self.collis[m]
+                fn = self.pars['pop'][imol].replace('pop','par')                
+                p, abun = np.loadtxt(fn,usecols=[1,4],skip_header=9,unpack=1)
+            
+            #-- We need flexible extrapolation, use interp1d with a spline
+            abun_interp = interp1d(x=p,y=abun,kind='cubic',bounds_error=0,\
+                                   assume_sorted=1,fill_value=(abun[0],0.))
+            self.abun[m] = Profiler.Profiler(x=self.r,func=abun_interp)
+            
+            #-- Set the coll rate and level pop interpolators
+            self.pop[m].setInterp(itype='spline',k=3,ext=3)
+            self.collis[m].setInterp(itype='spline',k=1,ext=0)
+
+            
+            
     def __setT(self):
     
         '''
@@ -1057,6 +1140,120 @@ class EnergyBalance(object):
             
 
 
+    def Clc(self,m):
+    
+        '''
+        Calculate the radiative line cooling rate for a molecule.
+        
+        For GS2014, no correction term yet for the excitation temperature per 
+        level. 
+        
+        Follows Sahai 1990.
+        
+        Cubic spline interpolation for the level populations. Linear 
+        interpolation and extrapolation for the collision rates (as for 
+        GASTRoNOoM). 
+        
+        Currently not yet implemented to use a sqrt(T/T0) extrapolation at lower
+        boundary as is done by MCP/ALI.
+        
+        Note that EnergyBalance will internally call this function with the 
+        molecule tag tacked onto the Clc function name. 
+        
+        @param m: The molecule name from the input molecules list.
+        @type m: str
+        
+        '''
+        
+        def calcLevelLC(llow,r,T):
+        
+            '''
+            Calculate the line cooling contribution for a single transition 
+            index, with a fixed lower level i and for which j > i, for the 
+            entire radial grid.
+            
+            Keep in mind, the goal is to include all transitions from every 
+            level to every level. It doesn't actually matter if the energy is 
+            lower or higher: The Sahai + Einstein equations change the sign if 
+            the lower level is really the upper level in terms of energy. 
+            
+            We can use the structure of the collision rate files, where all 
+            possible collisional transitions are included. By returning all 
+            transitions to a given lower level, we already have j > i. 
+            
+            @param llow: index of the transition lower level.
+            @type llow: int
+            @param r: The radial grid in cm
+            @type r: array
+            @param T: The temperature in K for which to calculate the cooling
+            @type T: array
+            
+            @return: The contribution to the line cooling for a given lower 
+                     level i (in ergs * cm^3 / s). 
+            @rtype: float
+            
+            '''
+            
+            #-- Get the transition indices that go to the level with index llow
+            indices = self.collis[m].getTI(itype='coll_trans',llow=llow)
+            
+            #-- In case no upper levels were found, llow is the highest level
+            #   available, and there are no collisions to be taken into account
+            #   return 0
+            if not indices.size: 
+                return 0.
+            
+            #-- Energy, weight and population of the lower level
+            Elow = self.mol[m].getLEnergy(index=llow,unit='erg')
+            glow = self.mol[m].getLWeight(index=llow)
+            poplow = self.pop[m].getInterp(llow)(r)
+            
+            #-- Retrieve the level indices, energies, weights and populations of
+            #   upper levels
+            lups = self.collis[m].getTUpper(index=indices,itype='coll_trans') 
+            Eups = self.mol[m].getLEnergy(lups,unit='erg')
+            popups = np.array([self.pop[m].getInterp(lup)(r) for lup in lups])
+            gups = self.mol[m].getLWeight(index=lups)
+            
+            #-- Force gups/Eups into a column vector for array multiplication
+            gups.shape = (gups.size,1)
+            Eups.shape = (Eups.size,1)
+            
+            #-- Retrieve the rates between llow and all lups
+            #   Also get the respective weights and energies
+            Culs = np.array([self.collis[m].getInterp(i)(T) for i in indices])
+            
+            #-- Calculate the reversed rate for lower to upper level.
+            #   Based on the Einstein relation: Cul/Clu = gl/gu exp(Eul/kT)
+            expfac = np.exp(np.outer((Elow-Eups),1./(k_b*T)))
+            Clus = Culs*np.multiply(expfac,gups/glow) 
+            
+            #-- Calculate the sum of the cooling contribution across all j>i 
+            #   transitions
+            return np.sum((Clus*poplow-Culs*popups)*(Eups-Elow),axis=0)    
+        
+        
+        #-- if cooling rate has already been calculated: don't do anything
+        if self.C['lc_{}'.format(m)].has_key(self.i): return 
+        
+        #-- Initialise the gas density, the line cooling parameters and data
+        self.setDensity('gas')
+        nh2 = self.gdens.eval(dtype='nh2')
+        self.setLineCooling(m)
+        amol = self.abun[m].eval(warn=0)
+
+        #-- Calculate the line cooling term for this molecule.
+        llows = self.pop[m].getLI()
+        LCterm = np.empty(shape=(len(self.r),len(llows)))
+        for i in llows: 
+            LCterm[:,i-1] = calcLevelLC(i,self.r,self.T.eval())
+        LCtotal = nh2*nh2*amol*np.sum(LCterm,axis=1)
+        
+        #-- Do NOT Multiply by -1. This already gives the net energy lost
+        self.C['lc_{}'.format(m)][self.i] = LCtotal
+
+
+
     def plotRateIterations(self,iterations=[],dTsign='C',mechanism='ad',\
                            scale=1,fn=None,cfg=None,**kwargs):
 
@@ -1093,10 +1290,10 @@ class EnergyBalance(object):
                       (default: None)
         @type cfg: str
         
-        @keywords kwargs: Additional keywords passed to the plotting method. 
-                          Overwrites any keys given in the cfg file.
+        @keyword kwargs: Additional keywords passed to the plotting method. 
+                         Overwrites any keys given in the cfg file.
                           
-                          (default: {})
+                         (default: {})
         @type kwargs: dict
                 
         @return: The filename of the plot is returned, including extension.
@@ -1195,10 +1392,10 @@ class EnergyBalance(object):
                        (default: 0)
         @type join: bool
         
-        @keywords kwargs: Additional keywords passed to the plotting method. 
-                          Overwrites any keys given in the cfg file.
+        @keyword kwargs: Additional keywords passed to the plotting method. 
+                         Overwrites any keys given in the cfg file.
                           
-                          (default: {})
+                         (default: {})
         @type kwargs: dict
                 
         @return: The filename of the plot is returned, including extension.
@@ -1304,10 +1501,10 @@ class EnergyBalance(object):
                       
                       (default: None)
         @type cfg: str
-        @keywords kwargs: Additional keywords passed to the plotting method. 
-                          Overwrites any keys given in the cfg file.
-                          
-                          (default: {})
+        @keyword kwargs: Additional keywords passed to the plotting method. 
+                         Overwrites any keys given in the cfg file.
+                         
+                         (default: {})
         @type kwargs: dict
         
         @return: The filename of the plot is returned, including extension.

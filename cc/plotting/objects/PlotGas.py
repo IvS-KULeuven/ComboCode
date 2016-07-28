@@ -19,7 +19,7 @@ from cc.plotting.objects.PlottingSession import PlottingSession
 from cc.tools.io import DataIO
 from cc.modeling.objects import Transition
 from cc.plotting import Plotting2
-from cc.tools.io import LineList
+from cc.tools.readers import LineList
 from cc.data.instruments import Pacs
 from cc.modeling.objects import Star
 
@@ -780,24 +780,22 @@ class PlotGas(PlottingSession):
         
         '''
         
-        cdms = int(star['LL_CDMS'])
-        jpl = int(star['LL_JPL'])
-        lamda = int(star['LL_LAMDA'])
-        min_strength = float(star['LL_MIN_STRENGTH']) \
-                            and float(star['LL_MIN_STRENGTH']) or None
-        max_exc = float(star['LL_MAX_EXC']) \
-                        and float(star['LL_MAX_EXC']) or None
+        cats = star['LL_CAT']
+        min_strengths = star['LL_MIN_STRENGTH']
+        max_excs = star['LL_MAX_EXC']
+        molecs = star['LL_GAS_LIST']
         
-        linelists = []
-        for molecule in star['LL_GAS_LIST']:
-            if not 'p1H' in molecule.molecule:
-                ll = LineList.LineList(molecule=molecule,x_min=xmin,\
-                                       x_unit=xunit,cdms=cdms,jpl=jpl,\
-                                       lamda=lamda,x_max=xmax,\
+        linelist = []
+        for m,cat,min_str,max_exc in zip(molecs,cats,min_strengths,max_excs):
+            #-- para versions of molecules included in CDMS/JPL db's
+            if not 'p1H' in m.molecule:
+                fn = os.path.join(cc.path.ll,'{}_{}.dat'.format(m.molecule,cat))
+                ll = LineList.LineList(fn=fn,x_min=xmin,\
+                                       unit=xunit,x_max=xmax,\
                                        min_strength=min_strength,\
-                                       max_exc=max_exc,include_extra=1)
-                linelists.append(ll)
-        lls = self.createLineLabels(linelists=linelists,\
+                                       max_exc=max_exc)
+                linelist.append(ll.makeTransitions(m))
+        lls = self.createLineLabels(linelist=linelist,\
                                     fn_trans_marker=fn_trans_marker,
                                     instrument=instrument)
         return lls     
@@ -1249,22 +1247,24 @@ class PlotGas(PlottingSession):
 
 
 
-    def createLineLabels(self,star_grid=[],linelists=[],fn_trans_marker='',\
+    def createLineLabels(self,star_grid=[],linelist=[],molecules=[],\
+                         fn_trans_marker='',\
                          unit='micron',mark_undetected=0,instrument='PACS'):
 
         '''
         Create line labels for all transitions in Star() objects or in
         LineList() objects or in a TRANSITION definition file. Priority:
         star_grid > linelists. fn_trans_marker is always added in addition.
-
+        
         @keyword star_grid: The Star() models.
 
                             (default: [])
         @type star_grid: list[Star()]
-        @keyword linelists: The LineList() objects.
+        @keyword linelist: The list of Transition() objects extracted from a 
+                           catalog, eg by createLineLabelsFromLineLists.
 
-                            (default: [])
-        @type linelists: list[LineList()]
+                           (default: [])
+        @type linelist: list[LineList()]
         @keyword fn_trans_marker: A file that includes TRANSITION definitions.
                                   These transitions will be marked up in the
                                   plot. For instance, when indicating a subset
@@ -1311,9 +1311,8 @@ class PlotGas(PlottingSession):
             alltrans = Transition.extractTransFromStars(star_grid,\
                                                         dtype=instrument,\
                                                         reset_data=0)
-        elif linelists:
-            alltrans = [t   for ll in linelists
-                            for t in ll.makeTransitions()]
+        elif linelist:
+            alltrans = linelist
         else:
             alltrans = []
 
@@ -1325,8 +1324,7 @@ class PlotGas(PlottingSession):
 
         used_indices = list(set([ll[-2] for ll in lls]))
         if fn_trans_marker:
-            def_molecs = dict([(ll.molecule.molecule,ll.molecule) 
-                               for ll in linelists])
+            def_molecs = dict([(m.molecule,m) for m in molecules])
             if star_grid: star = star_grid[0]
             else: star = None
             trl = DataIO.readDict(fn_trans_marker,multi_keys=['TRANSITION'])

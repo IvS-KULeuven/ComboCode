@@ -362,15 +362,15 @@ LS_FILE=                    # if LINE_SELECT=2, otherwise it is ignored. Gives t
 
 
 ###################
-#-- Plotting line lists from downloaded line lists. Data can be plotted as well according to the data settings in the general input.
+#-- Plotting line lists from downloadeded line lists. Data can be plotted as well according to the data settings in the general input.
+#   Catalogs must be located in cc.path.ll, and follow the naming convention: MOLECULE_CATALOG.dat, where MOLECULE is taken from Molecule.dat (TYPE_SHORT) and CATALOG is JPL or CDMS.
 #   Does not calculate RT models.
+#   Syntax: Number of elements the same across all four keywords, separated by &. Or only one element, in which case it applies to all molecules requested.
 ###################
-LL_CDMS=0                           # Pull data from CDMS
-LL_JPL=0                            # Pull data from JPL
-LL_LAMDA=0                          # Pull data from LAMDA
-LL_MIN_STRENGTH=0                   # Minimum integrated line intensity for inclusion in line list plot, in log10 scale, put to 0 to include ALL lines
-LL_MAX_EXC=0                        # Max excitation energy
-LL_MOLECULES=16O1H&1H12C14N         # List the molecules for line listing
+LL_CAT=CDMS                         # The catalog where to pull data from (CDMS or JPL only for now). Must have same number of elements as LL_MOLECULES separated by &
+LL_MIN_STRENGTH=0                   # Minimum integrated line intensity for inclusion in line list plot, in log10 scale, put to 0 to include ALL lines. Must have same number of elements as LL_MOLECULES separated by &
+LL_MAX_EXC=0                        # Max excitation energy. Put to 0 to include ALL lines. Must have same number of elements as LL_MOLECULES separated by &
+LL_MOLECULES=16O1H&1H12C14N         # List the molecules for line listing, separated by &.
 
 ###################
 # PLOTTING INPUT

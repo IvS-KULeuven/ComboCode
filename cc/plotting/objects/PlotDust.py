@@ -19,7 +19,8 @@ import cc.path
 from cc.data import Sed
 from cc.plotting.objects.PlottingSession import PlottingSession
 from cc.plotting import Plotting2,PlotMeixner
-from cc.tools.io import DataIO, KappaReader
+from cc.tools.io import DataIO
+from cc.tools.readers import KappaReader
 from cc.modeling.objects import Star
 from cc.modeling.codes import MCMax
 from cc.modeling.tools import Reddening 
@@ -1261,15 +1262,15 @@ class PlotDust(PlottingSession):
                                     star['LAST_MCMAX_MODEL'])
             denstemp = os.path.join(filepath,'denstemp.dat')
             logfile = os.path.join(filepath,'log.dat')
-            grid_shape = DataIO.getMCMaxOutput(filename=denstemp,incr=1,\
-                                               keyword='NGRAINS',single=0)[0]
+            grid_shape = DataIO.getKeyData(filename=denstemp,incr=1,\
+                                           keyword='NGRAINS',single=0)[0]
             star.update({'NTHETA':int(grid_shape[1]),\
                          'NRAD':int(grid_shape[0]),\
-                         'T_STAR':float(DataIO.getMCMaxOutput(filename=logfile,\
+                         'T_STAR':float(DataIO.getKeyData(filename=logfile,\
                                                 incr=0,\
                                                 keyword='STELLAR TEMPERATURE',\
                                                 single=0)[0][2]),\
-                         'R_STAR':float(DataIO.getMCMaxOutput(filename=logfile,\
+                         'R_STAR':float(DataIO.getKeyData(filename=logfile,\
                                                 incr=0,\
                                                 keyword='STELLAR RADIUS',\
                                                 single=0)[0][2])})            

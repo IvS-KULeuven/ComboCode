@@ -17,51 +17,101 @@ from matplotlib import mlab
 import cc.path
 
 
-def getMCMaxOutput(incr,filename,keyword='RADIUS',single=1):
+def findKey(i,data,key):
+
+    '''
+    Find the index of the line that contains the first occurrence of a keyword.
+    
+    The search is case-insensitive.
+    
+    @param i: The starting index of the search
+    @type i: int
+    @param data: The data read with readFile. Either split on a delimiter, or 
+                 the full line as a str.
+    @type data: list[list]/list[str]
+    @param key: The keyword that is searched
+    @type key: str
+    
+    @return: The index of the line that contains the key for the first time 
+    @rtype: int
+    
+    '''
+    
+    #-- The search is case-insensitive.
+    key = key.upper()
+    
+    #-- Determine if lines are given as string or a list of split strings.
+    if isinstance(data[0],str): 
+        key_absent = lambda x: x.upper().find(key) == -1
+    else:
+        key_absent = lambda x: ' '.join(x).upper().find(key) == -1
+    
+    #-- key_absent returns True as long as it cannot find the keyword.
+    #   while loop ensures we don't have to format the entire file. Can be 
+    #   arduous if the file is large.
+    while key_absent(data[i]):
+        i += 1
+    
+    return i
+    
+    
+    
+def getKeyData(incr,filename,keyword,single=1):
     
     """
-    Search MCMax output for relevant structural information.
+    Search a data file with data in a single (or multiple) columns, separated by
+    comment lines containing the type of data. 
+    
+    The data returned follow the line that contains the key, unless incr is set 
+    to 0. In this case, the line that contains the data is returned in its 
+    entirety, and single is put to 0.
+    
+    This method is often used for extracting MCMax output. In that case, for 
+    radius and theta incr is usually the grid size (NRAD and NTHETA 
+    respectively), and for any other quantity incr is NRAD*NTHETA (fi for 
+    denstemp.dat). incr==0 can be used to extract inputvalues from log.dat.
 
-    @param incr: length of partial list that is needed from MCMax output. For 
-                 radius and theta this is usually the grid size (NRAD and 
-                 NTHETA respectively), and for any other quantity this is 
-                 NRAD*NTHETA (fi for denstemp.dat). 
+    @param incr: length of the data after key that is required.
                  Put this keyword to zero if you are extracting a number
                  from one line that contains the keyword itself. In that case
-                 also put single to 0 so you can take your information from the
-                 whole line. (fi log.dat)
+                 single is put to 0 so you can take your information from the
+                 whole line.
     @type incr: int
     @param filename: name and path of the file searched
     @type filename: string
-    
-    @keyword keyword: the type of information required, always equal to one
-                      of the keywords present in the outputfiles of MCMax
-                        
-                      (default: 'RADIUS')
+    @param keyword: the type of information required, always equal to one
+                    of the keywords present in the file
     @type keyword: string
-    @keyword single: return a list of only the first element on every row
+    
+    @keyword single: return a list of only the first element on every row. 
+                     Otherwise the entire line is returned. Off by default if 
+                     incr == 0.
     
                      (default: 1)
     @type single: bool
     
-    @return: The requested data from MCMax output
+    @return: The requested data
     @rtype: list[]
     
     """
     
-    keyword = keyword.upper()
     data = readFile(filename,' ')
-    i = 1
-    while ' '.join(data[i-1]).upper().find(keyword) == -1:
-        i += 1
+    
+    #-- The line with the key is usually not what we want. So add 1.
+    i = findKey(0,data,keyword) + 1
+
+    #-- If incr is 0, we need the line itself, and not just the first value.
     if not incr:
+        single = 0
         i -= 1
         incr = 1
+        
+    #-- Return a single value (first of the line) or the entire line.
     if single:
         return [float(line[0]) for line in data[i:i+int(incr)]]
     else:
         return [line for line in data[i:i+int(incr)]]
-
+        
 
 
 def getGastronoomOutput(filename,keyword='RADIUS',begin_index=0,\
@@ -250,8 +300,8 @@ def readFile(filename,delimiter=None,replace_spaces=1):
 
 
 def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
-             convert_floats=0,convert_ints=0,multi_keys=[],start_index=0,\
-             end_index=None):
+             convert_floats=0,convert_ints=0,multi_keys=[],start_row=0,\
+             end_row=None,key_modifier=None):
      
     '''
     Read a file as a dictionary.
@@ -292,16 +342,22 @@ def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
                           
                          (default: [])
     @type multi_keys: list(string)
-    @keyword start_index: Limit the text file to lines starting from this index.
+    @keyword start_row: Limit the text file to lines starting from this index.
     
                           (default: 0)
-    @type start_index: int
-    @keyword end_index: Limit the text file to lines ending before this index
+    @type start_row: int
+    @keyword end_row: Limit the text file to lines ending before this index
                         (ie last line is end_index - 1). Default includes up to
                         the last line of the file.
                         
                         (default: None)
-    @type end_index: int
+    @type end_row: int
+    @keyword key_modifier: A function that modifies the key, such as lower(). 
+                           Any method that works on a string in principle works.
+                           Give the function as a string.
+                           
+                           (default: None)
+    @type key_modifier: str
     
     @return: the dictionary with the info from the file.
     @rtype: dict
@@ -309,17 +365,23 @@ def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
     '''
      
     lines = readFile(filename)
-    lines = lines[start_index:end_index]
+    lines = lines[start_row:end_row]
     lines, comments = removeComments(lines,comment_chars=comment_chars)
-    #- Make sure the final character in a value definition doesn't drop off
-    #- when splitting the line, in case there's no comment character on the line.
+    
+    #-- Make sure the final character in a value definition doesn't drop off
+    #   when splitting the line in case there's no comment character on the line
     newdict = dict()
-    all_keys = [line.split(delimiter,1)[0].strip() 
+    all_keys = [line.split(delimiter,1)[0].strip()
                 for line in lines
                 if len(line.split(delimiter,1)) == 2]
     all_vals = [line.split(delimiter,1)[1].strip()
                 for line in lines 
                 if len(line.split(delimiter,1)) == 2]
+    
+    #-- Apply a key modifier if requested. 
+    if key_modifier: 
+        all_keys = [getattr(k,key_modifier)() for k in all_keys]
+    
     for mkey in multi_keys:
         mkey_count = all_keys.count(mkey) 
         if mkey_count > 0:
@@ -528,7 +590,7 @@ def removeComments(lines,comment_chars=['#','!',';']):
 
 def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
              nans=0,start_from_keyword='',return_comments=0,\
-             comment_chars=['#','!',';'],start_index=0,end_index=None):
+             comment_chars=['#','!',';'],end_row=None):
     
     '''
     Read columns, remove comments and turn into floats.
@@ -544,7 +606,9 @@ def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
                          
                          (default: 1)
     @type make_float: bool
-    @keyword start_row: read from this row number onward
+    @keyword start_row: Limit the text file to lines starting from this row. 
+                        If start_from_keyword is used, start_row counts from the
+                        index where the keyword is first found.
     
                         (default: 0)
     @type start_row: int
@@ -573,16 +637,13 @@ def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
      
                             (default: ['#','!',';'])
     @type comment_chars: list[str]
-    @keyword start_index: Limit the text file to lines starting from this index.
-    
-                          (default: 0)
-    @type start_index: int
-    @keyword end_index: Limit the text file to lines ending before this index
-                        (ie last line is end_index - 1). Default includes up to
-                        the last line of the file.
+    @keyword end_row: Limit the text file to lines ending before this index
+                      (ie last line is end_index - 1). Default includes up to
+                      the last line of the file. If start_from_keyword is given,
+                      end_row counts with respect to the found index.
                         
-                        (default: None)
-    @type end_index: int
+                      (default: None)
+    @type end_row: int
     
     @return: The columns are returned, with in addition the comments if 
              requested
@@ -593,12 +654,15 @@ def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
     lines = readFile(filename)
     if str(start_from_keyword):
         #-- Find occurrences of searchstring
+        start_from_keyword = start_from_keyword.upper()
         indices = [i for i,line in enumerate(lines) 
-                     if line.upper().find(start_from_keyword.upper()) != -1]
+                     if line.upper().find(start_from_keyword) != -1]
         #-- If any were found, grab the first and cut the lines above it
         if indices: lines = lines[indices[0]:]
-    #-- Cut anything above start row
-    lines = lines[start_row:]
+    
+    #-- Cut anything above start row, up to the end_row
+    lines = lines[start_row:end_row]
+    
     #-- Remove the comments and empty lines, then split the lines
     lines,comments = removeComments(lines,comment_chars=comment_chars)
     lines = [line for line in lines if line]
@@ -710,11 +774,10 @@ def replaceString(filename,old_str,new_str):
     '''
     
     gg = glob(filename)
-    for gf in gg:                                                                                                                                    
-        old_lines = readFile(gf,replace_spaces=0)                                                                                                  
-        new_lines = [ll.replace(old_str,new_str) for ll in old_lines]                                                             
+    for gf in gg:
+        old_lines = readFile(gf,replace_spaces=0)
+        new_lines = [ll.replace(old_str,new_str) for ll in old_lines]
         writeFile(filename=gf,input_lines=new_lines,delimiter='') 
-    
     
     
     
@@ -760,6 +823,8 @@ def findNumber(index,floats):
     
     Cannot work with non-float or non-convertible-to-float input values.
     
+    If at the end of the list, the index is returned as the length of the list.
+    
     @param index: The starting index for the search
     @type index: int
     @param floats: The floats being searched for a non-zero number
@@ -771,7 +836,7 @@ def findNumber(index,floats):
     
     """
     
-    while float(floats[index]) == 0.0:
+    while index < len(floats) and float(floats[index]) == 0.0:
         index += 1
     return index
 
@@ -782,7 +847,9 @@ def findZero(index,floats):
     """ 
     Starting from index, find the index of the next number equal to zero in 
     the list. Can be at index itself!
-    
+
+    If at the end of the list, the index is returned as the length of the list.
+
     @param index: The starting index for the search
     @type index: int
     @param floats: The floats being searched for a zero number
@@ -794,7 +861,7 @@ def findZero(index,floats):
     
     """
     
-    while float(floats[index]) != 0.0:
+    while index < len(floats) and float(floats[index]) != 0.0:
         index += 1
     return index
 
@@ -1030,7 +1097,8 @@ def checkEntryInfo(input_list,number_of_keys,info_type):
                       'es will not be removed even if N_QUAD is the same too!'
                 for i in indices:
                     print 'At index %i:  %s' %(i,entries[i])
-                raw_input('Abort if identical transitions are not expected. Press enter otherwise.')
+                raw_input('Abort if identical transitions are not expected. '+\
+                          'Press enter otherwise.')
             if info_type == 'R_POINTS_MASS_LOSS':
                 #-- This will be a list of R_POINTS_MASS_LOSS sets, where each 
                 #   set is defined as a list of radial grid point parameters

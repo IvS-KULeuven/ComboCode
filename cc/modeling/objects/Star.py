@@ -880,8 +880,8 @@ class Star(dict):
         if not self['LAST_MCMAX_MODEL']: return empty(0)
     
         fn = self.getDustFn(species)
-        rad = array(DataIO.getMCMaxOutput(incr=int(self['NRAD']),\
-                                          keyword='RADIUS',filename=fn))
+        rad = array(DataIO.getKeyData(incr=int(self['NRAD']),\
+                                      keyword='RADIUS',filename=fn))
         
         unit = str(unit).lower()
         if unit == 'au':
@@ -917,8 +917,8 @@ class Star(dict):
         if not self['LAST_MCMAX_MODEL']: return empty(0)
     
         fn = self.getDustFn(species)
-        theta = array(DataIO.getMCMaxOutput(incr=int(self['NTHETA']),\
-                                            keyword='THETA',filename=fn))
+        theta = array(DataIO.getKeyData(incr=int(self['NTHETA']),\
+                                        keyword='THETA',filename=fn))
         return theta
         
         
@@ -963,8 +963,8 @@ class Star(dict):
         #   over the theta coordinate, if requested.
         fn = self.getDustFn(species)
         incr = int(self['NRAD'])*int(self['NTHETA'])
-        dens_ori = DataIO.getMCMaxOutput(filename=fn,incr=incr,\
-                                         keyword='DENSITY')
+        dens_ori = DataIO.getKeyData(filename=fn,incr=incr,\
+                                     keyword='DENSITY')
         if avg_theta: dens = Data.reduceArray(dens_ori,self['NTHETA'])
         else: dens = dens_ori
         
@@ -1022,8 +1022,8 @@ class Star(dict):
         #   over the theta coordinate, if requested.
         fn = self.getDustFn(species)
         incr = int(self['NRAD'])*int(self['NTHETA'])
-        temp_ori = DataIO.getMCMaxOutput(incr=incr,keyword='TEMPERATURE',\
-                                         filename=fn)
+        temp_ori = DataIO.getKeyData(incr=incr,keyword='TEMPERATURE',\
+                                     filename=fn)
         if avg_theta: temp = Data.reduceArray(temp_ori,self['NTHETA'])
         else: temp = temp_ori
 
@@ -1310,6 +1310,10 @@ class Star(dict):
                 self['LL_GAS_LIST'] = [Molecule.Molecule(molecule=molec,
                                                          linelist=1) 
                                        for molec in self['LL_MOLECULES']]
+            keys = ['LL_CAT','LL_MAX_EXC','LL_MIN_STRENGTH']
+            for k in keys: 
+                if not isinstance(self[k],collections.Iterable):
+                    self[k] = [self[k]]*len(self['LL_GAS_LIST'])
         else:
             pass
         

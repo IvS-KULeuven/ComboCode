@@ -77,18 +77,15 @@ WiP. See the inputfile for detailed description of the input parameters.
 ### How do I run ComboCode?
 ComboCode is ran easily from a Python or iPython shell. Open one, and take the following steps, for an arbitrary input filename: 
 
-0. Import ComboCode into the Python shell:
-    
-        >>> from cc import ComboCode
-
-1. Create a ComboCode object: 
-        
-        >>> filename = '/Users/user_name/ComboCode/input/icc_rdor.dat'
-        >>> c1m = ComboCode.ComboCode(filename)
-    
-2. Start the ComboCode session:
-        
-        >>> c1m.startSession()
+    >>> #-- Import ComboCode into the Python shell:
+    >>> from cc import ComboCode
+    >>>
+    >>> #-- Create a ComboCode object: 
+    >>> filename = '/Users/user_name/ComboCode/input/icc_rdor.dat'
+    >>> c1m = ComboCode.ComboCode(filename)
+    >>>
+    >>> #-- Start the ComboCode session:
+    >>> c1m.startSession()
 
 The c1m.startSession() command is essentially the body of the modeling calculation that is done. In what follows running this command is referred to as a "CC session". You cannot run this command twice. If you want to re-run a given filename, always create the ComboCode() object first (step 1) and then start the session (step 2).
 
@@ -114,13 +111,186 @@ ComboCode is an interface that provides access to two numerical RT codes for dus
 ![](https://github.com/IvS-KULeuven/ComboCode/blob/master/aux/flow_chart_codes.png?raw=true)
 
 ### Reading and using model output
+ComboCode includes several tools to read and use model input and output data, depending on the involved numerical codes (GASTRoNOoM mostly, but some functionality for MCP/ALI is given as well). All of the so-called **Reader** objects are found in the <a href="http://ivs-kuleuven.github.io/ComboCode/ComboCode.cc.tools.io-module.html">cc.tools.readers module</a>. This includes: 
+- TxtReader, FitsReader: radio data (single resolved emission lines) in the form of fits and txt files (see above)
+- SphinxReader: GASTRoNOoM-sphinx output with the ray-tracing results and the predicted line emission profiles
+- MlineReader: GASTRoNOoM-mline output with the radiative-transfer model results, including line opacities, source function, scattering integral, level populations, and the molecular spectroscopy used for the model
+- CollisReader, RadiatReader: the collisional rate data and molecular spectroscopy input, respectively, for GASTRoNOoM
+- PopReader: level populations calculated with MCP/ALI
+- LamdaReader: the collisional rate data and molecular spectroscopy from Lamda-format files as input for MCP/ALI
+- KappaReader: reading and interpolating dust opacities used for MCMax
+
+![](https://github.com/IvS-KULeuven/ComboCode/blob/master/aux/flow_chart_readers.png?raw=true)
+
+With the exception of KappaReader and LineList (entirely stand-alone), all classes inherit from the Reader base class, which itself functions as a dictionary. Instances of these classes thus can be treated as a dictionary that contains the information from the files. Instances of almost all classes can be created by passing them the filename of the output/input file. The only exceptions to this are KappaReader and RadiatReader (see below). Here follows an example that prints out the molecular excitation levels included in an mline radiative-transfer model: 
+    
+    >>> #-- Import and read
+    >>> from cc.tools.readers import MlineReader
+    >>> ml = MlineReader.MlineReader('ml1model_2016-07-26h15-22-11_12C16O.dat')
+    >>> print ml['level']
+
+Several helper functions are available for each class to retrieve specific information and create plots. Moreover, classes that read the same information for different codes (such as molecular spectroscopy for GASTRoNOoM and the Lamda format) employ the same syntax and methods to retrieve that information regardless of source, so they can be used interchangeably. 
+
+#### 1. Molecular spectroscopy and radiative-transfer output
+Molecular spectroscopy files are used in two formats: one for GASTRoNOoM (nonstandard format) and one for MCP/ALI (which is in the format of the Leiden Atomic and Molecular Database: <a href="http://home.strw.leidenuniv.nl/~moldata/">Lamda</a>). Most of the spectroscopy information is also contained in the mline output for GASTRoNOoM (this excludes collision rates).
+    
+RadiatReader, MlineReader and LamdaReader all inherit from SpectroscopyReader and MolReader, and thus share its methods. CollisReader also inherits from SpectropscopyReader, sharing the transition index methods. MlineReader inherits the capabilities of PopReader for level populations. LamdaReader inherits from CollisReader for collision rates. A few examples: 
+
+    >>> #-- Import and read
+    >>> from cc.tools.readers import CollisReader, LamdaReader, MlineReader
+    >>> lr = LamdaReader.LamdaReader('co@rovib-yang.dat')
+    >>> ml = MlineReader.MlineReader('ml1model_2016-07-26h15-22-11_12C16O.dat')
+    >>> cr = CollisReader.CollisReader('12C16O_collis.dat')
+    >>>
+    >>> #-- Retrieve all collisional transition indices for a given lower level index
+    >>> lr.getTI(llow=1,itype='coll_trans')
+    >>> cr.getTI(llow=1)
+    >>>
+    >>> #-- Retrieve the collision rates for a given collisional transition (both ways 
+    >>> #   apply to both objects), and the temperature grid
+    >>> lr.getRates(index=23)
+    >>> lr.getTemp()
+    >>> cr.getRates(llow=1,lup=3)
+    >>>
+    >>> #-- Retrieve the spectroscopic transition index for a lower and upper index
+    >>> lr.getTI(llow=1,lup=2,itype='trans')
+    >>> ml.getTI(llow=1,lup=2)
+    >>>
+    >>> #-- Retrieve the energy of a given level
+    >>> lr.getLEnergy(llow=12,unit='K')
+    >>> ml.getLEnergy(llow=12,unit='erg')
+    >>>
+    >>> #-- Retrieve the level weights of a list of indices in array form
+    >>> level_indices = [2,3,4,5,6,7,8]
+    >>> weights = lr.getWeights(index=level_indices)
+    >>>
+    >>> #-- Retrieve the level populations. Then make a plot of all level populations.
+    >>> ml.getPop(index=20)
+    >>> ml.plotPop()
+    >>>
+    >>> #-- Create interpolators for level populations (similarly for collision rates in CollisReader)
+    >>> ml.setInterp(itype='spline',k=1,ext=3)
+    >>> interp = ml.getInterp(index=1)
+    >>>
+    >>> #-- Retrieve the modeled source function, line opacity at line center and scattering integral
+    >>> #   as a function of transition index (dict key), and impact parameter in cm.
+    >>> p = ml.getP()
+    >>> for dtype in ['sf','lo','si']:
+    >>>     print(ml[dtype])
+
+       
+There are many more methods available, described in the docstrings of each class and its methods, see <a href="http://ivs-kuleuven.github.io/ComboCode/">the online documentation</a>. GASTRoNOoM-mline produces three output files: ml1, ml2 and ml3. Only ml1 (spectroscopy and circumstellar properties) and ml3 (radiative-transfer output for all transitions, and level populations) are read by MlineReader. It doesn't matter which of the two filenames are passed to MlineReader; both files will be read. Ml2 files give an overview of the iteration steps. MCP/ALI contrarily give less radiative-transfer output by default, but do give level populations (.pop files) to be read with PopReader.
+
+Note that RadiatReader requires additional input, namely the number of transitions and levels included. Refer to the MOLECULE definition in the ComboCode input for GASTRoNOoM, where ny=ny_up+ny_low and nline are given. This is not needed for the MlineReader.
+
+    >>> #-- Import and read
+    >>> from cc.tools.readers import RadiatReader
+    >>> rr = RadiatReader.RadiatReader('12C16O_radiat.dat',nline=240,ny=122)
+        
+Finally, a module is available to read other generic line lists from online databases such as
+    
+- Jet Propulsion Laboratory: <a href="http://spec.jpl.nasa.gov/">JPL</a>
+- Cologne Database for Molecular Spectroscopy: <a href="https://www.astro.uni-koeln.de/cdms">CDMS</a>
+    
+This module does not inherit from the Reader base class and has its own functionality. 
+
+    >>> #-- Import and read. Note the additional options.
+    >>> from cc.tools.readers import LineList
+    >>> ll = LineList.LineList('12C16O_CDMS.dat',x_min=100.,x_max=2000.,unit='GHz')
+    >>> 
+    >>> #-- Retrieve the linelist
+    >>> lines = ll.getLineList()
+    >>>
+    >>> #-- Make Transition() objects for additional functionality
+    >>> from cc.modeling.objects import Molecule
+    >>> mm = Molecule.Molecule('12C16O',linelist=1)
+    >>> transitions = ll.makeTransitions(molecule=mm,telescope='PACS')
+    >>> for t in transitions: print(t)
+    
+Line lists from the Lamda online database can of course be read with the LamdaReader. 
+
+#### 2. Modeled line profiles and ray-tracing output for GASTRoNOoM
+The third subcode of GASTRoNOoM, named sphinx, provides the ray tracing and calculated the line emission profiles. The output consists of two files: sph1 and sph2, the former giving intensities as a function of impact parameter, the latter giving the intrinsic and beam-convolved line profiles in several units as a function of velocity. It doesn't matter which of the two filenames are passed to SphinxReader; both files will be read. Several methods are available to return the information. 
+
+    >>> #-- Import and read
+    >>> from cc.tools.readers import SphinxReader
+    >>> fn = 'sph1model_2016-07-26h14-37-10_12C16O_vup0_jup1_vlow0_jlow0_JCMT_OFFSET0.00.dat'
+    >>> sph = SphinxReader.SphinxReader(fn)
+    >>>
+    >>> #-- Retrieve the impact parameter grid and the normalized intensity
+    >>> p = sph.getImpact()
+    >>> intens = sph.getNormalizedIntensity()
+    >>>
+    >>> #-- Retrieve the intrinsic line profile
+    >>> vel_intrinsic = sph.getVelocityIntrinsic()
+    >>> lp_int_cgs = sph.getLPIntrinsic(cont_subtract=1)
+    >>>
+    >>> #-- Retrieve the beam-convolved profile in Kelvin
+    >>> vel = sph.getVelocity()
+    >>> lp_K = sph.getLPIntrinsic(cont_subtract=0)
+        
+Other methods are available for other types of information. The sph object also functions as a dictionary, so can be easily checked. 
+
+#### 3. Dust opacities for MCMax
+The MCMax dust opacities can be read with the KappaReader. This is the only Reader object that doesn't inherit from the Reader base class and has its own functionality. It depends heavily on the usr/Dust.dat file, that contains all the dust information associated with the opacity files and their name tags. 
+
+    >>> #-- Create a KappaReader object.
+    >>> from cc.tools.readers import KappaReader
+    >>> kr = KappaReader.KappaReader()
+    >>>
+    >>> #-- Read the information of a dust species (e.g. amorphous carbon, included in usr.dist/Dust.dat)
+    >>> species = 'AMCCDEPREI'
+    >>> kr.readKappas(species)
+    >>>
+    >>> #-- Retrieve the information.
+    >>> w = kr.getWavelength(species)
+    >>> kappas = kr.getKappas(species,index=0)
+    >>> ext_eff = kr.getExtEff(species,index=1)
+    >>>
+    >>> #-- Create an interpolator (spline), pass extra args k and ext to the spline.
+    >>> interp = kr.interpolate(species=species,index=0,k=3,ext=0)
+        
+The opacity files contain three types of information as a function of wavelength, given by the index: 0: extinction, 1: absorption, 2: scattering.
+
+#### 4. General model input/output for GASTRoNOoM and MCMax
+Some information is available through general methods that retrieve specifically requested information, rather than working through a Reader object. Several methods are available to read any type of multiple-column-based or 1-column-based model input/output. Examples are getGastronoomOutput, getInputData and getKeyData in the <a href="http://ivs-kuleuven.github.io/ComboCode/ComboCode.cc.tools.io.DataIO-module.html">cc.tools.io.DataIO module</a>. See link for more information on the methods and how to use them. Some examples. 
+
+    >>> #-- Import modules
+    >>> from cc.tools.io import DataIO
+    >>> import cc.path
+    >>> import os
+    >>> 
+    >>> #-- Retrieve the radius and temperature for a GASTRoNOoM model (multi column output file)
+    >>> fgr_file = 'coolfgr_allmodel_2016-07-26h14-37-10.dat'
+    >>> rad = DataIO.getGastronoomOutput(filename=fgr_file,keyword='RADIUS',return_array=1)
+    >>> temp = DataIO.getGastronoomOutput(filename=fgr_file,keyword='TEMP',return_array=1)
+    >>>
+    >>> #-- Retrieve the radius and temperature for a MCMax model (1 column output file)
+    >>> dens_file = 'denstemp.dat'
+    >>> incr = 150 # NRAd -- number of radial points
+    >>> rad = DataIO.getKeyData(incr=incr,keyword='RADIUS',filename=dens_file)
+    >>> incr = 450 # NRAD*NTHETA -- number of radial times theta points
+    >>> temp = DataIO.getKeyData(incr=incr,keyword='TEMPERATURE',filename=dens_file)
+    >>> 
+    >>> #-- Read a plot cfg file as a dictionary
+    >>> inputfile = os.path.join(cc.path.aux,'plot_config_example.cfg')
+    >>> dd = DataIO.readDict(filename=inputfile,convert_lists=1,convert_floats=1,\
+    >>>                      comment_chars=['#','!'])
+    
+Especially the MCMax and GASTRoNOoM model output can also be more easily accessed through the Star() objects that represent each model in the model grid. They are accessible from the c1m.star_grid list (see above for more details).
 
 ### Plotting model output
 
-### Database management
+## 7. Database management
+ComboCode provides basic database functionality to track and book-keep modeling output and data files. Any model that is calculated successfully is listed in the appropriate model database with its parameters and is assigned a model ID. Whenever ComboCode is ran, and requested models are found in the database, the model ID is returned instead of calculating the model anew. 
+
+### Types of databases
 
 
-#### Cleaning your databases
+### Database locking
+
+
+### Cleaning your databases
 The databases include a way to track which models are currently being calculated in **any** CC session (or, shell). This works through an "IN\_PROGRESS" entry in the keyword definition of a given cooling, mline, sphinx, or MCMax model, and regular synchronisation between the Database() instance in the CC session and the harddisk version of the database. 
 
 However, if for some reason a CC session is terminated and results in an error, it may be possible "IN\_PROGRESS" entries remain in the database, while no model is currently being calculated. You can clean databases off these left-over "IN\_PROGRESS" entries by doing the following.  Only do this if you are positive **no other CC session is currently running**! Imagine a CC session is waiting for an mline model to finish (and no other CC session is running), open an ipython shell and do the following (for PATH_GASTRONOOM=MyModels):
@@ -130,14 +300,14 @@ However, if for some reason a CC session is terminated and results in an error, 
     >>> Database.cleanDatabase(db_fn)
     >>> exit()
 
-This effectively removes all "IN\_PROGRESS" entries from the databases. It is possible you run a CC session, which ends up waiting for another CC session to finish, while no other CC session is currently running. This means such a left-over "IN\_PROGRESS" entry is encountered. Open a separate ipython shell, and runn the above script. Once finished, the CC session will continue (it will say the mline model failed, since it is no longer present in the database). You can re-run ComboCode if you want to re-try the model. You can run the exact same script for other databases, including cooling, sphinx and MCMax. 
+This effectively removes all "IN\_PROGRESS" entries from the databases. It is possible that you run a CC session, which ends up waiting for another CC session to finish, while no other CC session is currently running. This means such a left-over "IN\_PROGRESS" entry is encountered. Open a separate ipython shell, and run the above script. Once finished, the CC session will continue (it will say the mline model failed, since it is no longer present in the database). You can re-run ComboCode if you want to re-try the model. You can run the exact same script for other databases, including cooling, sphinx and MCMax. 
 
 Note that older versions of the databases may sometimes contain model\_ids for mline and sphinx (in their respective databases) that contain no molecules or transitions. These are not allowed anymore in the current version of ComboCode. Running this method also removes those empty model\_ids. This must be done in case you encounter one of the two following error messages: 
 
     KeyError: 'Empty molec id found in the database. This should not be possible.'
     KeyError: 'Empty trans id found in the database. This should not be possible.'
 
-## 7. Statistical methods
+## 8. Statistical methods
 
 ### Measuring goodness-of-fit
 
@@ -146,7 +316,7 @@ Note that older versions of the databases may sometimes contain model\_ids for m
 
 
 
-## 8. Additional modules
+## 9. Additional modules
 
 ### Line profile fitting
 

@@ -74,7 +74,7 @@ def interp_file(x=None,read_func=DataIO.readCols,xcol=0,ycol=1,itype='spline',\
     @type x: array
     @keyword read_func: The function used to read the file. Default is 
                         straightforward function for reading columns. 
-                        Alternatives include getInputData, getMCMaxOutput, etc.
+                        Alternatives include getInputData, getKeyData, etc.
                         Can be given as a string, in which case the function 
                         must be defined in DataIO.
                         
