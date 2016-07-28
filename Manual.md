@@ -1,9 +1,9 @@
 # Welcome to the ComboCode User Manual
 ## 1. Introduction
 ### What is this manual?
-This manual is meant as a guide to running ComboCode and its two numerical codes. This is not an all-inclusive, comprehensive manual for the ComboCode capabilities. However, in-depth, up-to-date documentation for the Python package is available on <a href="https://IvS-KULeuven.github.io/ComboCode">on GitHub</a>, as a collection of doc-strings. The source code is also available there. Together with the in-depth documentation and the cookbooks provided in this manual for extracting information and using the additional modules, you should be able to use the package to its full extent. For additional questions or remarks, please <a href="https://github.com/robinlombaert">contact me</a>. 
+This manual is meant as a guide to running ComboCode and its two numerical codes. This is not an all-inclusive, comprehensive manual for the ComboCode capabilities. However, in-depth, up-to-date documentation for the Python package is available on <a href="https://robinlombaert.github.io/ComboCode">on GitHub</a>, as a collection of doc-strings. The source code is also available there. Together with the in-depth documentation and the cookbooks provided in this manual for extracting information and using the additional modules, you should be able to use the package to its full extent. For additional questions or remarks, please <a href="https://github.com/robinlombaert">contact me</a>. 
 
-For best results, it is recommended to use both radiative-transfer (RT) codes embedded in ComboCode: GASTRoNOoM (line RT) and MCMax (continuum RT), authored and maintained by L. Decin and M. Min, respectively. Both authors have to be contacted for use of the RT codes, also as part of ComboCode, and their contact details can be requested <a href="https://github.com/robinlombaert">from me</a>.
+For best results, it is recommended to use both radiative-transfer (RT) codes embedded in ComboCode: GASTRoNOoM (line RT) and MCMax (continuum RT), authored and maintained by L. Decin and M. Min, respectively. Both authors have to be contacted for use of the RT codes, also as part of ComboCode, and their contact details can be requested <a href="https://github.com/robinlombaert">from me</a>. A current work-in-progress is the implementation of the MCP & ALI codes used at Chalmers University of Technology, Sweden, currently maintained by H. Olofsson & M. Maercker.
 
 This manual has been written by Robin Lombaert and revised by Marie Van de Sande.
 
@@ -22,6 +22,8 @@ The functionality includes:
     - Automatic gas line selection based on available data and line listing
     - Databases for modeling output and easy parameter space searches
     - Interaction with a supercomputer cluster built into the databases
+    - Reading and using molecular spectroscopy, collision rates and level populations
+    
 * <b>Data</b>: 
     - Management of data files associated with radio data, SEDs and spectroscopic data
     - Fitting routines for resolved emission lines
@@ -33,7 +35,7 @@ In what follows, you will set up your folder structure first (much of which is d
 ### Folder setup
 The folder setup for running ComboCode can be split up into three parts: the folders specific to ComboCode, and the two folders for the GASTRoNOoM and MCMax RT codes that must be installed separately. 
 
-Firstly, the folder setup that comes with ComboCode is set up when installing the git repository. Only the usr/ folder must be installed manually, as this folder contains the local user-specific settings. This is described in the <a href="https://github.com/IvS-KULeuven/ComboCode/blob/master/README.md">README</a> document. For completeness, these folders include:
+Firstly, the folder setup that comes with ComboCode is set up when installing the git repository. Only the usr/ folder must be installed manually, as this folder contains the local user-specific settings. This is described in the <a href="https://github.com/robinlombaert/ComboCode/blob/master/README.md">README</a> document. For completeness, these folders include:
 
 <ol>
 <li>cc -- Contains the Python modules.</li>
@@ -108,10 +110,10 @@ Filename convention.
 ### Combined dust and gas radiative transfer
 ComboCode is an interface that provides access to two numerical RT codes for dust and gas respectively. The way these codes are linked through ComboCode is illustrated in the schematic below. Note that this schematic currently does not include iteration between energy balance and line RT, as this functionality is not yet implemented in ComboCode. 
 
-![](https://github.com/IvS-KULeuven/ComboCode/blob/master/aux/flow_chart_codes.png?raw=true)
+![](https://github.com/robinlombaert/ComboCode/blob/master/aux/flow_chart_codes.png?raw=true)
 
 ### Reading and using model output
-ComboCode includes several tools to read and use model input and output data, depending on the involved numerical codes (GASTRoNOoM mostly, but some functionality for MCP/ALI is given as well). All of the so-called **Reader** objects are found in the <a href="http://ivs-kuleuven.github.io/ComboCode/ComboCode.cc.tools.io-module.html">cc.tools.readers module</a>. This includes: 
+ComboCode includes several tools to read and use model input and output data, depending on the involved numerical codes (GASTRoNOoM mostly, but some functionality for MCP/ALI is given as well). All of the so-called **Reader** objects are found in the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.tools.readers-module.html">cc.tools.readers module</a>. This includes: 
 - TxtReader, FitsReader: radio data (single resolved emission lines) in the form of fits and txt files (see above)
 - SphinxReader: GASTRoNOoM-sphinx output with the ray-tracing results and the predicted line emission profiles
 - MlineReader: GASTRoNOoM-mline output with the radiative-transfer model results, including line opacities, source function, scattering integral, level populations, and the molecular spectroscopy used for the model
@@ -120,7 +122,7 @@ ComboCode includes several tools to read and use model input and output data, de
 - LamdaReader: the collisional rate data and molecular spectroscopy from Lamda-format files as input for MCP/ALI
 - KappaReader: reading and interpolating dust opacities used for MCMax
 
-![](https://github.com/IvS-KULeuven/ComboCode/blob/master/aux/flow_chart_readers.png?raw=true)
+![](https://github.com/robinlombaert/ComboCode/blob/master/aux/flow_chart_readers.png?raw=true)
 
 With the exception of KappaReader and LineList (entirely stand-alone), all classes inherit from the Reader base class, which itself functions as a dictionary. Instances of these classes thus can be treated as a dictionary that contains the information from the files. Instances of almost all classes can be created by passing them the filename of the output/input file. The only exceptions to this are KappaReader and RadiatReader (see below). Here follows an example that prints out the molecular excitation levels included in an mline radiative-transfer model: 
     
@@ -179,7 +181,7 @@ RadiatReader, MlineReader and LamdaReader all inherit from SpectroscopyReader an
     >>>     print(ml[dtype])
 
        
-There are many more methods available, described in the docstrings of each class and its methods, see <a href="http://ivs-kuleuven.github.io/ComboCode/">the online documentation</a>. GASTRoNOoM-mline produces three output files: ml1, ml2 and ml3. Only ml1 (spectroscopy and circumstellar properties) and ml3 (radiative-transfer output for all transitions, and level populations) are read by MlineReader. It doesn't matter which of the two filenames are passed to MlineReader; both files will be read. Ml2 files give an overview of the iteration steps. MCP/ALI contrarily give less radiative-transfer output by default, but do give level populations (.pop files) to be read with PopReader.
+There are many more methods available, described in the docstrings of each class and its methods, see <a href="http://robinlombaert.github.io/ComboCode/">the online documentation</a>. GASTRoNOoM-mline produces three output files: ml1, ml2 and ml3. Only ml1 (spectroscopy and circumstellar properties) and ml3 (radiative-transfer output for all transitions, and level populations) are read by MlineReader. It doesn't matter which of the two filenames are passed to MlineReader; both files will be read. Ml2 files give an overview of the iteration steps. MCP/ALI contrarily give less radiative-transfer output by default, but do give level populations (.pop files) to be read with PopReader.
 
 Note that RadiatReader requires additional input, namely the number of transitions and levels included. Refer to the MOLECULE definition in the ComboCode input for GASTRoNOoM, where ny=ny_up+ny_low and nline are given. This is not needed for the MlineReader.
 
@@ -253,7 +255,7 @@ The MCMax dust opacities can be read with the KappaReader. This is the only Read
 The opacity files contain three types of information as a function of wavelength, given by the index: 0: extinction, 1: absorption, 2: scattering.
 
 #### 4. General model input/output for GASTRoNOoM and MCMax
-Some information is available through general methods that retrieve specifically requested information, rather than working through a Reader object. Several methods are available to read any type of multiple-column-based or 1-column-based model input/output. Examples are getGastronoomOutput, getInputData and getKeyData in the <a href="http://ivs-kuleuven.github.io/ComboCode/ComboCode.cc.tools.io.DataIO-module.html">cc.tools.io.DataIO module</a>. See link for more information on the methods and how to use them. Some examples. 
+Some information is available through general methods that retrieve specifically requested information, rather than working through a Reader object. Several methods are available to read any type of multiple-column-based or 1-column-based model input/output. Examples are getGastronoomOutput, getInputData and getKeyData in the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.tools.io.DataIO-module.html">cc.tools.io.DataIO module</a>. See link for more information on the methods and how to use them. Some examples. 
 
     >>> #-- Import modules
     >>> from cc.tools.io import DataIO
