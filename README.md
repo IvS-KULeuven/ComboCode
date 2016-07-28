@@ -98,7 +98,7 @@ ComboCode is a work in progress. New features and bug fixes are introduced regul
 
 * Updating your own clone of ComboCode to the most recent version can be done with:
     - $ cd ~/ComboCode/
-    - $ git pull
+    - $ git pull origin master
 
 ## Documentation
 A user manual with cookbooks and an overview of the inputfiles is available on GitHub at (work in progress!):  
