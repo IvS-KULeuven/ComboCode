@@ -98,6 +98,9 @@ class SpectroscopyReader(Reader):
         
         A specific index (or array of indices) can be requested by specifying 
         the lower and upper level index.
+        
+        Multiple lup and/or llow can be given in one go to make a selection of 
+        indices.
 
         @param itype: The type of index. MolReader needs this to be 'trans'.
                       CollisReader needs this to be 'coll_trans'.
@@ -108,16 +111,17 @@ class SpectroscopyReader(Reader):
                       returned.
         
                       (default: None)
-        @type lup: int
+        @type lup: int/array
         @keyword llow: The index of the lower energy level in the transition. If
                        both this and lup are None, all transition indices are 
                        returned.
         
                        (default: None)
-        @type llow: int
+        @type llow: int/array
         
-        @return: The transition indices
-        @rtype: array
+        @return: The transition indices. A single integer if both lup and llow
+                 were single integers.
+        @rtype: int/array
         
         '''
         
@@ -129,11 +133,20 @@ class SpectroscopyReader(Reader):
         #   match found.
         bools = np.ones(shape=self[itype]['index'].shape,dtype=bool)
         if not lup is None: 
-            bools *= self[itype]['lup'] == lup
+            bools *= np.in1d(self[itype]['lup'],lup)
+            #self[itype]['lup'] == lup
         if not llow is None:
-            bools *= self[itype]['llow'] == llow
+            bools *= np.in1d(self[itype]['llow'],llow)
+            #self[itype]['llow'] == llow
+        selection = self[itype]['index'][bools]
         
-        return self[itype]['index'][bools]
+        #-- If both lup and llow were defined, only one index should be returned
+        #   at least if only one index was found. Else return the entire array
+        if selection.shape != (1,) or isinstance(lup,collections.Iterable) \
+                or isinstance(llow,collections.Iterable):
+            return selection
+        else:
+            return selection[0]
     
     
     

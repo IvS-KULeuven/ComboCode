@@ -309,8 +309,8 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 ## NEW_TEMPERATURE_FILENAME = the filename for the keyword below, only relevant if nonzero, but must be included (filename with other temperature values to be used in mline and sphinx. Units are [cm,K])
 ## SET_KEYWORD_CHANGE_TEMPERATURE = 0 or 1 - change the temperature after cooling (in sampling.f)
 ##########################################################################
-#MOLECULE=12C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
-#MOLECULE=13C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+MOLECULE=12C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+MOLECULE=13C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=12C17O 41 0 40 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=12C18O 41 0 40 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=1H1H16O  90  39  1157  50  0  1.0e-20  1.0e-20  1.0e-20  50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
@@ -343,8 +343,10 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 #   4) LINE_SELECT = 2: lines are selected from a file, which contains the TRANSITION definitions (requires LS_FILE) 
 ###################
 #-- Add your explicit TRANSITION definitions here. 
-#TRANSITION=12C16O 0 2 0 0 0 1 0 0 JCMT 0.0 100
-#TRANSITION=12C16O 0 1 0 0 0 0 0 0 JCMT 0.0 100
+TRANSITION=12C16O 0 2 0 0 0 1 0 0 IRAM 0.0 100
+TRANSITION=12C16O 0 1 0 0 0 0 0 0 IRAM 0.0 100
+TRANSITION=13C16O 0 2 0 0 0 1 0 0 IRAM 0.0 100
+TRANSITION=13C16O 0 1 0 0 0 0 0 0 IRAM 0.0 100
 
 
 #-- Sphinx keywords

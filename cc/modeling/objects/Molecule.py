@@ -13,7 +13,7 @@ import re
 import cc.path
 from cc.tools.io import DataIO
 from cc.tools.io.Database import Database
-from cc.tools.readers import RadiatReader
+from cc.tools.readers import RadiatReader, MlineReader
 
 
 
@@ -77,6 +77,7 @@ def makeMoleculeFromDb(molec_id,molecule,path_gastronoom='codeSep2010',\
         if molec_dict.has_key(key):
             del molec_dict[key]
     molec_dict = dict([(k.lower(),v) for k,v in molec_dict.items()])
+    molec_dict['path_gastronoom'] = path_gastronoom
     molec = Molecule(molecule=molecule,**molec_dict)
     molec.setModelId(molec_id)
     return molec
@@ -102,7 +103,8 @@ class Molecule():
                  opr=0,r_outer=0,outer_r_mode='MAMON',abundance_filename=None,\
                  change_fraction_filename=None,set_keyword_change_abundance=0,\
                  set_keyword_change_temperature=0,enhance_abundance_factor=0,\
-                 new_temperature_filename=None,linelist=0,starfile=''):
+                 new_temperature_filename=None,linelist=0,starfile='',\
+                 path_gastronoom=None):
         
         '''
         Initiate a Molecule class, setting all values for the allowed 
@@ -320,7 +322,10 @@ class Molecule():
                            
                            (default: '')
         @type starfile: str
-                           
+        @keyword path_gastronoom: model output folder in the GASTRoNOoM home
+        
+                                  (default: None)
+        @type path_gastronoom: string                   
         
         '''
  
@@ -330,6 +335,8 @@ class Molecule():
         self.nline = int(nline)
         self.n_impact = int(n_impact)
         self.n_impact_extra = int(n_impact_extra)
+        self.path_gastronoom = path_gastronoom
+        
         self.molecule_index = DataIO.getInputData(keyword='TYPE_SHORT',\
                                                   filename='Molecule.dat')\
                                                  .index(self.molecule)
@@ -427,6 +434,8 @@ class Molecule():
             self.radiat = None
             self.radiat_indices = None
         self.starfile = starfile
+        self.mline = None
+
 
 
     def __str__(self):
@@ -562,6 +571,56 @@ class Molecule():
                          
 
 
+    def makeMlineFilename(self,number='*',include_path=0):
+        
+        '''
+        Return an mline filename for this object.
+         
+        @keyword number: the number in the filename (ml*, ml1, ml2, ml3. Hence 
+                         can be *, 1, 2, 3)
+                         
+                         (default: '*')
+        @type number: string
+        @keyword include_path: Include the full filepath.
+        
+                               (default: 0) 
+        @type include_path: bool
+        
+        @return: The sphinx filename for this transition
+        @rtype: string
+        
+        '''
+        
+        try:
+            number = str(int(number))
+        except ValueError:
+            number = str(number)
+        
+        fn = 'ml{}{}_{}.dat'.format(number,self.getModelId(),self.molecule)
+        if include_path: 
+            fn = os.path.join(cc.path.gastronoom,self.path_gastronoom,'models',\
+                              self.getModelId(),fn)
+        
+        return fn
+
+
+
+    def readMline(self):
+         
+        '''
+        Read the mline output if the model id is valid.       
+        
+        The mline output is available in the MlineReader object mline, as a 
+        property of Molecule().
+        
+        '''
+
+        if self.mline is None and self.getModelId():
+            fn = self.makeMlineFilename(include_path=1)
+            self.mline = MlineReader.MlineReader(fn)
+     
+
+
     def setModelId(self,model_id):
         
         '''
@@ -657,19 +716,3 @@ class Molecule():
         
         return self.molecule in ['1H1H16O','p1H1H16O','1H1H17O',\
                                  'p1H1H17O','1H1H18O','p1H1H18O']
-        
-        
-    
-    def readMline(self):
-    
-        """
-        Read the mline output for this molecule, given that a model_id is 
-        available. 
-        
-        The mline output is available in the MlineReader object, as a property
-        of Molecule().
-        
-        [NYI]
-        
-        
-        """

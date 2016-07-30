@@ -740,8 +740,10 @@ class EnergyBalance(object):
                 fn = self.pars['pop'][imol].replace('pop','par')                
                 p, abun = np.loadtxt(fn,usecols=[1,4],skip_header=9,unpack=1)
             
-            #-- We need flexible extrapolation, use interp1d with a spline
-            abun_interp = interp1d(x=p,y=abun,kind='cubic',bounds_error=0,\
+            #-- We need flexible extrapolation, use interp1d and linear interp
+            #   Linear because cubic is too unstable for the last radial step in
+            #   a steep abundance decline. 
+            abun_interp = interp1d(x=p,y=abun,kind='linear',bounds_error=0,\
                                    assume_sorted=1,fill_value=(abun[0],0.))
             self.abun[m] = Profiler.Profiler(x=self.r,func=abun_interp)
             
@@ -1181,6 +1183,22 @@ class EnergyBalance(object):
             possible collisional transitions are included. By returning all 
             transitions to a given lower level, we already have j > i. 
             
+            A note must be made here. Normally one would want to work with 
+            all levels that have higher energy than Elow. However, for CO 
+            this leads to issues because some v=1 levels have lower energy
+            than some v=0 levels, while they are still sorted going v=0 to 
+            jmax, then v=1 to jmax, ie not sorted by energy. The collision
+            rates however assume that they are sorted by energy. Meaning 
+            that for some collisional transitions Eup-Elow becomes < 0 
+            because of how the CO spectroscopy is sorted. This is not 
+            necessarily a problem, hence why we assume Eup-Elow must be > 0
+            in what follows, and force it to be through abs(Eup-Elow). 
+            We assume the collision rate files are sorted properly, thus 
+            retrieve all "higher energy levels" by simply passing the llow
+            index to the getTI method. This leads to results that are 
+            identical with GASTRoNOoM CO cooling rates.
+            
+            
             @param llow: index of the transition lower level.
             @type llow: int
             @param r: The radial grid in cm
@@ -1194,19 +1212,20 @@ class EnergyBalance(object):
             
             '''
             
+            #-- Energy, weight and population of the lower level
+            Elow = self.mol[m].getLEnergy(index=llow,unit='erg')
+            glow = self.mol[m].getLWeight(index=llow)
+            poplow = self.pop[m].getInterp(llow)(r)
+            
             #-- Get the transition indices that go to the level with index llow
-            indices = self.collis[m].getTI(itype='coll_trans',llow=llow)
+            #   Enforce indices to be an array.
+            indices = self.collis[m].getTI(itype='coll_trans',llow=(llow,))
             
             #-- In case no upper levels were found, llow is the highest level
             #   available, and there are no collisions to be taken into account
             #   return 0
             if not indices.size: 
                 return 0.
-            
-            #-- Energy, weight and population of the lower level
-            Elow = self.mol[m].getLEnergy(index=llow,unit='erg')
-            glow = self.mol[m].getLWeight(index=llow)
-            poplow = self.pop[m].getInterp(llow)(r)
             
             #-- Retrieve the level indices, energies, weights and populations of
             #   upper levels
@@ -1225,12 +1244,12 @@ class EnergyBalance(object):
             
             #-- Calculate the reversed rate for lower to upper level.
             #   Based on the Einstein relation: Cul/Clu = gl/gu exp(Eul/kT)
-            expfac = np.exp(np.outer((Elow-Eups),1./(k_b*T)))
+            expfac = np.exp(np.outer(-1*abs(Elow-Eups),1./(k_b*T)))
             Clus = Culs*np.multiply(expfac,gups/glow) 
             
             #-- Calculate the sum of the cooling contribution across all j>i 
             #   transitions
-            return np.sum((Clus*poplow-Culs*popups)*(Eups-Elow),axis=0)    
+            return np.sum((Clus*poplow-Culs*popups)*abs(Eups-Elow),axis=0)    
         
         
         #-- if cooling rate has already been calculated: don't do anything
@@ -1519,9 +1538,9 @@ class EnergyBalance(object):
         
         #-- If not iterations are specified, plot all of them.
         if iterations: 
-            iterations = [i for i in iterations if i < self.i-1]
+            iterations = [i for i in iterations if i < self.i]
         elif not iterations:
-            iterations = range(0,self.i-1)
+            iterations = range(0,self.i)
         
         #-- Make sure we have a list, and proper input format.
         iterations = Data.arrayify(iterations)

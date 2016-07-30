@@ -1,6 +1,6 @@
 #-- Coordinate grids: radius, grain size (can be single value), wavelength
 r = [2e13,5e15,1000,1]
-a = 0.01e-4
+a = 0.1e-4
 l = [0.1e-4,1000e-4,1000,1]
 
 #-- Set basic profiles: gas velocity, initial temperature, opacity, mass loss, dust temperature

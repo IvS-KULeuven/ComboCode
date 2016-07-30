@@ -160,7 +160,7 @@ class Density(Profiler.Profiler):
         
         #-- Define the number density dictionary and its interpolators
         self.n = dict()
-        self.nip = dict()
+        self.fac = dict()
     
     
     
@@ -214,10 +214,6 @@ class Density(Profiler.Profiler):
         
                     (default: None)
         @type a: float
-        @keyword order: Order of the spline interpolation. Default is cubic.
-                        
-                        (default: 3)
-        @type order: int
            
         '''
         
@@ -226,7 +222,7 @@ class Density(Profiler.Profiler):
             self.a = a
             denominator = sd*4./3.*np.pi*a**3
             self.n['Dust'] = self.rho/denominator
-            self.nip['Dust'] = spline1d(self.r,self.n['Dust'],k=order)
+            self.fac['Dust'] = 1./denominator
             return
             
         #-- Remember fractional abundances
@@ -239,24 +235,24 @@ class Density(Profiler.Profiler):
         #-- Total gas number density is 
         #   n_H + 4*n_He = n(H2) (n(H)/n(H2) + 2)(1 + 4*n(He)/n_H)
         self.n['Gas'] = self.rho/self.mh
+        self.fac['Gas'] = 1./self.mh
         
         #-- n(H2) taking into account fractional abundances of H and He
         denominator = self.mh*(fH+2.)*(1.+4.*fHe)
         self.n['H2'] = self.rho/denominator
+        self.fac['H2'] = 1./denominator
         
         #-- Atomic hydrogen fractional abundance given with respect to H2
         self.n['H'] = fH*self.n['H2']
+        self.fac['H'] = fH/denominator
         
         #-- Total hydrogen abundance n_H = n(H) + 2*n(H2)
         self.n['Htot'] = self.n['H'] + 2.*self.n['H2']
+        self.fac['Htot'] = fH/denominator + 2./denominator
 
         #-- He abundance given by fractional abundance with respect to Htot
         self.n['He'] = fHe*self.n['Htot']
-        
-        #-- Set up interpolators for evaluating the profiles on different radial
-        #   grids.
-        for ntype in ['Gas','H2','H','Htot','He']:
-            self.nip[ntype] = spline1d(self.r,self.n[ntype],k=order)
+        self.fac['He'] = fHe*(fH/denominator + 2./denominator)
         
         
     
@@ -292,8 +288,9 @@ class Density(Profiler.Profiler):
         
         #-- Call the Profiler method in the normal dens case
         dtype = dtype.lower()
+        rho = super(Density,self).eval(x=r,warn=warn)
         if not dtype in ['nh2', 'nh', 'nhtot', 'nhe', 'ngas', 'ndust']:
-            return super(Density,self).eval(x=r,warn=warn)
+            return rho
         
         #-- Check if number densities have already been calculated
         if not self.n: 
@@ -304,10 +301,8 @@ class Density(Profiler.Profiler):
         if r is None:
             return self.n[dtype]
         
-        #-- ... or interpolate the requested number density.
-        if warn and np.any((r>self.r[-1])|(r<self.r[0])):
-            print('Warning! There were values outside of the interp1d range.')
-        return self.nip[dtype](r)
+        #-- Otherwise calc the requested number density for the new grid
+        return self.fac[dtype]*rho
 
 
 

@@ -1274,7 +1274,7 @@ class Transition():
 
 
 
-    def makeSphinxFilename(self,number='*'):
+    def makeSphinxFilename(self,number='*',include_path=0):
         
         '''
         Return a string in the sphinx filename format.
@@ -1284,7 +1284,11 @@ class Transition():
                          
                          (default: '*')
         @type number: string
+        @keyword include_path: Include the full filepath.
         
+                               (default: 0) 
+        @type include_path: bool
+                
         @return: The sphinx filename for this transition
         @rtype: string
         
@@ -1308,11 +1312,18 @@ class Transition():
             for i,attr in enumerate(['vup','jup','Kaup','Kcup',\
                                      'vlow','jlow','Kalow','Kclow']):
                 quantum_dict[i] = (attr,getattr(self,attr.lower()))
-        return '_'.join(['sph%s%s'%(number,self.getModelId()),\
+        
+        fn = '_'.join(['sph%s%s'%(number,self.getModelId()),\
                                     self.molecule.molecule] + \
                         ['%s%i'%(quantum_dict[k][0],quantum_dict[k][1])
                            for k in sorted(quantum_dict.keys())] + \
                         [self.telescope,'OFFSET%.2f.dat'%(self.offset)])
+                        
+        if include_path: 
+            fn = os.path.join(cc.path.gastronoom,self.path_gastronoom,'models',\
+                              self.getModelId(),fn)
+        
+        return fn
         
 
 
@@ -1421,15 +1432,12 @@ class Transition():
         #-- Retrieve the transition index based on the level indices. Check if 
         #   only a single index is returned. If not, something is wrong with the
         #   lower/upper level indices or with the spectroscopy file.
-        tindex = self.molecule.radiat.getTI(lup=self.lup,llow=self.llow)
-        if tindex.shape != (1,):
+        self.tindex = self.molecule.radiat.getTI(lup=self.lup,llow=self.llow)
+        if not isinstance(self.tindex,int):
             msg = 'Something fishy is going on in Transition.py... '+\
                   'non-unique or invalid transition indices for %s!'\
                   %self.getInputString(include_nquad=0)
             raise(IndexError(msg))
-        
-        #-- Make sure self.tindex is just a float, not an array.
-        self.tindex = tindex[0]
         
         #-- Get the transition frequency
         freq = self.molecule.radiat.getTFrequency(index=self.tindex,unit='Hz')
@@ -1637,16 +1645,13 @@ class Transition():
     def readSphinx(self):
          
         '''
-        Read the sphinx output if the model id is not None or ''.
+        Read the sphinx output if the model id is valid.
         
         '''
          
-        if self.sphinx is None and self.getModelId() <> None \
-                and self.getModelId() != '':
-            gout = os.path.join(cc.path.gastronoom,self.path_gastronoom)
-            filename = os.path.join(gout,'models',self.getModelId(),\
-                                    self.makeSphinxFilename())
-            self.sphinx = SphinxReader.SphinxReader(filename)
+        if self.sphinx is None and self.getModelId():
+            fn = self.makeSphinxFilename(include_path=1)
+            self.sphinx = SphinxReader.SphinxReader(fn)
      
      
      

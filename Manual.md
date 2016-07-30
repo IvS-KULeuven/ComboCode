@@ -82,8 +82,8 @@ ComboCode is ran easily from a Python or iPython shell. Open one, and take the f
     >>> #-- Import ComboCode into the Python shell:
     >>> from cc import ComboCode
     >>>
-    >>> #-- Create a ComboCode object: 
-    >>> filename = '/Users/user_name/ComboCode/input/icc_rdor.dat'
+    >>> #-- Create a ComboCode object for the default input file: 
+    >>> filename = '/Users/user_name/ComboCode/aux/inputComboCode.dat'
     >>> c1m = ComboCode.ComboCode(filename)
     >>>
     >>> #-- Start the ComboCode session:
@@ -93,7 +93,112 @@ The c1m.startSession() command is essentially the body of the modeling calculati
 
 It is possible to have multiple such CC sessions running concurrently in different shells. <a href="Manual.md#cleaning-your-databases">The databases make sure no conflicts can happen</a> between models requested in one session and another session, in case they are identical. 
 
-Note that ComboCode, GASTRoNOoM and MCMax all print output to the shell. ComboCode-specific output typically concerns information about whether model calculation was successful, some information about the model output, etc. and is denoted with asterisks '*'. GASTRoNOoM and MCMax print output in their own formats and are preceded by an indication of which code is about to be called, and followed by "DONE!", so it is generally easy to tell which code is giving you information at any given time. Running the same ComboCode inputfile again after successful calculation will reload the models without calculating them, in which case no GASTRoNOoM or MCMax output will be printed to the shell. 
+Note that ComboCode, GASTRoNOoM and MCMax all print output to the shell. ComboCode-specific output typically concerns information about whether model calculation was successful, some information about the model output, etc. and is denoted with asterisks '*'. GASTRoNOoM and MCMax print output in their own formats and are preceded by an indication of which code is about to be called, and followed by "DONE!", so it is generally easy to tell which code is giving you information at any given time. 
+
+Running the same ComboCode inputfile again after successful calculation will reload the models without calculating them, in which case no GASTRoNOoM or MCMax output will be printed to the shell. Whenever a model is calculated or is found in the database, the model ID is printed out. These IDs can differ between the MCMax and the three subcodes of GASTRoNOoM, so make sure you are working with the correct model output. Using these IDs you can retrieve your model output from the PATH\_GASTRONOOM and PATH\_MCMAX subfolders. Several methods and classes are available and described in Section 6 to read and use this information.
+
+### The ComboCode object and its model contents
+The ComboCode object contains all of the information used when setting up and calculating models, as well loading data and doing the statistical analysis. All of these are accessible through properties of the ComboCode object. Below follow some examples, assuming that c1m is the ComboCode object, and the c1m.startSession() call has finished.
+
+First, the model information is contained in a list of Star() objects. These objects essentially function as a dictionary, and contain keyword-based information about the models. Not only information given in the inputfile can be retrieved this way, but also information derived from it. So in case a keyword is not present in the dictionary, the Star() object will attempt to create it first, and return the value if successful. Otherwise, Star() objects will behave as a dictionary. 
+
+    >>> #-- Retrieve the first model Star() object
+    >>> s = c1m.star_grid[0]
+    >>>
+    >>> #-- This contains L_STAR and T_STAR from the CC inputfile. Ask for R_STAR
+    >>> for k in ['T_STAR','L_STAR','R_STAR']:
+    >>>     print s.has_key(k)
+    >>>     print s[k]
+    >>> 
+    >>> #-- Retrieve the model IDs associated with this Star()
+    >>> mid = s['LAST_MCMAX_MODEL']
+    >>> gid = s['LAST_GASTRONOOM_MODEL']
+
+Star() objects also contain several methods to read model output, such as temperature profiles for gas and dust, create the appropriate filename for a given dust species, or create the filename for the GASTRoNOoM thermodynamical output from the *cooling* subcode. Refer to the <a href="http://ivs-kuleuven.github.io/ComboCode/ComboCode.cc.modeling.objects.Star.Star-class.html">online documentation</a> for more information on the Star class. Typically, you will be interested in any get\* or read\* methods. All of the calcKEY methods are for creating entries in the dictionary, so those values are available through **s['KEY']**. Any __ methods are called when needed by the package itself, so should not be called by the user.
+    
+    >>> #-- Retrieve the filename that contains the dust properties of amorphous carbon
+    >>> fnd = s.getDustFn('AMCCDEPREI')
+    >>>
+    >>> #-- Retrieve a list of all dust species in the model
+    >>> all_species = s.getDustList()
+    >>>
+    >>> #-- Read the radial density profile for carbon in AU, and average out the theta coordinate
+    >>> rd = s.getDustRad('AMCCDEPREI',unit='AU')
+    >>> rho = s.getDustDensity('AMCCDEPREI',avg_theta=1)
+    >>>
+    >>> #-- Get the CO and H2 number density. First set the filename arguments for the cool1 file for 12CO
+    >>> kwargs = {'ftype':1,'mstr':'12C16O'}
+    >>> rg = s.getGasRad(unit='cm',**kwargs)
+    >>>
+    >>> #-- The cool1 file contains the number density for its molecule, as well as H2
+    >>> nmol = s.getNumberDensity(molecule=1,**kwargs)
+    >>> nh2 = s.getNumberDensity(molecule=0,**kwargs)
+    
+The Star() objects also contain the information specific to molecules and transitions. Both are contained in their own type of object as well (Molecule() and Transition() respectively), and offer a slew of methods to get the molecule or transition properties, retrieve model information such as calculated line profiles, and compare with data. The objects have a string representation and can be used to check between objects for equality. For more information on the MlineReader and SphinxReader objects, see Section 6.
+
+    >>> #-- Retrieve the list of Molecule() objects, or retrieve a specific molecule
+    >>> molecs = s['GAS_LIST']
+    >>> for m in molecs: print m
+    >>> some_molec = s.getMolecule('12C16O') 
+    >>>
+    >>> #-- If used in context of GASTRoNOoM RT, the RadiatReader object is available (see Section 6)
+    >>> rr = some_molec.radiat
+    >>> print rr['levels']
+    >>>
+    >>> #-- And if the model was already calculated, the *mline* model ID is here:
+    >>> mline_id = some_molec.getModelId()
+    >>>
+    >>> #-- Or the MlineReader object:
+    >>> some_molec.readMline()
+    >>> ml = some_molec.mline
+    >>>
+    >>>
+    >>> #-- Retrieve the list of Transition() objects, or retrieve all transitions for a specific molecule
+    >>> trans = s['GAS_LINES']
+    >>> for t in trans: print t
+    >>> some_trans = s.getTransitions('12C16O')
+    >>> t1 = some_trans[0]
+    >>>
+    >>> #-- The Transition object is the workhorse of line modeling. 
+    >>> trans_id = t1.getModelId()
+    >>> frequency = t1.getFrequency()
+    >>> Eup = t1.getEnergyUpper(unit='K')
+    >>>
+    >>> #-- Make a dictionary that contains all relevant info (is also used in database)
+    >>> tdict = t1.makeDict()
+    >>>
+    >>> #-- Get the sphinx (final GASTRoNOoM subcode for ray tracing) filename that contains the line profile
+    >>> fnsph = t1.makeSphinxFilename(number=2,include_path=1)
+    >>>
+    >>> #-- Get the SphinxReader object that read the sphinx output files, or the line strength
+    >>> t1.readSphinx()
+    >>> sph = t1.sphinx
+    >>> ls = t1.getIntIntIntSphinx(units='si',cont_subtract=1)
+    >>>
+    >>> #-- If taken from ComboCode object, will contain data as well
+    >>> dls_tmb = t1.getIntTmbData(units='tmb')
+    >>> dls_si = t1.getIntTmbData(units='si')
+    >>>
+    >>> #-- Calculate the loglikelihood for the model compared to the data
+    >>> lll = t1.getLoglikelihood(vmin=-10.0,vmax=10.0)
+
+Finally, the ComboCode object also contains multiple dictionaries for each of the requested STAR\_NAME input key values. These contain either data or statistics objects for each of the given star names. The example here does not contain data, and has STAR\_NAME=model. But assuming the inputfile was set up for, e.g., 'rdor', the data and statistics can be retrieved as follows. 
+
+    >>> #-- If PACS is on, retrieve the Pacs() object for R Dor and list the data files and the line fit results:
+    >>> pacs = c1m.pacs['rdor']
+    >>> print pacs.data_filenames 
+    >>> print pacs.linefit
+    >>> 
+    >>> #-- Statistics can be calculated for the comparison between PACS measured line strengths and the model
+    >>> stats = c1m.pacsstats['rdor']
+    >>>
+    >>> #-- Get the line strength model/data ratios for unblended lines for the first model
+    >>> pacs_id = c1m.star_grid[0]['LAST_PACS_MODEL']
+    >>> wav = stats.getRatios(sel_type='int_ratios',data_type='central_mwav',this_id=pacs_id)
+    >>> ratio = stats.getRatios(sel_type='int_ratios',data_type='int_ratios',this_id=pacs_id)
+    >>> error = stats.getRatios(sel_type='int_ratios',data_type='int_ratios_err',this_id=pacs_id)
+    
+Note that the data and statistics objects are usually prepared with some basic form of data and statistics settings as long as the respective keywords in the inputComboCode.dat file are turned on (such as PACS=1, STATISTICS=1). For more details on what is possible, check the <a href="http://ivs-kuleuven.github.io/ComboCode/">online documentation</a> for ComboCode.py, and the respective data and statistics objects. 
 
 ## 5. Data management
 
@@ -103,8 +208,6 @@ Note that ComboCode, GASTRoNOoM and MCMax all print output to the shell. ComboCo
 
 ### Spectral energy distribution
 Filename convention.
-
-
 
 ## 6. Model management
 ### Combined dust and gas radiative transfer
@@ -282,6 +385,13 @@ Some information is available through general methods that retrieve specifically
 Especially the MCMax and GASTRoNOoM model output can also be more easily accessed through the Star() objects that represent each model in the model grid. They are accessible from the c1m.star_grid list (see above for more details).
 
 ### Plotting model output
+With the many reader classes and methods, the model output is always easily accessible for the user. However, ComboCode does provide some built-in plotting modules to plot modeled emission lines, SEDs, circumstellar profiles for temperature, density, etc. These modules can be used to make publication-quality plots through the use of configuration files (or cfg files). Most plotting methods have the option to pass such a cfg file. 
+
+The most obvious way to plot model results (along with the data if available) is through the PLOT/CFG keywords listed at the bottom of the inputComboCode.dat file. Turning one of these on will produce a plot at the end of the CC session, and print out the filename of the plot. If you have loaded some models with the ComboCode object, and then wish to remake the plots after changing some parameters in the cfg files, then you can run c1m.runPlotManager() and the plots will be made anew. 
+
+An example cfg file is available in cc/aux/plot\_config\_example.cfg. Any argument of the Plotting2.plotCols (or Plotting2.plotTiles) can be added in the cfg file. It converts lists and strings for you, through the use of the DataIO.readDict method. You can experiment with that method to see what is possible in terms of input. But most settings of the plots can be adapted this way. Some specific plotting methods also allow passing arguments through the cfg file and are used before calling the plotting method itself. 
+
+An overview of all possible plot settings is available at <a href="http://ivs-kuleuven.github.io/ComboCode/ComboCode.cc.plotting.Plotting2-module.html#plotCols"> Plotting2.plotCols</a> and at <a href="http://ivs-kuleuven.github.io/ComboCode/ComboCode.cc.plotting.Plotting2-module.html#plotTiles"> Plotting2.plotTiles</a>.
 
 ## 7. Database management
 ComboCode provides basic database functionality to track and book-keep modeling output and data files. Any model that is calculated successfully is listed in the appropriate model database with its parameters and is assigned a model ID. Whenever ComboCode is ran, and requested models are found in the database, the model ID is returned instead of calculating the model anew. 

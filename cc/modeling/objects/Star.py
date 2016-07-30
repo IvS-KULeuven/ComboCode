@@ -3066,7 +3066,7 @@ class Star(dict):
                         use_fraction_level_corr=self['USE_FRACTION_LEVEL_CORR'],\
                         fraction_level_corr=self['FRACTION_LEVEL_CORR'],\
                         number_level_max_corr=self['NUMBER_LEVEL_MAX_CORR'],\
-                        starfile=starfile)
+                        starfile=starfile,path_gastronoom=self.path_gastronoom)
                      
                      for molec in self['MOLECULE']]
             
