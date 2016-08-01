@@ -1163,7 +1163,7 @@ class PlotGas(PlottingSession):
         if cfg_dict.has_key('normalized'):
              normalized = int(cfg_dict['normalized'])
         if cfg_dict.has_key('include'):
-             include = int(cfg_dict['include'])
+             include = cfg_dict['include']
 
         normalized = int(normalized)
         lcf = 'getNormalizedIntensity' if normalized else 'getWeightedIntensity'
