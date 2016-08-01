@@ -1114,7 +1114,7 @@ class PlotGas(PlottingSession):
             
 
     def plotLineContributions(self,star_grid,fn_plt='',normalized=1,cfg='',\
-                              do_sort=1,include_velocity=1):
+                              do_sort=1,include='intensity'):
         
         '''
         Plot the source function as function of impact parameter for every 
@@ -1144,10 +1144,12 @@ class PlotGas(PlottingSession):
                           
                           (default: 1)
         @type do_sort: bool
-        @keyword include_velocity: Include the velocity profile on the plot
+        @keyword include: Include and additional profile on a second axis. Can 
+                          be 'velocity' or 'intensity' (at line center) at the 
+                          moment. Any other value will add no second axis.
                           
-                                   (default: 0)
-        @type include_velocity: bool
+                          (default: 'intensity')
+        @type include: str
         
         '''
         
@@ -1160,10 +1162,11 @@ class PlotGas(PlottingSession):
              do_sort = int(cfg_dict['do_sort'])
         if cfg_dict.has_key('normalized'):
              normalized = int(cfg_dict['normalized'])
-        if cfg_dict.has_key('include_velocity'):
-             include_velocity = int(cfg_dict['include_velocity'])
+        if cfg_dict.has_key('include'):
+             include = int(cfg_dict['include'])
 
         normalized = int(normalized)
+        lcf = 'getNormalizedIntensity' if normalized else 'getWeightedIntensity'
         for i,star in enumerate(star_grid):
             extra_pars = dict()
             if do_sort:
@@ -1173,7 +1176,37 @@ class PlotGas(PlottingSession):
                                      key=lambda x:x.wavelength)
             else:
                 transitions = star['GAS_LINES']
-            if include_velocity:
+            
+            #-- Read the sphinx files and extract the P/intensity columns
+            [t.readSphinx() for t in transitions]
+            radii = [t.sphinx.getImpact() for t in transitions]
+            linecontribs =  [getattr(t.sphinx,lcf)() for t in transitions]
+            
+            #-- Set filename
+            pfn = fn_plt if fn_plt else 'linecontrib'
+            subf = 'LCs'
+            suff = '{}_{}'.format(star['LAST_GASTRONOOM_MODEL'],i)
+            pfn = self.setFnPlt(pfn,fn_suffix=suff,fn_subfolder=subf)
+            extra_pars['filename'] = pfn
+            
+            #-- Set extra plot parameters
+            extra_pars['keytags'] = [r'$I(p,LC)\ pdp$ - $\mathrm{%s}:$ %s'\
+                                      %(t.molecule.molecule_plot\
+                                         .replace('$',''),\
+                                        t.makeLabel())
+                                     for t in transitions]
+            extra_pars['key_location'] = 'best'
+            extra_pars['ymin'] = normalized and -0.01 or None
+            extra_pars['ymax'] = normalized and 1.02 or None
+            extra_pars['xmin'] = 1
+            extra_pars['xaxis'] = '$p\ \mathrm{(R}_\star\mathrm{)}$'
+            extra_pars['yaxis'] = '$I(p)\ pdp$'
+            extra_pars['linewidth'] = 3
+            extra_pars['xlogscale'] = 1
+            extra_pars['fontsize_key'] = 16
+            
+            #-- Add second axis for velocity if requested
+            if include == 'velocity':
                 rad = star.getGasRad(unit='rstar')
                 vel = star.getGasVelocity()
                 vel = vel/10.**5
@@ -1182,33 +1215,15 @@ class PlotGas(PlottingSession):
                 extra_pars['twiny_keytags'] = [r'$v_\mathrm{g}$']
                 extra_pars['twinyaxis'] = r'$v_\mathrm{g}$ (km s$^{-1}$)' 
             
-            [trans.readSphinx() for trans in transitions]
-            radii = [trans.sphinx.getImpact() for trans in transitions]
-            linecontribs =  [normalized \
-                                and list(trans.sphinx.getNormalizedIntensity())\
-                                or list(trans.sphinx.getWeightedIntensity())
-                             for trans in transitions]
-            
-            #-- Set filename
-            pfn = fn_plt if fn_plt else 'linecontrib'
-            subf = 'LCs'
-            suff = '{}_{}'.format(star['LAST_GASTRONOOM_MODEL'],i)
-            pfn = self.setFnPlt(pfn,fn_suffix=suff,fn_subfolder=subf)
-
-            extra_pars['filename'] = pfn
-            extra_pars['keytags'] = ['$\mathrm{%s}:$ %s'\
-                                      %(trans.molecule.molecule_plot\
-                                             .replace('$',''),\
-                                        trans.makeLabel())
-                                     for trans in transitions]
-            extra_pars['key_location'] = 'upper left'
-            extra_pars['ymin'] = normalized and -0.01 or None
-            extra_pars['ymax'] = normalized and 1.02 or None
-            extra_pars['xmin'] = 1
-            extra_pars['xaxis'] = '$p\ \mathrm{(R}_\star\mathrm{)}$'
-            extra_pars['yaxis'] = '$I(p)\ pdp$'
-            extra_pars['linewidth'] = 3
-            extra_pars['xlogscale'] = 1
+            #-- Add second axis for intensity at line center if requested
+            elif include == 'intensity':
+                extra_pars['twiny_x'] = radii
+                extra_pars['twiny_y'] = [t.sphinx.getLineIntensity() 
+                                         for t in transitions]
+                extra_pars['twiny_keytags'] = [k.replace(r'\ pdp','')
+                                               for k in extra_pars['keytags']]
+                extra_pars['twiny_logscale'] = 1                                               
+                extra_pars['twinyaxis'] = r'$I(p)$' 
             
             pfn = Plotting2.plotCols(x=radii,y=linecontribs,cfg=cfg_dict,\
                                      **extra_pars)

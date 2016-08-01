@@ -54,9 +54,14 @@ class SphinxReader(Reader):
     def parseImpact(self):
         
         ''' 
-        Parse sphinx file 1, which includes all the impact parameter info. 
+        Parse sphinx file 1, line intensities at line center (!) as a function 
+        of impact parameter. 
         
         The output is stored in dict self['sph1'].
+        
+        Note that the headers of the sph1 file state the last two columns are
+        summed intensities. This is not true! It is the intensity at line 
+        center.
         
         '''
         
@@ -66,8 +71,8 @@ class SphinxReader(Reader):
         self['sph1']['p'] = data[0]
         self['sph1']['norm_intens'] = data[1] 
         self['sph1']['weighted_intens'] = data[2] 
-        self['sph1']['sum_intens_p'] = data[3]
-        self['sph1']['sum_intens'] = data[4]
+        self['sph1']['weighted_intens_p^-2'] = data[3]
+        self['sph1']['intens'] = data[4]
         
         
         
@@ -283,9 +288,10 @@ class SphinxReader(Reader):
     def getWeightedIntensity(self):
         
         '''
-        Return the weighted intensity with respect to impact parameter squared.
+        Return the weighted intensity with respect to impact parameter squared
+        at line center.
         
-        @return: The weighted intensity list.
+        @return: The weighted intensity at line center.
         @rtype: array
         
         '''
@@ -297,15 +303,29 @@ class SphinxReader(Reader):
     def getNormalizedIntensity(self):
         
         '''
-        Return the normalized weighted intensity with respect to 
+        Return the normalized p^2-weighted intensity at line center with respect to 
         impact parameter squared.
         
-        @return: The normalized weighted intensity lists.
+        @return: The normalized p^2-weighted intensity at line center.
         @rtype: array
         
         '''
         
         return self['sph1']['norm_intens']
+        
+    
+    
+    def getLineIntensity(self):
+        
+        '''
+        Return the intensity at line center as a function of impact parameter.
+        
+        @return: The intensity at line center as a function of impact parameter.
+        @rtype: array
+        
+        '''
+        
+        return self['sph1']['intens']
         
         
         
