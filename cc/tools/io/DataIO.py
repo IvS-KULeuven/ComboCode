@@ -492,7 +492,7 @@ def convertFloat(string,nans=0,convert_int=0):
     @type convert_int: bool
     
     @return: The converted float is returned, or the input string if 
-                conversion failed
+             conversion failed
     @rtype: float or string
     
     '''
