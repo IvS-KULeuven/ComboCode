@@ -114,7 +114,7 @@ First, the model information is contained in a list of Star() objects. These obj
     >>> mid = s['LAST_MCMAX_MODEL']
     >>> gid = s['LAST_GASTRONOOM_MODEL']
 
-Star() objects also contain several methods to read model output, such as temperature profiles for gas and dust, create the appropriate filename for a given dust species, or create the filename for the GASTRoNOoM thermodynamical output from the *cooling* subcode. Refer to the <a href="http://ivs-kuleuven.github.io/ComboCode/ComboCode.cc.modeling.objects.Star.Star-class.html">online documentation</a> for more information on the Star class. Typically, you will be interested in any get\* or read\* methods. All of the calcKEY methods are for creating entries in the dictionary, so those values are available through **s['KEY']**. Any other methods are specifically called when needed by the package itself, so should not be called by the user, especially when the method name is preceded by \_\_.
+Star() objects also contain several methods to read model output, such as temperature profiles for gas and dust, create the appropriate filename for a given dust species, or create the filename for the GASTRoNOoM thermodynamical output from the *cooling* subcode. Refer to the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.objects.Star.Star-class.html">online documentation</a> for more information on the Star class. Typically, you will be interested in any get\* or read\* methods. All of the calcKEY methods are for creating entries in the dictionary, so those values are available through **s['KEY']**. Any other methods are specifically called when needed by the package itself, so should not be called by the user, especially when the method name is preceded by \_\_.
     
     >>> #-- Retrieve the filename that contains the dust properties of amorphous carbon
     >>> fnd = s.getDustFn('AMCCDEPREI')
@@ -198,7 +198,7 @@ Finally, the ComboCode object also contains multiple dictionaries for each of th
     >>> ratio = stats.getRatios(sel_type='int_ratios',data_type='int_ratios',this_id=pacs_id)
     >>> error = stats.getRatios(sel_type='int_ratios',data_type='int_ratios_err',this_id=pacs_id)
     
-Note that the data and statistics objects are usually prepared with some basic form of data and statistics settings as long as the respective keywords in the inputComboCode.dat file are turned on (such as PACS=1, STATISTICS=1). For more details on what is possible, check the <a href="http://ivs-kuleuven.github.io/ComboCode/">online documentation</a> for ComboCode.py, and the respective data and statistics objects. 
+Note that the data and statistics objects are usually prepared with some basic form of data and statistics settings as long as the respective keywords in the inputComboCode.dat file are turned on (such as PACS=1, STATISTICS=1). For more details on what is possible, check the <a href="http://robinlombaert.github.io/ComboCode/">online documentation</a> for ComboCode.py, and the respective data and statistics objects. 
 
 ## 5. Data management
 
@@ -391,7 +391,7 @@ The most obvious way to plot model results (along with the data if available) is
 
 An example cfg file is available in cc/aux/plot\_config\_example.cfg. Any argument of the Plotting2.plotCols (or Plotting2.plotTiles) can be added in the cfg file. It converts lists and strings for you, through the use of the DataIO.readDict method. You can experiment with that method to see what is possible in terms of input. But most settings of the plots can be adapted this way. Some specific plotting methods also allow passing arguments through the cfg file and are used before calling the plotting method itself. 
 
-An overview of all possible plot settings is available at <a href="http://ivs-kuleuven.github.io/ComboCode/ComboCode.cc.plotting.Plotting2-module.html#plotCols"> Plotting2.plotCols</a> and at <a href="http://ivs-kuleuven.github.io/ComboCode/ComboCode.cc.plotting.Plotting2-module.html#plotTiles"> Plotting2.plotTiles</a>.
+An overview of all possible plot settings is available at <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.plotting.Plotting2-module.html#plotCols"> Plotting2.plotCols</a> and at <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.plotting.Plotting2-module.html#plotTiles"> Plotting2.plotTiles</a>.
 
 ## 7. Database management
 ComboCode provides basic database functionality to track and book-keep modeling output and data files. Any model that is calculated successfully is listed in the appropriate model database with its parameters and is assigned a model ID. Whenever ComboCode is ran, and requested models are found in the database, the model ID is returned instead of calculating the model anew. 
