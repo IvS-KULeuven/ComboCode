@@ -20,7 +20,7 @@ from cc.managers.ModelingManager import ModelingManager as MM
 from cc.managers.PlottingManager import PlottingManager as PM
 from cc.managers import Vic
 from cc.modeling.objects import Star, Transition
-from cc.statistics import UnresoStats, ResoStats, SedStats
+from cc.statistics import UnresoStats, ResoStats, SedStats, ChemStats
 from cc.data.instruments import Pacs, Spire
 from cc.data import Sed, Radio
 from cc.modeling.tools import ColumnDensity, ContinuumDivision
@@ -102,9 +102,9 @@ class ComboCode(object):
             self.finished = True
             self.runModelManager()
             self.finalizeVic()
+            self.runChemistry()
             self.runPlotManager()
             self.runStatistics()
-            self.runChemistry()
             self.doContDiv()
             #self.appendResults()
             if self.write_dust_density:
@@ -137,7 +137,8 @@ class ComboCode(object):
                           ('stat_lll_p',None),('stat_method','clipping'),\
                           ('star_name','model'),('single_session',0),\
                           ('stat_lll_vmin',0.0),('chemistry',0),\
-                          ('stat_lll_vmax',0.0), ('print_check_t',1)]
+                          ('stat_lll_vmax',0.0), ('print_check_t',1),\
+                          ('chemstats',0),('chemstats_molecules',[])]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v))
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -661,8 +662,10 @@ class ComboCode(object):
         self.plot_manager = {sn: PM(star_name=sn,\
                                     gastronoom=self.gastronoom,\
                                     mcmax=self.mcmax,\
+                                    chemistry=self.chemistry,\
                                     path_gastronoom=self.path_gastronoom,\
                                     path_mcmax=self.path_mcmax,\
+                                    path_chemistry=self.path_chemistry,\
                                     inputfilename=self.inputfilename,\
                                     pacs=self.pacs[sn],\
                                     spire=self.spire[sn],\
@@ -753,7 +756,10 @@ class ComboCode(object):
                if self.plot_manager[sn].gas_pars.keys()] + \
               [self.plot_manager[sn].dust_pars.keys()
                for sn in self.star_name
-               if self.plot_manager[sn].dust_pars.keys()]
+               if self.plot_manager[sn].dust_pars.keys()] + \
+              [self.plot_manager[sn].chem_pars.keys()
+               for sn in self.star_name
+               if self.plot_manager[sn].chem_pars.keys()]
         if not dds: return
         
         #-- Continue with the plots
@@ -784,7 +790,6 @@ class ComboCode(object):
         Append results at the end of the inputfile.
 
         '''
-
         print '** Appending results to inputfile and copying to output folders.'
         print '***********************************'
         #-- Check if the transition was intended to be calculated, and if it was
@@ -884,6 +889,7 @@ class ComboCode(object):
         self.unresostats = []
         self.resostats = dict()
         self.sedstats = dict()
+        self.chemstats = dict()
         
         #-- Data are handled by these objects themselves for unresolved lines.
         for sn in self.star_name:
@@ -947,11 +953,24 @@ class ComboCode(object):
                 self.resostats[sn] = ss
                 #bfms = self.resostats.selectBestFitModels(mode='int')
                 #self.plot_manager.plotTransitions(star_grid=bfms,fn_suffix='BFM',force=1)
+        
+        for sn in self.star_name:    
+            if self.statistics and self.chemistry:
+                self.chemstats_molecules = list(self.chemstats_molecules)
+                ss = ChemStats.ChemStats(star_name=sn,\
+                                         path_code=self.path_chemistry,\
+                                         star_grid=self.star_grid,\
+                                         molecules = self.chemstats_molecules)
+                self.chemstats[sn] = ss
 
 
     
     def runChemistry(self):
         if self.chemistry:
+            print '************************************************'
+            print '** Running Chemistry '
+            print '************************************************'
+
             chemistry_db_path = os.path.join(cc.path.cout,'Chemistry_models.db')
             self.chem_db = Database.Database(db_path=chemistry_db_path)
 
@@ -959,20 +978,16 @@ class ComboCode(object):
                                     replace_db_entry = self.replace_db_entry,\
                                     db = self.chem_db,\
                                     single_session=self.single_session)
-            for star in self.star_grid:
-                print '************************************************'
-                print '** Running Chemistry'
-                print '************************************************'
+            for i,star in enumerate(self.star_grid):
+                print '***********************************'
+                print '** Model #%i out of %i requested models.'\
+                      %(i+1,len(self.star_grid))
+                print '***********************************'
+
+                ch.doChemistry(star)
                 
-                
-                
-                #star['R_STAR'] = numpy.sqrt(star['L_STAR']/ \
-                    #(star.sigma*4*numpy.pi*star['T_STAR']**4))*star.Rsun
-                
-                #star['R_INNER_CHEM_CM'] = star['R_INNER_CHEM']*star['R_STAR']*star.Rsun
-                #star['FIN_RADIUS_CHEM'] 
-                # in doChemistry
-                
+                if ch.model_id:
+                    star['LAST_CHEMISTRY_MODEL'] = ch.model_id
 
             
             

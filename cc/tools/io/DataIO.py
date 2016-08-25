@@ -13,114 +13,11 @@ from glob import glob
 from scipy import array,zeros
 from PyPDF2 import PdfFileMerger
 from matplotlib import mlab
-
+import numpy as np
+from numpy import array
 import cc.path
-
-
-def getMCMaxOutput(incr,filename,keyword='RADIUS',single=1):
-    
-    """
-    Search MCMax output for relevant structural information.
-
-    @param incr: length of partial list that is needed from MCMax output. For 
-                 radius and theta this is usually the grid size (NRAD and 
-                 NTHETA respectively), and for any other quantity this is 
-                 NRAD*NTHETA (fi for denstemp.dat). 
-                 Put this keyword to zero if you are extracting a number
-                 from one line that contains the keyword itself. In that case
-                 also put single to 0 so you can take your information from the
-                 whole line. (fi log.dat)
-    @type incr: int
-    @param filename: name and path of the file searched
-    @type filename: string
-    
-    @keyword keyword: the type of information required, always equal to one
-                      of the keywords present in the outputfiles of MCMax
-                        
-                      (default: 'RADIUS')
-    @type keyword: string
-    @keyword single: return a list of only the first element on every row
-    
-                     (default: 1)
-    @type single: bool
-    
-    @return: The requested data from MCMax output
-    @rtype: list[]
-    
-    """
-    
-    keyword = keyword.upper()
-    data = readFile(filename,' ')
-    i = 1
-    while ' '.join(data[i-1]).upper().find(keyword) == -1:
-        i += 1
-    if not incr:
-        i -= 1
-        incr = 1
-    if single:
-        return [float(line[0]) for line in data[i:i+int(incr)]]
-    else:
-        return [line for line in data[i:i+int(incr)]]
-
-
-
-def getGastronoomOutput(filename,keyword='RADIUS',begin_index=0,\
-                        return_array=0,key_index=0):
-    
-    """
-    Search GASTRoNOoM output for relevant envelope information.
-
-    @param filename: The filename of the relevant output GASTRoNOoM file
-    @type filename: string
-    
-    @keyword keyword: the type of information required, always equal to one of 
-                      the keywords present in the outputfiles of GASTRoNOoM
-                      
-                      (default: 'RADIUS')
-    @type keyword: string
-    @keyword begin_index: start looking for keyword at row with begin_index
-                    
-                          (default: 0)
-    @type begin_index: int
-    @keyword return_array: Return a scipy array rather than a python list
-    
-                           (default: 0)
-    @type return_array: bool
-    @keyword key_index: If 0 it is automatically determined, otherwise this is 
-                        the column index
-                        
-                        (default: 0)
-    @type key_index: int
-    
-    @return: The requested data from the GASTRoNOoM output
-    @rtype: list/array
    
-    """
     
-    keyword = keyword.upper()
-    data = readFile(filename,' ')
-    data_col_1 = [d[0] for d in data]
-    key_i = findString(begin_index,data_col_1)
-    key_j = findFloat(key_i,data_col_1)
-    if not key_index:
-        keys = ' '.join([' '.join(d).replace('\n','') 
-                         for d in data[key_i:key_j]]).split()
-        key_index = [key[:len(keyword)].upper() for key in keys].index(keyword)
-    #- Data never start on the first line
-    #- Starting from 1st float, all floats into list, until EOF OR end of block
-    data_i = key_j
-    #- Data may end at EOF or before a new block of data (sphinx fi)
-    data_j = findString(data_i,data_col_1)     
-    if return_array:
-        dd = array([float(line[key_index].replace('D+','E+').replace('D-','E-')) 
-                    for line in data[data_i:data_j]])
-        return dd
-    else:   
-        return [float(line[key_index].replace('D+','E+').replace('D-','E-')) 
-                for line in data[data_i:data_j]]
-
-
-
 def getInputData(path=cc.path.usr,keyword='STAR_NAME',filename='Star.dat',\
                  remove_underscore=0,make_float=1,start_index=1,rindex=None):
     

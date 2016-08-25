@@ -29,7 +29,7 @@ from cc.tools.io import DataIO, Atmosphere
 from cc.tools.numerical import Interpol
 from cc.modeling.objects import Molecule
 from cc.modeling.objects import Transition
-from cc.modeling.tools import ColumnDensity
+from cc.modeling.tools import ColumnDensity,CodeIO
 from cc.modeling.codes import MCMax
 
 
@@ -882,7 +882,7 @@ class Star(dict):
         if not self['LAST_MCMAX_MODEL']: return empty(0)
     
         fn = self.getDustFn(species)
-        rad = array(DataIO.getMCMaxOutput(incr=int(self['NRAD']),\
+        rad = array(CodeIO.getMCMaxOutput(incr=int(self['NRAD']),\
                                           keyword='RADIUS',filename=fn))
         
         unit = str(unit).lower()
@@ -919,7 +919,7 @@ class Star(dict):
         if not self['LAST_MCMAX_MODEL']: return empty(0)
     
         fn = self.getDustFn(species)
-        theta = array(DataIO.getMCMaxOutput(incr=int(self['NTHETA']),\
+        theta = array(CodeIO.getMCMaxOutput(incr=int(self['NTHETA']),\
                                             keyword='THETA',filename=fn))
         return theta
         
@@ -965,7 +965,7 @@ class Star(dict):
         #   over the theta coordinate, if requested.
         fn = self.getDustFn(species)
         incr = int(self['NRAD'])*int(self['NTHETA'])
-        dens_ori = DataIO.getMCMaxOutput(filename=fn,incr=incr,\
+        dens_ori = CodeIO.getMCMaxOutput(filename=fn,incr=incr,\
                                          keyword='DENSITY')
         if avg_theta: dens = Data.reduceArray(dens_ori,self['NTHETA'])
         else: dens = dens_ori
@@ -1024,7 +1024,7 @@ class Star(dict):
         #   over the theta coordinate, if requested.
         fn = self.getDustFn(species)
         incr = int(self['NRAD'])*int(self['NTHETA'])
-        temp_ori = DataIO.getMCMaxOutput(incr=incr,keyword='TEMPERATURE',\
+        temp_ori = CodeIO.getMCMaxOutput(incr=incr,keyword='TEMPERATURE',\
                                          filename=fn)
         if avg_theta: temp = Data.reduceArray(temp_ori,self['NTHETA'])
         else: temp = temp_ori
@@ -1069,7 +1069,7 @@ class Star(dict):
         else:
             kws['keyword'] = 'N(H2)'
         
-        nmol = DataIO.getGastronoomOutput(filename=fgr_file,return_array=1,\
+        nmol = CodeIO.getGastronoomOutput(filename=fgr_file,return_array=1,\
                                           **kws)
                                               
         return nmol
@@ -1092,7 +1092,7 @@ class Star(dict):
         
         if not self['LAST_GASTRONOOM_MODEL']: return empty(0)
         fgr_file = self.getCoolFn(**kwargs)
-        vel = DataIO.getGastronoomOutput(filename=fgr_file,keyword='VEL',\
+        vel = CodeIO.getGastronoomOutput(filename=fgr_file,keyword='VEL',\
                                          return_array=1)
         return vel
         
@@ -1114,7 +1114,7 @@ class Star(dict):
         
         if not self['LAST_GASTRONOOM_MODEL']: return empty(0)
         fgr_file = self.getCoolFn(**kwargs)
-        temp = DataIO.getGastronoomOutput(filename=fgr_file,keyword='TEMP',\
+        temp = CodeIO.getGastronoomOutput(filename=fgr_file,keyword='TEMP',\
                                           return_array=1)
         return temp
     
@@ -1152,7 +1152,7 @@ class Star(dict):
         
         unit = str(unit).lower()
         fgr_file = self.getCoolFn(ftype=ftype,**kwargs)
-        rad = DataIO.getGastronoomOutput(filename=fgr_file,keyword='RADIUS',\
+        rad = CodeIO.getGastronoomOutput(filename=fgr_file,keyword='RADIUS',\
                                          return_array=1)
         #-- fgr_all gives radius in cm. Others in rstar. Convert others to cm
         if ftype != 'fgr_all':
@@ -2661,7 +2661,7 @@ class Star(dict):
         '''
         
         inputfile = self.getCoolFn(ftype='fgr_all')
-        drift = DataIO.getGastronoomOutput(inputfile,keyword='VDRIFT')  
+        drift = CodeIO.getGastronoomOutput(inputfile,keyword='VDRIFT')  
         opa_gs_max = 2.5e-1
         opa_gs_min = 5.0e-3
         return array(drift)/sqrt(0.25)*1.25\

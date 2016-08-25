@@ -1619,6 +1619,7 @@ def setLineLabels(line_labels,line_label_spectrum,fontsize_label,y_pos,\
     extra_ls = getLineTypes(black=not line_label_color)
     ltd = dict()
     all_indices = list(set([index for label,x_pos,index,vib in line_labels]))
+    print all_indices, line_label_types
     for ii,this_i in enumerate(all_indices): 
         if len(all_indices) != len(line_label_types):
             ltd[this_i] = extra_ls[ii]
@@ -1661,11 +1662,17 @@ def setLineLabels(line_labels,line_label_spectrum,fontsize_label,y_pos,\
                 ls = '--'
             else: 
                 ls = splitLineType(ltd[index])[0]
+            print index, ls, splitLineType(ltd[index])[1]
             pl.axvline(x=x_pos,\
                        ymin=short_label_lines and 0.7 or 0,ls=ls,\
                        c=splitLineType(ltd[index])[1],\
                        linewidth=linewidth,zorder=-100)
                        
+    #for ii,this_i in enumerate(all_indices): 
+        #print ii
+        #print this_i
+        #print ltd[this_i]
+    
     
 def getLineTypes(black=0):
 

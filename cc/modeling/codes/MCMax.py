@@ -453,7 +453,7 @@ class MCMax(ModelingSession):
                 elif self.replace_db_entry \
                         and model_id not in self.new_entries: 
                     print 'Replacing MCMax database entry for old ID %s.'\
-                          %model_id
+                          #%model_id
                     del self.db[model_id]
                     finished = 0
                     break

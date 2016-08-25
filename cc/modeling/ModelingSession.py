@@ -199,6 +199,11 @@ class ModelingSession(object):
                 keywords.remove('dust_species')
             if 'IN_PROGRESS' in keywords:
                 keywords.remove('IN_PROGRESS')
+        #elif code == 'chemistry':
+            ##keywords = set(this_list.keys()+modellist.keys())
+            #keywords = getattr(self,code + '_keywords')
+            #if 'IN_PROGRESS' in keywords:
+                #keywords.remove('IN_PROGRESS')
         else:
             keywords = getattr(self,code + '_keywords')
         if code == 'mline' and ignoreAbun and not check_keys:
