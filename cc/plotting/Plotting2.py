@@ -896,6 +896,10 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                    
                         (default: 0)
     @type ylogscale: bool
+    @keyword twiny_logscale: set logarithmic scale of the twiny-axis
+                   
+                             (default: 0)
+    @type twiny_logscale: bool
     @keyword xmin: if default then autoscaling is done, otherwise min x value
                    
                    (default: None)
@@ -1091,6 +1095,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
     key_location=kwargs.get('key_location','best')
     xlogscale=kwargs.get('xlogscale',0)
     ylogscale=kwargs.get('ylogscale',0)
+    twiny_logscale=kwargs.get('twiny_logscale',0)
     xmin=kwargs.get('xmin',None)
     xmax=kwargs.get('xmax',None)
     ymin=kwargs.get('ymin',None)
@@ -1269,7 +1274,6 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
              for xi,yi,lp,ms,zo,alph,xerri,yerri in zip(x,y,line_types,markersize,zorder,alpha,xerr,yerr)
              if list(yi)]
         no_err = []
-        legends = []
         for index,(xi,yi,lp,ms,zo,alph,xerri,yerri) in enumerate(these_data):
             ls,col = splitLineType(lp)
             if index in histoplot:
@@ -1277,16 +1281,15 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                                linewidth=(thick_lw_data and linewidth*2. \
                                                         or linewidth),\
                                markeredgewidth=markeredgewidth,zorder=zo,\
-                               alpha=alph,color=col)
+                               alpha=alph,color=col,label='dummy')
             else:
                 leg, = sub.plot(xi,yi,ls,linewidth=linewidth,ms=ms,\
                                markeredgewidth=markeredgewidth,zorder=zo,\
-                               alpha=alph,color=col)
+                               alpha=alph,color=col,label='dummy')
             if '--' in lp:
                 leg.set_dashes([8,3])
             if '.-' in lp or '-.' in lp:
                 leg.set_dashes([8,3,2,3])
-            legends.append(leg)
             if xerri <> None: 
                 try:
                     test = len(xerri[0])
@@ -1432,15 +1435,18 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
             pl.ylim(ymin=ymin) # min([min(xi) for xi in x])
         if ymax <> None:
             pl.ylim(ymax=ymax)
+        
+        #-- Add a twin y axis if needed.
         if twinyaxis <> None:
-            twiny_legends = []
             sub2 = sub.twinx()
             twindata = []
             [twindata.extend([xi,yi,lp])
              for xi,yi,lp in zip(twiny_x,twiny_y,twiny_line_types)
              if list(yi)]
-            twiny_legends.append(sub2.plot(linewidth=linewidth,*twindata))
+            sub2.plot(linewidth=linewidth,label='dummy',*twindata)
             sub2.autoscale_view(tight=True,scaley=False)
+            if twiny_logscale:
+                sub2.set_yscale('log')
             if twiny_ymin is None:
                 twiny_ymin = 0.9*min([min(yi) for yi in twiny_y])
             pl.ylim(ymin=twiny_ymin) # min([min(xi) for xi in x])
@@ -1462,20 +1468,39 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
             for tl in sub2.yaxis.get_minorticklines() + sub2.xaxis.get_minorticklines():
                 tl.set_markersize(size_ticklines/2.)
                 tl.set_markeredgewidth(1.2)
+        
+        #-- Set the x min max after the twin axis was added.
         if xmin <> None:
             pl.xlim(xmin=xmin) # min([min(xi) for xi in x])
         if xmax <> None:
             pl.xlim(xmax=xmax)
+            
+        #-- Set the keytags. Only done for the first subplot in case a split 
+        #   spectrum is plotted.
         if i == 0 and keytags:
-            these_legs = legends[:len(keytags)]
+            subs = [sub]
+            
+            #-- Extract the dummy keytags which we replace here
+            klines, klabels = sub.get_legend_handles_labels()
+            
+            #-- Perhaps fewer keys required than the number of lines
+            klines = klines[:len(keytags)]
+            
+            #-- Add the keytags for the twin y axis
             if twiny_keytags:
-                these_legs += twiny_legends[:len(twiny_keytags)]
+                twinklines, klabels = sub2.get_legend_handles_labels()
+                twinklines = twinklines[:len(twiny_keytags)]
+                klines += twinklines
                 keytags += twiny_keytags
+                subs.append(sub2)
+                
+            #-- Always use the last axis for the legend
             prop = pl.matplotlib.font_manager.FontProperties(size=fontsize_key)
-            lg = pl.legend(these_legs,keytags,loc=key_location,\
-                           numpoints=legend_numpoints,prop=prop)
+            lg = subs[-1].legend(klines, keytags, loc=key_location,prop=prop,\
+                                 numpoints=legend_numpoints)
             lg.legendPatch.set_alpha(0.8)
             lg.set_zorder(max(zorder)+1)
+            
     if filename: filename = saveFig(filename,extension,landscape)
     if show_plot or filename is None:
         pl.subplots_adjust(bottom=0.10)

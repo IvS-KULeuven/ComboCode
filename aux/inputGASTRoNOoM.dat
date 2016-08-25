@@ -100,7 +100,6 @@ COSMICS=1                    ! cosmic ray heating, 0 or 1
 
 
 #Numerical parameters
-LOG_DEPTH_STEP_POWER=1.00    ! power for the log(R) steps
 N_IMPACT_EXTRA=0           ! Number of extra depth points in r-mesh, linearly distributed between N_IMPACT_EXTRA_RIN and N_IMPACT_EXTRA_ROUT
 N_IMPACT_EXTRA_RIN=100.       ! innermost point of extra r-mesh sampling [R*]
 N_IMPACT_EXTRA_ROUT=150.      ! outermost point of extra r-mesh sampling [R*]
@@ -117,6 +116,7 @@ START_APPROX=0             !set =0 when one wants to start with LTE-approx as st
 FEHLER=1e-4                  ! convergence criterium in mline
 ITERA=200                    ! Maximum number of iterations in mline
 LTE_REQUEST=0                  !If you only want LTE in MLINE
+XDEX=2.                         ! Controls the distribution of the impact parameters in the interval between R_STAR and R_OUTER. 
 
 USE_COLLIS_RADIAT_SWITCH=0      !set to 1 if one wants to use the collision-radiative switching method of Hummer and Voels (1988)
 USE_FRACTION_LEVEL_CORR=1       ! set to 1 if one wants to put a limit on the level-population correction (BES3).

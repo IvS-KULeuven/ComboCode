@@ -145,20 +145,18 @@ class Star(dict):
             
         super(Star, self).__init__(example_star)
         if extra_input <> None: self.update(extra_input)
-        self.Rsun = 6.95508e10         #in cm  Harmanec & Prsa 2011
+        self.Rsun = cst.R_sun.cgs.value         #in cm  Harmanec & Prsa 2011
         self.Msun = 1.98547e33      #in g   Harmanec & Prsa 2011
-        self.Mearth = 5.97237e27        # in g
+        self.Mearth = cst.M_earth.cgs.value   # in g
         self.Tsun = 5779.5747            #in K   Harmanec & Psra 2011
-        self.Lsun = 3.846e33           #in erg/s
-        self.year = 31557600.            #julian year in seconds
+        self.Lsun = cst.L_sun.cgs.value           #in erg/s
         self.au = 149598.0e8             #in cm
         self.c = cst.c.cgs.value          #in cm/s
         self.h = cst.h.cgs.value         #in erg*s, Planck constant
         self.k = cst.k_B.cgs.value          #in erg/K, Boltzmann constant
-        self.sigma = 5.67040040e-5         #in erg/cm^2/s/K^4   Harmanec & Psra 2011
-        self.pc = 3.08568025e16         #in cm
-        self.mh = 1.672661e-24           #in g, mass hydrogen atom
-        self.G = 6.674e-8               # in cm^3 g^-1 s^-2
+        self.sigma = cst.sigma_sb.cgs.value         #in erg/cm^2/s/K^4  = g / (K^4 s^3) Stefan_boltzmann constant
+        self.mh = cst.m_p.cgs.value           #in g, mass hydrogen atom
+        self.G = cst.G.cgs.value           # in cm^3 g^-1 s^-2
         
         self.path_gastronoom = path_gastronoom        
         self.path_mcmax = path_mcmax
@@ -306,22 +304,6 @@ class Star(dict):
             self.dust[species] = dict()
             for key in ['sd','molar','tdes','tdesa','tdesb','fn']:
                 self.dust[species][key] = dust_info[key][index]        
-                
-        
-    
-    def getDustList(self):
-        
-        '''
-        Return (and initialize) the list of nonzero abundance dust species in 
-        the model. 
-        
-        @return: The dust species
-        @rtype: tuple(str)
-        
-        '''
-        
-        if self.dust_list is None: self.readDustProperties()
-        return self.dust_list
     
     
     
@@ -334,15 +316,26 @@ class Star(dict):
         
         '''
         
+        #-- Check if the Star instance actually has a model id available.
+        if not self['LAST_GASTRONOOM_MODEL']: 
+            print('WARNING! Star() does not have a cooling model id. ' + \
+                  'Cannot add parameters from the database.')
+            return
+    
+        #-- Set the path, and extract the parameters dictionary from the db
         cooling_path = os.path.join(cc.path.gout,\
                                     'GASTRoNOoM_cooling_models.db')
         cool_db = Database.Database(cooling_path)
-        cooling_dict = cool_db[self['LAST_GASTRONOOM_MODEL']].copy()
-        cooling_keys = ['T_STAR','R_STAR','TEMDUST_FILENAME','MDOT_GAS']
-        for k in cooling_dict.keys():
-            if k not in cooling_keys: del cooling_dict[k]            
-        cooling_dict['R_STAR'] = float(cooling_dict['R_STAR'])/self.Rsun
-        self.update(cooling_dict)
+        db_dict = cool_db[self['LAST_GASTRONOOM_MODEL']]
+        
+        #-- Only set a small subset of keys for now. These will always be in the
+        #   cooling dictionary. 
+        cool_keys = ['T_STAR','R_STAR','TEMDUST_FILENAME','MDOT_GAS']
+        cool_dict = {k: DataIO.convertFloat(db_dict[k]) for k in cool_keys}
+
+        #-- Set the correct units for the stellar radius.
+        cool_dict['R_STAR'] = cool_dict['R_STAR']/self.Rsun
+        self.update(cool_dict)
 
 
 
@@ -382,40 +375,20 @@ class Star(dict):
                                             self['LAST_MCMAX_MODEL'],\
                                             'kappas.dat'))
         return opas.pop(0),opas
-                            
 
-    #OBSOLETE. NOT USED. PERHAPS IN THE FUTURE. DONT CALL THIS UPON INITIALIZATION OF STAR()
-    #def convertRadialUnit(self):
-        
-        #'''
-        #Convert any radial unit for shell parameters to R_STAR.
-        
-        #'''
-        
-        #if self['R_SHELL_UNIT'] != 'R_STAR':
-            #shell_units = ['CM','M','KM','AU']
-            #unit_index = shell_units.index(self['R_SHELL_UNIT'].upper())
-            #unit_conversion = [1./(self.Rsun*self['R_STAR']),\
-                               #10.**2/(self.Rsun*self['R_STAR']),\
-                               #10.**5/(self.Rsun*self['R_STAR']),\
-                               #self.au/(self.Rsun*self['R_STAR'])]
-            #for par in ['R_INNER_GAS','R_INNER_DUST','R_OUTER_GAS',\
-                        #'R_OUTER_DUST'] \
-                    #+ ['R_MAX_' + species for species in self.getDustList()] \
-                    #+ ['R_MIN_' + species for species in self.getDustList()]:
-                #if self.has_key(par):
-                    #self[par] = self[par]*unit_conversion[unit_index]
-        #else:
-            #pass
-                                             
 
-    
+
     def removeMutableMCMax(self,mutable,var_pars):
         
         """
         Remove mutable parameters after an MCMax run.
-    
-        @param mutable: mutable keywords
+        
+        This method is accessed by the ComboCode package whenever necessary. The 
+        user should not have to do this.
+        
+        @param mutable: mutable keywords. Listed in 
+        aux/Mutable_Parameters_MCMax.dat.
+        
         @type mutable: list[string]
         @param var_pars: parameters that are varied during gridding, these will
                          not be removed and are kept constant throughout the 
@@ -445,7 +418,13 @@ class Star(dict):
         
         """
         Remove mutable parameters after a GASTRoNOoM run.
-    
+
+        This method is accessed by the ComboCode package whenever necessary. The 
+        user should not have to do this.
+        
+        @param mutable: mutable keywords. Listed in 
+        aux/Mutable_Parameters_GASTRoNOoM.dat.
+        
         @param mutable: mutable parameters
         @type mutable: list[string]
         @param var_pars: parameters that are varied during gridding, these will
@@ -520,20 +499,6 @@ class Star(dict):
 
 
 
-    def calcA_NO_NORM(self):
-        
-        """
-        Set the default value of A_NO_NORM to 0.
-        
-        """
-        
-        if not self.has_key('A_NO_NORM'):
-            self['A_NO_NORM'] = 0
-        else:
-            pass
-    
-        
-
     def __addLineList(self):
         
         """ 
@@ -584,53 +549,6 @@ class Star(dict):
         self['GAS_LINES'].extend(gas_list)
 
 
-    
-    def calcLS_NO_VIB(self):
-        
-        """
-        Set the default value of LS_NO_VIB (remove vibrational states from the
-        calculation and plots) to zero.        
-        
-        """
-        
-        if not self.has_key('LS_NO_VIB'):
-            self['LS_NO_VIB'] = []
-        else:
-            pass
-    
-    
-        
-    def calcN_QUAD(self):
-        
-        """
-        Set the default value of N_QUAD to 100. 
-        
-        Only used when auto selecting transition based on a wavelength range.
-        
-        """
-        
-        if not self.has_key('N_QUAD'):
-            self['N_QUAD'] = 100
-        else:
-            pass
-    
-    
-    
-    def calcLS_OFFSET(self):
-        
-        """
-        Set the default value of LS_OFFSET to 0.0. 
-        
-        Only used when auto selecting transitions based on a wavelength range.
-        
-        """
-        
-        if not self.has_key('LS_OFFSET'):
-            self['LS_OFFSET'] = 0.0
-        else:
-            pass
-    
-        
 
     def checkT(self):
         
@@ -882,8 +800,8 @@ class Star(dict):
         if not self['LAST_MCMAX_MODEL']: return empty(0)
     
         fn = self.getDustFn(species)
-        rad = array(CodeIO.getMCMaxOutput(incr=int(self['NRAD']),\
-                                          keyword='RADIUS',filename=fn))
+        rad = array(DataIO.getKeyData(incr=int(self['NRAD']),\
+                                      keyword='RADIUS',filename=fn))
         
         unit = str(unit).lower()
         if unit == 'au':
@@ -919,8 +837,8 @@ class Star(dict):
         if not self['LAST_MCMAX_MODEL']: return empty(0)
     
         fn = self.getDustFn(species)
-        theta = array(CodeIO.getMCMaxOutput(incr=int(self['NTHETA']),\
-                                            keyword='THETA',filename=fn))
+        theta = array(DataIO.getKeyData(incr=int(self['NTHETA']),\
+                                        keyword='THETA',filename=fn))
         return theta
         
         
@@ -965,8 +883,8 @@ class Star(dict):
         #   over the theta coordinate, if requested.
         fn = self.getDustFn(species)
         incr = int(self['NRAD'])*int(self['NTHETA'])
-        dens_ori = CodeIO.getMCMaxOutput(filename=fn,incr=incr,\
-                                         keyword='DENSITY')
+        dens_ori = DataIO.getKeyData(filename=fn,incr=incr,\
+                                     keyword='DENSITY')
         if avg_theta: dens = Data.reduceArray(dens_ori,self['NTHETA'])
         else: dens = dens_ori
         
@@ -1024,8 +942,8 @@ class Star(dict):
         #   over the theta coordinate, if requested.
         fn = self.getDustFn(species)
         incr = int(self['NRAD'])*int(self['NTHETA'])
-        temp_ori = CodeIO.getMCMaxOutput(incr=incr,keyword='TEMPERATURE',\
-                                         filename=fn)
+        temp_ori = DataIO.getKeyData(incr=incr,keyword='TEMPERATURE',\
+                                     filename=fn)
         if avg_theta: temp = Data.reduceArray(temp_ori,self['NTHETA'])
         else: temp = temp_ori
 
@@ -1268,6 +1186,169 @@ class Star(dict):
 
 
 
+    def getAverageDrift(self):
+        
+        '''
+        Return an array with the average drift velocity as a function of 
+        radius, from coolfgr_all, in cm/s.
+        
+        '''
+        
+        inputfile = self.getCoolFn(ftype='fgr_all')
+        drift = DataIO.getGastronoomOutput(inputfile,keyword='VDRIFT')  
+        opa_gs_max = 2.5e-1
+        opa_gs_min = 5.0e-3
+        return array(drift)/sqrt(0.25)*1.25\
+                            *(opa_gs_max**(-2.)-opa_gs_min**(-2.))\
+                            /(opa_gs_max**(-2.5)-opa_gs_min**(-2.5))
+
+        
+
+    def getOpticalDepth(self,wavelength=0):
+        
+        '''
+        Calculate the optical depth.
+        
+        If wavelength keyword is given, tau at wavelength is returned. 
+        
+        Otherwise, the full wavelength array is returned.
+        
+        @keyword wavelength: the wavelength in micron. If 0, the whole 
+                             wavelength array is returned.
+                             
+                             (default: 0)
+        @type wavelength: float
+        
+        @return: The optical depth at requested wavelength or the full
+                 wavelength and optical depth arrays
+        @rtype: float or (array,array)
+        
+        '''
+        
+        wavelength = float(wavelength)
+        rad = self.getDustRad()
+        dens = self.getDustDensity()
+        wave_list,kappas = self.getWeightedKappas()
+        if wavelength:
+            wave_index = argmin(abs(wave_list-wavelength))
+            return integrate.trapz(y=dens*kappas[wave_index],x=rad)
+        else:
+            return (wave_list,array([integrate.trapz(y=dens*kappas[i],x=rad)
+                                     for i in xrange(len(wave_list))]))
+        
+    
+    
+    def getWeightedKappas(self):
+        
+        '''
+        Return the wavelength and kappas weighted with their respective dust 
+        mass fractions.
+        
+        Typically you only want the absorption coefficients because GASTRoNOoM
+        does not take into account scattering. You could try approximating 
+        the effect of scattering on the acceleration, but at this point this is 
+        not taken into account accurately.
+        
+        @return: The wavelength and weighted kappas grid
+        @rtype: (array,array)
+        
+        '''
+        
+        wave_list,kappas = self.readKappas()
+        if self['INCLUDE_SCAT_GAS']:
+            #-- First the absorption coefficients of all dust species are given 
+            #   Then the scattering coefficients. So iterate twice over the 
+            #   dust list.
+            wkappas = [sum([float(self['A_%s'%(species)])*float(kappas[i][j])
+                            for i,species in enumerate(self.getDustList()*2)])
+                       for j in xrange(len(kappas[0]))]
+        else: 
+            #-- Only iterate once over the dust list to just take the 
+            #   absorption coefficients.
+            wkappas = [sum([float(self['A_%s'%(species)])*float(kappas[i][j])
+                            for i,species in enumerate(self.getDustList())])
+                       for j in xrange(len(kappas[0]))]
+        return array(wave_list),array(wkappas)
+    
+        
+        
+    def getDustList(self):
+        
+        '''
+        Return (and initialize) the list of nonzero abundance dust species in 
+        the model. 
+        
+        @return: The dust species
+        @rtype: tuple(str)
+        
+        '''
+        
+        if self.dust_list is None: self.readDustProperties()
+        return self.dust_list
+    
+    
+        
+    def calcA_NO_NORM(self):
+        
+        """
+        Set the default value of A_NO_NORM to 0.
+        
+        """
+        
+        if not self.has_key('A_NO_NORM'):
+            self['A_NO_NORM'] = 0
+        else:
+            pass
+            
+            
+                
+    def calcLS_NO_VIB(self):
+        
+        """
+        Set the default value of LS_NO_VIB (remove vibrational states from the
+        calculation and plots) to zero.        
+        
+        """
+        
+        if not self.has_key('LS_NO_VIB'):
+            self['LS_NO_VIB'] = []
+        else:
+            pass
+    
+    
+        
+    def calcN_QUAD(self):
+        
+        """
+        Set the default value of N_QUAD to 100. 
+        
+        Only used when auto selecting transition based on a wavelength range.
+        
+        """
+        
+        if not self.has_key('N_QUAD'):
+            self['N_QUAD'] = 100
+        else:
+            pass
+    
+    
+    
+    def calcLS_OFFSET(self):
+        
+        """
+        Set the default value of LS_OFFSET to 0.0. 
+        
+        Only used when auto selecting transitions based on a wavelength range.
+        
+        """
+        
+        if not self.has_key('LS_OFFSET'):
+            self['LS_OFFSET'] = 0.0
+        else:
+            pass
+            
+    
+    
     def calcTLR(self):  
         
         """
@@ -1312,6 +1393,10 @@ class Star(dict):
                 self['LL_GAS_LIST'] = [Molecule.Molecule(molecule=molec,
                                                          linelist=1) 
                                        for molec in self['LL_MOLECULES']]
+            keys = ['LL_CAT','LL_MAX_EXC','LL_MIN_STRENGTH']
+            for k in keys: 
+                if not isinstance(self[k],tuple):
+                    self[k] = [self[k]]*len(self['LL_GAS_LIST'])
         else:
             pass
         
@@ -1345,6 +1430,20 @@ class Star(dict):
             
     
     
+    def calcXDEX(self):
+        
+        '''
+        Set the default value of XDEX parameter.
+        
+        '''
+        
+        if not self.has_key('XDEX'):
+            self['XDEX'] = 2.
+        else:
+            pass
+            
+            
+            
     def calcFEHLER(self):
         
         '''
@@ -2575,7 +2674,7 @@ class Star(dict):
                     #   profiles in the Rayleigh limit, i.e. s=1
                     power = -2./(4+1)
                     #-- Take the reciprocal relation of the dust temperature
-                    #   profile (such as in Profiler.tempPowerLawDust())
+                    #   profile (as in profilers.Temperature.Tdust())
                     #   rmax is in Rstar!
                     rmax = (tmin/self['T_STAR'])**(1/power)/2.
                 self[missing_key] = rmax
@@ -2652,24 +2751,6 @@ class Star(dict):
 
 
 
-    def getAverageDrift(self):
-        
-        '''
-        Return an array with the average drift velocity as a function of 
-        radius, from coolfgr_all, in cm/s.
-        
-        '''
-        
-        inputfile = self.getCoolFn(ftype='fgr_all')
-        drift = CodeIO.getGastronoomOutput(inputfile,keyword='VDRIFT')  
-        opa_gs_max = 2.5e-1
-        opa_gs_min = 5.0e-3
-        return array(drift)/sqrt(0.25)*1.25\
-                            *(opa_gs_max**(-2.)-opa_gs_min**(-2.))\
-                            /(opa_gs_max**(-2.5)-opa_gs_min**(-2.5))
-        
-
-
     def calcDENSTYPE(self):
         
         """
@@ -2731,8 +2812,6 @@ class Star(dict):
         """
         
         if not self.has_key('SHELLMASS'):
-            #self['SHELLMASS'] = float(self['MDOT_GAS'])*self.Msun\
-                                  #/((self['VEL_INFINITY_GAS']*10**5)*self.year)
             self['SHELLMASS'] = self['MDOT_GAS']/self['VEL_INFINITY_GAS']
         else:
             pass
@@ -2746,9 +2825,10 @@ class Star(dict):
         """
         
         if not self.has_key('SHELLDENS'):
-            self['SHELLDENS'] = float(self['MDOT_GAS'])*self.Msun\
-                                  /((self['VEL_INFINITY_GAS']*10**5)*self.year\
-                                    *(self['R_STAR']*self.Rsun)**2*4.*pi)
+            
+            mdot_cgs = (float(self['MDOT_GAS'])*u.M_sun/u.yr).to(u.g/u.s).value
+            self['SHELLDENS'] = mdot_cgs/((self['VEL_INFINITY_GAS']*10**5)\
+                                         *(self['R_STAR']*self.Rsun)**2*4.*pi)
         else:
             pass
         
@@ -3047,11 +3127,11 @@ class Star(dict):
                         use_maser_in_sphinx=self['USE_MASER_IN_SPHINX'],\
                         use_no_maser_option=self['USE_NO_MASER_OPTION'],\
                         fehler=self['FEHLER'],n_freq=self['N_FREQ'],\
-                        start_approx=self['START_APPROX'],\
+                        start_approx=self['START_APPROX'],xdex=self['XDEX'],\
                         use_fraction_level_corr=self['USE_FRACTION_LEVEL_CORR'],\
                         fraction_level_corr=self['FRACTION_LEVEL_CORR'],\
                         number_level_max_corr=self['NUMBER_LEVEL_MAX_CORR'],\
-                        starfile=starfile)
+                        starfile=starfile,path_gastronoom=self.path_gastronoom)
                      
                      for molec in self['MOLECULE']]
             
@@ -3398,7 +3478,7 @@ class Star(dict):
         else:
             pass
 
-
+    
 
     def calcSTARFILE(self):
         
@@ -3514,42 +3594,9 @@ class Star(dict):
                 self['DUST_TO_GAS_ITERATED'] = None
         else:
             pass  
-
-
-
-    def getOpticalDepth(self,wavelength=0):
         
-        '''
-        Calculate the optical depth.
         
-        If wavelength keyword is given, tau at wavelength is returned. 
         
-        Otherwise, the full wavelength array is returned.
-        
-        @keyword wavelength: the wavelength in micron. If 0, the whole 
-                             wavelength array is returned.
-                             
-                             (default: 0)
-        @type wavelength: float
-        
-        @return: The optical depth at requested wavelength or the full
-                 wavelength and optical depth arrays
-        @rtype: float or (array,array)
-        
-        '''
-        
-        wavelength = float(wavelength)
-        rad = self.getDustRad()
-        dens = self.getDustDensity()
-        wave_list,kappas = self.readWeightedKappas()
-        if wavelength:
-            wave_index = argmin(abs(wave_list-wavelength))
-            return integrate.trapz(y=dens*kappas[wave_index],x=rad)
-        else:
-            return (wave_list,array([integrate.trapz(y=dens*kappas[i],x=rad)
-                                     for i in xrange(len(wave_list))]))
-        
-    
     def calcINCLUDE_SCAT_GAS(self):
         
         '''
@@ -3566,41 +3613,8 @@ class Star(dict):
         else:
             pass
         
-    
-    def readWeightedKappas(self):
         
-        '''
-        Return the wavelength and kappas weighted with their respective dust 
-        mass fractions.
-        
-        Typically you only want the absorption coefficients because GASTRoNOoM
-        does not take into account scattering. You could try approximating 
-        the effect of scattering on the acceleration, but at this point this is 
-        not taken into account accurately.
-        
-        @return: The wavelength and weighted kappas grid
-        @rtype: (array,array)
-        
-        '''
-        
-        wave_list,kappas = self.readKappas()
-        if self['INCLUDE_SCAT_GAS']:
-            #-- First the absorption coefficients of all dust species are given 
-            #   Then the scattering coefficients. So iterate twice over the 
-            #   dust list.
-            wkappas = [sum([float(self['A_%s'%(species)])*float(kappas[i][j])
-                            for i,species in enumerate(self.getDustList()*2)])
-                       for j in xrange(len(kappas[0]))]
-        else: 
-            #-- Only iterate once over the dust list to just take the 
-            #   absorption coefficients.
-            wkappas = [sum([float(self['A_%s'%(species)])*float(kappas[i][j])
-                            for i,species in enumerate(self.getDustList())])
-                       for j in xrange(len(kappas[0]))]
-        return array(wave_list),array(wkappas)
-        
-        
-    
+            
     def calcRATIO_12C_TO_13C(self):
         
         '''
@@ -3698,7 +3712,7 @@ class Star(dict):
                 self['TEMDUST_FILENAME'] = os.path.split(filename)[1]
             else:
                 try:
-                    wavelength,q_ext = self.readWeightedKappas()
+                    wavelength,q_ext = self.getWeightedKappas()
                     q_ext *= self['SPEC_DENS_DUST']*(4.0/3)
                     wavelength = list(wavelength)
                     wavelength.reverse()
@@ -3766,45 +3780,7 @@ class Star(dict):
                                         /self['R_STAR']/self.Rsun
         else:
             pass         
-    
-    
-    
-    def getBlackBody(self):
-        
-        '''
-        Calculate the black body intensity profile.
-        
-        @return: The wavelength and black body intensity grid
-        @rtype: (array,array)
-        
-        '''
-        
-        #- Define wavelength grid in cm
-        w = 10**(linspace(-9,2,5000))
-        freq = self.c/w
-        #- Calculate the blackbody
-        bb = 2*self.h*freq**3/self.c**2 * \
-             (1/(exp((self.h*freq)/(self.k*self['T_STAR']))-1))
-        return w*10**(4),bb*10**(23)
-    
-    
-    
-    def getObservedBlackBody(self):
-        
-        '''
-        Scale the blackbody intensity following the distance and stellar radius.
-        
-        This is not the flux!
-        
-        @return: The wavelength grid and rescaled blackbody intensity
-        @rtype: (array,array)
-        
-        '''
-        
-        w,bb = self.getBlackBody()
-        return w,bb*(self['R_STAR']*self.Rsun)**2\
-                   /(self['DISTANCE']*self.pc)**2
-        
+
 
 
     def missingInput(self,missing_key):

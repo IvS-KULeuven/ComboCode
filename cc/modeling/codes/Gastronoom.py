@@ -16,7 +16,7 @@ from scipy import array
 import cc.path
 from cc.tools.io import DataIO
 from cc.tools.io import Atmosphere
-from cc.modeling.ModelingSession import ModelingSession
+from cc.modeling.codes.ModelingSession import ModelingSession
 from cc.modeling.objects.Molecule import Molecule
 
 
@@ -424,8 +424,8 @@ class Gastronoom(ModelingSession):
                     #   Such empty dicts are removed upon fail/success check
                     #   in doMline.
                     if not v.keys(): 
-                        raise KeyError('Empty molec id found in the database'+\
-                                       '. This should not be possible.')
+                        raise KeyError('Empty molec id found in the database.'+\
+                                       ' This should not be possible.')
                     
                     #-- molecule already in this id. Keep searching, unless it 
                     #   is the last entry. Then we have to make a new id
@@ -443,7 +443,7 @@ class Gastronoom(ModelingSession):
                         cks = ['OUTER_R_MODE','CHANGE_DUST_TO_GAS_FOR_ML_SP',\
                                'DUST_TO_GAS_CHANGE_ML_SP','STARFILE',\
                                'USE_STARFILE','USE_NO_MASER_OPTION',\
-                               'USE_MASER_IN_SPHINX','FEHLER','N_FREQ',\
+                               'USE_MASER_IN_SPHINX','FEHLER','N_FREQ','XDEX',\
                                'START_APPROX','USE_FRACTION_LEVEL_CORR',\
                                'FRACTION_LEVEL_CORR','NUMBER_LEVEL_MAX_CORR']
                         if self.cCL(this_list=molec.makeDict(),\

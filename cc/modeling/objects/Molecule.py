@@ -13,7 +13,7 @@ import re
 import cc.path
 from cc.tools.io import DataIO
 from cc.tools.io.Database import Database
-from cc.tools.io import Radiat
+from cc.tools.readers import RadiatReader, MlineReader
 
 
 
@@ -77,6 +77,7 @@ def makeMoleculeFromDb(molec_id,molecule,path_gastronoom='codeSep2010',\
         if molec_dict.has_key(key):
             del molec_dict[key]
     molec_dict = dict([(k.lower(),v) for k,v in molec_dict.items()])
+    molec_dict['path_gastronoom'] = path_gastronoom
     molec = Molecule(molecule=molecule,**molec_dict)
     molec.setModelId(molec_id)
     return molec
@@ -95,14 +96,15 @@ class Molecule():
                  abun_molec_re=1.0e-10,rmax_molec=1.,itera=0,lte_request=None,\
                  use_collis_radiat_switch=0,dust_to_gas_change_ml_sp=0,\
                  use_no_maser_option=0,use_maser_in_sphinx=1,\
-                 fehler=1e-4,n_freq=30,start_approx=0,\
+                 fehler=1e-4,xdex=2.,n_freq=30,start_approx=0,\
                  use_fraction_level_corr=1,fraction_level_corr=0.8,\
                  number_level_max_corr=1e-12,\
                  ratio_12c_to_13c=0,ratio_16o_to_17o=0,ratio_16o_to_18o=0,\
                  opr=0,r_outer=0,outer_r_mode='MAMON',abundance_filename=None,\
                  change_fraction_filename=None,set_keyword_change_abundance=0,\
                  set_keyword_change_temperature=0,enhance_abundance_factor=0,\
-                 new_temperature_filename=None,linelist=0,starfile=''):
+                 new_temperature_filename=None,linelist=0,starfile='',\
+                 path_gastronoom=None):
         
         '''
         Initiate a Molecule class, setting all values for the allowed 
@@ -171,6 +173,11 @@ class Molecule():
         
                          (default: 1e-4)
         @type fehler: float
+        @keyword xdex: Controls the distribution of the impact parameters in the
+                       interval between R_STAR and R_OUTER. 
+                       
+                       (default: 2.)
+        @type xdex: float 
         @keyword n_freq: Number of frequency points in line profile
         
                          (default: 30)
@@ -315,7 +322,10 @@ class Molecule():
                            
                            (default: '')
         @type starfile: str
-                           
+        @keyword path_gastronoom: model output folder in the GASTRoNOoM home
+        
+                                  (default: None)
+        @type path_gastronoom: string                   
         
         '''
  
@@ -325,6 +335,8 @@ class Molecule():
         self.nline = int(nline)
         self.n_impact = int(n_impact)
         self.n_impact_extra = int(n_impact_extra)
+        self.path_gastronoom = path_gastronoom
+        
         self.molecule_index = DataIO.getInputData(keyword='TYPE_SHORT',\
                                                   filename='Molecule.dat')\
                                                  .index(self.molecule)
@@ -361,6 +373,7 @@ class Molecule():
         self.use_no_maser_option = int(use_no_maser_option)
         self.use_maser_in_sphinx = int(use_maser_in_sphinx)
         self.fehler = fehler
+        self.xdex = xdex
         self.n_freq = int(n_freq)
         self.start_approx = int(start_approx)
         self.use_fraction_level_corr = int(use_fraction_level_corr)
@@ -397,8 +410,15 @@ class Molecule():
                                 str(self.ny_up),str(self.nline)])
                 i = DataIO.getInputData(start_index=4,keyword='MOLECULE',\
                                         filename='Indices.dat').index(tag)
-                self.indices_index = i
-            self.radiat = Radiat.Radiat(molecule=self)
+                fn = DataIO.getInputData(path=cc.path.usr,keyword='RADIAT',\
+                                         filename='Indices.dat',start_index=4,\
+                                         rindex=i)
+                fn = os.path.join(cc.path.gdata,'radiat_backup',fn)
+            else: 
+                fn = os.path.join(cc.path.gdata,'%s_radiat.dat'%self.molecule)
+
+            self.radiat = RadiatReader.RadiatReader(fn=fn,nline=self.nline,
+                                                    ny=self.ny_up+self.ny_low)
             if self.spec_indices:
                 if self.use_indices_dat:
                     f = DataIO.getInputData(path=cc.path.usr,start_index=4,\
@@ -414,6 +434,8 @@ class Molecule():
             self.radiat = None
             self.radiat_indices = None
         self.starfile = starfile
+        self.mline = None
+
 
 
     def __str__(self):
@@ -480,6 +502,7 @@ class Molecule():
                    ('USE_NO_MASER_OPTION',self.use_no_maser_option),\
                    ('USE_MASER_IN_SPHINX',self.use_maser_in_sphinx),\
                    ('FEHLER',self.fehler),\
+                   ('XDEX',self.xdex),\
                    ('N_FREQ',self.n_freq),\
                    ('START_APPROX',self.start_approx),\
                    ('USE_FRACTION_LEVEL_CORR',self.use_fraction_level_corr),\
@@ -546,6 +569,56 @@ class Molecule():
 
         return dd        
                          
+
+
+    def makeMlineFilename(self,number='*',include_path=0):
+        
+        '''
+        Return an mline filename for this object.
+         
+        @keyword number: the number in the filename (ml*, ml1, ml2, ml3. Hence 
+                         can be *, 1, 2, 3)
+                         
+                         (default: '*')
+        @type number: string
+        @keyword include_path: Include the full filepath.
+        
+                               (default: 0) 
+        @type include_path: bool
+        
+        @return: The sphinx filename for this transition
+        @rtype: string
+        
+        '''
+        
+        try:
+            number = str(int(number))
+        except ValueError:
+            number = str(number)
+        
+        fn = 'ml{}{}_{}.dat'.format(number,self.getModelId(),self.molecule)
+        if include_path: 
+            fn = os.path.join(cc.path.gastronoom,self.path_gastronoom,'models',\
+                              self.getModelId(),fn)
+        
+        return fn
+
+
+
+    def readMline(self):
+         
+        '''
+        Read the mline output if the model id is valid.       
+        
+        The mline output is available in the MlineReader object mline, as a 
+        property of Molecule().
+        
+        '''
+
+        if self.mline is None and self.getModelId():
+            fn = self.makeMlineFilename(include_path=1)
+            self.mline = MlineReader.MlineReader(fn)
+     
 
 
     def setModelId(self,model_id):
@@ -643,19 +716,3 @@ class Molecule():
         
         return self.molecule in ['1H1H16O','p1H1H16O','1H1H17O',\
                                  'p1H1H17O','1H1H18O','p1H1H18O']
-        
-        
-    
-    def readMline(self):
-    
-        """
-        Read the mline output for this molecule, given that a model_id is 
-        available. 
-        
-        The mline output is available in the MlineReader object, as a property
-        of Molecule().
-        
-        [NYI]
-        
-        
-        """

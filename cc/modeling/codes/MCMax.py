@@ -13,7 +13,7 @@ from glob import glob
 
 import cc.path
 from cc.tools.io import DataIO, Database
-from cc.modeling.ModelingSession import ModelingSession
+from cc.modeling.codes.ModelingSession import ModelingSession
 
 
 

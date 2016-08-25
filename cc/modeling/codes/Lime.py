@@ -39,7 +39,7 @@ def prepInput(star,path,repl_str=''):
     #-- First opacities and t_dust, which are not part of the GASTRoNOoM output
     mcmid = star['LAST_MCMAX_MODEL']
     fnopac = os.path.join(path,'opac_%s.dat'%(repl_str and repl_str or mcmid))
-    DataIO.writeCols(fnopac,star.readWeightedKappas())
+    DataIO.writeCols(fnopac,star.getWeightedKappas())
     
     #-- Write dust temperature to a file.
     fntd = os.path.join(path,'td_%s.dat'%(repl_str and repl_str or mcmid))

@@ -7,6 +7,7 @@ Author: R. Lombaert
 
 """
 
+import collections
 from scipy import mean, std, sqrt, log, isfinite
 from scipy import array, zeros, arange
 from scipy.stats import tmean, tstd
@@ -507,4 +508,34 @@ def selectArray(flux,wave=None,wmin=None,wmax=None):
 
 
 
+def arrayify(x):
 
+    '''
+    Check whether the input value is a proper array. 
+    
+    @param x: The input candidate array
+    @type x: anything
+    
+    @return: an array of the input value
+    @rtype: array
+    
+    '''
+    
+    #-- Already an array, that is not just an number
+    if isinstance(x,np.ndarray) and x.shape:
+        return x
+        
+    #-- An array of size 1, but just a number. Make it an array with a shape
+    if isinstance(x,np.ndarray):
+        return np.array([x])
+    
+    #-- Not an array, but iterable and not a string
+    if isinstance(x,collections.Iterable) and not isinstance(x,str):
+        return np.array(x)
+        
+    #-- A string: make it a float first
+    if isinstance(x,str):
+        return np.array([float(x)])
+        
+    #-- Just a number, make it an array but through a one-element list
+    return np.array([x])

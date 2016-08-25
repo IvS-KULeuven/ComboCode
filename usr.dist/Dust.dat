@@ -5,11 +5,6 @@ AL2O3DHS        4.00        101.96           1500.    40720.    18.479     Alumi
 FECDE           7.87        55.8             1400.    21542.    6.6715     Fe/Fe_a_CDE_size_0.1.opac
 FEDHS03         7.87        55.8             1400.    21542.    6.6715     Fe/Fe_0.29-0.31_-3.5_DHS_0.8_henStogn1996.opac
 FECDE001        7.87        55.8             1400.    21542.    6.6715     Fe/fe_0.01_0.01_-3.5_CDE.particle
-FEMRN01         7.87        55.8             1400.    21542.    6.6715     Fe/fe_0.01_0.1_-3.5_DHS_0.8.opac
-FEMRN1          7.87        55.8             1400.    21542.    6.6715     Fe/fe_0.01_1.0_-3.5_DHS_0.8.opac
-FEMRN2          7.87        55.8             1400.    21542.    6.6715     Fe/fe_0.01_2.0_-3.5_DHS_0.8.opac
-FEMRN5          7.87        55.8             1400.    21542.    6.6715     Fe/fe_0.01_5.0_-3.5_DHS_0.8.opac
-FEMRN10         7.87        55.8             1400.    21542.    6.6715     Fe/fe_0.01_10.0_-3.5_DHS_0.8.opac
 FORSTEMP        3.3         140.69           1150.    26091.    13.418     Forsterite/foSuto2006_0.01_0.01_-3.5_CDE.topac
 FORSSUTO100     3.3         140.69           1150.    26091.    13.418     Forsterite/foSuto2006_100_0.01_0.01_-3.5_CDE.opac
 FORSSUTO150DHS  3.3         140.69           1150.    26091.    13.418     Forsterite/foSuto2006_150_0.1_0.1_-3.5_DHS_0.8.particle

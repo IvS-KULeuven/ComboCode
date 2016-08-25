@@ -10,6 +10,7 @@ Author: R. Lombaert
 import os
 from scipy.integrate import trapz
 from scipy import average, argmax
+from astropy import constants as cst
 import math
 
 import cc.path
@@ -50,8 +51,7 @@ class ColumnDensity(object):
         self.star = star
         self.Rsun = star.Rsun      #in cm
         self.Msun = star.Msun      #in g
-        self.year = star.year            #in s 
-        self.avogadro = 6.022e23         
+        self.avogadro = cst.N_A.cgs.value           
         self.au = star.au
         self.r_des = dict()
         self.r_max = dict()
@@ -248,10 +248,10 @@ class ColumnDensity(object):
             cndh2 = trapz(x=rad[(rad<rout)*(rad>rin)],\
                           y=nh2[(rad<rout)*(rad>rin)])
         else: 
-            mdot_gas = float(self.star['MDOT_GAS'])*self.Msun/self.year
-            vexp_gas = float(self.star['VEL_INFINITY_GAS']) * 100000
+            mdot = (float(self.star['MDOT_GAS'])*u.M_sun/u.yr).to(u.g/u.s).value
+            vexp = float(self.star['VEL_INFINITY_GAS']) * 100000
             h2_molar = 2.
-            sigma = (1./rin-1./rout)*mdot_gas/vexp_gas/4./math.pi
+            sigma = (1./rin-1./rout)*mdot/vexp/4./math.pi
             cndh2 = sigma * self.avogadro / h2_molar
         return cndh2    
     

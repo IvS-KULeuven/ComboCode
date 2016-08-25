@@ -15,11 +15,11 @@ from scipy.interpolate import interp1d
 import numpy as np
 
 import cc.path
-from cc.plotting.PlottingSession import PlottingSession
+from cc.plotting.objects.PlottingSession import PlottingSession
 from cc.tools.io import DataIO
 from cc.modeling.objects import Transition
 from cc.plotting import Plotting2
-from cc.tools.io import LineList
+from cc.tools.readers import LineList
 from cc.data.instruments import Pacs
 from cc.modeling.objects import Star
 
@@ -780,24 +780,22 @@ class PlotGas(PlottingSession):
         
         '''
         
-        cdms = int(star['LL_CDMS'])
-        jpl = int(star['LL_JPL'])
-        lamda = int(star['LL_LAMDA'])
-        min_strength = float(star['LL_MIN_STRENGTH']) \
-                            and float(star['LL_MIN_STRENGTH']) or None
-        max_exc = float(star['LL_MAX_EXC']) \
-                        and float(star['LL_MAX_EXC']) or None
+        cats = star['LL_CAT']
+        min_strengths = star['LL_MIN_STRENGTH']
+        max_excs = star['LL_MAX_EXC']
+        molecs = star['LL_GAS_LIST']
         
-        linelists = []
-        for molecule in star['LL_GAS_LIST']:
-            if not 'p1H' in molecule.molecule:
-                ll = LineList.LineList(molecule=molecule,x_min=xmin,\
-                                       x_unit=xunit,cdms=cdms,jpl=jpl,\
-                                       lamda=lamda,x_max=xmax,\
+        linelist = []
+        for m,cat,min_str,max_exc in zip(molecs,cats,min_strengths,max_excs):
+            #-- para versions of molecules included in CDMS/JPL db's
+            if not 'p1H' in m.molecule:
+                fn = os.path.join(cc.path.ll,'{}_{}.dat'.format(m.molecule,cat))
+                ll = LineList.LineList(fn=fn,x_min=xmin,\
+                                       unit=xunit,x_max=xmax,\
                                        min_strength=min_strength,\
-                                       max_exc=max_exc,include_extra=1)
-                linelists.append(ll)
-        lls = self.createLineLabels(linelists=linelists,\
+                                       max_exc=max_exc)
+                linelist.append(ll.makeTransitions(m))
+        lls = self.createLineLabels(linelist=linelist,\
                                     fn_trans_marker=fn_trans_marker,
                                     instrument=instrument)
         return lls     
@@ -1034,7 +1032,7 @@ class PlotGas(PlottingSession):
                     frac_interpol = 1
                 #-- GASTRoNOoM output already takes into account enhance_abundance_factor
                 #   abun_factor only takes into account isotope ratios and OPR
-                abun = nmol/nh2*frac_interpol*molec.abun_factor     
+                abun = nmol/nh2*frac_interpol/molec.abun_factor     
                 ddata[istar][molec.molecule]['abun'] = abun
                 ddata[istar][molec.molecule]['key'] = molec.molecule_plot
                 ddata[istar][molec.molecule]['id'] = mid
@@ -1074,6 +1072,7 @@ class PlotGas(PlottingSession):
             #-- Collect all data
             molecs = list(set([molec for istar in ddata.keys()
                                      for molec in ddata[istar].keys()]))
+            mplot = ddata[0][molec.molecule]['key']
             for molec in molecs: 
                 #-- Collect data
                 radii = [dmol['rad']
@@ -1090,8 +1089,7 @@ class PlotGas(PlottingSession):
                            if molec == imolec]
 
                 #-- Set the y axis tag
-                strmolec = ddata[0][molec]['key']
-                yaxis = '$n_\mathrm{%s}/n_{\mathrm{H}_2}$'%strmolec
+                yaxis = '$n_\mathrm{%s}/n_{\mathrm{H}_2}$'%mplot.replace('$','')
 
                 #-- Make filename
                 pfn = fn_plt if fn_plt else 'abundance_profiles'
@@ -1116,7 +1114,7 @@ class PlotGas(PlottingSession):
             
 
     def plotLineContributions(self,star_grid,fn_plt='',normalized=1,cfg='',\
-                              do_sort=1,include_velocity=1):
+                              do_sort=1,include='intensity'):
         
         '''
         Plot the source function as function of impact parameter for every 
@@ -1146,10 +1144,12 @@ class PlotGas(PlottingSession):
                           
                           (default: 1)
         @type do_sort: bool
-        @keyword include_velocity: Include the velocity profile on the plot
+        @keyword include: Include and additional profile on a second axis. Can 
+                          be 'velocity' or 'intensity' (at line center) at the 
+                          moment. Any other value will add no second axis.
                           
-                                   (default: 0)
-        @type include_velocity: bool
+                          (default: 'intensity')
+        @type include: str
         
         '''
         
@@ -1162,10 +1162,11 @@ class PlotGas(PlottingSession):
              do_sort = int(cfg_dict['do_sort'])
         if cfg_dict.has_key('normalized'):
              normalized = int(cfg_dict['normalized'])
-        if cfg_dict.has_key('include_velocity'):
-             include_velocity = int(cfg_dict['include_velocity'])
+        if cfg_dict.has_key('include'):
+             include = cfg_dict['include']
 
         normalized = int(normalized)
+        lcf = 'getNormalizedIntensity' if normalized else 'getWeightedIntensity'
         for i,star in enumerate(star_grid):
             extra_pars = dict()
             if do_sort:
@@ -1175,7 +1176,37 @@ class PlotGas(PlottingSession):
                                      key=lambda x:x.wavelength)
             else:
                 transitions = star['GAS_LINES']
-            if include_velocity:
+            
+            #-- Read the sphinx files and extract the P/intensity columns
+            [t.readSphinx() for t in transitions]
+            radii = [t.sphinx.getImpact() for t in transitions]
+            linecontribs =  [getattr(t.sphinx,lcf)() for t in transitions]
+            
+            #-- Set filename
+            pfn = fn_plt if fn_plt else 'linecontrib'
+            subf = 'LCs'
+            suff = '{}_{}'.format(star['LAST_GASTRONOOM_MODEL'],i)
+            pfn = self.setFnPlt(pfn,fn_suffix=suff,fn_subfolder=subf)
+            extra_pars['filename'] = pfn
+            
+            #-- Set extra plot parameters
+            extra_pars['keytags'] = [r'$I(p,LC)\ pdp$ - $\mathrm{%s}:$ %s'\
+                                      %(t.molecule.molecule_plot\
+                                         .replace('$',''),\
+                                        t.makeLabel())
+                                     for t in transitions]
+            extra_pars['key_location'] = 'best'
+            extra_pars['ymin'] = normalized and -0.01 or None
+            extra_pars['ymax'] = normalized and 1.02 or None
+            extra_pars['xmin'] = 1
+            extra_pars['xaxis'] = '$p\ \mathrm{(R}_\star\mathrm{)}$'
+            extra_pars['yaxis'] = '$I(p)\ pdp$'
+            extra_pars['linewidth'] = 3
+            extra_pars['xlogscale'] = 1
+            extra_pars['fontsize_key'] = 16
+            
+            #-- Add second axis for velocity if requested
+            if include == 'velocity':
                 rad = star.getGasRad(unit='rstar')
                 vel = star.getGasVelocity()
                 vel = vel/10.**5
@@ -1184,32 +1215,15 @@ class PlotGas(PlottingSession):
                 extra_pars['twiny_keytags'] = [r'$v_\mathrm{g}$']
                 extra_pars['twinyaxis'] = r'$v_\mathrm{g}$ (km s$^{-1}$)' 
             
-            [trans.readSphinx() for trans in transitions]
-            radii = [trans.sphinx.getImpact() for trans in transitions]
-            linecontribs =  [normalized \
-                                and list(trans.sphinx.getNormalizedIntensity())\
-                                or list(trans.sphinx.getWeightedIntensity())
-                             for trans in transitions]
-            
-            #-- Set filename
-            pfn = fn_plt if fn_plt else 'linecontrib'
-            subf = 'LCs'
-            suff = '{}_{}'.format(star['LAST_GASTRONOOM_MODEL'],i)
-            pfn = self.setFnPlt(pfn,fn_suffix=suff,fn_subfolder=subf)
-
-            extra_pars['filename'] = pfn
-            extra_pars['keytags'] = ['$\mathrm{%s}:$ %s'\
-                                      %(trans.molecule.molecule_plot,\
-                                        trans.makeLabel())
-                                     for trans in transitions]
-            extra_pars['key_location'] = 'upper left'
-            extra_pars['ymin'] = normalized and -0.01 or None
-            extra_pars['ymax'] = normalized and 1.02 or None
-            extra_pars['xmin'] = 1
-            extra_pars['xaxis'] = '$p\ \mathrm{(R}_\star\mathrm{)}$'
-            extra_pars['yaxis'] = '$I(p)\ pdp$'
-            extra_pars['linewidth'] = 3
-            extra_pars['xlogscale'] = 1
+            #-- Add second axis for intensity at line center if requested
+            elif include == 'intensity':
+                extra_pars['twiny_x'] = radii
+                extra_pars['twiny_y'] = [t.sphinx.getLineIntensity() 
+                                         for t in transitions]
+                extra_pars['twiny_keytags'] = [k.replace(r'\ pdp','')
+                                               for k in extra_pars['keytags']]
+                extra_pars['twiny_logscale'] = 1                                               
+                extra_pars['twinyaxis'] = r'$I(p)$' 
             
             pfn = Plotting2.plotCols(x=radii,y=linecontribs,cfg=cfg_dict,\
                                      **extra_pars)
@@ -1248,22 +1262,24 @@ class PlotGas(PlottingSession):
 
 
 
-    def createLineLabels(self,star_grid=[],linelists=[],fn_trans_marker='',\
+    def createLineLabels(self,star_grid=[],linelist=[],molecules=[],\
+                         fn_trans_marker='',\
                          unit='micron',mark_undetected=0,instrument='PACS'):
 
         '''
         Create line labels for all transitions in Star() objects or in
         LineList() objects or in a TRANSITION definition file. Priority:
         star_grid > linelists. fn_trans_marker is always added in addition.
-
+        
         @keyword star_grid: The Star() models.
 
                             (default: [])
         @type star_grid: list[Star()]
-        @keyword linelists: The LineList() objects.
+        @keyword linelist: The list of Transition() objects extracted from a 
+                           catalog, eg by createLineLabelsFromLineLists.
 
-                            (default: [])
-        @type linelists: list[LineList()]
+                           (default: [])
+        @type linelist: list[LineList()]
         @keyword fn_trans_marker: A file that includes TRANSITION definitions.
                                   These transitions will be marked up in the
                                   plot. For instance, when indicating a subset
@@ -1310,9 +1326,8 @@ class PlotGas(PlottingSession):
             alltrans = Transition.extractTransFromStars(star_grid,\
                                                         dtype=instrument,\
                                                         reset_data=0)
-        elif linelists:
-            alltrans = [t   for ll in linelists
-                            for t in ll.makeTransitions()]
+        elif linelist:
+            alltrans = linelist
         else:
             alltrans = []
 
@@ -1324,8 +1339,8 @@ class PlotGas(PlottingSession):
 
         used_indices = list(set([ll[-2] for ll in lls]))
         if fn_trans_marker:
-            def_molecs = dict([(ll.molecule.molecule,ll.molecule) 
-                               for ll in linelists])
+            all_molecs = set([t.molecule for t in all_trans])
+            def_molecs = dict([(m.molecule,m) for m in all_molecs])
             if star_grid: star = star_grid[0]
             else: star = None
             trl = DataIO.readDict(fn_trans_marker,multi_keys=['TRANSITION'])

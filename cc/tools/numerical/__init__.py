@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ["Interpol","Gridding"]
+__all__ = ["Interpol","Gridding","Operators"]

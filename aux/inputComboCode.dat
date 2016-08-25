@@ -286,9 +286,9 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 ## Molecule_name = short hand molecule notation
 ## NY_LOW = number of levels in ground-state of molecule
 ## NY_UP = number of levels in first-vibrational state of molecule
-## NLINE =" number of (allowed) radiative transitions in molecule 
+## NLINE = number of (allowed) radiative transitions in molecule 
 ## N_IMPACT = number of depth points in radius mesh
-## N_IMPACT_EXTRA = number of depth points in radius mesh (< N_IMPACT) which specifically will be used properly sample variable mass-loss. In case of constant mass loss, take 0   
+## N_IMPACT_EXTRA = number of depth points in radius mesh (< N_IMPACT) which specifically will be used properly sample variable mass-loss. In case of constant mass loss, take 0. If not 0, N_IMPACT_EXTRA has to be smaller than N_IMPACT as it defines a subset of the total amount of impact parameters.
 ## ABUN_MOLEC = abundance at stellar radius, abun will decrease gradually toward abun_molec_rinner at r_inner
 ## ABUN_MOLEC_RINNER = abundance at r_inner, will decrease gradually to abun_molec_re at rmax_molec
 ## ABUN_MOLEC_RE =abundance at rmax_molec, abun from willacy and millar is scaled to this value between rmax_molec and r_outer
@@ -309,8 +309,8 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 ## NEW_TEMPERATURE_FILENAME = the filename for the keyword below, only relevant if nonzero, but must be included (filename with other temperature values to be used in mline and sphinx. Units are [cm,K])
 ## SET_KEYWORD_CHANGE_TEMPERATURE = 0 or 1 - change the temperature after cooling (in sampling.f)
 ##########################################################################
-#MOLECULE=12C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
-#MOLECULE=13C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+MOLECULE=12C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
+MOLECULE=13C16O 61 61 240 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=12C17O 41 0 40 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=12C18O 41 0 40 50 0 1.0e-10 1.0e-10 1.0e-10 1. 200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
 #MOLECULE=1H1H16O  90  39  1157  50  0  1.0e-20  1.0e-20  1.0e-20  50.  200 0 0 0 idonotexist.dat 0 idonotexist_abun.dat 0 idonotexist_temp.dat 0
@@ -343,8 +343,10 @@ NZLAM=300                           # Step size subgrid (must be < than N_LAM). 
 #   4) LINE_SELECT = 2: lines are selected from a file, which contains the TRANSITION definitions (requires LS_FILE) 
 ###################
 #-- Add your explicit TRANSITION definitions here. 
-#TRANSITION=12C16O 0 2 0 0 0 1 0 0 JCMT 0.0 100
-#TRANSITION=12C16O 0 1 0 0 0 0 0 0 JCMT 0.0 100
+TRANSITION=12C16O 0 2 0 0 0 1 0 0 IRAM 0.0 100
+TRANSITION=12C16O 0 1 0 0 0 0 0 0 IRAM 0.0 100
+TRANSITION=13C16O 0 2 0 0 0 1 0 0 IRAM 0.0 100
+TRANSITION=13C16O 0 1 0 0 0 0 0 0 IRAM 0.0 100
 
 
 #-- Sphinx keywords
@@ -362,15 +364,15 @@ LS_FILE=                    # if LINE_SELECT=2, otherwise it is ignored. Gives t
 
 
 ###################
-#-- Plotting line lists from downloaded line lists. Data can be plotted as well according to the data settings in the general input.
+#-- Plotting line lists from downloadeded line lists. Data can be plotted as well according to the data settings in the general input.
+#   Catalogs must be located in cc.path.ll, and follow the naming convention: MOLECULE_CATALOG.dat, where MOLECULE is taken from Molecule.dat (TYPE_SHORT) and CATALOG is JPL or CDMS.
 #   Does not calculate RT models.
+#   Syntax: Number of elements the same across all four keywords, separated by &. Or only one element, in which case it applies to all molecules requested.
 ###################
-LL_CDMS=0                           # Pull data from CDMS
-LL_JPL=0                            # Pull data from JPL
-LL_LAMDA=0                          # Pull data from LAMDA
-LL_MIN_STRENGTH=0                   # Minimum integrated line intensity for inclusion in line list plot, in log10 scale, put to 0 to include ALL lines
-LL_MAX_EXC=0                        # Max excitation energy
-LL_MOLECULES=16O1H&1H12C14N         # List the molecules for line listing
+LL_CAT=CDMS                         # The catalog where to pull data from (CDMS or JPL only for now). Must have same number of elements as LL_MOLECULES separated by &
+LL_MIN_STRENGTH=0                   # Minimum integrated line intensity for inclusion in line list plot, in log10 scale, put to 0 to include ALL lines. Must have same number of elements as LL_MOLECULES separated by &
+LL_MAX_EXC=0                        # Max excitation energy. Put to 0 to include ALL lines. Must have same number of elements as LL_MOLECULES separated by &
+LL_MOLECULES=16O1H&1H12C14N         # List the molecules for line listing, separated by &.
 
 ###################
 # PLOTTING INPUT

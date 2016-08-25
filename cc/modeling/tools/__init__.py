@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ["ColumnDensity","ContinuumDivision","Profiler","DustOpacity",\
-           "Reddening","CodeIO"]
+__all__ = ["ColumnDensity","ContinuumDivision","DustOpacity",\
+           "Reddening"]

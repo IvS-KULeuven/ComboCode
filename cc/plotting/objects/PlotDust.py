@@ -17,12 +17,14 @@ import numpy as np
 
 import cc.path
 from cc.data import Sed
-from cc.plotting.PlottingSession import PlottingSession
+from cc.plotting.objects.PlottingSession import PlottingSession
 from cc.plotting import Plotting2,PlotMeixner
-from cc.tools.io import DataIO, KappaReader
+from cc.tools.io import DataIO
+from cc.tools.readers import KappaReader
 from cc.modeling.objects import Star
 from cc.modeling.codes import MCMax
-from cc.modeling.tools import Profiler,Reddening,CodeIO
+from cc.modeling.tools import Reddening 
+from cc.modeling.profilers import Temperature
 
 
 class PlotDust(PlottingSession):
@@ -199,7 +201,9 @@ class PlotDust(PlottingSession):
         fmodels = []
         for model_id,s in zip(model_ids_mcm,star_grid):
             dpath = os.path.join(cc.path.mout,'models',model_id)
-            fn_spec = 'spectrum{:04.1f}.dat'.format(s['RT_INCLINATION'])
+            fn_spec = 'spectrum{:04.1f}'.format(s['RT_INCLINATION'])
+            if s['RT_NOSOURCE']: fn_spec += 'NOSTAR'
+            fn_spec += '.dat'
             w,f = MCMax.readModelSpectrum(dpath,s['RT_SPEC'],fn_spec)
             if s['REDDENING']:
                 print 'Reddening models to correct for interstellar extinction.'
@@ -315,7 +319,9 @@ class PlotDust(PlottingSession):
             for s in star_grid:
                 model_id = s['LAST_MCMAX_MODEL']
                 dpath = os.path.join(cc.path.mout,'models',model_id)
-                fn_vis = 'visibility{:04.1f}.dat'.format(s['RT_INCLINATION'])
+                fn_vis = 'visibility{:04.1f}'.format(s['RT_INCLINATION'])
+                if s['RT_NOSOURCE']: fn_vis += 'NOSTAR'
+                fn_vis += '.dat'              
                 model = MCMax.readVisibilities(dpath=dpath,fn_vis=fn_vis)
                 models.append(model)
             real_models = [model for model in models if model]
@@ -851,11 +857,12 @@ class PlotDust(PlottingSession):
         
         #-- Add power laws if requested
         for s in power:
-            rad_rstar = star_grid[0].getDustRad(unit='rstar')
             rad = star_grid[0].getDustRad(unit=unit)
             tstar = star_grid[0]['T_STAR']
-            temp,key = Profiler.tempPowerLawDust(rad=rad_rstar,add_key=1,\
-                                                 tstar=tstar,s=s)
+            rstar = star_grid[0]['R_STAR']
+            key = '$T_\mathrm{d}(r) = %i \\left(\\frac{2r}'%int(tstar) + \
+                  '{\mathrm{R}_\star}\\right)^{\\frac{2}{4+%i}}$'%int(s)
+            temp = Temperature.Tdust(r=rad,T0=tstar,r0=rstar,s=s)
             rads.append(rad)
             temps.append(temp)
             keytags.append(key)
@@ -983,11 +990,12 @@ class PlotDust(PlottingSession):
         
             #-- Add power laws if requested
             for s in power:
-                rad_rstar = star_grid[0].getDustRad(unit='rstar')
                 rad  = star_grid[0].getDustRad(unit=unit)
                 tstar = star_grid[0]['T_STAR']
-                temp,key = Profiler.tempPowerLawDust(rad=rad_rstar,add_key=1,\
-                                                     tstar=tstar,s=s)
+                rstar = star_grid[0]['R_STAR']
+                key = '$T_\mathrm{d}(r) = %i \\left(\\frac{2r}'%int(tstar) + \
+                      '{\mathrm{R}_\star}\\right)^{\\frac{2}{4+%i}}$'%int(s)
+                temp = Temperature.Tdust(r=rad,T0=tstar,r0=rstar,s=s)
                 rads.append(rad)
                 temps.append(temp)
                 keytags.append(key)
@@ -1254,15 +1262,15 @@ class PlotDust(PlottingSession):
                                     star['LAST_MCMAX_MODEL'])
             denstemp = os.path.join(filepath,'denstemp.dat')
             logfile = os.path.join(filepath,'log.dat')
-            grid_shape = CodeIO.getMCMaxOutput(filename=denstemp,incr=1,\
-                                               keyword='NGRAINS',single=0)[0]
+            grid_shape = DataIO.getKeyData(filename=denstemp,incr=1,\
+                                           keyword='NGRAINS',single=0)[0]
             star.update({'NTHETA':int(grid_shape[1]),\
                          'NRAD':int(grid_shape[0]),\
-                         'T_STAR':float(CodeIO.getMCMaxOutput(filename=logfile,\
+                         'T_STAR':float(DataIO.getKeyData(filename=logfile,\
                                                 incr=0,\
                                                 keyword='STELLAR TEMPERATURE',\
                                                 single=0)[0][2]),\
-                         'R_STAR':float(CodeIO.getMCMaxOutput(filename=logfile,\
+                         'R_STAR':float(DataIO.getKeyData(filename=logfile,\
                                                 incr=0,\
                                                 keyword='STELLAR RADIUS',\
                                                 single=0)[0][2])})            

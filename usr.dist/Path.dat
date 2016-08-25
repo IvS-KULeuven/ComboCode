@@ -46,7 +46,7 @@ dcflux=Data/CorrFlux
 
 #-- Folder for IvS Repository data
 ivsdata=ComboCode/aux/ivsdata
-#-- Folder for model atmospheres. 
+#-- Folder for model atmospheres. The base folder must be the same as the above folder, and must include sedtables/modelgrids as subfolder.
 atm=ComboCode/aux/ivsdata/sedtables/modelgrids
 
 #-- Folder for CDMS, JPL, LAMDA downloaded line lists.

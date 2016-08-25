@@ -10,6 +10,8 @@ Author: R. Lombaert
 import os
 import numpy as np
 from numpy import array
+from scipy.interpolate import InterpolatedUnivariateSpline as spline1d
+from scipy.interpolate import interp1d
 
 import cc.path
 from cc.tools.io import DataIO
@@ -19,6 +21,9 @@ class KappaReader(object):
     
     """
     An interface for reading opacities of multiple dust species.
+    
+    Does not inherit from the Reader object, because the files are structured 
+    too differently from common input/output data.
     
     """
     
@@ -42,6 +47,7 @@ class KappaReader(object):
         self.qext_a = dict()
         self.waves = dict()
         self.fns = dict()
+        self.spec_dens = dict()
         
 
 
@@ -81,6 +87,7 @@ class KappaReader(object):
             part_file = DataIO.readCols(filename=fn)
             wav = part_file[0]
             kappa = part_file[1:]
+        self.spec_dens[species] = sd
         self.fns[species] = fn
         self.waves[species] = wav
         self.kappas[species] = kappa
@@ -131,6 +138,7 @@ class KappaReader(object):
         
         """
         
+        index = int(index)
         self.readKappas(species)
         if self.kappas.has_key(species):
             return self.kappas[species][index]
@@ -145,7 +153,10 @@ class KappaReader(object):
         Return the extinction efficiencies per grain size for given species.
         
         The index determines if you want extinction, scattering or absorption.
-        
+
+        @param species: The dust species (from Dust.dat)
+        @type species: string
+                
         @keyword index: The index of the kappas in the .opacity/.particle file. 
                         0: extinction, 1: absorption, 2: scattering
                         
@@ -162,4 +173,33 @@ class KappaReader(object):
             return self.qext_a[species][index]
         else:
             return np.empty(0)
+    
+    
+    
+    def interpolate(self,species,index=0,*args,**kwargs):  
+    
+        """
+        Create an interpolation object for the mass extinction/absorption/
+        scattering coefficients.
         
+        Additional arguments can be passed to the interpolation object.
+        
+        @param species: The dust species (from Dust.dat)
+        @type species: string
+                
+        @keyword index: The index of the kappas in the .opacity/.particle file. 
+                        0: extinction, 1: absorption, 2: scattering
+                        
+                        (default: 0)
+        @type index: int
+                
+        @return: The interpolator for the mass extinction/absorption/scattering
+                 coefficients. (in cgs!)
+        @rtype: spline1d 
+        
+        """        
+        
+        #-- Note that the wavelength is given in micron, but the interpolator 
+        #   convers to cgs.
+        return spline1d(x=self.getWavelength(species)*1e-4,\
+                        y=self.getKappas(species,index),*args,**kwargs)

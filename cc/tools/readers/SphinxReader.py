@@ -12,7 +12,7 @@ from scipy import array
 from scipy import isnan
 from scipy import isfinite
 
-from cc.tools.io.Reader import Reader
+from cc.tools.readers.Reader import Reader
 from cc.tools.io import DataIO
 
 
@@ -22,9 +22,11 @@ class SphinxReader(Reader):
     '''
     A Reader for Sphinx output files. 
     
+    Inherits from the Reader class. 
+    
     '''
     
-    def __init__(self,filename):
+    def __init__(self,fn,*args,**kwargs):
         
         '''
         Creating a Sphinx object ready for reading Sphinx output.
@@ -33,14 +35,17 @@ class SphinxReader(Reader):
         
         The sphinxfile number is given as *, which is then replaced as needed.
         
-        @param filename: The sphinx filename, including filepath. The sphinx
-                         file number is given by *.
-        @type filename: string
+        Additional args/kwargs are used for the dict creation of the parent of 
+        Reader.
+        
+        @param fn: The sphinx filename, including filepath. The sphinx
+                   file number is given by *.
+        @type fn: string
         
         '''
         
-        super(SphinxReader, self).__init__()
-        self.filename = filename.replace('sph1','sph*').replace('sph2','sph*')
+        fn = fn.replace('sph1','sph*').replace('sph2','sph*')
+        super(SphinxReader, self).__init__(fn,*args,**kwargs)
         self.nans_present=False
         self.parseImpact()
         self.parseProfile()
@@ -49,21 +54,25 @@ class SphinxReader(Reader):
     def parseImpact(self):
         
         ''' 
-        Parse sphinx file 1, which includes all the impact parameter info. 
+        Parse sphinx file 1, line intensities at line center (!) as a function 
+        of impact parameter. 
         
-        The output is stored in dict self.sph1.
+        The output is stored in dict self['sph1'].
+        
+        Note that the headers of the sph1 file state the last two columns are
+        summed intensities. This is not true! It is the intensity at line 
+        center.
         
         '''
         
         
-        self.sph1 = dict()
-        self.contents['sph1'] = self.sph1
-        data = DataIO.readCols(self.filename.replace('*','1'),start_row=1)
-        self.sph1['impact'] = data[0]
-        self.sph1['norm_intens'] = data[1] 
-        self.sph1['weighted_intens'] = data[2] 
-        self.sph1['sum_intens_p'] = data[3]
-        self.sph1['sum_intens'] = data[4]
+        self['sph1'] = dict()
+        data = DataIO.readCols(self.fn.replace('*','1'),start_row=1)
+        self['sph1']['p'] = data[0]
+        self['sph1']['norm_intens'] = data[1] 
+        self['sph1']['weighted_intens'] = data[2] 
+        self['sph1']['weighted_intens_p^-2'] = data[3]
+        self['sph1']['intens'] = data[4]
         
         
         
@@ -72,56 +81,62 @@ class SphinxReader(Reader):
         '''
         Parse the sphinx file 2, which includes all line profile info.
         
-        The output is stored in dict self.sph2.
+        The output is stored in dict self['sph2'].
         
         '''
         
-        self.sph2 = dict()
-        self.contents['sph2'] = self.sph2
-        self.sph2['nobeam'] = dict()
-        self.sph2['beam'] = dict()
-        self.sph2['nobeam_cont'] = dict()
-        self.sph2['beam_cont'] = dict()
-        data = self.getFile(self.filename.replace('*','2'))
+        self['sph2'] = dict()
+        self['sph2']['nobeam'] = dict()
+        self['sph2']['beam'] = dict()
+        self['sph2']['nobeam_cont'] = dict()
+        self['sph2']['beam_cont'] = dict()
+        data = self.getFile(wildcard='2',delimiter=' ')
         data_col_1 = [d[0] for d in data]
         data_i = 6
         data_j = DataIO.findString(data_i,data_col_1)
-        self.sph2['nobeam']['velocity'] = array([float(line[0]) 
+        self['sph2']['nobeam']['velocity'] = array([float(line[0]) 
                                               for line in data[data_i:data_j]])
+        
         #-- Reverse this flux grid. Sphinx output files give the mirrored
         #   flux grid for the associated velocity grid.
-        self.sph2['nobeam']['flux'] =     array([DataIO.convertFloat(line[-1],\
+        self['sph2']['nobeam']['flux'] = array([DataIO.convertFloat(line[-1],\
                                                                      nans=1) 
                                               for line in data[data_i:data_j]])
-        self.sph2['nobeam']['flux'] = self.sph2['nobeam']['flux'][::-1]
+        self['sph2']['nobeam']['flux'] = self['sph2']['nobeam']['flux'][::-1]
         data_k = data_j + 4
         data_l = DataIO.findString(data_k,data_col_1)
-        self.sph2['beam']['velocity'] =  array([float(line[0]) 
+        self['sph2']['beam']['velocity'] =  array([float(line[0]) 
                                               for line in data[data_k:data_l]])
-        self.sph2['beam']['flux'] =      array([float(line[-1]) 
+        self['sph2']['beam']['flux'] =      array([float(line[-1]) 
                                               for line in data[data_k:data_l]])  
-        self.sph2['beam']['norm_flux'] = array([float(line[1]) 
+        self['sph2']['beam']['norm_flux'] = array([float(line[1]) 
                                               for line in data[data_k:data_l]])
-        self.sph2['beam']['tmb'] =       array([float(line[2]) 
+        self['sph2']['beam']['tmb'] =       array([float(line[2]) 
                                               for line in data[data_k:data_l]])
         
+        #-- Set the continuum value for the different profiles
         self.setContinuum('nobeam','flux')
         for lp in ['flux','norm_flux','tmb']:
             self.setContinuum('beam',lp)
-        if self.sph2['beam']['velocity'][0] > self.sph2['beam']['velocity'][-1]:
-            self.sph2['beam']['velocity'] = self.sph2['beam']['velocity'][::-1]
-            self.sph2['beam']['flux'] = self.sph2['beam']['flux'][::-1]
-            self.sph2['beam']['norm_flux'] = self.sph2['beam']['norm_flux'][::-1]
-            self.sph2['beam']['tmb'] = self.sph2['beam']['tmb'][::-1]
-        if self.sph2['nobeam']['velocity'][0] > self.sph2['nobeam']['velocity'][-1]:
-            self.sph2['nobeam']['velocity'] = self.sph2['nobeam']['velocity'][::-1]
-            self.sph2['nobeam']['flux'] = self.sph2['nobeam']['flux'][::-1]
-        if True in list(isnan(self.sph2['nobeam']['flux'])):
+            
+        #-- Check if the velocity is correctly monotonously increasing
+        if self['sph2']['beam']['velocity'][0] > self['sph2']['beam']['velocity'][-1]:
+            self['sph2']['beam']['velocity'] = self['sph2']['beam']['velocity'][::-1]
+            self['sph2']['beam']['flux'] = self['sph2']['beam']['flux'][::-1]
+            self['sph2']['beam']['norm_flux'] = self['sph2']['beam']['norm_flux'][::-1]
+            self['sph2']['beam']['tmb'] = self['sph2']['beam']['tmb'][::-1]
+        if self['sph2']['nobeam']['velocity'][0] > self['sph2']['nobeam']['velocity'][-1]:
+            self['sph2']['nobeam']['velocity'] = self['sph2']['nobeam']['velocity'][::-1]
+            self['sph2']['nobeam']['flux'] = self['sph2']['nobeam']['flux'][::-1]
+        
+        #-- Check for NaNs in the profile.
+        if True in list(isnan(self['sph2']['nobeam']['flux'])):
             self.nans_present = True
             print "WARNING! There are NaN's in the intrinsic line profile " + \
                   "with model id %s:"\
-                  %(os.path.split(os.path.split(self.filename)[0])[1])
-            print os.path.split(self.filename.replace('sph*','sph2'))[1]
+                  %(os.path.split(os.path.split(self.fn)[0])[1])
+            print os.path.split(self.fn.replace('sph*','sph2'))[1]
+    
     
     
     def setContinuum(self,beam,lp):
@@ -136,11 +151,12 @@ class SphinxReader(Reader):
         
         '''
         
-        flux = self.sph2[beam][lp] 
+        flux = self['sph2'][beam][lp] 
         flux = flux[isfinite(flux)]
         continuum = (flux[0] + flux[-1])/2.
-        self.sph2[beam+'_cont'][lp] = continuum
-                
+        self['sph2'][beam+'_cont'][lp] = continuum
+        
+        
         
     def getLPIntrinsic(self,cont_subtract=1):
         
@@ -154,41 +170,44 @@ class SphinxReader(Reader):
         @type cont_subtract: bool
         
         @return: The intrinsic flux
-        @rtype: list
+        @rtype: array
         
         '''
         
-        flux = self.sph2['nobeam']['flux']
+        flux = self['sph2']['nobeam']['flux']
         if cont_subtract:
-            flux = flux - self.sph2['nobeam_cont']['flux']
+            flux = flux - self['sph2']['nobeam_cont']['flux']
         
         return flux
         
-    
+        
+        
     def getVelocityIntrinsic(self):
         
         '''
         Return the velocity grid for the intrinsic line profile. 
         
         @return: The velocity grid
-        @rtype: list
+        @rtype: array
         
         '''
         
-        return self.sph2['nobeam']['velocity']
-    
-
+        return self['sph2']['nobeam']['velocity']
+        
+        
+        
     def getVelocity(self):
         
         '''
         Return the velocity grid for the convolved line profile. 
         
         @return: The velocity grid
-        @rtype: list
+        @rtype: array
         
         '''
         
-        return self.sph2['beam']['velocity']
+        return self['sph2']['beam']['velocity']
+        
         
         
     def getLPTmb(self,cont_subtract=1):
@@ -205,13 +224,13 @@ class SphinxReader(Reader):
         @type cont_subtract: bool
         
         @return: The main beam temperature
-        @rtype: list
+        @rtype: array
         
         '''
         
-        tmb = self.sph2['beam']['tmb']
+        tmb = self['sph2']['beam']['tmb']
         if cont_subtract:
-            tmb = tmb - self.sph2['beam_cont']['tmb']
+            tmb = tmb - self['sph2']['beam_cont']['tmb']
 
         return tmb
         
@@ -229,13 +248,13 @@ class SphinxReader(Reader):
         @type cont_subtract: bool
         
         @return: The convolved flux
-        @rtype: list
+        @rtype: array
         
         '''
         
-        flux = self.sph2['beam']['flux']
+        flux = self['sph2']['beam']['flux']
         if cont_subtract:
-            flux = flux - self.sph2['beam_cont']['flux']
+            flux = flux - self['sph2']['beam_cont']['flux']
         
         return flux
         
@@ -254,54 +273,71 @@ class SphinxReader(Reader):
         @type cont_subtract: bool
         
         @return: The normalized + convolved flux
-        @rtype: list
+        @rtype: array
         
         '''
         
-        flux = self.sph2['beam']['norm_flux']
+        flux = self['sph2']['beam']['norm_flux']
         if cont_subtract:
-            flux = flux - self.sph2['beam_cont']['norm_flux']
+            flux = flux - self['sph2']['beam_cont']['norm_flux']
         
         return flux        
         
-    
+        
+        
     def getWeightedIntensity(self):
         
         '''
-        Return the weighted intensity with respect to impact parameter squared.
+        Return the weighted intensity with respect to impact parameter squared
+        at line center.
         
-        @return: The weighted intensity list.
-        @rtype: list
+        @return: The weighted intensity at line center.
+        @rtype: array
         
         '''
         
-        return self.sph1['weighted_intens']
+        return self['sph1']['weighted_intens']
         
         
         
     def getNormalizedIntensity(self):
         
         '''
-        Return the normalized weighted intensity with respect to 
+        Return the normalized p^2-weighted intensity at line center with respect to 
         impact parameter squared.
         
-        @return: The normalized weighted intensity lists.
-        @rtype: list
+        @return: The normalized p^2-weighted intensity at line center.
+        @rtype: array
         
         '''
         
-        return self.sph1['norm_intens']
+        return self['sph1']['norm_intens']
+        
     
     
-    
+    def getLineIntensity(self):
+        
+        '''
+        Return the intensity at line center as a function of impact parameter.
+        
+        @return: The intensity at line center as a function of impact parameter.
+        @rtype: array
+        
+        '''
+        
+        return self['sph1']['intens']
+        
+        
+        
     def getImpact(self):
         
         '''
         Return the impact parameter grid.
         
-        @return: the grid of impact parameters in the sphinx outputfile 1.
-        @rtype: list
+        @return: the grid of impact parameters in the sphinx outputfile 1 in 
+                 rstar.
+        @rtype: array
         
         '''
         
-        return self.sph1['impact']
+        return self['sph1']['p']

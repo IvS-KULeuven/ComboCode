@@ -10,18 +10,27 @@ The functionality includes:
     - Automatic line selection based on available data and line listing
     - Databases for modeling output and easy parameter space searches
     - Interaction with a supercomputer clusters built into the databases
-
+    - Reading and using molecular spectroscopy, collision rates and level populations
+    
 * <b>Data</b>: 
     - Management of data files associated with radio data, SEDs and spectroscopic data
     - Fitting routines for resolved emission lines
     - Statistical analysis for samples and individual sources, and both resolved and unresolved emission lines
+
+### Acknowledgments
+ComboCode was originally developed at <b>KU Leuven, Belgium</b>. Currently, development and maintenance continue at <b>Chalmers University of Technology, Sweden</b>.
+
+Developers: 
+- <a href="https://github.com/robinlombaert">Robin Lombaert</a>, Chalmers University of Technology, Sweden (main author)
+- <a href="https://github.com/MarieVdS">Marie van de Sande</a>, KU Leuven, Belgium (contributing author)
+
 
 ### How do I run ComboCode?
 <ol>
 <li>First you have to install the package itself. See instructions below.</li>
 <li>You will need the radiative-transfer codes to be able to run ComboCode to its fullest potential. For this you will
 have to contact the authors of the codes.</li>
-<li>Examples of how to run ComboCode are available in the <a href="https://github.com/IvS-KULeuven/ComboCode/blob/master/Manual.md">Manual</a>.</li>
+<li>Examples of how to run ComboCode are available in the <a href="https://github.com/robinlombaert/ComboCode/blob/master/Manual.md">Manual</a>.</li>
 <li>ComboCode folder structure: 
 <ol>
 <li>cc -- Contains the Python modules.</li>
@@ -31,9 +40,10 @@ have to contact the authors of the codes.</li>
 </li>
 </ol>
 
-### The codes currently in ComboCode
+### The numerical codes currently included in ComboCode
 * <b> GASTRoNOoM:</b> L. Decin (KU Leuven, Belgium) 
 * <b> MCMax:</b> M. Min (UvA, the Netherlands)
+* <b> MCP & ALI:</b> H. Olofsson & M. Maercker (Chalmers, Sweden) -- WiP 
 
 ## Requirements
 Currently the code has been tested to run on Unix-based systems, more specifically Fedora and Mac OS X. In principle, any operating systems that fulfills the requirements listed below should be able to run ComboCode. The code runs ons machines with an internal memory of 8 GB, but less is likely fine as well. The memory requirements are primarily set by the numerical codes included in ComboCode.
@@ -72,7 +82,7 @@ If you intend to get consistent dust input, the use of MCMax is recommended (in 
 Once the requirements are sorted out, you can get to work with ComboCode. You can download the code to your hard disk right away (or if you intend to submit code for this repository: fork the repo, and clone that -- see Developer's Manual below): 
 * Clone the git repository to create a local copy, located in ~/ComboCode/ (or whichever location your prefer, replace ~/ with the parent folder you want):
     - $ cd ~/
-    - $ git clone https://github.com/IvS-KULeuven/ComboCode.git ComboCode
+    - $ git clone https://github.com/robinlombaert/ComboCode.git ComboCode
 
 * Copy the contents of the usr.dist/ folder to the usr/ folder. The usr/ folder contains user-specific settings that are not updated with the repository. Any changes made to the structure of those files will come through usr.dist/ and won't affect the usr/ folder, allowing the user to save personal settings before updating usr/ files. Note especially usr/Path.dat which contains all the relevant folders for ComboCode.
     - $ cd ~/ComboCode/
@@ -92,24 +102,24 @@ ComboCode is a work in progress. New features and bug fixes are introduced regul
 
 ## Documentation
 A user manual with cookbooks and an overview of the inputfiles is available on GitHub at (work in progress!):  
-<a href="https://github.com/IvS-KULeuven/ComboCode/blob/master/Manual.md">ComboCode Manual</a>
+<a href="https://github.com/robinlombaert/ComboCode/blob/master/Manual.md">ComboCode Manual</a>
 
 Up-to-date in-depth documentation comprised of the doc-strings that go with the source code is available on GitHub at:  
-<a href="https://IvS-KULeuven.github.io/ComboCode"> ComboCode Documentation</a>
+<a href="https://robinlombaert.github.io/ComboCode"> ComboCode Documentation</a>
 
 ## Developer's Manual
 If you want to make changes to ComboCode, you should fork the repository to your own github account. The convention is to call your online version of the code *origin*. It is this version that your local machine will refer to when pulling and pushing changes. Once downloaded on a local machine, you can create your own developer's branch that will not interfere with the origin/master branch. In general, it is advised NEVER to work in the origin/master branch. Keep your origin/master branch up-to-date with the original repository (called upstream below), but don't meddle with it, and never merge your changes into the origin/master branch. 
 
 ### Setting up your developer's environment for ComboCode
-* Go to the main IvS-KULeuven/ComboCode.git page and fork the repository to your account. 
+* Go to the main robinlombaert/ComboCode.git page and fork the repository to your account. 
 
 * Clone a copy of the code in your account to your local machine (fill in your github user name, and change the ComboCode folder to whatever you want for your copy. Replace ~/ with the parent folder you want.)
     - $ cd ~/
     - $ git clone https://github.com/YOUR_USERNAME/ComboCode.git ComboCode
 
-* Tell git what the original "upstream" version of the code is at IvS-KULeuven (i.e. the original online version of the code -- don't confuse with origin, i.e. *your* online version of the code):
+* Tell git what the original "upstream" version of the code is at robinlombaert's repository (i.e. the original online version of the code -- don't confuse with origin, i.e. *your* online version of the code):
     - $ cd ~/ComboCode/
-    - $ git remote add --track master upstream https://github.com/IvS-KULeuven/ComboCode.git
+    - $ git remote add --track master upstream https://github.com/robinlombaert/ComboCode.git
 
 * Copy the contents of the usr.dist/ folder to the usr/ folder. Note especially usr/Path.dat which contains all the relevant folders for ComboCode.
     - $ cd ~/ComboCode/
@@ -146,7 +156,7 @@ When developing code (such as hotfixing, or adding any other changes), always wo
 * Then you want to update your GitHub repo with the changes
     - $ git push origin  dev
 
-* Then you have to go to your personal ComboCode GitHub page, and select the dev branch. Create a pull request to the upstream version of the code (i.e. the IvS-KULeuven account), and wait for the pull request to be merged with the upstream remote, as described <a href="https://help.github.com/articles/creating-a-pull-request/"> here</a>. Once the pull-request was accepted, you can proceed to update your master branch as described <a href="https://github.com/IvS-KULeuven/ComboCode#keeping-your-code-up-to-date-with-the-upstream-version">above</a>. 
+* Then you have to go to your personal ComboCode GitHub page, and select the dev branch. Create a pull request to the upstream version of the code (i.e. the robinlombaert repository), and wait for the pull request to be merged with the upstream remote, as described <a href="https://help.github.com/articles/creating-a-pull-request/"> here</a>. Once the pull-request was accepted, you can proceed to update your master branch as described <a href="https://github.com/robinlombaert/ComboCode#keeping-your-code-up-to-date-with-the-upstream-version">above</a>. 
 
 * Finally, you want to make sure your developer's branch is updated with any changes to the upstream version by other users:
     - $ git merge master
