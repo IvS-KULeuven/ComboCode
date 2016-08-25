@@ -29,7 +29,7 @@ from cc.tools.io import DataIO, Atmosphere
 from cc.tools.numerical import Interpol
 from cc.modeling.objects import Molecule
 from cc.modeling.objects import Transition
-from cc.modeling.tools import ColumnDensity,CodeIO
+from cc.modeling.tools import ColumnDensity
 from cc.modeling.codes import MCMax
 
 
@@ -987,7 +987,7 @@ class Star(dict):
         else:
             kws['keyword'] = 'N(H2)'
         
-        nmol = CodeIO.getGastronoomOutput(filename=fgr_file,return_array=1,\
+        nmol = DataIO.getGastronoomOutput(filename=fgr_file,return_array=1,\
                                           **kws)
                                               
         return nmol
@@ -1010,7 +1010,7 @@ class Star(dict):
         
         if not self['LAST_GASTRONOOM_MODEL']: return empty(0)
         fgr_file = self.getCoolFn(**kwargs)
-        vel = CodeIO.getGastronoomOutput(filename=fgr_file,keyword='VEL',\
+        vel = DataIO.getGastronoomOutput(filename=fgr_file,keyword='VEL',\
                                          return_array=1)
         return vel
         
@@ -1032,7 +1032,7 @@ class Star(dict):
         
         if not self['LAST_GASTRONOOM_MODEL']: return empty(0)
         fgr_file = self.getCoolFn(**kwargs)
-        temp = CodeIO.getGastronoomOutput(filename=fgr_file,keyword='TEMP',\
+        temp = DataIO.getGastronoomOutput(filename=fgr_file,keyword='TEMP',\
                                           return_array=1)
         return temp
     
@@ -1070,7 +1070,7 @@ class Star(dict):
         
         unit = str(unit).lower()
         fgr_file = self.getCoolFn(ftype=ftype,**kwargs)
-        rad = CodeIO.getGastronoomOutput(filename=fgr_file,keyword='RADIUS',\
+        rad = DataIO.getGastronoomOutput(filename=fgr_file,keyword='RADIUS',\
                                          return_array=1)
         #-- fgr_all gives radius in cm. Others in rstar. Convert others to cm
         if ftype != 'fgr_all':

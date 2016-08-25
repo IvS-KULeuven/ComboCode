@@ -7,17 +7,16 @@ Author: R. Lombaert
 
 """
 
-import os
+import os, sys
 import subprocess
 from glob import glob
+import numpy as np
 from scipy import array,zeros
 from PyPDF2 import PdfFileMerger
 from matplotlib import mlab
-import numpy as np
-from numpy import array
+
 import cc.path
-<<<<<<< HEAD
-=======
+
 
 
 def findKey(i,data,key):
@@ -147,8 +146,31 @@ def getGastronoomOutput(filename,keyword='RADIUS',begin_index=0,\
     
     @return: The requested data from the GASTRoNOoM output
     @rtype: list/array
->>>>>>> master
-   
+    """
+  
+    keyword = keyword.upper()
+    data = readFile(filename,' ')
+    data_col_1 = [d[0] for d in data]
+    key_i = findString(begin_index,data_col_1)
+    key_j = findFloat(key_i,data_col_1)
+    if not key_index:
+        keys = ' '.join([' '.join(d).replace('\n','') 
+                         for d in data[key_i:key_j]]).split()
+        key_index = [key[:len(keyword)].upper() for key in keys].index(keyword)
+    #- Data never start on the first line
+    #- Starting from 1st float, all floats into list, until EOF OR end of block
+    data_i = key_j
+    #- Data may end at EOF or before a new block of data (sphinx fi)
+    data_j = findString(data_i,data_col_1)     
+    if return_array:
+        dd = array([float(line[key_index].replace('D+','E+').replace('D-','E-')) 
+                    for line in data[data_i:data_j]])
+        return dd
+    else:   
+        return [float(line[key_index].replace('D+','E+').replace('D-','E-')) 
+                for line in data[data_i:data_j]]
+    
+    
     
 def getInputData(path=cc.path.usr,keyword='STAR_NAME',filename='Star.dat',\
                  remove_underscore=0,make_float=1,start_index=1,rindex=None):
