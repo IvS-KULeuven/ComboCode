@@ -578,7 +578,7 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
     '''
     
     print '*******************************************'
-    if theory and filename <> None:
+    if theory and not filename is None:
         d = DataIO.readCols(filename=filename)
         vel = d[0]
         flux = d[1]
@@ -641,7 +641,7 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
     
     #-- Do the fit of the line again, including an extra gaussian if 
     #   irregularities are present. 
-    if include_gauss <> None:
+    if not include_gauss is None:
         #-- fit soft para model + gaussian
         #   1. Set up new soft parabola for several guesses of vexp
         ivexps = list(ivexps)
@@ -747,12 +747,12 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
           %trapz(y=flux_first,x=velsel))
     print('I_mb (SP -- final guess): %f'\
           %fi_final)
-    if include_gauss <> None:
+    if not include_gauss is None:
         fitted_flux = mymodel.evaluate(velsel)
         print('I_mb (SP + Gauss fit): %f'\
               %trapz(y=fitted_flux,x=velsel))
     print('Final v_exp guess: %.4f +/- %.4f km/s'%(vexp,evexp))
-    if gamma <> None:
+    if not gamma is None:
         print('Final gamma guess: %.4f +/- %.4f'%(gamma,egamma))
     print('Final vlsr guess: %.4f +/- %.4f'%(fvlsr,fevlsr))
     print('Final peak Tmb guess at v_lsr: %.4f +/- %.4f K'%(peak,epeak))
@@ -768,7 +768,7 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
         vel_highres = np.linspace(velsel[0],velsel[-1],10000)
         flux_final_highres = finalfit.evaluate(vel_highres)
         flux_first_highres = firstguess.evaluate(vel_highres)    
-        if include_gauss <> None:
+        if not include_gauss is None:
             flux_full_highres = mymodel.evaluate(vel_highres)
         if show: 
             plt.step(velsel,fluxsel,'-r',where='mid',lw=3,\
@@ -777,7 +777,7 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
                      label='First guess')
             plt.plot(vel_highres,flux_final_highres,'g--',lw=3,\
                      label='Improved guess')
-            if include_gauss <> None:
+            if not include_gauss is None:
                 plt.plot(vel_highres,flux_full_highres,'g-',lw=2,\
                          label='Full fit (including Gaussian)')
             leg = plt.legend(loc='best',fancybox=True)
@@ -790,7 +790,7 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
             line_types = ['-r','-b',]
             x = [velsel,vel_highres]
             y = [fluxsel,flux_final_highres]
-            if include_gauss <> None:
+            if not include_gauss is None:
                 line_types.append('g--')
                 x.append(vel_highres)
                 y.append(flux_full_highres)
@@ -827,7 +827,7 @@ def fitLP(filename=None,lprof=None,theory=0,show=0,cfg='',convert_ms_kms=0,\
     #   making the functions separately and setting pars, then using fit.Model
     results['fitprof'] = (do_gauss and 'gauss' or 'soft_parabola',\
                           list(finalfit.get_parameters()[0]))
-    if include_gauss <> None:
+    if not include_gauss is None:
         results['fitabs'] = ('gauss',list(gaussian.get_parameters()[0]))
     else:
         results['fitabs'] = None

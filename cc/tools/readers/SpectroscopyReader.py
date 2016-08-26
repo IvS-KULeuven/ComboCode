@@ -11,6 +11,7 @@ import numpy as np, collections
 
 from cc.tools.io import DataIO
 from cc.tools.readers.Reader import Reader
+from cc.data import Data
 
 
 class SpectroscopyReader(Reader):
@@ -77,9 +78,11 @@ class SpectroscopyReader(Reader):
         if index is None:
             return self[ptype][prop]
             
-        #-- Prefer explicit selection on indexing. Doesn't assume indexing in 
-        #   files goes 1 -> i_max 
-        selection = self[ptype][prop][np.in1d(self[ptype]['index'],index)]
+        #-- Prefer explicit selection on indexing. Using indexing instead of 
+        #   np.in1d to maintain the original shape of index. Assumes indexing in
+        #   files goes 1 -> i_max. This is normally the case. Much faster. 
+        #selection = self[ptype][prop][np.in1d(self[ptype]['index'],index)]
+        selection = self[ptype][prop][Data.arrayify(index)-1]
         
         #-- If a non-iterable object was passed as index, return just one value
         #   if only one value was indeed found. Otherwise, just return as is.

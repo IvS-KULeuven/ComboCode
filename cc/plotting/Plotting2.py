@@ -471,7 +471,7 @@ def plotTiles(data,cfg='',**kwargs):
         [these_data.append([xi,yi,lp,xerri,yerri]) 
              for xi,yi,lp,xerri,yerri in zip(ddict['x'],ddict['y'],line_types,\
                                              ddict['xerr'],ddict['yerr'])
-             if list(yi) and yi <> None]
+             if list(yi) and not yi is None]
         for index,(xi,yi,lp,xerri,yerri) in enumerate(these_data):
             ls,col = splitLineType(lp)
             if index in ddict['histoplot']:
@@ -483,7 +483,7 @@ def plotTiles(data,cfg='',**kwargs):
                 leg[0].set_dashes([15,5])
             if '.-' in lp or '-.' in lp:
                 leg[0].set_dashes([15,5,2,5])
-            if xerri <> None: 
+            if not xerri is None: 
                 try:
                     test = len(xerri[0])
                     lls = xerri[0]
@@ -500,12 +500,12 @@ def plotTiles(data,cfg='',**kwargs):
                                      ecolor=col,\
                                      lolims=ll==0,\
                                      uplims=ul==0,\
-                                     fmt=None,\
+                                     fmt="none",\
                                      capsize=5,\
                                      markeredgewidth=markeredgewidth,\
                                      elinewidth=linewidth/2.,\
                                      barsabove=True)#,zorder=zo,alpha=alph)
-            if yerri <> None:
+            if not yerri is None:
                 try:
                     test = len(yerri[0])
                     lls = yerri[0]
@@ -522,7 +522,7 @@ def plotTiles(data,cfg='',**kwargs):
                                      ecolor=col,\
                                      lolims=ll==0,\
                                      uplims=ul==0,\
-                                     fmt=None,\
+                                     fmt="none",\
                                      capsize=5,\
                                      markeredgewidth=markeredgewidth,\
                                      elinewidth=linewidth/2.,\
@@ -584,13 +584,13 @@ def plotTiles(data,cfg='',**kwargs):
             pl.axes(ax) 
             if transparent:
                 ax.patch.set_alpha(0.6)
-            if ddict['xmin'] <> None:
+            if not ddict['xmin'] is None:
                 pl.xlim(xmin=ddict['xmin']) # min([min(xi) for xi in x])
-            if ddict['xmax'] <> None:
+            if not ddict['xmax'] is None:
                 pl.xlim(xmax=ddict['xmax'])
-            if ddict['ymin'] <> None:
+            if not ddict['ymin'] is None:
                 pl.ylim(ymin=ddict['ymin']) # min([min(xi) for xi in x])
-            if ddict['ymax'] <> None:
+            if not ddict['ymax'] is None:
                 pl.ylim(ymax=ddict['ymax'])
     if filename: filename = saveFig(filename,extension,landscape)
     if show_plot or filename is None:
@@ -767,7 +767,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                       
                       (default: [])
     @type keytags: list[string] 
-    @keyword twiny_keytags: as keytags, but only if twinyaxis <> None.
+    @keyword twiny_keytags: as keytags, but only if not twinyaxis is None.
                           
                             (default: [])
     @type twiny_keytags: list[string] 
@@ -1223,7 +1223,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
         twinyaxis = None
         xmin = None
         xmax = None
-    if twinyaxis <> None:
+    if not twinyaxis is None:
         twiny_line_types,extra_line_types = setLineTypes(len(twiny_x),\
                                                          twiny_line_types,\
                                                          extra_line_types)
@@ -1251,7 +1251,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                  ms,\
                  zo,\
                  alph,\
-                 xerri <> None \
+                 not xerri is None \
                     and (type(xerri[0]) is not types.ListType \
                         and list(xerri[abs(xi-(xi[0]+(2*(i+1)-1)*delta/2.))\
                                        <= delta/2.]) \
@@ -1259,7 +1259,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                                         <= delta/2.])
                             for xerrii in xerri]) \
                     or None,\
-                 yerri <> None \
+                 not yerri is None \
                     and (type(xerri[0]) is not types.ListType \
                         and list(yerri[abs(xi-(xi[0]+(2*(i+1)-1)*delta/2.))\
                                        <= delta/2.]) \
@@ -1290,7 +1290,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                 leg.set_dashes([8,3])
             if '.-' in lp or '-.' in lp:
                 leg.set_dashes([8,3,2,3])
-            if xerri <> None: 
+            if not xerri is None: 
                 try:
                     test = len(xerri[0])
                     lls = xerri[0]
@@ -1307,12 +1307,12 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                                      ecolor=col,\
                                      lolims=ll==0,\
                                      uplims=ul==0,\
-                                     fmt=None,\
+                                     fmt="none",\
                                      capsize=xerr_capsize,\
                                      markeredgewidth=xerr_markeredgewidth,\
                                      elinewidth=xerr_linewidth,\
                                      barsabove=True,zorder=zo,alpha=alph)
-            if yerri <> None:
+            if not yerri is None:
                 try:
                     test = len(yerri[0])
                     lls = yerri[0]
@@ -1329,7 +1329,7 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                                      ecolor=col,\
                                      lolims=ll==0,\
                                      uplims=ul==0,\
-                                     fmt=None,\
+                                     fmt="none",\
                                      capsize=yerr_capsize,\
                                      markeredgewidth=yerr_markeredgewidth,\
                                      elinewidth=yerr_linewidth,\
@@ -1431,13 +1431,13 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
         pl.axes(ax) 
         if transparent:
             ax.patch.set_alpha(0.5)
-        if ymin <> None:
+        if not ymin is None:
             pl.ylim(ymin=ymin) # min([min(xi) for xi in x])
-        if ymax <> None:
+        if not ymax is None:
             pl.ylim(ymax=ymax)
         
         #-- Add a twin y axis if needed.
-        if twinyaxis <> None:
+        if not twinyaxis is None:
             sub2 = sub.twinx()
             twindata = []
             [twindata.extend([xi,yi,lp])
@@ -1470,9 +1470,9 @@ def plotCols(x=[],y=[],xerr=[],yerr=[],cfg='',**kwargs):
                 tl.set_markeredgewidth(1.2)
         
         #-- Set the x min max after the twin axis was added.
-        if xmin <> None:
+        if not xmin is None:
             pl.xlim(xmin=xmin) # min([min(xi) for xi in x])
-        if xmax <> None:
+        if not xmax is None:
             pl.xlim(xmax=xmax)
             
         #-- Set the keytags. Only done for the first subplot in case a split 
@@ -1641,18 +1641,28 @@ def setLineLabels(line_labels,line_label_spectrum,fontsize_label,y_pos,\
         
     ''' 
     
+    #-- Sort the indices, so that the order is always ascending. For line labels
+    #   in spectroscopy/molecule identification this means the order follows
+    #   Molecule.dat for the molecules, followed by fn_trans_marker labels and
+    #   undetected labels. This is also the order to follow when defining your
+    #   own line_label_types.
+    all_indices = sorted(set([index for label,x_pos,index,vib in line_labels]))
+
+    #-- Set the line types for these indices
     extra_ls = getLineTypes(black=not line_label_color)
     ltd = dict()
-    all_indices = list(set([index for label,x_pos,index,vib in line_labels]))
     for ii,this_i in enumerate(all_indices): 
         if len(all_indices) != len(line_label_types):
             ltd[this_i] = extra_ls[ii]
         else:
             ltd[this_i] = line_label_types[ii]
     
+    #-- Select labels based on the x-range.
     allowed_labels = [label 
                       for label in line_labels 
                       if label[1] <= xmax and label[1] >= xmin]
+                      
+    #-- Set the line label tags if requested
     if not no_line_label_text:
         for l,(label,x_pos,index,vib) in enumerate(allowed_labels):
             if line_label_spectrum == 2:
@@ -1679,6 +1689,8 @@ def setLineLabels(line_labels,line_label_spectrum,fontsize_label,y_pos,\
                         rotation='vertical',\
                         fontsize=fontsize_label,\
                         color=splitLineType(ltd[index])[1])
+                        
+    #-- Draw the line label lines if requested
     if line_label_lines:
         for label,x_pos,index,vib in allowed_labels:
             if line_label_dashedvib and vib \
@@ -1691,6 +1703,7 @@ def setLineLabels(line_labels,line_label_spectrum,fontsize_label,y_pos,\
                        c=splitLineType(ltd[index])[1],\
                        linewidth=linewidth,zorder=-100)
                        
+   
     
 def getLineTypes(black=0):
 
@@ -1707,7 +1720,8 @@ def getLineTypes(black=0):
     
     '''    
     
-    linestyles = ['-','--',':','x','o',':','s','.','-.','+','h','d','|','p','2']
+    linestyles = ['-','--','-.',':','x','o',':','s','.','+','h','d','|','p','2']
+    linestyles += linestyles + linestyles
     colors = ['k'] if black else ['r','b','k','g','m','y','c']
     return [ls + col for ls in linestyles for col in colors ]
     

@@ -282,7 +282,7 @@ def reduceArray(arr,stepsize,cutoff=None,mode='average'):
     arr, stepsize, mode = array(arr), int(stepsize), str(mode).lower()
 
     if mode == 'remove':
-        if cutoff <> None:
+        if not cutoff is None:
             cutoff = float(cutoff)
             arrkeep = arr[arr<=cutoff]
             arrsel = arr[arr>cutoff]
@@ -495,7 +495,7 @@ def selectArray(flux,wave=None,wmin=None,wmax=None):
 
     flux = array(flux)
     fsel = flux[isfinite(flux)]
-    if wave <> None:
+    if not wave is None:
         wave = array(wave)
         wsel = wave[isfinite(flux)]
         if wmin is None:

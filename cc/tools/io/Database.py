@@ -472,7 +472,7 @@ def coolingDbRetrieval(path_gastronoom,r_outer=None):
         input_dict = dict([(k,v) for k,v in input_dict.items() 
                                  if k in coolkeys])
         cool_db[ml_id] = input_dict
-        if r_outer <> None:
+        if not r_outer is None:
             cool_db[ml_id]['R_OUTER'] = r_outer
     cool_db.sync()
     

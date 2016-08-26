@@ -368,7 +368,7 @@ class Vic():
                 elif line.find('do wsub -A dummy -t 1-8 -batch') != -1:
                     new_line = line.replace('vic_job_example.sh',\
                                             os.path.split(job[0])[1])   
-                    if self.credits_acc <> None:
+                    if not self.credits_acc is None:
                         new_line = new_line.replace('-A dummy',\
                                                     '-A %s'%self.credits_acc)
                     else:

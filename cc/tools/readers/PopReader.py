@@ -7,6 +7,7 @@ Author: R. Lombaert and M. van de Sande
 
 """
 
+import os, collections
 import numpy as np
 from cc.tools.io import DataIO
 from cc.tools.readers.Reader import Reader
@@ -50,6 +51,10 @@ class PopReader(Reader):
         Additional args/kwargs are used for the dict creation of the parent of 
         Reader.
         
+        Note that the filename can be given as None, or may not be an existing
+        file. In this case, nothing is read, and the user can set the impact 
+        parameter and the level populations manually with setP and setPop.
+        
         @param fn: The filename of the level populations. 
         @type fn: str
         
@@ -57,8 +62,12 @@ class PopReader(Reader):
         
         super(PopReader,self).__init__(fn,*args,**kwargs)
         
+        #-- Initialise the pars/pop dict entries
+        self['pars'] = {}
+        self['pop'] = {}
+        
         #-- Only call the read method if the class is not inheriting PopReader
-        if self.__class__ == PopReader: 
+        if self.__class__ == PopReader and os.path.isfile(self.fn):
             self.read()
             
     
@@ -79,15 +88,59 @@ class PopReader(Reader):
         
         #-- Save impact parameter grid (already increasing), and create pop dict
         self['p'] = data[:,0]
-        self['pop'] = dict()
         
         #-- Loop over the level indices. Note 1-based indexing! Column with 
         #   index 0 is impact parameter.
-        self['pars'] = {'ny':len(data[0])-1}
+        self['pars']['ny'] = len(data[0])-1
         for i in range(1,self['pars']['ny']+1):
             self['pop'][i] = data[:,i]
     
     
+    
+    def setNY(self,ny): 
+    
+        '''
+        Set the number of levels. Usually the highest level index.
+        
+        @param ny: The number of levels
+        @type ny: int
+        
+        '''
+        
+        self['pars']['ny'] = ny
+        
+    
+    
+    def setP(self,p):
+        
+        '''
+        Instead of reading the impact parameters, set them explicitly. 
+        
+        @param p: the impact parameters (cm)
+        @type p: array
+        
+        '''
+    
+        self['p'] = p
+        
+    
+    
+    def setPop(self,index,n):
+        
+        '''
+        Instead of reading the populations, set them here per level.
+        
+        @param index: The level index
+        @type index: int
+        @param n: The level populations as a function of impact parameter for 
+                  level with index
+        @type n: array
+        
+        '''
+        
+        self['pop'][index] = n
+        
+        
     
     def getP(self):
     
@@ -106,7 +159,7 @@ class PopReader(Reader):
     def getPop(self,index=None):
     
         '''
-        Return the level populations for a given index or irrespective of index.
+        Return the level populations for a set of level indices.
         
         Note that this is the level index, not lower J. For CO, the J quantum 
         number would be index-1. 
@@ -114,6 +167,14 @@ class PopReader(Reader):
         Note that the array approach is not used because that makes indexing 
         (0-based for python, 1-based for fortran) more confusing and prone to
         mistakes. Hence, a dictionary explicity index-key approach is preferred.
+        This is internal only. 
+        
+        If an index is given as an iterable, an array is still returened
+        with shape = (len(index),len(self['p'])) for ease of use. This includes
+        when all level populations are requested, i.e. when index is None. 
+        
+        If one wants to use the dictionary itself, self['pop'] is of course 
+        available.
         
         @keyword index: The index of the level, if None all levels are returned
                         as a dict. Each level is then accessed through 
@@ -124,14 +185,17 @@ class PopReader(Reader):
         
         @return: The level populations in the form of a 1d or 2d array, 
                  depending if a single level or multiple levels are requested.
-        @rtype: array/dict
+        @rtype: array
         
         '''
         
         if index is None: 
-            return self['pop']
-        
-        return self['pop'][index]
+            return np.array([self['pop'][i] for i in self.getLI()])
+        elif isinstance(index,collections.Iterable) \
+                and not isinstance(index,str):
+            return np.array([self['pop'][i] for i in index])
+        else:
+            return self['pop'][int(index)]
     
     
     

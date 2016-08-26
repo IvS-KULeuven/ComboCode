@@ -650,7 +650,7 @@ def makeParamPlot(sg,xpar,ypar,expar=[],eypar=[],xratios=[],yratios=[],\
         s['EC'] = (current_par,\
                     tuple([s[par]
                             for par in extra_par
-                            if s[par] <> None]))
+                            if not s[par] is None]))
     ecl = sorted(list(set([s['EC'] for s in sg])))
     ecl_num = []
     for ec in ecl:
@@ -1489,7 +1489,7 @@ def selectDataSG(sg,par,epar,par_co=None,edist=[]):
     edist = array(edist)
     if isinstance(par,str):
         vals = array([s[par] for s in sg])
-        if par_co <> None:
+        if not par_co is None:
             if par_co[0] is None:
                 par_co[0] = min(vals)
             if par_co[1] is None:
@@ -1498,7 +1498,7 @@ def selectDataSG(sg,par,epar,par_co=None,edist=[]):
         if par == 'MDOT_GAS':
             evals = np.ones(len(sg))*np.log10(3.)/3.
             vals = np.log10(vals)
-            if par_co <> None: par_co = np.log10(par_co)
+            if not par_co is None: par_co = np.log10(par_co)
             vals_log = 1
         else:
             evals = epar
@@ -1629,7 +1629,7 @@ def corrSG(sg,xpar,ypar,expar=[],eypar=[],xratio=None,yratio=None,\
     
     #-- The x-ratio is set here. 
     if xratio is None or xratio == ypar:
-        if xratio <> None: ep['y_for_xratio'] = 1
+        if not xratio is None: ep['y_for_xratio'] = 1
         xrat, exrat, ep['par2_log'] = array([]),array([]),0
     else:
         xrat, exrat, dummy, ep['par2_log'] = selectDataSG(sg,xratio,exratio)
@@ -1643,7 +1643,7 @@ def corrSG(sg,xpar,ypar,expar=[],eypar=[],xratio=None,yratio=None,\
     
     #-- The y-ratio is set here.
     if yratio is None or yratio == xpar:
-        if yratio <> None: ep['x_for_yratio'] = 1
+        if not yratio is None: ep['x_for_yratio'] = 1
         yrat, eyrat, ep['line2_log'] = array([]),array([]),0
     else:
         yrat, eyrat, dummy, ep['line2_log'] = selectDataSG(sg,yratio,eyratio)

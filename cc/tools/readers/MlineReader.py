@@ -105,6 +105,10 @@ class MlineReader(MolReader,PopReader):
         Note that the level indexing is J + 1 for simple molecules like CO. For
         any molecule, the 0-energy level has index 1!
         
+        Note also that the vel in the ml1 file is the velocity profile divided 
+        by the stochastic velocity. (see source_common/vel.f) The velocity 
+        profile saved here is the real velocity profile, corrected for this. 
+        
         '''
         
         #-- Molecule settings are in ml1
@@ -147,6 +151,7 @@ class MlineReader(MolReader,PopReader):
         colnames = ['p_rstar','vel','nmol','nh2','amol','Tg','Td']
         d4 = np.genfromtxt(fn,names=colnames,\
                            skip_header=nhdr,max_rows=d1['n_impact'])[::-1]
+        d4['vel'] *= d1['vsto']
         self['props'] = d4
         
         #-- Add a convenient reference to the instance dict so PopReader and

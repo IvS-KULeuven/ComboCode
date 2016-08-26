@@ -132,7 +132,7 @@ class Pacs(Instrument):
         self.data_delta_list = []
         self.redo_convolution = redo_convolution
 
-        if self.path <> None:
+        if not self.path is None:
             #-- Convenience path
             cc.path.gout = os.path.join(cc.path.gastronoom,self.path)
             #-- Check the path for the PACS database if a model folder is known
@@ -496,7 +496,6 @@ class Pacs(Instrument):
         '''
         
         if star['LAST_PACS_MODEL']:
-            print star['LAST_PACS_MODEL']
             return self.db[star['LAST_PACS_MODEL']]['filenames']
         else:
             #selection = [(k,v) for k,v in self.db.items() 

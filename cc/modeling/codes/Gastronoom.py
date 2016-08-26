@@ -222,7 +222,7 @@ class Gastronoom(ModelingSession):
         
         DataIO.writeFile(filename=os.path.join(cc.path.gout,'models',new_id,\
                          'cooling_id.log'),input_lines=[self.model_id])
-        if molec_id <> None:
+        if not molec_id is None:
             DataIO.writeFile(filename=os.path.join(cc.path.gout,'models',\
                              new_id,'mline_id.log'),input_lines=[molec_id])
 
@@ -246,7 +246,7 @@ class Gastronoom(ModelingSession):
             self.command_list[par] = self.command_list[par].\
                     replace(self.command_list[par][self.command_list[par].\
                     find('model_'):self.command_list[par].find('model_')+25],\
-                    model_id <> None and model_id or self.model_id,2)
+                    not model_id is None and model_id or self.model_id,2)
         
 
 
@@ -273,10 +273,6 @@ class Gastronoom(ModelingSession):
             del self.sph_db[model_id]
         except KeyError:
             pass
-        #if self.pacs <> None:
-            #for pacs_id in [k for k,v in self.pacs_db.items() 
-                              #if v['cooling_id'] == model_id]:
-                #del self.pacs_db[pacs_id]  
 
 
 
@@ -443,7 +439,7 @@ class Gastronoom(ModelingSession):
                         cks = ['OUTER_R_MODE','CHANGE_DUST_TO_GAS_FOR_ML_SP',\
                                'DUST_TO_GAS_CHANGE_ML_SP','STARFILE',\
                                'USE_STARFILE','USE_NO_MASER_OPTION',\
-                               'USE_MASER_IN_SPHINX','FEHLER','N_FREQ','XDEX',\
+                               'USE_MASER_IN_SPHINX','FEHLER','N_FREQ',\
                                'START_APPROX','USE_FRACTION_LEVEL_CORR',\
                                'FRACTION_LEVEL_CORR','NUMBER_LEVEL_MAX_CORR']
                         if self.cCL(this_list=molec.makeDict(),\
@@ -537,7 +533,7 @@ class Gastronoom(ModelingSession):
                                 modellist=db_trans_dict,code='sphinx'):
                         trans.setModelId(trans_id)
                         self.trans_bools.append(True)
-                        if self.vic <> None \
+                        if not self.vic is None \
                                 and db_trans_dict.has_key('IN_PROGRESS'):
                             self.vic.addTransInProgress(trans)
                             print 'Sphinx model is currently being '+\
@@ -708,11 +704,11 @@ class Gastronoom(ModelingSession):
         #-- Collect H2O and CO molecule definitions for inclusion in the 
         #   cooling inputfile. Also includes abundance_filename info for H2O if
         #   requested
-        if star.getMolecule('1H1H16O') <> None:
+        if not star.getMolecule('1H1H16O') is None:
             h2o_dict = star.getMolecule('1H1H16O').makeDict()
         else:            
             h2o_dict = Molecule('1H1H16O',45,45,648,50).makeDict()
-        if star.getMolecule('12C16O') <> None:
+        if not star.getMolecule('12C16O') is None:
             co_dict = star.getMolecule('12C16O').makeDict()
         else:
             co_dict = Molecule('12C16O',61,61,240,50).makeDict()
@@ -861,7 +857,7 @@ class Gastronoom(ModelingSession):
             #- at least one molecule was successfully calculated, so start  
             #- Sphinx, hence if vic is requested, the cooling model_id can now  
             #- be added to the models list
-            if self.vic <> None and self.sphinx: 
+            if not self.vic is None and self.sphinx: 
                 #- add the command list to the vic models list
                 self.vic.addModel(self.model_id,self.command_list)
             
@@ -892,7 +888,7 @@ class Gastronoom(ModelingSession):
                                    [trans.getModelId()][str(trans)]
                     self.sph_db.addChangedKey(self.model_id)
                     trans.setModelId('')
-                elif self.vic <> None:
+                elif not self.vic is None:
                     #- add transition to the vic translist for this cooling id
                     self.vic.addTrans(trans)
                 elif self.recover_sphinxfiles: 
@@ -941,10 +937,10 @@ class Gastronoom(ModelingSession):
                                                             self.trans_list) 
                                    if not boolean])  \
                               == set([''])
-        if self.vic <> None and self.sphinx and (False in self.trans_bools \
+        if not self.vic is None and self.sphinx and (False in self.trans_bools \
               and not mline_not_available):
             self.vic.queueModel()
-        elif self.vic <> None and self.sphinx and (False not in self.trans_bools\
+        elif not self.vic is None and self.sphinx and (False not in self.trans_bools\
               or mline_not_available):
             self.vic.reset()
             

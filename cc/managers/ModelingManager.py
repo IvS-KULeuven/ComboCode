@@ -152,7 +152,7 @@ class ModelingManager():
         if self.mcmax:
             mcmax_db_path = os.path.join(cc.path.mout,'MCMax_models.db')
             self.mcmax_db = Database.Database(db_path=mcmax_db_path)
-        if self.vic <> None:
+        if not self.vic is None:
             self.vic.setSphinxDb(self.sph_db)
         
         

@@ -1,15 +1,15 @@
-#-- Coordinate grids: radius, grain size (can be single value), wavelength
+#-- radius, grain size (can be single value), wavelength. (See cc.tools.numerical.Gridding.makeGrid)
 r = [2e13,5e15,1000,1]
 a = 0.1e-4
 l = [0.1e-4,1000e-4,1000,1]
 
 #-- Set basic profiles: gas velocity, initial temperature, opacity, mass loss, dust temperature
-v         = [vbeta,2e13,2.5e5,15e5,1.0]
-Tinit     = [Teps,1500.,2e13,0.6]
-opac      = [read_opacity,AMCDHSPREI,1,5]
+v         = vbeta r0=2e13 v0=2.5e5 vinf=15e5 beta=1 vi_mode=constant
+Tinit     = Teps T0=1500. r0=2e13 epsilon=0.6 inner=1
+opac      = read_opacity species=AMCDHSPREI index=1 k=5 ext=3
 mdot      = 1e-5
 mdot_dust = 1e-8
-Td        = [Tdust,2500.,1e13,1]
+Td        = Tdust T0=2500. r0=1e13 s=1
 
 #-- Stellar parameters: Tstar, rstar, Ltype
 Tstar = 2500.
@@ -20,10 +20,11 @@ Ltype = blackbody
 fH  = 0.0
 fHe = 0.0
 
-#-- Grain specific density, porosity, and size distribution (only if a.size > 1)
+#-- Grain specific density, porosity, size distribution and sputtering drift limit (only if a.size > 1)
 sd  = 1.8
 P   = 0.0
 GSD = MRN
+w_sputter = 20e5
 
 #-- Cooling and heating terms. Adiabatic cooling always included. Hdt/Hdg heating mode (gs2014 or Classical). adiabatic coefficient (value, h2, or h2_mcp)
 cterms = []
@@ -31,13 +32,16 @@ hterms = []
 heatmode = classical
 gamma = h2_mcp
 
-#-- Line Cooling parameters: code/molecules/collis/pop files
-rtcode = ali
-molecules = []
-collis = []
-pop = []
-
 #-- Heating parameters: thermal term in drift (none,kwok,mean,rms,prob), sticking coefficient
 w_thermal = none
 alpha = 0.0
+pe_method = draine Kpe=1e-26
+cr_method = standard
+h2_method = groenewegen
 
+#-- Line Cooling parameters: Only included if lc in cterms. molecule contains name and abundance info
+rtcode = ali
+molecule = 12C16O np.loadtxt fname=/Users/robinl/Projects/LineCooling/theo_prototype/waql.par usecols=[1,4] skiprows=9 unpack=1
+#molecule = 1H1H16O 1e-4
+collis = []
+pop = []

@@ -16,6 +16,42 @@ from cc.modeling.profilers import Profiler
 
 
 
+def mdot_step(r,rate,r0,rate_inner=0.0):
+
+    '''
+    Step function for the mass-loss rate. 
+    
+    When used for the dust mass-loss rate, requires the inner radius of the
+    dust shell to be given as r0.
+    
+    Can be used also for the gas mass-loss rate with a step anywhere in the wind
+    This is not a smooth transition.
+    
+    At r < r0: rate_inner, at r >= r0: rate.
+    
+    @param r: r grid (can be array or float)
+    @type r: array/float
+    @param rate: The dust mass-loss rate from r0 onward
+    @type rate: float
+    @param r0: The dust condensation radius
+    @type r0: float
+
+    @keyword rate_inner: The mass-loss rate in the inner region at r<r0. Default
+                         typically used for the dust mass-loss rate, with r0 the
+                         condensation radius.
+    
+                         (default: 0.0)
+    @type rate_inner: float
+    
+    @return: The dust mass-loss rate profile as a function of r
+    @rtype: array
+    
+    '''
+    
+    return Profiler.step(r,0,rate,r0)
+
+
+
 class Mdot(Profiler.Profiler):
 
     '''

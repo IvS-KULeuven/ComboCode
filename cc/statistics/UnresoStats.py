@@ -135,7 +135,7 @@ class UnresoStats(Statistics):
                                      for t in self.sample_trans[fn]]
             
             self.__setPeakRatios(ifn,fn)
-            if inst.linefit <> None:
+            if not inst.linefit is None:
                 self.__setIntRatios(ifn,fn)
         
         print '***********************************'
@@ -270,7 +270,7 @@ class UnresoStats(Statistics):
                 self.derr_bands[fn].append(np.nan)
                 self.blends_bands[fn].append(None)
             else: 
-                if blends <> None:
+                if not blends is None:
                     #-- Take abs in case dintint is already blend due to FWHM
                     dintint = -1*abs(dintint)
                 self.dint_bands[fn].append(dintint)
@@ -311,7 +311,7 @@ class UnresoStats(Statistics):
                         #   was made negative to indicate blend presence.
                         blendlines = [star.getTransition(t) 
                                       for t in blend
-                                      if star.getTransition(t) <> None]
+                                      if not star.getTransition(t) is None]
                         total_mint = sum([t.getIntIntIntSphinx() 
                                           for t in blendlines])
                         self.mint_bands[fn][this_id].append(total_mint)
@@ -391,7 +391,7 @@ class UnresoStats(Statistics):
             #      (was a negative model flux value: We don't want that)
             #      Negative ratios are possible, in case of ratio lower limits 
             this_id = star['LAST_%s_MODEL'%inst.instrument.upper()]
-            self.peak_ratios[fn][this_id] = [m <> None and m/d or None
+            self.peak_ratios[fn][this_id] = [not m is None and m/d or None
                                              for m,d in zip(central_mflux,\
                                                             central_dflux)]
             
@@ -462,7 +462,7 @@ class UnresoStats(Statistics):
                           for fn in filenames
                           for v,v2 in zip(getattr(self,sel_type)[fn],\
                                           getattr(self,data_type)[fn])
-                          if v <> None \
+                          if not v is None \
                             and ((return_negative and v < 0) \
                                  or (not return_negative and v > 0))])
 
@@ -471,7 +471,7 @@ class UnresoStats(Statistics):
                           for fn in filenames
                           for v,v2 in zip(getattr(self,sel_type)[fn][this_id],\
                                           getattr(self,data_type)[fn])
-                          if v <> None \
+                          if not v is None \
                             and ((return_negative and v < 0) \
                                  or (not return_negative and v > 0))])
         
@@ -480,7 +480,7 @@ class UnresoStats(Statistics):
                           for fn in filenames
                           for v,v2 in zip(getattr(self,sel_type)[fn],\
                                           getattr(self,data_type)[fn][this_id])
-                          if v <> None \
+                          if not v is None \
                             and ((return_negative and v < 0) \
                                  or (not return_negative and v > 0))])
         
@@ -489,7 +489,7 @@ class UnresoStats(Statistics):
                           for fn in filenames
                           for v,v2 in zip(getattr(self,sel_type)[fn][this_id],\
                                           getattr(self,data_type)[fn][this_id])
-                          if v <> None \
+                          if not v is None \
                             and ((return_negative and v < 0) \
                                  or (not return_negative and v > 0))])
 
@@ -560,7 +560,7 @@ class UnresoStats(Statistics):
                     ratios_err.append(None)
                     lp.append('dg')
             
-            if inst.linefit <> None:
+            if not inst.linefit is None:
                 #-- If integrated intensities are available for the instrument, get
                 #   the integrated intensity ratios
                 this_wav_int = self.getRatios(sel_type='int_ratios',\

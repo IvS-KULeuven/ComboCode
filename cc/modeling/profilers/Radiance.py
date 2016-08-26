@@ -26,7 +26,6 @@ Author: R. Lombaert
 
 """
 
-import sys
 import numpy as np
 from astropy import constants as cst
 
@@ -125,14 +124,6 @@ class Radiance(Profiler.Profiler):
         if not (l is None or f is None): 
             raise ValueError('Both wavelength and frequency given. ' + \
                              'Define only one.')
-        
-        #-- If the function is given as a string, retrieve it from the local 
-        #   module, or from the Profiler module.
-        if isinstance(func,str):
-            try:
-                func = getattr(sys.modules[__name__],func)
-            except AttributeError:
-                func = getattr(Profiler,func)
         
         #-- If wavelength is given, calculate frequency and reverse order
         self.c = cst.c.cgs.value

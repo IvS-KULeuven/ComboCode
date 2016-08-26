@@ -144,7 +144,7 @@ class Star(dict):
         """    
             
         super(Star, self).__init__(example_star)
-        if extra_input <> None: self.update(extra_input)
+        if not extra_input is None: self.update(extra_input)
         self.Rsun = cst.R_sun.cgs.value         #in cm  Harmanec & Prsa 2011
         self.Msun = 1.98547e33      #in g   Harmanec & Prsa 2011
         self.Mearth = cst.M_earth.cgs.value   # in g
@@ -266,7 +266,7 @@ class Star(dict):
         '''
         
         #-- If already read, don't read again
-        if self.dust_list <> None: return
+        if not self.dust_list is None: return
     
         #-- Read the info
         dust_info = dict()
