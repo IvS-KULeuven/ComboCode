@@ -45,6 +45,11 @@ have to contact the authors of the codes.</li>
 * <b> MCMax:</b> M. Min (UvA, the Netherlands)
 * <b> MCP & ALI:</b> H. Olofsson & M. Maercker (Chalmers, Sweden) -- WiP 
 
+### The numerical modules written in ComboCode:
+* <b> EnergyBalance: </b> R. Lombaert, H. Olofsson & M. Maercker (Chalmers, Sweden)
+
+For the use of the EnergyBalance module, please contact one of the three authors listed here.
+
 ## Requirements
 Currently the code has been tested to run on Unix-based systems, more specifically Fedora and Mac OS X. In principle, any operating systems that fulfills the requirements listed below should be able to run ComboCode. The code runs ons machines with an internal memory of 8 GB, but less is likely fine as well. The memory requirements are primarily set by the numerical codes included in ComboCode.
 

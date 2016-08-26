@@ -61,7 +61,7 @@ def prepInput(star,path,repl_str=''):
     #-- h2 number density
     nh2 = star.getGasNumberDensity(ftype='fgr_all')
     nh2 = nh2*10**6
-    if icutoff <> None: 
+    if not icutoff is None: 
         nh2 = Data.reduceArray(nh2,20,nh2[icutoff],'remove')
     fnnh2 = os.path.join(path,'nh2_%s.dat'%repl_str)
     DataIO.writeCols(fnnh2,[rad,nh2])
@@ -69,7 +69,7 @@ def prepInput(star,path,repl_str=''):
     #-- Velocity profile
     vel = star.getGasVelocity(ftype='fgr_all')
     vel = vel*10**-2
-    if icutoff <> None: 
+    if not icutoff is None: 
         vel = Data.reduceArray(vel,20,vel[icutoff],'remove')
     fnvel = os.path.join(path,'vg_%s.dat'%repl_str)
     DataIO.writeCols(fnvel,[rad,vel])

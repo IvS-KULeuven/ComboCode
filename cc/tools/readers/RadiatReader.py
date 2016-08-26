@@ -40,7 +40,7 @@ class RadiatReader(MolReader):
     
     '''
     
-    def __init__(self,fn,ny,nline,*args,**kwargs):
+    def __init__(self,fn,ny,nline=None,*args,**kwargs):
         
         '''
         Initializing an instance of the RadiatReader class.
@@ -54,7 +54,12 @@ class RadiatReader(MolReader):
         @type fn: string    
         @param ny: The number of levels included in the spectroscopy
         @type ny: int
-        @param nline: The number of transitions included in the spectroscopy
+        
+        @keyword nline: The number of transitions included in the spectroscopy.
+                        If default, nline isn't known and is determined from the
+                        radiat file itself.
+        
+                        (default: None)
         @type nline: int
         
         '''
@@ -86,6 +91,31 @@ class RadiatReader(MolReader):
         #-- Read the radiat file which is just one long column
         radiat = np.loadtxt(self.fn)
         
+        #-- If nline wasn't given, find out now. 
+        if self.nline is None:
+            nline = DataIO.findZero(0,radiat)
+            
+            #-- Check if this is a good nline. If not, there's likely no zeroes
+            #   (and the above function found the 0-energy level or an ny-0). 
+            if len(radiat) < 4*nline+2*self.ny:
+                #-- But there might still be zeroes for ny: this is always the 
+                #   first non-zero energy level
+                ienergy = DataIO.findNumber(nline,radiat)
+                
+                #-- Find the ny-zeroes, but this might be end of file: no zeroes
+                n0_nyi = DataIO.findZero(ienergy,radiat)
+                if n0_nyi == len(radiat):
+                    n0_ny = 0
+                
+                #-- Otherwise, continue. We do have ny-zeroes
+                else:   
+                    n0_nyj = DataIO.findNumber(n0_nyi,radiat)
+                    n0_ny = n0_nyj-n0_nyi
+                self.nline = (len(radiat)-2*(self.ny+n0_ny))/4
+            else:
+                self.nline = nline
+            self['pars']['nline'] = self.nline
+            
         #-- Prep the transition array
         dtype = [('index',int),('lup',int),('llow',int),('frequency',float),\
                  ('einsteinA',float)]

@@ -146,7 +146,7 @@ class ContinuumDivision(object):
         fn = Plotting2.plotCols(x=x,y=y,xmin=self.frmin*0.9,\
                                 xmax=self.frmax*1.1,keytags=keys,\
                                 key_location=(0.6,0.02),cfg=self.cfg)
-        if fn <> None:
+        if not fn is None:
             print 'Your Continuum Division plot can be found at '
             print fn
 

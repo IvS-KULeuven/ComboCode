@@ -433,6 +433,7 @@ class Sed(object):
         '''
         
         for dt,fn in zip(self.data_types,self.data_filenames):
+            print dt, fn
             data = DataIO.readCols(fn,nans=0)
             #-- Currently, error bars only available for these types of data.
             if 'Photometric' in dt or 'MIDI' in dt or 'Sacha' in dt: 

@@ -7,7 +7,6 @@ Author: R. Lombaert
 
 """
 
-import sys
 import numpy as np
 from astropy import constants as cst
 from astropy import units as u
@@ -143,14 +142,7 @@ class Distribution(Profiler.Profiler2D):
         
         '''
 
-        #-- If the function is given as a string, retrieve it from the local 
-        #   module, or from the Profiler module.
-        if isinstance(func,str):
-            try:
-                func = getattr(sys.modules[__name__],func)
-            except AttributeError:
-                func = getattr(Profiler,func)
-                
+        #-- Set min and max grain size if needed
         if not kwargs.has_key('a_min'):
             kwargs['a_min'] = a[0]
         if not kwargs.has_key('a_max'):
@@ -162,4 +154,69 @@ class Distribution(Profiler.Profiler2D):
         self.r = self.x
         self.a = self.y
         self.nd = self.z
+        
+        
+        
+    def __call__(self,*args,**kwargs):
+    
+        '''
+        Evaluate the profile function at a coordinate point.
+                
+        Passes all args and kwargs on the call to self.eval().
+        
+        @return: The profile evaluated at x and y
+        @rtype: array/float
+        
+        '''
+    
+        return self.eval(*args,**kwargs)
+    
+    
+    
+    def eval(self,x=None,y=None,warn=1,w_sputter=0.,w=np.empty(0)):
+        
+        '''
+        Evaluate the grain-size distribution function at a coordinate point.
+        
+        x/y can be any value or array. If func is an interpolation object, it is
+        in principle limited by the x/y-range of the interpolator. It is advised
+        not to extend much beyond the given x/y-range. 
+        
+        If one of the two variables is None, it is replaced by the default grid.
+        
+        Sputtering can be applied here by passing the drift array and the max
+        drift velocity to the call. Any grain sizes with a drift above w_sputter
+        will have their number density set to 0.
+                
+        @keyword x: The primary coordinate point(s). If None, the default 
+                    coordinate grid is used.
+        
+                    (default: None)
+        @type x: array/float
+        @keyword y: The secondary coordinate point(s). If None, the default 
+                    coordinate grid is used.
+        
+                    (default: None)
+        @type y: array/float
+        @keyword warn: Warn when extrapolation occurs.
+        
+                       (default: 1)
+        @type warn: bool
+
+        
+        @return: The profile evaluated at x and y
+        @rtype: array/float
+        
+        '''
+        
+        #-- Grab the original grain size distribution.
+        z = super(Distribution,self).eval(x=x,y=y,warn=warn)
+        
+        #-- w_sputter is zero, don't change anything
+        if w_sputter == 0.: return z
+        
+        #-- Set the distribution to zero wherever the drift velocity is too 
+        #   large, and return
+        z = np.where(w>w_sputter,np.zeros_like(z),z)
+        return z
         

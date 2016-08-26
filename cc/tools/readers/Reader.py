@@ -45,7 +45,7 @@ class Reader(dict):
         super(Reader,self).__init__(*args,**kwargs)
         
         #-- Remember the filename (possibly including a wildcard character)
-        self['fn'] = fn
+        self['fn'] = str(fn)
         self.fn = self['fn']
         
         #-- The contents contains the raw files read with DataIO.readFile.

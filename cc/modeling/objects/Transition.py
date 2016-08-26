@@ -256,11 +256,11 @@ def extractTransFromStars(star_grid,sort_freq=1,sort_molec=1,dtype='all',\
                             for trans in star['GAS_LINES']
                             if trans]),\
                        key=lambda x:sort_freq \
-                                     and (sort_molec and x.molecule or '',\
-                                          x.frequency) \
-                                     or  (sort_molec and x.molecule or '',\
-                                          x.wavelength))
-   
+                                and (sort_molec and x.molecule.molecule or '',\
+                                     x.frequency) \
+                                or  (sort_molec and x.molecule.molecule or '',\
+                                     x.wavelength))
+
     if dtype == 'UNRESOLVED':
         selection = [trans for trans in selection if trans.unresolved]
     elif dtype == 'RESOLVED':
@@ -433,7 +433,7 @@ def makeTransition(trans,star=None,def_molecs=None,**kwargs):
                   'check_tau_step':star['CHECK_TAU_STEP']}
     extra_pars.update(kwargs)
     
-    if molec <> None:
+    if not molec is None:
         return Transition(molecule=molec,n_quad=n_quad,\
                           vup=int(trans[1]),jup=int(trans[2]),\
                           kaup=int(trans[3]),kcup=int(trans[4]),\
@@ -787,7 +787,7 @@ def checkUniqueness(trans_list):
             merged.append(trans)
         else:
             #-- Only add data files if there are any to begin with.
-            if trans.datafiles <> None:
+            if not trans.datafiles is None:
                 ddict = dict(zip(trans.datafiles,trans.fittedlprof))
                 merged[merged.index(trans)].addDatafile(ddict)
     return merged
@@ -1060,8 +1060,13 @@ class Transition():
         '''
         Compare two transitions and return true if equal.
         
-        The condition is the dictionary of this Transition() returned by the 
-        makeDict() method.
+        The condition is the string representation of this Transition(). Note 
+        that the other properties included in the self.makeDict() dictionary are
+        not compared. Those properties do not determine whether a transition is 
+        equal or not.
+        
+        In this sense equal refers to the quantum numbers, telescope and offset
+        properties, ie the tags that go into the GASTRoNOoM model.
         
         @return: The comparison
         @rtype: bool
@@ -1083,8 +1088,13 @@ class Transition():
         '''
         Compare two transitions and return true if not equal.
         
-        The condition is the dictionary of this Transition() returned by the 
-        makeDict() method.
+        The condition is the string representation of this Transition(). Note 
+        that the other properties included in the self.makeDict() dictionary are
+        not compared. Those properties do not determine whether a transition is 
+        equal or not.
+        
+        In this sense equal refers to the quantum numbers, telescope and offset
+        properties, ie the tags that go into the GASTRoNOoM model.
         
         @return: The negative comparison
         @rtype: bool
@@ -1104,9 +1114,15 @@ class Transition():
     def __hash__(self):
         
         '''
-        Return a hash number based on the string of the transition, but make 
-        sure that every comparison includes the isTransition method of the 
-        trans.
+        Return a hash number based on the string of the transition.
+        
+        The condition is the string representation of this Transition(). Note 
+        that the other properties included in the self.makeDict() dictionary are
+        not compared. Those properties do not determine whether a transition is 
+        equal or not.
+        
+        In this sense equal refers to the quantum numbers, telescope and offset
+        properties, ie the tags that go into the GASTRoNOoM model.
         
         @return: The hash number:
         @rtype: int
@@ -1730,7 +1746,7 @@ class Transition():
             self.fittedlprof = []
             
         for k in sorted(datadict.keys()):
-            if datadict[k] <> None:
+            if not datadict[k] is None:
                 if not os.path.split(k)[0]: 
                     self.datafiles.append(os.path.join(cc.path.dradio,k))
                 else: 
@@ -1759,7 +1775,7 @@ class Transition():
         if self.unresolved:
             return
         if self.lpdata is None:
-            if self.datafiles <> None:
+            if not self.datafiles is None:
                 self.lpdata = []
                 for idf,df in enumerate(self.datafiles):
                     if df[-5:] == '.fits':
@@ -1938,7 +1954,7 @@ class Transition():
         
         
         #-- check if vlsr was already calculated
-        if self.best_vlsr <> None:
+        if not self.best_vlsr is None:
             return self.best_vlsr
 
         #-- Read the data.
@@ -2219,7 +2235,7 @@ class Transition():
             
         #-- Grab integration from radio database lp fit results if tmb is needed
         if not units in ['si','cgs']:
-            if use_fit or self.fittedlprof[index]['fitabs'] <> None:
+            if use_fit or not self.fittedlprof[index]['fitabs'] is None:
                 #-- Integrating the fitted SoftPar, rather than data
                 #   due to detected absorption component in the line profile.
                 return (self.fittedlprof[index]['fgintint'],abs_err)
@@ -2242,7 +2258,7 @@ class Transition():
         dvel = dvel[keep]
         
         #-- Select the fitted profile if needed, otherwise read data
-        if use_fit or self.fittedlprof[index]['fitabs'] <> None:
+        if use_fit or not self.fittedlprof[index]['fitabs'] is None:
             functype = self.fittedlprof[index]['fitprof'][0]
             pars = self.fittedlprof[index]['fitprof'][1]
             dflux = funclib.evaluate(functype,dvel,pars)
@@ -2375,7 +2391,7 @@ class Transition():
             self.unreso[fn] = dint
         else:
             self.unreso[fn] = float(dint)
-        self.unreso_err[fn] = dint_err <> None and float(dint_err) or None
+        self.unreso_err[fn] = not dint_err is None and float(dint_err) or None
         self.unreso_blends[fn] = st_blends
         #-- Set the vlsr, but convert to km/s for plotting purposes.
         self.vlsr = vlsr * 10**(-5)
@@ -2525,7 +2541,7 @@ class Transition():
 
         #-- Grab data line profile. Using fit (even in case of absorption) has 
         #   no use. 
-        #if self.fittedlprof[index]['fitabs'] <> None:
+        #if not self.fittedlprof[index]['fitabs'] is None:
         #    pars = array(self.fittedlprof[index]['fitprof'][1])
         #    functype = self.fittedlprof[index]['fitprof'][0]
         #    dsel = funclib.evaluate(functype,vel[selection],pars)

@@ -203,7 +203,7 @@ class PlottingSession(object):
         #-- Copy inputfilename over to the plot id folder if it is made.
         if not path:
             DataIO.testFolderExistence(self.pplot)
-            if self.inputfilename <> None:
+            if not self.inputfilename is None:
                 ipfn = os.path.split(self.inputfilename)[1]
                 newf = os.path.join(self.pplot,ipfn)
                 if not os.path.isfile(newf):

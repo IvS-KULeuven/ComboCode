@@ -12,7 +12,7 @@ import numpy as np
 from numpy import array
 from scipy.interpolate import InterpolatedUnivariateSpline as spline1d
 from scipy.interpolate import interp1d
-
+from astropy import units as u
 import cc.path
 from cc.tools.io import DataIO
 
@@ -95,7 +95,7 @@ class KappaReader(object):
         
     
     
-    def getWavelength(self,species):
+    def getWavelength(self,species,unit='micron'):
     
         """
         Return the wavelength grid for a given species. 
@@ -103,17 +103,38 @@ class KappaReader(object):
         @param species: The dust species (from Dust.dat)
         @type species: string
         
-        @return: wavelength (micron)
+        @keyword unit: The unit of the wavelength. Can be given as u.Unit() 
+                       object or as a string representation of those objects.
+                       Can range from length, to frequency, and energy
+        
+                       (default: micron)
+        @type unit: str/u.Unit()
+        
+        @return: wavelength (given unit)
         @rtype: array
         
         
         """
         
+        
+        #-- Convert the units. Grab the unit first
+        if isinstance(unit,str) and unit.lower() in ['cm-1','cm^-1']: 
+            unit = 1./u.cm 
+        elif isinstance(unit,str): 
+            unit = getattr(u,unit)
+        
         self.readKappas(species)
-        if self.waves.has_key(species):
-            return self.waves[species]
-        else:
+        if not self.waves.has_key(species):
             return np.empty(0)
+        
+        wav = self.waves[species]*u.micron
+        #-- In case of temperature, and extra step is needed
+        if (isinstance(unit,u.Quantity) and unit.unit.is_equivalent(u.K)) \
+                or (isinstance(unit,u.UnitBase) and unit.is_equivalent(u.K)):
+            wav = wav.to(u.erg,equivalencies=u.spectral())
+            return wav.to(unit,equivalencies=u.temperature_energy()).value
+        else: 
+            return wav.to(unit,equivalencies=u.spectral()).value
         
         
         
@@ -176,13 +197,15 @@ class KappaReader(object):
     
     
     
-    def interpolate(self,species,index=0,*args,**kwargs):  
+    def interpolate(self,species,index=0,unit='micron',*args,**kwargs):  
     
         """
         Create an interpolation object for the mass extinction/absorption/
         scattering coefficients.
         
         Additional arguments can be passed to the interpolation object.
+        
+        The unit of the wavelength for the interpolation can be chosen.
         
         @param species: The dust species (from Dust.dat)
         @type species: string
@@ -192,14 +215,18 @@ class KappaReader(object):
                         
                         (default: 0)
         @type index: int
+        @keyword unit: The unit of the wavelength. Can be given as u.Unit() 
+                       object or as a string representation of those objects.
+                       Can range from length, to frequency, and energy
+        
+                       (default: micron)
+        @type unit: str/u.Unit()
                 
         @return: The interpolator for the mass extinction/absorption/scattering
-                 coefficients. (in cgs!)
+                 coefficients.
         @rtype: spline1d 
         
         """        
         
-        #-- Note that the wavelength is given in micron, but the interpolator 
-        #   convers to cgs.
-        return spline1d(x=self.getWavelength(species)*1e-4,\
+        return spline1d(x=self.getWavelength(species,unit=unit),\
                         y=self.getKappas(species,index),*args,**kwargs)

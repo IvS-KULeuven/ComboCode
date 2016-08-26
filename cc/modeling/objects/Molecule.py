@@ -451,6 +451,87 @@ class Molecule():
 
 
 
+    def __eq__(self,other):
+        
+        '''
+        Compare two molecules and return true if equal.
+        
+        The condition is the string representation of this Molecule(). Note 
+        that the other properties included in the self.makeDict() dictionary are
+        not compared. Those properties do not determine whether a molecule is 
+        equal or not.
+        
+        In this sense equal refers to the spectroscopy included for this 
+        molecule, the number of impact parameters, and the molecule itself, of 
+        course.
+        
+        @return: The comparison
+        @rtype: bool
+        
+        '''
+        
+        try:        
+            if str(self) == str(other):
+                return True
+            else:
+                return False
+        except AttributeError:
+            return False
+                
+
+
+    def __ne__(self,other):
+        
+        '''
+        Compare two molecules and return true if not equal.
+        
+        The condition is the string representation of this Molecule(). Note 
+        that the other properties included in the self.makeDict() dictionary are
+        not compared. Those properties do not determine whether a molecule is 
+        equal or not.
+        
+        In this sense equal refers to the spectroscopy included for this 
+        molecule, the number of impact parameters, and the molecule itself, of 
+        course.
+        
+        @return: The negative comparison
+        @rtype: bool
+        
+        '''
+        
+        try:
+            if str(self) != str(other):
+                return True
+            else:
+                return False
+        except AttributeError:
+            return True
+
+
+ 
+    def __hash__(self):
+        
+        '''
+        Return a hash number based on the string of the molecule.
+         
+        The condition is the string representation of this Molecule(). Note 
+        that the other properties included in the self.makeDict() dictionary are
+        not compared. Those properties do not determine whether a molecule is 
+        equal or not.
+        
+        In this sense equal refers to the spectroscopy included for this 
+        molecule, the number of impact parameters, and the molecule itself, of 
+        course.
+        
+        @return: The hash number:
+        @rtype: int
+        
+        '''
+        
+        return hash(str(self))
+
+
+
     def updateParameters(self,pardict):
         
         '''
@@ -528,7 +609,7 @@ class Molecule():
             moltab = self.molecule_full[:self.molecule_full.index('.')]
             dd['MOLECULE_TABLE'] = moltab 
             dd['ISOTOPE_TABLE'] = self.molecule_full
-            if path <> None:
+            if not path is None:
                 afn = os.path.join(path,\
                                    os.path.split(self.abundance_filename)[1])
             else:
@@ -538,7 +619,7 @@ class Molecule():
         if self.set_keyword_change_abundance:
             dd['SET_KEYWORD_CHANGE_ABUNDANCE'] \
                             = self.set_keyword_change_abundance
-            if path <> None:
+            if not path is None:
                 cffn = os.path.join(path,\
                                 os.path.split(self.change_fraction_filename)[1])
             else:
@@ -548,7 +629,7 @@ class Molecule():
         if self.set_keyword_change_temperature:
             dd['SET_KEYWORD_CHANGE_TEMPERATURE'] \
                             = self.set_keyword_change_temperature
-            if path <> None:
+            if not path is None:
                 tfn = os.path.join(path,\
                                 os.path.split(self.new_temperature_filename)[1])
             else:
@@ -557,7 +638,7 @@ class Molecule():
 
         if self.starfile:
             dd['USE_STARFILE'] = 1
-            if path <> None:
+            if not path is None:
                 sfn = os.path.join(path,os.path.split(self.starfile)[1])
                 
             else:

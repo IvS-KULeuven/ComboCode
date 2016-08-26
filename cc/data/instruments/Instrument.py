@@ -89,7 +89,7 @@ class Instrument(object):
         #-- Set relevant velocities in cm/s
         self.c = 2.99792458e10 
         self.vlsr = float(DataIO.getInputData(keyword='V_LSR',rindex=istar))*10**5
-        if self.path <> None:
+        if not self.path is None:
             pp = getattr(cc.path,self.code.lower())
             DataIO.testFolderExistence(os.path.join(pp,self.path,'stars'))
             DataIO.testFolderExistence(os.path.join(pp,self.path,'stars',\
@@ -340,7 +340,7 @@ class Instrument(object):
         #      2) only one match was found, 
         #      3) if multiple matches have been found it was not the first. 
         #      
-        blended = [ii <> None and len(wf_blends[ii]) > 1. \
+        blended = [not ii is None and len(wf_blends[ii]) > 1. \
                                 and wf_blends[ii].index(st) != 0
                    for (st,mwav),(match,ii) in zip(strans,matches)]
         for (st,mwav),blend,(match,ii) in zip(strans,blended,matches):

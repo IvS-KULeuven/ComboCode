@@ -712,7 +712,7 @@ class ComboCode(object):
 
         '''
 
-        if self.vic_manager <> None:
+        if not self.vic_manager is None:
             #vic_running = vic_manager.checkProgress()
             if self.vic_manager.getQueue():
                 vic_running = True
@@ -880,7 +880,7 @@ class ComboCode(object):
         
         #-- Data are handled by these objects themselves for unresolved lines.
         for sn in self.star_name:
-            if self.statistics and self.pacs[sn] <> None:
+            if self.statistics and not self.pacs[sn] is None:
                 ss = UnresoStats.UnresoStats(star_name=sn,\
                                              path_code=self.path_gastronoom)
                 ss.setInstrument(instrument_name='PACS',\
@@ -888,7 +888,7 @@ class ComboCode(object):
                                  stat_method=self.stat_method)
                 self.pacsstats[sn] = ss
                 self.unresostats.append(ss)
-            if self.statistics and self.spire[sn] <> None:
+            if self.statistics and not self.spire[sn] is None:
                 ss = UnresoStats.UnresoStats(star_name=sn,\
                                              path_code=self.path_gastronoom)
                 ss.setInstrument(instrument_name='SPIRE',\
@@ -908,7 +908,7 @@ class ComboCode(object):
             ss.plotRatioWav(inputfilename=self.inputfilename)
         
         for sn in self.star_name:
-            if self.statistics and self.sed[sn] <> None:
+            if self.statistics and not self.sed[sn] is None:
                 print '************************************************'
                 print '** SED statistics for %s.'%sn
                 print '************************************************'

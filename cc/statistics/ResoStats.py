@@ -197,7 +197,7 @@ class ResoStats(Statistics):
         self.sample_trans = sample_transitions    
 
         
-    def setIntensities(self,vmin = 0, vmax = 0):
+    def setIntensities(self):
         
         """
         The data intensities are stored in the dictionary 
@@ -507,7 +507,7 @@ class ResoStats(Statistics):
                       DataIO.fillOutSpaces(str(st),60),\
                       self.trans_uncertainties[ist],\
                       (not self.noisy[ist] and 'NOT ' or ''),\
-                      self.lll_threshold[ist] <> None and \
+                       not self.lll_threshold[ist] is None and \
                         ' The lll threshold is %.2e'%self.lll_threshold[ist] or\
                         '')
                    for ist,st in enumerate(self.translist)]
@@ -614,11 +614,11 @@ class ResoStats(Statistics):
                 if not bfms:
                     print 'The max LLL for this model is : %.2e.'\
                         %max(self.loglikelihood[st])
-                    if self.lll_p <> None: 
+                    if not self.lll_p is None: 
                         print 'This leads to a threshold of %.2e with %i free parameters.'\
                           %(self.lll_threshold[ist],self.lll_p)            
                 else:
-                    if self.lll_p <> None:
+                    if not self.lll_p is None:
                         maxlll, lll_thr = self.calcLoglikelihoodThreshold(bfms,ist)
                         print 'The max LLL for this subselection of models is: ' +\
                             '%.2e.' %maxlll
@@ -706,7 +706,7 @@ class ResoStats(Statistics):
                             bfbools[i] = False
                             
                     ##-- Loglikelihood is maximized by best fitting model
-                    if lll_thresh <> None and not self.noisy[ist] \
+                    if not lll_thresh is None and not self.noisy[ist] \
                             and use_lll and lll < lll_thresh:
                         bfbools[i] = False
                         
@@ -739,10 +739,10 @@ class ResoStats(Statistics):
                 lll_thresh = self.lll_threshold[ist]
                 for i,lll in enumerate(self.loglikelihood[st]):
                     ##-- Loglikelihood is maximized by best fitting model
-                    #if lll_thresh <> None and not self.noisy[ist] \
+                    #if not lll_thresh is None and not self.noisy[ist] \
                             #and lll < lll_thresh:
                         #bfbools[i] = False
-                    if lll_thresh <> None  \
+                    if not lll_thresh is None  \
                             and lll < lll_thresh:
                         bfbools[i] = False
                         

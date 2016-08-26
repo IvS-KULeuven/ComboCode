@@ -7,6 +7,7 @@ Author: R. Lombaert
 
 """
 
+import sys, collections
 import numpy as np
 from scipy.interpolate import interp1d, interp2d, UnivariateSpline, BivariateSpline
 from scipy.interpolate import InterpolatedUnivariateSpline as spline1d
@@ -15,6 +16,7 @@ import os
 
 from cc.tools.numerical import Operators as op
 from cc.tools.io import DataIO
+from cc.data import Data
 
 
 
@@ -318,6 +320,12 @@ class Profiler(object):
         derivative. They are saved in self.y and self.dydx. Alternatively, new
         evaluations can be attained through eval and diff.
         
+        Note that if func is an interpolator object, the original input x and y
+        grids can be passed as additional keywords xin and yin, which would then
+        be arrays. Otherwise, the x and the interpolator(x) are set as xin and 
+        yin. xin and yin are ignored if func is a function, even if it returns
+        an interpolator (in which case the original grids are known)
+        
         @param x: The default coordinate points, minimum three points. In the 
                   case of an interpolation function, this is the default grid
                   returned by the instance. The original x/y of the 
@@ -328,7 +336,9 @@ class Profiler(object):
                        x. Can be given as an interp1d object. Default is a read
                        function that interpolates data and returns the 
                        interpolator object. If interpolation object, x and 
-                       eval(x) are assumed to be the original grids
+                       eval(x) are assumed to be the original grids, unless
+                       xin and yin are given as keywords with arrays as values
+                       for the original grids.
                        
                        (default: interp_file)
         @type func: function/interp1d object
@@ -365,7 +375,30 @@ class Profiler(object):
         #   derivative.
         if len(x) < 3:
             raise ValueError('Coordinate grid must have more than 2 elements.')
-                
+        
+        #-- If the function is given as a string, retrieve it from the local 
+        #   child module, or from the Profiler module (as parent). If the latter
+        #   case then check if the function comes from one of Profiler's 
+        #   attributes, such as the loaded DataIO module.
+        #   Can also simply be a constant value, so try making a float first.
+        if isinstance(func,str):
+            try:
+                #-- Check if a constant was given, rather than a function
+                kwargs['c'] = float(func)
+                func = constant
+
+            except ValueError:
+                #-- Note that self.module refers to the child, not Profiler
+                if hasattr(sys.modules[self.__module__],func):
+                    func = getattr(sys.modules[self.__module__],func)
+
+                #-- Recursively find the function of loaded modules in Profiler
+                #   or a function of the Profiler module itself if no '.'         
+                else:
+                    
+                    func = DataIO.read(func=func,module=sys.modules[__name__],\
+                                       return_func=1)
+        
         #-- set functional args, remember spline order. args/kwargs for 
         #   func and dfunc are saved separately. They are removed if either are
         #   interpolation objects. They are always accessible, the _** variables
@@ -377,6 +410,11 @@ class Profiler(object):
         self._dkwargs = self.kwargs
         self._kwargs = self.kwargs
         self.order = order
+        
+        #-- Grab default xin and yin keys in case they are included, and remove
+        #   from the arguments dictionary. None if not available. 
+        xin = self.kwargs.pop('xin',None)
+        yin = self.kwargs.pop('yin',None)
         
         #-- By default no interpolation, so leave this off.
         self.interp_func = 0
@@ -417,8 +455,8 @@ class Profiler(object):
             self._kwargs = {}
             self.interp_func = 1
             self.y = self.func(x)
-            self.yin = self.y
-            self.xin = x
+            self.yin = yin if not yin is None else self.y
+            self.xin = xin if not xin is None else x
                                                     
         #-- Set the derivative function, resorting to default if needed
         if not dfunc is None:
@@ -512,18 +550,26 @@ class Profiler(object):
         
         '''
         
+        #-- Run the boundary check for interpolators
         if self.interp_func and warn:
+            #-- Select the actual x array (for the cases that x is None)
+            xarr = self.x if x is None else x
+            
             #-- Are all requested values in range of the original grid?
-            if np.any((x>self.xin[-1])|(x<self.xin[0])):
-                m = 'Warning! There were values outside of interpolation range.'
+            if np.any((xarr>self.xin[-1])|(xarr<self.xin[0])):
+                m = 'Warning! There were values outside of interpolation '+\
+                    'range in module {}.'.format(sys.modules[self.__module__])
+                vals = Data.arrayify(xarr)
+                sel = vals[(vals>self.xin[-1])|(vals<self.xin[0])]
+                m += '\n {}'.format(str(sel))
                 print(m)
         
+        #-- Return self.y since x was given as None
         if x is None:
             return self.y
         
+        #-- call the interpolator or the function
         return self.func(x,*self._args,**self._kwargs)
-            #-- Remove 2nd dimension if it only contains one element.
-            #return np.squeeze(profile)
     
     
     
@@ -551,16 +597,26 @@ class Profiler(object):
         
         '''
         
-        
-        if self.interp_dfunc and warn:
+        #-- Run the boundary check for interpolators. Check if the func is an
+        #   interpolator as well as dfunc
+        if self.interp_func and self.interp_dfunc and warn:
+            #-- Select the actual x array (for the cases that x is None)
+            xarr = self.x if x is None else x
+            
             #-- Are all requested values in range of the original grid?
-            if np.any((x>self.x[-1])|(x<self.x[0])):
-                m = 'Warning! There were values outside of interpolation range.'
+            if np.any((xarr>self.xin[-1])|(xarr<self.xin[0])):
+                m = 'Warning! There were values outside of interpolation '+\
+                    'range in module {}.'.format(sys.modules[self.__module__])
+                vals = Data.arrayify(xarr)
+                sel = vals[(vals>self.xin[-1])|(vals<self.xin[0])]
+                m += '\n {}'.format(str(sel))
                 print(m)
         
+        #-- Return self.y since x was given as None
         if x is None:
             return self.dydx
         
+        #-- call the interpolator or the function
         return self.dfunc(x,*self._dargs,**self._dkwargs)
             
             
@@ -612,6 +668,19 @@ class Profiler2D(object):
         
         '''
 
+        #-- If the function is given as a string, retrieve it from the local 
+        #   child module, or from the Profiler module (as parent). If the latter
+        #   check if the function comes from one of Profiler's attributes, such
+        #   as the loaded DataIO module.
+        if isinstance(func,str):
+            try:
+                #-- Note that self.module refers to the child, not Profiler
+                func = getattr(sys.modules[self.__module__],func)
+            except AttributeError:
+                #-- Recursively find the function of loaded modules in Profiler
+                #   or a function of the Profiler module itself if no '.' 
+                func = DataIO.read(sys.modules[__name__],return_func=1)
+                
         #-- set functional args, remember spline order. args/kwargs for 
         #   func are saved separately. They are removed if either are
         #   interpolation objects. They are always accessible, the _** variables
@@ -621,7 +690,7 @@ class Profiler2D(object):
         self._args = args
         self._kwargs = kwargs
         self.func = func
-        
+
         if isinstance(self.func,interp2d) \
                 or isinstance(self.func,BivariateSpline):
             self.interp_func = 1
@@ -631,7 +700,7 @@ class Profiler2D(object):
             self.interp_func = 0
         
         #-- Evaluate the default grid with function. Set x as None first so it
-        #   can actually evaluate. Set x once derivative has been evaluated.
+        #   can actually evaluate.
         self.x = None
         self.y = None
         self.z = self.func(x,y,*self._args,**self._kwargs)
@@ -639,6 +708,7 @@ class Profiler2D(object):
         #-- Now set x and y.
         self.x = x
         self.y = y 
+        
         
     
     def __call__(self,x=None,y=None,warn=1):
@@ -709,28 +779,27 @@ class Profiler2D(object):
         
         '''
         
+        #-- Select the actual x/y arrays
+        xarr = self.x if x is None else x
+        yarr = self.y if y is None else y
+            
+        #-- Run the boundary check for interpolators
+        if self.interp_func and warn:
+            #-- Are all requested values in range of the original grid?
+            if np.any((xarr>self.x[-1])|(xarr<self.x[0])) \
+                    or np.any((yarr>self.y[-1])|(yarr<self.y[0])):
+                m = 'Warning! There were values outside of 2D interpolation '+\
+                    'range in module {}.'.format(sys.modules[self.__module__])
+                xvals, yvals = Data.arrayify(xarr), Data.arrayify(yarr)
+                xsel = xvals[(xvals>self.x[-1])|(xvals<self.x[0])]
+                ysel = yvals[(yvals>self.y[-1])|(yvals<self.y[0])]
+                m += '\nx: {}, \ny: {}'.format(str(xsel),str(ysel))
+                print(m)
+        
+        #-- Return self.z since x and y were given as None
         if x is None and y is None: 
             return self.z
         
-        if x is None:
-            x = self.x
-            
-        if y is None:
-            y = self.y
-# Ignoring equal arrays for now. Likely faster this way.
-#         if np.array_equal(x,self.x) and np.array_equal(y,self.y):
-#             return self.z
-            
-        if self.interp_func and warn:
-            #-- Check whether this is either the first time running eval or 
-            #   whether all requested values lie in range of the original grid
-            if np.any((x>self.x[-1])|(x<self.x[0])) \
-                    or np.any((y>self.y[-1])|(y<self.y[0])):
-                m = 'Warning! There were values outside of 2D interpolation '+\
-                    'range.'
-                print(m)
-        
-        return self.func(x,y,*self._args,**self._kwargs)
-    
-    
+        #-- call the interpolator or the function
+        return self.func(xarr,yarr,*self._args,**self._kwargs)
     

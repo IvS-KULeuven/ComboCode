@@ -45,7 +45,7 @@ class Atmosphere(object):
         
         self.modeltype = modeltype
         self.filename = filename
-        if self.filename <> None:
+        if not self.filename is None:
             self.filepath = os.path.join(cc.path.atm,self.filename)
         self.modellist = glob(os.path.join(cc.path.atm,modeltype+'*'))
         self.modelgrid = None

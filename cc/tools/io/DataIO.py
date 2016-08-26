@@ -7,14 +7,65 @@ Author: R. Lombaert
 
 """
 
-import os
+import os, sys
 import subprocess
 from glob import glob
+import numpy as np
 from scipy import array,zeros
 from PyPDF2 import PdfFileMerger
 from matplotlib import mlab
 
 import cc.path
+
+
+def read(func,module=sys.modules[__name__],return_func=0,*args,**kwargs):
+
+    '''
+    Takes any function given as a str (preceding modules separated with a dot 
+    '.' ) and passes any additional args and kwargs to the function found in 
+    either the DataIO module or the given module. 
+    
+    Note that numpy is important in DataIO as np, and can also be requested this
+    way. 
+    
+    @param func: The requested function. Can also be given as a function, in 
+                 which case no search for the function is done, and this returns
+                 that function's results.
+    @type func: str/function
+    
+    @keyword module: The home module of the function. Default is DataIO, and any
+                     module therein can be accessed by passing module.func to 
+                     the keyword. 
+                     
+                     (default: DataIO)
+    @type module: module
+    @keyword return_func: Return the function itself, rather than calling it. 
+    
+                          (default: 0)
+    @type return_func: bool
+    
+    @return: the function's output is returned. 
+    @rtype: anything. Or function. 
+    
+    '''
+
+    #-- Function not yet found. Search it. 
+    if isinstance(func,str):
+        #-- Recursively find the function of loaded modules in given
+        #   module or a function of the DataIO module itself if no '.' 
+        for fstr in func.split('.'):
+            if fstr == 'DataIO': 
+                module = sys.modules[__name__]
+                continue
+            module = getattr(module,fstr)
+    
+    #-- Only return the function, don't call it
+    if return_func:
+        return module
+        
+    #-- Call the function and return the results.
+    return module(*args,**kwargs)
+
 
 
 def findKey(i,data,key):
@@ -111,7 +162,36 @@ def getKeyData(incr,filename,keyword,single=1):
         return [float(line[0]) for line in data[i:i+int(incr)]]
     else:
         return [line for line in data[i:i+int(incr)]]
-        
+
+
+
+def readFortranFile(convert_cols,func=np.loadtxt,*args,**kwargs):
+
+    '''
+    Reads a fortran data file. 
+    
+    The method is identical to np.loadtxt, but defines a converters dict for 
+    converting double-notation into floats. 
+    
+    Use as np.loadtxt, but leave out the converters argument.
+    
+    @param convert_cols: The indices of the columns containing double notation
+    @type convert_cols: list
+    
+    @keyword func: The read function used. Default is np.loadtxt, alternative
+                   is np.genfromtxt. Function requires converters keyword. 
+                   
+                   (default: np.loadtxt)
+    @type func: function
+    
+    @return: The np.loadtxt output
+    @rtype: array
+    
+    '''
+    
+    converters = {i: lambda x:float(x.replace('D','E')) for i in convert_cols}
+    return np.loadtxt(converters=converters,*args,**kwargs)    
+
 
 
 def getGastronoomOutput(filename,keyword='RADIUS',begin_index=0,\
@@ -254,7 +334,7 @@ def getInputData(path=cc.path.usr,keyword='STAR_NAME',filename='Star.dat',\
             elements = [line[data_index] 
                         for line in data[i:end_index] 
                         if line[0]]
-    if rindex <> None:
+    if not rindex is None:
         return elements[rindex]
     else:
         return elements
@@ -299,9 +379,9 @@ def readFile(filename,delimiter=None,replace_spaces=1):
 
 
 
-def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
-             convert_floats=0,convert_ints=0,multi_keys=[],start_row=0,\
-             end_row=None,key_modifier=None):
+def readDict(filename=None,lines=None,delimiter='=',comment_chars=['#'],\
+             convert_lists=0,convert_floats=0,convert_ints=0,multi_keys=[],\
+             start_row=0,end_row=None,key_modifier=None):
      
     '''
     Read a file as a dictionary.
@@ -312,8 +392,17 @@ def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
     keywords are returned as a list in the dictionary with key equal to the 
     keyword. The given keywords are defined by the list multi_keys
 
-    @param filename: the filename of the file to be read
+    @keyword filename: the filename of the file to be read. In case of default,
+                       lines are required. filename takes precedence over lines.
+                    
+                       (default: None)
     @type filename: string
+    @keyword lines: Skip reading a file, and parse these lines instead. 
+                    If default, a filename is required. Is a list of strings,
+                    each interpreted as a line. Ignored if filename is given.
+                    
+                    (default: None)
+    @type lines: list[str]
     @keyword delimiter: the delimiter defining the key/value pairs
      
                         (default: '=')
@@ -363,8 +452,9 @@ def readDict(filename,delimiter='=',comment_chars=['#'],convert_lists=0,\
     @rtype: dict
      
     '''
-     
-    lines = readFile(filename)
+    
+    if filename:
+        lines = readFile(filename)
     lines = lines[start_row:end_row]
     lines, comments = removeComments(lines,comment_chars=comment_chars)
     
@@ -595,6 +685,10 @@ def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
     '''
     Read columns, remove comments and turn into floats.
     
+    Note that number of columns returned is the minimum number of columns from
+    all rows, where the columns are split by the chosen delimiter (space-like
+    by default). 
+    
     @param filename: The full filename and path of the file
     @type filename: string
     
@@ -675,7 +769,7 @@ def readCols(filename,delimiter=' ',make_float=1,start_row=0,make_array=1,\
     #-- Apply requests for floatsand arrays and return.
     if make_float:
         lines = [[convertFloat(l,nans=nans) for l in line] for line in lines]
-    ndata = len(lines[0])
+    ndata = min([len(line) for line in lines])
     if make_array and make_float:    
         lines = [array([line[i] for line in lines]) for i in xrange(ndata)]
     else:

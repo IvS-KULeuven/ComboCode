@@ -46,12 +46,12 @@ class LPDataReader(Reader):
         super(LPDataReader, self).__init__(fn,*args,**kwargs)
         self.fn = fn
         fn = os.path.splitext(os.path.split(self.fn)[1])[0]
-        if star_name <> None:
+        if not star_name is None:
             self.star_name = star_name
         else:
             self.star_name = fn.split('_')[0]
         self.c = 2.99792458e10          #in cm/s
-        self.contents['vlsr'] = None
+        self['contents']['vlsr'] = None
         self.telescope = fn.split('_')[-1]
 
     
@@ -65,7 +65,7 @@ class LPDataReader(Reader):
         
         '''
         
-        return self.contents['velocity']
+        return self['contents']['velocity']
     
     
     
@@ -79,7 +79,7 @@ class LPDataReader(Reader):
         
         '''
         
-        return self.contents['flux']
+        return self['contents']['flux']
     
     
     def getVexp(self):
@@ -92,7 +92,7 @@ class LPDataReader(Reader):
         
         '''
         
-        return self.contents['vexp']
+        return self['contents']['vexp']
         
     
     
@@ -108,7 +108,7 @@ class LPDataReader(Reader):
         
         '''
         
-        self.contents['vexp'] = float(vexp)
+        self['contents']['vexp'] = float(vexp)
         
     
     def getNoise(self,vexp=None):
@@ -127,9 +127,9 @@ class LPDataReader(Reader):
         
         '''
         
-        if not self.contents.has_key('noise'):
+        if not self['contents'].has_key('noise'):
             self.setNoise(vexp)
-        return self.contents['noise']
+        return self['contents']['noise']
         
         
    
@@ -149,7 +149,7 @@ class LPDataReader(Reader):
         
         '''
 
-        return self.contents['vlsr']
+        return self['contents']['vlsr']
     
     
     
@@ -172,13 +172,13 @@ class LPDataReader(Reader):
                   'Add star to Star.dat!'
             raise IOError()
         if self.getVlsr() is None: 
-            self.contents['vlsr'] = vlsr
+            self['contents']['vlsr'] = vlsr
         elif vlsr == 0.0:
             print('WARNING! V_lsr in Star.dat is set to 0. Double check!')
             if not abs(self.getVlsr()) < 0.25:
-                self.contents['vlsr'] = vlsr
+                self['contents']['vlsr'] = vlsr
         elif abs(self.getVlsr()/vlsr) > 1.3 or abs(self.getVlsr()/vlsr) < 0.75:
-            self.contents['vlsr'] = vlsr
+            self['contents']['vlsr'] = vlsr
             
         
     
@@ -189,7 +189,7 @@ class LPDataReader(Reader):
         
         """
         
-        return self.contents['date_obs']
+        return self['contents']['date_obs']
         
     
     
@@ -219,16 +219,16 @@ class LPDataReader(Reader):
         
         """
         
-        if vexp <> None and not self.contents.has_key('vexp'):
-            self.contents['vexp'] = float(vexp)
-        if not self.contents.has_key('vexp'):
+        if not vexp is None and not self['contents'].has_key('vexp'):
+            self['contents']['vexp'] = float(vexp)
+        if not self['contents'].has_key('vexp'):
             print 'Cannot set noise without an estimate for the terminal gas'+\
                   ' velocity. Pass as keyword to this method!'
             return None
-        vel = self.contents['velocity']
-        flux = self.contents['flux']
-        vlsr = self.contents['vlsr']
-        vexp = self.contents['vexp']
+        vel = self['contents']['velocity']
+        flux = self['contents']['flux']
+        vlsr = self['contents']['vlsr']
+        vexp = self['contents']['vexp']
         noise = Data.getStd(wave=vel,flux=flux,wmin=vlsr-5*vexp,\
                             wmax=vlsr-2*vexp,minsize=10)
         if noise is None:
@@ -243,5 +243,5 @@ class LPDataReader(Reader):
         if noise is None:
             print 'WARNING! Noise cannot be determined, not enough data ' + \
                   'points outside the emission line.'
-        self.contents['noise'] = noise
+        self['contents']['noise'] = noise
         

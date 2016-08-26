@@ -141,7 +141,7 @@ class ModelingSession(object):
                                              make_int,exp_not)
                 return True
             except KeyError:
-                if alternative <> None:
+                if not alternative is None:
                     self.command_list[comm_key] = \
                         DataIO.inputToString(alternative,make_int,exp_not)
                     return True
@@ -187,7 +187,7 @@ class ModelingSession(object):
         """
         
         model_bool_list = []
-        if extra_dict <> None: this_list.update(extra_dict)
+        if not extra_dict is None: this_list.update(extra_dict)
         if check_keys:
             keywords = check_keys
         elif code == 'mcmax':

@@ -70,10 +70,10 @@ class TxtReader(LPDataReader):
         if self.fn[-6:] == '.ISPEC':
             del data[0]
             data[0] = data[0]/1000.
-        self.contents['velocity'] = data[0]
-        self.contents['flux'] = data[1]
-        if self.contents['velocity'][0] > self.contents['velocity'][-1]: 
-            self.contents['velocity'] = self.contents['velocity'][::-1]
-            self.contents['flux'] = self.contents['flux'][::-1]
-        self.contents['date_obs'] = 'N.A.'
-        self.contents['vlsr'] = None
+        self['contents']['velocity'] = data[0]
+        self['contents']['flux'] = data[1]
+        if self['contents']['velocity'][0] > self['contents']['velocity'][-1]: 
+            self['contents']['velocity'] = self['contents']['velocity'][::-1]
+            self['contents']['flux'] = self['contents']['flux'][::-1]
+        self['contents']['date_obs'] = 'N.A.'
+        self['contents']['vlsr'] = None

@@ -1,17 +1,17 @@
-#-- Coordinate grids: radius, grain size (can be single value), wavelength
-r = [2e13,5e15,1000,1]
+#-- radius, grain size (can be single value), wavelength. (See cc.tools.numerical.Gridding.makeGrid)
+r = [1e14,1e17,1000,1]
 a = [0.005e-4,0.25e-4,200,1]
 #a = 0.01e-4
 l = [0.1e-4,1000e-4,1000,1]
 
 #-- Set basic profiles: gas velocity, initial temperature, opacity, mass loss, dust temperature
-v         = [vbeta,2e13,2.5e5,15e5,1.0]
-Tinit     = [Teps,1500.,2e13,0.6]
-opac      = [read_opacity,AMCDHSPREI,1,5]
+v         = vbeta r0=1e14 v0=vs vinf=15e5 beta=1 vi_mode=beta rstar=3.32475e13 beta_inner=0.5
+Tinit     = Teps T0=1443. r0=1e14 epsilon=0.5 inner=1
+opac      = read_opacity species=AMCDHSPREI index=1 k=5 ext=3
 mdot      = 1e-5
 mdot_dust = 1e-8
-#Td        = [interp_file,readCols,/Users/robinl/Projects/LineCooling/dev_tests/Td_testprofile.dat]
-Td        = [Tdust,2500.,1e13,1]
+#Td        = interp_file func=readCols filename=/Users/robinl/Projects/LineCooling/dev_tests/Td_testprofile.dat
+Td        = Tdust T0=2500. r0=1.3e13 s=1
 
 #-- Stellar parameters: Tstar, rstar, Ltype
 Tstar = 2500.
@@ -22,25 +22,29 @@ Ltype = blackbody
 fH  = 0.0
 fHe = 0.0
 
-#-- Grain specific density, porosity, and size distribution (only if a.size > 1)
+#-- Grain specific density, porosity, size distribution and sputtering drift limit (only if a.size > 1)
 sd  = 1.8
 P   = 0.0
 GSD = MRN
+w_sputter = 20e5
 
 #-- Cooling and heating terms. Adiabatic/Line cooling always included. Hdt/Hdg heating mode (gs2014 or Classical). adiabatic coefficient (value, h2, or h2_mcp)
 cterms = []
 #hterms = [dg,dt]
 hterms = []
-heatmode = gs2014
+heatmode = classical
 gamma = h2
+pe_method = draine Kpe=1e-26
+cr_method = standard
+h2_method = decin
 
 #-- Heating parameters: thermal term in drift (none,kwok,mean,rms,prob,epstein), sticking coefficient
 w_thermal = epstein
 alpha = 0.0
 
-#-- Line Cooling parameters: code/molecules/collis/pop files. Empty list of molecules if no LC wanted.
-rtcode = gastronoom
-molecules = []
-collis = []
-pop = []
-
+#-- Line Cooling parameters: Only included if lc in cterms. molecule contains name and abundance info
+rtcode = ali
+molecule = 12C16O np.loadtxt fname=/Users/robinl/Projects/LineCooling/theo_prototype/waql.par usecols=[1,4] skiprows=9 unpack=1
+#molecule = 1H1H16O 1e-4
+collis = [/Users/robinl/GASTRoNOoM/data/12C16O_collis.dat]
+pop = [,]

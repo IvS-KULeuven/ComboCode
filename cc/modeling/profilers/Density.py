@@ -8,7 +8,6 @@ Author: R. Lombaert
 
 """
 
-import sys
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline as spline1d
 from astropy import constants as cst
@@ -138,14 +137,6 @@ class Density(Profiler.Profiler):
                 
         '''
 
-        #-- If the function is given as a string, retrieve it from the local 
-        #   module, or from the Profiler module.
-        if isinstance(func,str):
-            try:
-                func = getattr(sys.modules[__name__],func)
-            except AttributeError:
-                func = getattr(Profiler,func)
-                
         #-- Do not name func, dfunc, etc in function call, or *args won't work           
         super(Density, self).__init__(r,func,dfunc,order,*args,**kwargs)
         
@@ -180,7 +171,7 @@ class Density(Profiler.Profiler):
 
         
     
-    def calcNumberDensity(self,fH=0.,fHe=0.,sd=None,a=None,gsd=None,order=3): 
+    def calcNumberDensity(self,fH=0.,fHe=0.,sd=None,a=None,gsd=None): 
     
         '''
         In case of gas, calculate the H_2, H, He and total number density 
@@ -234,8 +225,8 @@ class Density(Profiler.Profiler):
         
         #-- Total gas number density is 
         #   n_H + 4*n_He = n(H2) (n(H)/n(H2) + 2)(1 + 4*n(He)/n_H)
-        self.n['Gas'] = self.rho/self.mh
-        self.fac['Gas'] = 1./self.mh
+        self.n['Gas'] = self.rho/self.mh/self.mu
+        self.fac['Gas'] = 1./self.mh/self.mu
         
         #-- n(H2) taking into account fractional abundances of H and He
         denominator = self.mh*(fH+2.)*(1.+4.*fHe)

@@ -417,7 +417,7 @@ class PlotGas(PlottingSession):
             if not cfg_dict.has_key('filename'): cfg_dict['filename'] = fn_plt            
         if fn_suffix: 
             filename = cfg_dict.get('filename',None)
-            if filename <> None: filename = '_'.join(filename,fn_suffix)
+            if not filename is None: filename = '_'.join(filename,fn_suffix)
             cfg_dict['filename'] = filename
         if cfg_dict.has_key('keytags'):
             keytags = cfg_dict['keytags']
@@ -550,7 +550,7 @@ class PlotGas(PlottingSession):
                         vlsr = 0.0
                         noise = None
                     for trans in current_sub:
-                        if trans <> None:
+                        if not trans is None:
                             trans.readSphinx()
                             #-- Data have been read for current_trans. Don't 
                             #   read again for other objects (same data files),
@@ -606,7 +606,8 @@ class PlotGas(PlottingSession):
                     if telescope_label:
                         if True in [trans.sphinx.nans_present 
                                     for trans in current_sub
-                                    if (trans <> None and trans.sphinx <> None)]:
+                                    if (not trans is None \
+                                        and not trans.sphinx is None)]:
                             telescope_string = '%s*'\
                                 %current_trans.telescope.replace('-H2O','')\
                                                         .replace('-CORRB','')
@@ -1339,7 +1340,7 @@ class PlotGas(PlottingSession):
 
         used_indices = list(set([ll[-2] for ll in lls]))
         if fn_trans_marker:
-            all_molecs = set([t.molecule for t in all_trans])
+            all_molecs = set([t.molecule for t in alltrans])
             def_molecs = dict([(m.molecule,m) for m in all_molecs])
             if star_grid: star = star_grid[0]
             else: star = None
@@ -1347,7 +1348,8 @@ class PlotGas(PlottingSession):
             n_entry = len(trl['TRANSITION'][0].split())
             trl_sorted = DataIO.checkEntryInfo(trl['TRANSITION'],n_entry,\
                                                'TRANSITION')
-            etrans = [makeTransition(trans=t,def_molecs=def_molecs,star=star) 
+            etrans = [Transition.makeTransition(trans=t,def_molecs=def_molecs,\
+                                                star=star) 
                       for t in trl_sorted]
             this_index = max(used_indices)+1
             used_indices = used_indices + [this_index]
@@ -1482,6 +1484,13 @@ class PlotGas(PlottingSession):
         
         if not star_grid: 
             exclude_data = 0
+
+        #-- Make sure Transitions get assigned a line strength when detected
+        if mark_undetected:
+            trl = Transition.extractTransFromStars(star_grid,dtype='PACS')
+            for ifn in range(len(self.pacs.data_filenames)):
+                self.pacs.intIntMatch(trans_list=trl,ifn=ifn)
+        
 
         lls = self.createLineLabels(star_grid=star_grid,\
                                     fn_trans_marker=fn_trans_marker,\
@@ -1631,7 +1640,13 @@ class PlotGas(PlottingSession):
             labels = bool(cfg_dict['labels'])
         else:
             labels = []
-        
+
+        #-- Make sure Transitions get assigned a line strength when detected
+        if mark_undetected:
+            trl = Transition.extractTransFromStars(star_grid,dtype='PACS')
+            for ifn in range(len(self.pacs.data_filenames)):
+                self.pacs.intIntMatch(trans_list=trl,ifn=ifn)
+
         lls = self.createLineLabels(star_grid=star_grid,\
                                     fn_trans_marker=fn_trans_marker,\
                                     mark_undetected=mark_undetected,\

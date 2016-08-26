@@ -116,7 +116,7 @@ class FitsReader(LPDataReader):
 
         #- get header, number of grid points and stepsize
         hdr = pyfits.getheader(self.fn)
-        self.contents['hdr'] = hdr
+        self['contents']['hdr'] = hdr
         n_points = hdr.get('naxis1')
         if n_points is None or n_points == 1:
             raw_input('Could not find array size of fits file.')
@@ -128,15 +128,15 @@ class FitsReader(LPDataReader):
         #except MemoryError:
             #print 'WARNING! Reading %s results in a '%self.fn + \
                   #'MemoryError. Ignoring datafile for now.'
-            #self.contents['flux'] = []
-            #self.contents['velocity'] = []
+            #self['contents']['flux'] = []
+            #self['contents']['velocity'] = []
             #return
         if len(lp.shape) == 4 and lp.shape[0] == lp.shape[1] == lp.shape[2] == 1:
-            self.contents['flux'] = lp[0][0][0]
+            self['contents']['flux'] = lp[0][0][0]
         elif len(lp.shape) == 3 and lp.shape[0] == lp.shape[1] == 1:
-            self.contents['flux'] = lp[0][0]
+            self['contents']['flux'] = lp[0][0]
         elif lp.shape[0] != 1:
-            self.contents['flux'] = lp
+            self['contents']['flux'] = lp
         else:
             raise IOError('Unknown fits file formate for the FitsReader.'+\
                           'Check dimensions fits data. (Then contact Robin)')
@@ -171,7 +171,7 @@ class FitsReader(LPDataReader):
             #- if it is 0.0, save the initial guess from Star.dat,
             #if abs(vlsr_fits) < 1e03: self.checkVlsr()
             #- else save value from fits file.
-            self.contents['vlsr'] = vlsr_fits/1000.
+            self['contents']['vlsr'] = vlsr_fits/1000.
             self.checkVlsr()
             deltav = hdr.get('deltav')
             #- vlsr_fits in m/s, we want km/s, conversion factor of 1000
@@ -181,8 +181,8 @@ class FitsReader(LPDataReader):
         #- Make sure the velocity grid is ascending.
         if vel_grid[0] > vel_grid [-1]:
             vel_grid = vel_grid[::-1]
-            self.contents['flux'] = self.contents['flux'][::-1]
-        self.contents['velocity'] = vel_grid
+            self['contents']['flux'] = self['contents']['flux'][::-1]
+        self['contents']['velocity'] = vel_grid
 
         #- Get the date of observation
-        self.contents['date_obs'] = hdr.get('DATE-OBS')
+        self['contents']['date_obs'] = hdr.get('DATE-OBS')

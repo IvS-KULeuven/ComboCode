@@ -117,7 +117,7 @@ class Statistics(object):
         '''
         instrument_name = instrument_name.upper()
         if instrument_name == 'PACS':
-            if instrument_instance <> None:
+            if not instrument_instance is None:
                 self.instrument = instrument_instance
                 self.instrument.setData(data_filenames=data_filenames,\
                                         searchstring=searchstring)
@@ -128,7 +128,7 @@ class Statistics(object):
                                         searchstring=searchstring)
         
         elif instrument_name == 'SPIRE':
-            if instrument_instance <> None:
+            if not instrument_instance is None:
                 self.instrument = instrument_instance
                 self.instrument.setData(data_filenames=data_filenames,\
                                         searchstring=searchstring)
@@ -139,7 +139,7 @@ class Statistics(object):
                                         searchstring=searchstring)
         
         elif instrument_name == 'SED':
-            if instrument_instance <> None:
+            if not instrument_instance is None:
                 self.instrument = instrument_instance
             else:
                 self.instrument = Sed.Sed(star_name=self.star_name,**kwargs)
@@ -205,7 +205,7 @@ class Statistics(object):
             self.instrument.prepareSphinx(star_grid)
             self.star_grid = [star 
                               for star in star_grid 
-                              if star['LAST_%s_MODEL'%instr] <> None]
+                              if not star['LAST_%s_MODEL'%instr] is None]
         #-- The FREQ_RESO case
         else:
             if not star_grid:
