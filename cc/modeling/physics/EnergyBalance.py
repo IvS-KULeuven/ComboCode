@@ -3,7 +3,10 @@
 """
 Module for calculating the energy balance. 
 
-Author: R. Lombaert
+Author: R. Lombaert, H. Olofsson & M. Maercker (Chalmers, Sweden)
+
+For the use of the EnergyBalance module, please contact one of the three authors
+listed here.
 
 """
 
@@ -109,6 +112,11 @@ class EnergyBalance(object):
     
     '''
     The energy balance class.
+    
+    Author: R. Lombaert, H. Olofsson & M. Maercker (Chalmers, Sweden)
+
+    For the use of the EnergyBalance module, please contact one of the three 
+    authors listed here.
     
     Calculates energy balance and provides tools for reading and writing I/O, 
     and setting input physics.
@@ -221,6 +229,14 @@ class EnergyBalance(object):
         @type kwargs: dict
                 
         '''
+        
+        #-- A welcome message, and credentials
+        m = "Welcome to the EnergyBalance module of ComboCode! \n"+\
+            "This module was written at Chalmers University of Technology. "+\
+            "The main author is R. Lombaert, with support from H. Olofsson "+\
+            "and M. Maercker. Please contact one of these people if you wish "+\
+            "to use the EnergyBalance with the purpose of publishing results."
+        print m
         
         #-- Initialise all variables
         self.__reset()
