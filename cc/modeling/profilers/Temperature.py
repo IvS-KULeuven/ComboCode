@@ -175,7 +175,7 @@ class Temperature(Profiler.Profiler):
         #   equal to the class' self.r attribute, and thus it will evaluated
         #   properly. Evaluated with inner_eps==0.5. Reevaluated if alpha is
         #   different upon eval call.
-        self.T = self.eval(self.x,inner_eps=0.5)
+        self.T = self.eval(self.x,inner_eps=self.inner_eps)
         self.y = self.T
         
         #-- Now also redo the derivative method. Then call diff to set the 

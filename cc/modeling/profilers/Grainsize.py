@@ -186,7 +186,8 @@ class Distribution(Profiler.Profiler2D):
         
         Sputtering can be applied here by passing the drift array and the max
         drift velocity to the call. Any grain sizes with a drift above w_sputter
-        will have their number density set to 0.
+        will have their number density set to 0. This depends on both the grain 
+        size and the radius.
                 
         @keyword x: The primary coordinate point(s). If None, the default 
                     coordinate grid is used.
@@ -202,7 +203,16 @@ class Distribution(Profiler.Profiler2D):
         
                        (default: 1)
         @type warn: bool
-
+        @keyword w_sputter: The sputtering drift velocity above which the number
+                            density is set to zero. Default in case no 
+                            sputtering is to be applied. 
+                            
+                            (default: 0.)
+        @type w_sputter: float
+        @keyword w: The Drift() object. Only relevant when w_sputter is nonzero.
+        
+                    (default: np.empty(0))
+        @type w: array
         
         @return: The profile evaluated at x and y
         @rtype: array/float

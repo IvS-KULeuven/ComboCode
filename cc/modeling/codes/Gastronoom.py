@@ -439,7 +439,7 @@ class Gastronoom(ModelingSession):
                         cks = ['OUTER_R_MODE','CHANGE_DUST_TO_GAS_FOR_ML_SP',\
                                'DUST_TO_GAS_CHANGE_ML_SP','STARFILE',\
                                'USE_STARFILE','USE_NO_MASER_OPTION',\
-                               'USE_MASER_IN_SPHINX','FEHLER','N_FREQ','XDEX',\
+                               'USE_MASER_IN_SPHINX','FEHLER','N_FREQ',\
                                'START_APPROX','USE_FRACTION_LEVEL_CORR',\
                                'FRACTION_LEVEL_CORR','NUMBER_LEVEL_MAX_CORR']
                         if self.cCL(this_list=molec.makeDict(),\

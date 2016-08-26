@@ -157,7 +157,7 @@ def vsound(T,gamma,mu):
     The sound velocity at T for a given mean molecular weight and gamma.
         
     @param T: The temperature (K)
-    @type r: array/float
+    @type T: array/float
     @param gamma: The adiabatic constant
     @type gamma: float
     @param mu: the mean molecular weight in units of hydrogen mass (g)

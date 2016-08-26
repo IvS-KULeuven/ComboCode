@@ -1364,12 +1364,10 @@ class EnergyBalance(object):
         #-- Remember the rates profiler for each iteration
         self.rates[self.i] = yrates/dens_term
         
-        #-- Add the density term
-        yrates = yrates/dens_term
-        
         #-- Note that if no rates are requested, this will give an empty array
         if self.r.size == Data.arrayify(yrates).size:
-            rp = Profiler.Profiler(self.r,spline1d(self.r,yrates,*args,**kwargs))
+            rp = Profiler.Profiler(self.r,spline1d(self.r,self.rates[self.i],\
+                                                   *args,**kwargs))
         else:
             rp = None 
         
@@ -2293,8 +2291,9 @@ class EnergyBalance(object):
         Plot the total heating and cooling term (excluding adiabatic cooling)
         calculated by calcT before the differential equation is solved. 
         
-        This excludes the density factor that enters, and so is essentially 
-        H - C.
+        This includes the density factor that enters, and so is essentially 
+        (H - C)/rho. The velocity does not enter here, since that is calculated
+        explicitly in dTdr. Hence the y-axis units K/s.
         
         @keyword fn: The filename and path of the plot (without extension). If
                      default, a filename can be given in a cfg file, and if that

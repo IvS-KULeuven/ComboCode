@@ -116,7 +116,7 @@ START_APPROX=0             !set =0 when one wants to start with LTE-approx as st
 FEHLER=1e-4                  ! convergence criterium in mline
 ITERA=200                    ! Maximum number of iterations in mline
 LTE_REQUEST=0                  !If you only want LTE in MLINE
-XDEX=2.                         ! Controls the distribution of the impact parameters in the interval between R_STAR and R_OUTER. 
+#XDEX=2.                         ! [Currently not implemented] Controls the distribution of the impact parameters in the interval between R_STAR and R_OUTER. 
 
 USE_COLLIS_RADIAT_SWITCH=0      !set to 1 if one wants to use the collision-radiative switching method of Hummer and Voels (1988)
 USE_FRACTION_LEVEL_CORR=1       ! set to 1 if one wants to put a limit on the level-population correction (BES3).
