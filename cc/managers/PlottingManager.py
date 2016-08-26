@@ -12,6 +12,7 @@ import os
 import cc.path
 from cc.plotting.objects import PlotGas
 from cc.plotting.objects import PlotDust
+from cc.plotting.objects import PlotChem
 
 
 class PlottingManager():
@@ -21,8 +22,10 @@ class PlottingManager():
     
     """
     
-    def __init__(self,star_name,mcmax=False,gastronoom=False,pacs=None,\
+    def __init__(self,star_name,mcmax=False,gastronoom=False,\
+                 chemistry=False,pacs=None,\
                  path_gastronoom='codeJun2010',path_mcmax='codeJun2010',\
+                 path_chemistry='OutputClumpy',\
                  inputfilename='inputComboCode.dat',spire=None,fn_add_star=1,\
                  plot_pars=dict(),sed=None):
                 
@@ -89,6 +92,8 @@ class PlottingManager():
         self.dust_cfg = dict()
         self.gas_pars = dict()
         self.gas_cfg = dict()
+        self.chem_pars = dict()
+        self.chem_cfg = dict()
         for k,v in plot_pars.items():
             if k[0:9] == 'PLOT_GAS_' and v:
                 self.gas_pars[k.replace('_GAS','',1)] = v
@@ -98,8 +103,13 @@ class PlottingManager():
                 self.dust_pars[k.replace('_DUST','',1)] = v
             elif k[0:9] == 'CFG_DUST_' and v:
                 self.dust_cfg[k.replace('_DUST','',1)] = v
+            elif k[0:15] == 'PLOT_CHEMISTRY_' and v:
+                self.chem_pars[k.replace('_CHEMISTRY','',1)] = v
+            elif k[0:14] == 'CFG_CHEMISTRY_' and v:
+                self.chem_cfg[k.replace('_CHEMISTRY','',1)] = v
         self.mcmax = mcmax
         self.gastronoom = gastronoom
+        self.chemistry = chemistry
         if self.mcmax: 
             self.plotter_dust = PlotDust.PlotDust(star_name=star_name,\
                                                   path_mcmax=path_mcmax,\
@@ -117,6 +127,13 @@ class PlottingManager():
                                                fn_add_star=fn_add_star)                                     
         else:
             self.plotter_gas = None
+        if self.chemistry:
+            self.plotter_chem = PlotChem.PlotChem(star_name=star_name,\
+                                                  path_chemistry=path_chemistry,\
+                                                  inputfilename=inputfilename,
+                                                  fn_add_star=fn_add_star)
+        else:
+            self.plotter_chem = None
         
 
     
@@ -165,7 +182,15 @@ class PlottingManager():
                 thisMethod = getattr(self.plotter_gas,method_name)
                 thisMethod(star_grid=star_grid,\
                            cfg=self.gas_cfg.get(k.replace('PLOT_','CFG_'),''))
-    
+        if self.chemistry:
+            for k in self.chem_pars:
+                method_name = 'plot' + \
+                              ''.join([w.capitalize() 
+                                       for w in k.replace('PLOT_','')\
+                                                 .split('_')])
+                thisMethod = getattr(self.plotter_chem,method_name)
+                thisMethod(star_grid=star_grid,\
+                           cfg=self.chem_cfg.get(k.replace('PLOT_','CFG_'),''))
     
     
     def plotTransitions(self,star_grid,force=0,cfg='',fn_suffix=''):

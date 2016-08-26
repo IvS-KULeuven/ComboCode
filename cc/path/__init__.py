@@ -19,6 +19,7 @@ def __readPaths():
     '''
     
     dd = dict([('gdata','GASTRoNOoM/src/data'),('gastronoom','GASTRoNOoM'),\
+               ('chemistry','Chemistry'),('csource',''),\
                ('mcmax','MCMax'),('mobs','MCMax/Observation_Files'),\
                ('mopac','MCMax/Opacities'),('data',''),('dradio',''),\
                ('dpacs',''),('dspire',''),('dsed',''),('dphot',''),\

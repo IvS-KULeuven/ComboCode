@@ -67,7 +67,6 @@ def read(func,module=sys.modules[__name__],return_func=0,*args,**kwargs):
     return module(*args,**kwargs)
 
 
-
 def findKey(i,data,key):
 
     '''
@@ -224,9 +223,8 @@ def getGastronoomOutput(filename,keyword='RADIUS',begin_index=0,\
     
     @return: The requested data from the GASTRoNOoM output
     @rtype: list/array
-   
     """
-    
+  
     keyword = keyword.upper()
     data = readFile(filename,' ')
     data_col_1 = [d[0] for d in data]
@@ -248,9 +246,9 @@ def getGastronoomOutput(filename,keyword='RADIUS',begin_index=0,\
     else:   
         return [float(line[key_index].replace('D+','E+').replace('D-','E-')) 
                 for line in data[data_i:data_j]]
-
-
-
+    
+    
+    
 def getInputData(path=cc.path.usr,keyword='STAR_NAME',filename='Star.dat',\
                  remove_underscore=0,make_float=1,start_index=1,rindex=None):
     

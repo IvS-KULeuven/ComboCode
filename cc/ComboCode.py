@@ -12,6 +12,7 @@ import os
 import subprocess
 import time
 
+
 import cc.path
 from cc.tools.io import DataIO
 from cc.tools.numerical import Gridding
@@ -19,10 +20,12 @@ from cc.managers.ModelingManager import ModelingManager as MM
 from cc.managers.PlottingManager import PlottingManager as PM
 from cc.managers import Vic
 from cc.modeling.objects import Star, Transition
-from cc.statistics import UnresoStats, ResoStats, SedStats
+from cc.statistics import UnresoStats, ResoStats, SedStats, ChemStats
 from cc.data.instruments import Pacs, Spire
 from cc.data import Sed, Radio
 from cc.modeling.tools import ColumnDensity, ContinuumDivision
+from cc.modeling.codes import Chemistry
+from cc.tools.io import Database
 
 class ComboCode(object):
 
@@ -99,6 +102,7 @@ class ComboCode(object):
             self.finished = True
             self.runModelManager()
             self.finalizeVic()
+            self.runChemistry()
             self.runPlotManager()
             self.runStatistics()
             self.doContDiv()
@@ -125,14 +129,16 @@ class ComboCode(object):
                           ('append_results',0),('write_dust_density',0),\
                           ('replace_db_entry',0),('update_spec',0),\
                           ('path_gastronoom',''),('path_mcmax',''),\
+                          ('path_chemistry',''),\
                           ('print_model_info',1),('stat_chi2','diff'),\
                           ('contdiv_features',[]),('cfg_contdiv',''),\
                           ('show_contdiv',0),('skip_cooling',0),\
                           ('recover_sphinxfiles',0),('stat_print',0),\
                           ('stat_lll_p',None),('stat_method','clipping'),\
                           ('star_name','model'),('single_session',0),\
-                          ('stat_lll_vmin',0.0),\
-                          ('stat_lll_vmax',0.0), ('print_check_t',1)]
+                          ('stat_lll_vmin',0.0),('chemistry',0),\
+                          ('stat_lll_vmax',0.0), ('print_check_t',1),\
+                          ('chemstats',0),('chemstats_molecules',[])]
         global_pars = dict([(k,self.processed_input.pop(k.upper(),v))
                             for k,v in default_global])
         self.__dict__.update(global_pars)
@@ -593,9 +599,10 @@ class ComboCode(object):
 
         cc.path.gout = os.path.join(cc.path.gastronoom,self.path_gastronoom)
         cc.path.mout = os.path.join(cc.path.mcmax,self.path_mcmax)
+        cc.path.cout = os.path.join(cc.path.chemistry,self.path_chemistry)
         DataIO.testFolderExistence(cc.path.gout)
         DataIO.testFolderExistence(cc.path.mout)
-
+        DataIO.testFolderExistence(cc.path.cout)
 
     def setVicManager(self):
 
@@ -637,7 +644,8 @@ class ComboCode(object):
                                 path_mcmax=self.path_mcmax,\
                                 skip_cooling=self.skip_cooling,\
                                 recover_sphinxfiles=self.recover_sphinxfiles,\
-                                single_session=self.single_session)
+                                single_session=self.single_session,\
+                                )
 
 
     def setPlotManager(self):
@@ -654,8 +662,10 @@ class ComboCode(object):
         self.plot_manager = {sn: PM(star_name=sn,\
                                     gastronoom=self.gastronoom,\
                                     mcmax=self.mcmax,\
+                                    chemistry=self.chemistry,\
                                     path_gastronoom=self.path_gastronoom,\
                                     path_mcmax=self.path_mcmax,\
+                                    path_chemistry=self.path_chemistry,\
                                     inputfilename=self.inputfilename,\
                                     pacs=self.pacs[sn],\
                                     spire=self.spire[sn],\
@@ -746,7 +756,10 @@ class ComboCode(object):
                if self.plot_manager[sn].gas_pars.keys()] + \
               [self.plot_manager[sn].dust_pars.keys()
                for sn in self.star_name
-               if self.plot_manager[sn].dust_pars.keys()]
+               if self.plot_manager[sn].dust_pars.keys()] + \
+              [self.plot_manager[sn].chem_pars.keys()
+               for sn in self.star_name
+               if self.plot_manager[sn].chem_pars.keys()]
         if not dds: return
         
         #-- Continue with the plots
@@ -777,7 +790,6 @@ class ComboCode(object):
         Append results at the end of the inputfile.
 
         '''
-
         print '** Appending results to inputfile and copying to output folders.'
         print '***********************************'
         #-- Check if the transition was intended to be calculated, and if it was
@@ -877,6 +889,7 @@ class ComboCode(object):
         self.unresostats = []
         self.resostats = dict()
         self.sedstats = dict()
+        self.chemstats = dict()
         
         #-- Data are handled by these objects themselves for unresolved lines.
         for sn in self.star_name:
@@ -940,9 +953,49 @@ class ComboCode(object):
                 self.resostats[sn] = ss
                 #bfms = self.resostats.selectBestFitModels(mode='int')
                 #self.plot_manager.plotTransitions(star_grid=bfms,fn_suffix='BFM',force=1)
+        
+        for sn in self.star_name:    
+            if self.statistics and self.chemistry:
+                self.chemstats_molecules = list(self.chemstats_molecules)
+                ss = ChemStats.ChemStats(star_name=sn,\
+                                         path_code=self.path_chemistry,\
+                                         star_grid=self.star_grid,\
+                                         molecules = self.chemstats_molecules)
+                self.chemstats[sn] = ss
 
 
+    
+    def runChemistry(self):
+        if self.chemistry:
+            print '************************************************'
+            print '** Running Chemistry '
+            print '************************************************'
 
+            chemistry_db_path = os.path.join(cc.path.cout,'Chemistry_models.db')
+            self.chem_db = Database.Database(db_path=chemistry_db_path)
+
+            ch = Chemistry.Chemistry(path_chemistry=self.path_chemistry,\
+                                    replace_db_entry = self.replace_db_entry,\
+                                    db = self.chem_db,\
+                                    single_session=self.single_session)
+            for i,star in enumerate(self.star_grid):
+                print '***********************************'
+                print '** Model #%i out of %i requested models.'\
+                      %(i+1,len(self.star_grid))
+                print '***********************************'
+
+                ch.doChemistry(star)
+                
+                if ch.model_id:
+                    star['LAST_CHEMISTRY_MODEL'] = ch.model_id
+
+            
+            
+            
+            
+            
+            
+    
     def doContDiv(self):
 
         '''

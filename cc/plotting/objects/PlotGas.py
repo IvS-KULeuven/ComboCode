@@ -1350,7 +1350,7 @@ class PlotGas(PlottingSession):
                                                'TRANSITION')
             etrans = [Transition.makeTransition(trans=t,def_molecs=def_molecs,\
                                                 star=star) 
-                      for t in trl_sorted]
+            for t in trl_sorted]
             this_index = max(used_indices)+1
             used_indices = used_indices + [this_index]
             ells = [('%s %s'%(t.molecule.molecule,t.makeLabel()),\
@@ -1484,14 +1484,12 @@ class PlotGas(PlottingSession):
         
         if not star_grid: 
             exclude_data = 0
-
         #-- Make sure Transitions get assigned a line strength when detected
         if mark_undetected:
             trl = Transition.extractTransFromStars(star_grid,dtype='PACS')
             for ifn in range(len(self.pacs.data_filenames)):
                 self.pacs.intIntMatch(trans_list=trl,ifn=ifn)
         
-
         lls = self.createLineLabels(star_grid=star_grid,\
                                     fn_trans_marker=fn_trans_marker,\
                                     mark_undetected=mark_undetected,\
