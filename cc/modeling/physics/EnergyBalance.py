@@ -3,7 +3,10 @@
 """
 Module for calculating the energy balance. 
 
-Author: R. Lombaert
+Author: R. Lombaert, H. Olofsson & M. Maercker (Chalmers, Sweden)
+
+For the use of the EnergyBalance module, please contact one of the three authors
+listed here.
 
 """
 
@@ -109,6 +112,11 @@ class EnergyBalance(object):
     
     '''
     The energy balance class.
+    
+    Author: R. Lombaert, H. Olofsson & M. Maercker (Chalmers, Sweden)
+
+    For the use of the EnergyBalance module, please contact one of the three 
+    authors listed here.
     
     Calculates energy balance and provides tools for reading and writing I/O, 
     and setting input physics.
@@ -221,6 +229,14 @@ class EnergyBalance(object):
         @type kwargs: dict
                 
         '''
+        
+        #-- A welcome message, and credentials
+        m = "Welcome to the EnergyBalance module of ComboCode! \n"+\
+            "This module was written at Chalmers University of Technology. "+\
+            "The main author is R. Lombaert, with support from H. Olofsson "+\
+            "and M. Maercker. Please contact one of these people if you wish "+\
+            "to use the EnergyBalance with the purpose of publishing results."
+        print m
         
         #-- Initialise all variables
         self.__reset()
@@ -1561,7 +1577,7 @@ class EnergyBalance(object):
         
         General case (following Gail & Sedlmayr 2014, see Eq 15.19): 
         Hdt = alpha pi k_b n_h2 (fH+2.)(1.-P)^(-2./3.) Int(n_d a^2 da) (T_d - T)
-              sqrt(8*vT^2+drift^2) (1/(gamma-1))
+        sqrt(8*vT^2+drift^2) (1/(gamma-1))
         
         MCP/ALI case (n_d: dust number density, average grain size a): 
         Hdt = 2 alpha pi k_b n_h2 (n_d a^2) (T_d - T) vT
@@ -1649,10 +1665,10 @@ class EnergyBalance(object):
         Calculate the heating rate by the photoelectric effect. 
         
         Two methods are available at present: 
-            1) Following Draine 1978 and Huggins et al. 1988, as used by MCP
-               (see also Crosas & Menten 1997)
-            2) Following Bakes & Tielens 1994., as implemented by Decin et al.
-               2006 in GASTRoNOoM. 
+        1) Following Draine 1978 and Huggins et al. 1988, as used by MCP
+        (see also Crosas & Menten 1997)
+        2) Following Bakes & Tielens 1994., as implemented by Decin et al.
+        2006 in GASTRoNOoM. 
                
         No options to tweak these methods has been implemented yet, but a lot of
         consistency checks should be done, and some of the assumptions can be 
@@ -1791,10 +1807,10 @@ class EnergyBalance(object):
         Calculate the line cooling rate by vibrational excitation of H_2.
         
         Two modes are available (used by MCP/ALI and GASTRoNOoM, respectively):
-            1) Following Groenewegen 1994, based on Hartquist et al 1980. Based
-               on fitting of tabulated data of H2 cooling under LTE conditions
-            2) Following Decin et al 2006, based on GS1976, Hollenbach & McKee
-               1979 and Hollenbach & McKee 1989.
+        1) Following Groenewegen 1994, based on Hartquist et al 1980. Based
+        on fitting of tabulated data of H2 cooling under LTE conditions
+        2) Following Decin et al 2006, based on GS1976, Hollenbach & McKee
+        1979 and Hollenbach & McKee 1989.
         
         The keyword h2_method (groenewegen, or gs1976) determines which of the 
         two is used. 

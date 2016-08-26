@@ -1073,9 +1073,9 @@ class PlotGas(PlottingSession):
             #-- Collect all data
             molecs = list(set([molec for istar in ddata.keys()
                                      for molec in ddata[istar].keys()]))
-            mplot = ddata[0][molec.molecule]['key']
             for molec in molecs: 
                 #-- Collect data
+                mplot = ddata[0][molec]['key']
                 radii = [dmol['rad']
                          for istar in ddata.keys()
                          for imolec,dmol in ddata[istar].items()

@@ -10,6 +10,23 @@ This manual has been written by Robin Lombaert and revised by Marie Van de Sande
 ### Is this manual finished?
 No! This is very much a work in progress. Any comments, questions or clarifications can be requested <a href="https://github.com/robinlombaert">by contacting me</a>. We will try to keep the manual as up-to-date as possible, but for a while yet, it will not be complete. Bear with us!
 
+### Acknowledgments
+ComboCode was originally developed at <b>KU Leuven, Belgium</b>. Currently, development and maintenance continue at <b>Chalmers University of Technology, Sweden</b>.
+
+Developers: 
+- <a href="https://github.com/robinlombaert">Robin Lombaert</a>, Chalmers University of Technology, Sweden (main author)
+- <a href="https://github.com/MarieVdS">Marie van de Sande</a>, KU Leuven, Belgium (contributing author)
+
+### The numerical codes currently included in ComboCode
+* <b> GASTRoNOoM:</b> L. Decin (KU Leuven, Belgium) 
+* <b> MCMax:</b> M. Min (UvA, the Netherlands)
+* <b> MCP & ALI:</b> H. Olofsson & M. Maercker (Chalmers, Sweden) -- WiP 
+
+### The numerical modules written in ComboCode:
+* <b> EnergyBalance: </b> R. Lombaert, H. Olofsson & M. Maercker (Chalmers, Sweden)
+
+For the use of the EnergyBalance module, please contact one of the three authors listed here.
+
 ### Table of Contents
 
 ## 2. Goals of the ComboCode package
