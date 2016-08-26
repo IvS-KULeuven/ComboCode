@@ -1484,24 +1484,12 @@ class PlotGas(PlottingSession):
         
         if not star_grid: 
             exclude_data = 0
-<<<<<<< HEAD
-            
-        #-- Make sure Transitions get assigned a line strength when detected
-        if mark_undetected:
-            trl = Transition.extractTransFromStars(star_grid,dtype='PACS')
-            for ifn in range(len(self.pacs.data_filenames)):
-                self.pacs.intIntMatch(trans_list=trl,ifn=ifn)
-                
-=======
-
         #-- Make sure Transitions get assigned a line strength when detected
         if mark_undetected:
             trl = Transition.extractTransFromStars(star_grid,dtype='PACS')
             for ifn in range(len(self.pacs.data_filenames)):
                 self.pacs.intIntMatch(trans_list=trl,ifn=ifn)
         
-
->>>>>>> master
         lls = self.createLineLabels(star_grid=star_grid,\
                                     fn_trans_marker=fn_trans_marker,\
                                     mark_undetected=mark_undetected,\
@@ -1650,15 +1638,6 @@ class PlotGas(PlottingSession):
             labels = bool(cfg_dict['labels'])
         else:
             labels = []
-<<<<<<< HEAD
-            
-        #-- Make sure Transitions get assigned a line strength when detected
-        if mark_undetected:
-            trl = Transition.extractTransFromStars(star_grid,dtype='PACS')
-            for ifn in range(len(self.pacs.data_filenames)):
-                self.pacs.intIntMatch(trans_list=trl,ifn=ifn)      
-                
-=======
 
         #-- Make sure Transitions get assigned a line strength when detected
         if mark_undetected:
@@ -1666,7 +1645,6 @@ class PlotGas(PlottingSession):
             for ifn in range(len(self.pacs.data_filenames)):
                 self.pacs.intIntMatch(trans_list=trl,ifn=ifn)
 
->>>>>>> master
         lls = self.createLineLabels(star_grid=star_grid,\
                                     fn_trans_marker=fn_trans_marker,\
                                     mark_undetected=mark_undetected,\
