@@ -768,12 +768,12 @@ class ResoStats(Statistics):
         
         The 'output' is divided into three components.
         * Dictionary confidenceLLL (transitions as keywords)
-            Gives the difference between the calculate loglikelihood
-            and the threshold value
+        Gives the difference between the calculate loglikelihood
+        and the threshold value
         * Dictionary condidenceLLL_verdict (transitions as keywords)
-            Contains the result (1 or 0) for every model per transition
+        Contains the result (1 or 0) for every model per transition
         * Array confidenceLLL_models
-            Models that fit all included transitions
+        Models that fit all included transitions
         
         '''
         
@@ -980,14 +980,14 @@ class ResoStats(Statistics):
         
         Output can be found in:
         * Dictionary line_lll:  dictionary containing whether 
-            a line satisfies the condition or not. One list per transition,  
-            each list containing the verdict per model.
+        a line satisfies the condition or not. One list per transition,  
+        each list containing the verdict per model.
         * List model_lll: list containing the verdict per transition,
-            per model. Number of lists = number of models. 
-            Length of each list = number of transitions. 
+        per model. Number of lists = number of models. 
+        Length of each list = number of transitions. 
         * List verdict_model_lll: list containing the verdict per 
-            transition, per model. Number of lists = number of models. 
-            Each list contains a single number.
+        transition, per model. Number of lists = number of models. 
+        Each list contains a single number.
         
         '''
         
@@ -1054,14 +1054,14 @@ class ResoStats(Statistics):
         
         Output can be found in:
         * Dictionary line_lll_range:  dictionary containing whether 
-            a line satisfies the condition or not. One list per transition,  
-            each list containing the verdict per model.
+        a line satisfies the condition or not. One list per transition,  
+        each list containing the verdict per model.
         * List model_lll_range: list containing the verdict per transition,
-            per model. Number of lists = number of models. 
-            Length of each list = number of transitions. 
+        per model. Number of lists = number of models. 
+        Length of each list = number of transitions. 
         * List verdict_model_lll_range: list containing the verdict per 
-            transition, per model. Number of lists = number of models. 
-            Each list contains a single number.
+        transition, per model. Number of lists = number of models. 
+        Each list contains a single number.
         
         '''
         
@@ -1146,14 +1146,14 @@ class ResoStats(Statistics):
         
         Output can be found in:
         * Dictionary verdict_ratioint:  dictionary containing whether 
-            a line satisfies the condition or not. One list per transition,  
-            each list containing the verdict per model.
+        a line satisfies the condition or not. One list per transition,  
+        each list containing the verdict per model.
         * List model_ratioint: list containing the verdict per transition,
-            per model. Number of lists = number of models. 
-            Length of each list = number of transitions. 
+        per model. Number of lists = number of models. 
+        Length of each list = number of transitions. 
         * List model_ratioint_verdict: list containing the verdict per 
-            transition, per model. Number of lists = number of models. 
-            Each list contains a single number.
+        transition, per model. Number of lists = number of models. 
+        Each list contains a single number.
 
         '''
         
@@ -1345,14 +1345,14 @@ class ResoStats(Statistics):
         
         Output can be found in:
         * Dictionary verdict_ratiopeak:  dictionary containing whether 
-            a line satisfies the condition or not. One list per transition,  
-            each list containing the verdict per model.
+        a line satisfies the condition or not. One list per transition,  
+        each list containing the verdict per model.
         * List model_ratiopeak: list containing the verdict per transition,
-            per model. Number of lists = number of models. 
-            Length of each list = number of transitions. 
+        per model. Number of lists = number of models. 
+        Length of each list = number of transitions. 
         * List model_ratiopeak_verdict: list containing the verdict per 
-            transition, per model. Number of lists = number of models. 
-            Each list contains a single number.
+        transition, per model. Number of lists = number of models. 
+        Each list contains a single number.
             
         '''
 
@@ -1435,7 +1435,7 @@ class ResoStats(Statistics):
         
         '''
         Combine the ratio of the integrated and peak main beam intensity
-            per transition.
+        per transition.
         
         @keyword useNoisy: assign a larger error to noisy lines
         @type useNoisy: bool
@@ -1451,14 +1451,14 @@ class ResoStats(Statistics):
         
         Output can be found in:
         * Dictionary verdict_ratiocombo:  dictionary containing whether 
-            a line satisfies the condition or not. One list per transition,  
-            each list containing the verdict per model.
+        a line satisfies the condition or not. One list per transition,  
+        each list containing the verdict per model.
         * List model_ratiocombo: list containing the verdict per transition,
-            per model. Number of lists = number of models. 
-            Length of each list = number of transitions. 
+        per model. Number of lists = number of models. 
+        Length of each list = number of transitions. 
         * List model_ratiocombo_verdict: list containing the verdict per 
-            transition, per model. Number of lists = number of models. 
-            Each list contains a single number.
+        transition, per model. Number of lists = number of models. 
+        Each list contains a single number.
                 
         '''
         
@@ -1548,13 +1548,13 @@ class ResoStats(Statistics):
         
         '''
         Calculate the (reduced) chi squared of the integrated 
-            main beam intensities.
+        main beam intensities.
         
         @keyword P: Degrees of freedom = len(data) - P
         @type P: int
         
         @keyword useTeleUncertainties: Use telescope uncertainties 
-            instead of a fixed error.
+        instead of a fixed error.
         @type useTeleUncertainties: bool
         
         @keyword useNoisy: Use a higher uncertainty for noisy lines
