@@ -22,7 +22,6 @@ from cc.plotting import Plotting2
 from cc.tools.io import LineList
 from cc.data.instruments import Pacs
 from cc.modeling.objects import Star
-from cc.modeling.tools import CodeIO
 
 
 class PlotChem(PlottingSession):
@@ -144,9 +143,9 @@ class PlotChem(PlottingSession):
             folders = [os.path.join(cc.path.cout,'models',\
                     star['LAST_CHEMISTRY_MODEL'])+'/' for star in valid_sg]
             
-            radii = [CodeIO.getChemistryPhysPar(folder+'csphyspar.out', 'RADIUS') \
+            radii = [DataIO.getChemistryPhysPar(folder+'csphyspar.out', 'RADIUS') \
                 for folder in folders]
-            temps = [CodeIO.getChemistryPhysPar(folder+'csphyspar.out', 'VELOCITY') \
+            temps = [DataIO.getChemistryPhysPar(folder+'csphyspar.out', 'VELOCITY') \
                 for folder in folders]
 
             if temps:    
@@ -222,9 +221,9 @@ class PlotChem(PlottingSession):
             folders = [os.path.join(cc.path.cout,'models',\
                     star['LAST_CHEMISTRY_MODEL'])+'/' for star in valid_sg]
             
-            radii = [CodeIO.getChemistryPhysPar(folder+'csphyspar.out', 'RADIUS') \
+            radii = [DataIO.getChemistryPhysPar(folder+'csphyspar.out', 'RADIUS') \
                 for folder in folders]
-            temps = [CodeIO.getChemistryPhysPar(folder+'csphyspar.out', 'TEMP') \
+            temps = [DataIO.getChemistryPhysPar(folder+'csphyspar.out', 'TEMP') \
                 for folder in folders]
 
             if temps:    
@@ -305,9 +304,9 @@ class PlotChem(PlottingSession):
             folders = [os.path.join(cc.path.cout,'models',\
                     star['LAST_CHEMISTRY_MODEL'])+'/' for star in valid_sg]
             
-            radii = [CodeIO.getChemistryPhysPar(folder+'csphyspar.out', 'RADIUS') \
+            radii = [DataIO.getChemistryPhysPar(folder+'csphyspar.out', 'RADIUS') \
                 for folder in folders]
-            avs = [CodeIO.getChemistryPhysPar(folder+'csphyspar.out', 'A_V') \
+            avs = [DataIO.getChemistryPhysPar(folder+'csphyspar.out', 'A_V') \
                 for folder in folders]
 
             if avs:    
@@ -387,9 +386,9 @@ class PlotChem(PlottingSession):
             folders = [os.path.join(cc.path.cout,'models',\
                     star['LAST_CHEMISTRY_MODEL'])+'/' for star in valid_sg]
             
-            radii = [CodeIO.getChemistryPhysPar(folder+'csphyspar.out', 'RADIUS') \
+            radii = [DataIO.getChemistryPhysPar(folder+'csphyspar.out', 'RADIUS') \
                 for folder in folders]
-            cos = [CodeIO.getChemistryPhysPar(folder+'csphyspar.out', 'COK(PHOT)') \
+            cos = [DataIO.getChemistryPhysPar(folder+'csphyspar.out', 'COK(PHOT)') \
                 for folder in folders]
 
             if cos:    
@@ -470,9 +469,9 @@ class PlotChem(PlottingSession):
             folders = [os.path.join(cc.path.cout,'models',\
                     star['LAST_CHEMISTRY_MODEL'])+'/' for star in valid_sg]
             
-            radii = [CodeIO.getChemistryPhysPar(folder+'csphyspar.out', 'RADIUS') \
+            radii = [DataIO.getChemistryPhysPar(folder+'csphyspar.out', 'RADIUS') \
                 for folder in folders]
-            cos = [CodeIO.getChemistryPhysPar(folder+'csphyspar.out', 'COK(PHOT)') \
+            cos = [DataIO.getChemistryPhysPar(folder+'csphyspar.out', 'COK(PHOT)') \
                 for folder in folders]
 
             if cos:    
@@ -586,13 +585,13 @@ class PlotChem(PlottingSession):
             
             folder = os.path.join(cc.path.cout,'models',\
                         star['LAST_CHEMISTRY_MODEL'])+'/'
-            ddata[istar]['rad'] = CodeIO.getChemistryPhysPar(folder+\
+            ddata[istar]['rad'] = DataIO.getChemistryPhysPar(folder+\
                 'csphyspar.out', 'RADIUS')
             ddata[istar]['id'] = star['LAST_CHEMISTRY_MODEL']
             if frac:
-                species = CodeIO.getChemistryAbundances(folder+'csfrac.out')
+                species = DataIO.getChemistryAbundances(folder+'csfrac.out')
             else:
-                species = CodeIO.getChemistryAbundances(folder+'csnum.out')
+                species = DataIO.getChemistryAbundances(folder+'csnum.out')
             
             for molec in molecules: 
                 ddata[istar][molec] = species[molec]
