@@ -18,7 +18,7 @@ import numpy as np
 
 import cc.path
 from cc.tools.io import DataIO
-from cc.modeling.tools import CodeIO
+#from cc.modeling.tools import CodeIO
 from cc.statistics.Statistics import Statistics
 import matplotlib.pyplot as plt
 from cc.modeling.objects import Transition

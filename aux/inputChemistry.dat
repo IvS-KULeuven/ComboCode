@@ -1,0 +1,43 @@
+! INPUT PARAMETERS FOR THE RATE13_CSE_MODEL
+!
+! PHYSICAL PARAMETERS OF THE CIRCUMSTELLAR ENVELOPE
+R_STAR                  = 2.15E13 CM
+T_STAR                  = 1000 K
+START_RADIUS_WIND       = 4.04E13 CM
+EPSILON_TEMP_LAW        = 0.65
+TERMINAL_VELOCITY       = 5.5E5 CM/S
+MASS_LOSS_RATE          = 9E-8 M_SUN/YEAR
+BETA_VEL_PROFILE        = 5.0
+!
+! GRAIN PARAMETERS FOR H2 FORMATION AND CR IONISATION
+GRAIN_RADIUS            = 1.0E-5 CM
+GRAIN_DENSITY           = 1.5E-12
+GRAIN_ALBEDO            = 0.5
+COSMIC_RAY              = 1.0
+CO_EXTINCTION_COEFF     = 3.0
+RATIO_UV_VISUAL_EXTINC  = 4.65
+!
+! RADIUS INFORMATION
+R_INNER_CHEM          = 10 RSTAR
+R_OUTER_CHEM          = 200 RSTAR
+RESOLUTION            = 0.03
+!
+! ANALYSE SUBROUTINE
+PERFORM_ROUTINE         = 0
+ROUTINE_RADIUS          = 2.0E16
+!
+! DVODE
+RTOL = 1.0E-5
+ATOL = 1.0E-20
+!
+! CLUMPING PARAMETERS
+FMASS = 0.0
+FNOEXT = 0
+!
+! SHIELDING FUNCTIONS CO AND N2
+FILECO                  = "home/mariev/Chemistry/src/shielding/co/shield.03.5.69-557-36.dat"
+FILEN2                  = "home/mariev/Chemistry/src/shielding/n2/Tex_10K_bH2_3km.s-1_bH_5km.s-1_NH_1e+20cm-2.dat"
+! INPUT AND OUTPUT FILE NAMES
+REACTIONS_FILE = '/home/mariev/Chemistry/src/rates/rate13.rates'
+SPECIES_FILE = '/home/mariev/Chemistry/src/specs/rdor-adapted.specs'
+! OUTPUT FILES CSFRAC_NAME.OUT AND CSNUM_NAME.OUT FOR FRACTIONAL ABUNDANCES AND NUMBER DENSITIES

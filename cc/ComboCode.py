@@ -596,13 +596,17 @@ class ComboCode(object):
         only done inside a ComboCode session. Each module sets these themselves
 
         '''
+        
+        paths = ['gastronoom','mcmax','chemistry']
+        folders = [self.path_gastronoom,self.path_mcmax,self.path_chemistry]
+        names = ['gout','mout','cout']
+        for p,f,n in zip(paths,folders,names):
+            if not getattr(self,p): continue
+            path = os.path.join(getattr(cc.path,p),f)
+            setattr(cc.path,n,path)
+            DataIO.testFolderExistence(path)
 
-        cc.path.gout = os.path.join(cc.path.gastronoom,self.path_gastronoom)
-        cc.path.mout = os.path.join(cc.path.mcmax,self.path_mcmax)
-        cc.path.cout = os.path.join(cc.path.chemistry,self.path_chemistry)
-        DataIO.testFolderExistence(cc.path.gout)
-        DataIO.testFolderExistence(cc.path.mout)
-        DataIO.testFolderExistence(cc.path.cout)
+
 
     def setVicManager(self):
 
@@ -989,13 +993,8 @@ class ComboCode(object):
                 if ch.model_id:
                     star['LAST_CHEMISTRY_MODEL'] = ch.model_id
 
-            
-            
-            
-            
-            
-            
-    
+
+
     def doContDiv(self):
 
         '''
