@@ -1226,3 +1226,157 @@ def checkEntryInfo(input_list,number_of_keys,info_type):
                          for extra_line in this_input 
                          for this_list in final]
             return [tuple(final_list) for final_list in final]
+
+
+def getChemistryAbundances(filename):
+    
+    '''
+    Reads in the Chemistry abundance output, works for both 
+    fractional abundances and number densities.
+    
+    @param filename: The filename of the abundance output 
+                     (csfrac.out or csnum.out)
+    @type filename: string
+    
+    @return: Recursive array containing the abundance per species name.
+    @rtype: recarray
+    
+    '''
+    
+    ###- Open file, read in all columns
+    ##data = DataIO.readCols(filename,start_row=1)
+    ###- Join them into one output array
+    ##C = []
+    ##for c in data[1:]:
+        ##C =  np.concatenate((C,c),axis = 0)
+
+    #- Open file, read in all lines
+    f = open(filename, 'r')
+    lines = f.read().splitlines()
+    f.close()
+    
+    #- Remove first line, empty strings within lists, and empty lists
+    data = [filter(None, line.split(' ')) for line in lines[1:]]
+    data = filter(None, data)
+    
+    #- Number of columns is constant throughout the file
+    if len(set([len(d) for d in data])) == 1:
+        data = DataIO.readCols(filename,start_row=1)
+        
+        #- Join them into one output array
+        C = []
+        for c in data[1:]:
+            C =  np.concatenate((C,c),axis = 0)
+            
+        #- Number of calculations per species
+        c0 = data[0]
+        L = np.where(np.array(c0) == c0[0])[0][1]+1        
+
+    
+    #- If the number of columns varies througout the file (e.g. by adding 
+    #  species), run a more elaborate method to read in the columns    
+    else:
+        #- Read in first block of 10 columns and concatenate
+        limit = [i for i,d in enumerate(data) if len(d) != 10][0]
+        blok = zip(*data[:limit])
+        C = []
+        for c in blok[1:]:
+            C =  np.concatenate((C,c),axis = 0)
+        
+        # Add the appendix (with less then 10 columns)
+        app = zip(*data[limit:])
+        for c in app[1:]:
+            C =  np.concatenate((C,c),axis = 0)
+        
+        #- Number of calculations per species
+        c0 = blok[0]
+        L = np.where(np.array(c0) == c0[0])[0][1]+1        
+    
+    #- Put the names of the species in an array
+    names = []      
+    for ii in range(len(C)):
+        if ii%L == 0:
+            names.append(C[ii])  
+    N = len(names)
+    
+    #- Radii of calculation
+    radius = np.array(c0[1:L-1])
+    radius = radius.astype(np.float)
+    
+    #- Output array: [species,[output]]
+    species = np.recarray(shape = [L-2,], dtype = zip(names, [float]*N))
+    for ii in range(N):
+        species[names[ii]] = C[(ii*L)+1:((ii+1)*L)-1].astype(float)
+    
+    return species 
+
+
+def getChemistryPhysPar(filename, keyword):
+    
+    '''
+    Reads in the Chemistry physical output
+    
+    @param filename: The filename of the abundance output 
+                     (csphyspar.out)
+    @type filename: string
+    
+    @keyword keyword: The physical parameter in question. Options are:
+                      RADIUS, n(H2), TEMP. A_V, RAD. FIELD, 
+                      CO K(PHOT), VELOCITY
+                      
+    @type keyword: string
+    
+    @return: Recursive array containing the abundance per species name.
+    @rtype: recarray
+    
+    '''
+    
+    #- Open file, read in all columns
+    data = DataIO.readCols(filename,start_row=1)
+    
+    #- Initialise keyword
+    keyword = keyword.upper()
+    
+    #- Select right columm
+    c = [i for i,s in enumerate(data) if keyword in s[0]][0]
+    par = [float(p) for p in data[c][1:]]
+    
+    return par
+
+
+def getChemistrySpecies(filename,parents=1):
+    
+    '''
+    Reads the species and parent species included in the Chemistry code.
+    
+    @param filename: The .specs file
+    @type filename: string
+    @keyword parents: Give parent species as output.
+                      If parents=0, all species are given.
+                      (default: 1)
+    
+    @return species: (Parent) species included in the Chemistry code.
+    @rtype: list
+    
+    '''
+    
+    #- Read in file
+    data = DataIO.readFile(filename)
+    data = [x.split() for x in data]
+    
+    #- Determine the different sections in the species file
+    separators = np.where([len(i)==2 for i in data])[0]
+    
+    if parents:
+        #- Select parent species
+        parents = data[separators[2]:]
+        parents = [parents[x][0] for x in range(len(parents))]
+    else:
+        #- Select species included
+        species = data[1:separators[0]]
+        species = [species[x][1] for x in range(len(species))]
+        
+    return species
+  
+  
+
