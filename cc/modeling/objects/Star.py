@@ -1441,9 +1441,79 @@ class Star(dict):
             self['XDEX'] = 2.
         else:
             pass
+
+
+
+    def calcSTOCHASTIC_VEL_MODE(self):
+        
+        '''
+        Set the default value of STOCHASTIC_VEL_MODE parameter.
+        
+        '''
+        
+        if not self.has_key('STOCHASTIC_VEL_MODE'):
+            self['STOCHASTIC_VEL_MODE'] = 'CONSTANT'
+        else:
+            pass
+                        
+    
+    
+    def calcSTOCHASTIC_VEL(self):
+        
+        '''
+        Set the default value of STOCHASTIC_VEL parameter.
+        
+        '''
+        
+        if not self.has_key('STOCHASTIC_VEL'):
+            self['STOCHASTIC_VEL'] = 0.
+        else:
+            pass
+            
+               
+    
+    def calcSTOCHASTIC_VEL_POWER(self):
+        
+        '''
+        Set the default value of STOCHASTIC_VEL_POWER parameter.
+        
+        '''
+        
+        if not self.has_key('STOCHASTIC_VEL_POWER'):
+            self['STOCHASTIC_VEL_POWER'] = 0.
+        else:
+            pass
+
+
+
+    def calcSTOCHASTIC_VEL_INNER(self):
+        
+        '''
+        Set the default value of STOCHASTIC_VEL_INNER parameter.
+        
+        '''
+        
+        if not self.has_key('STOCHASTIC_VEL_INNER'):
+            self['STOCHASTIC_VEL_INNER'] = 1.0
+        else:
+            pass
+
+
+
+    def calcSTOCHASTIC_VEL_FILENAME(self):
+        
+        '''
+        Set the default value of STOCHASTIC_VEL_FILENAME parameter.
+        
+        '''
+        
+        if not self.has_key('STOCHASTIC_VEL_FILENAME'):
+            self['STOCHASTIC_VEL_FILENAME'] = ''
+        else:
+            pass
             
             
-            
+                    
     def calcFEHLER(self):
         
         '''

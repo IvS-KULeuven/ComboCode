@@ -1148,7 +1148,18 @@ class Gastronoom(ModelingSession):
                             = star['TEMPERATURE_EPSILON3_GAS']
                     self.command_list['RADIUS_EPSILON3'] \
                             = star['RADIUS_EPSILON3_GAS']    
-            
+        
+        #-- Add the stochastic velocity filename if mode is filename, or power 
+        #   and inner value if mode is powerlaw. Mode and Vel are always added.
+        if star['STOCHASTIC_VEL_MODE'].upper() == 'POWERLAW':
+            self.command_list['STOCHASTIC_VEL_POWER'] \
+                    = star['STOCHASTIC_VEL_POWER']
+            self.command_list['STOCHASTIC_VEL_INNER'] \
+                    = star['STOCHASTIC_VEL_INNER']
+        elif star['STOCHASTIC_VEL_MODE'].upper() == 'FILENAME':
+            self.command_list['STOCHASTIC_VEL_FILENAME'] \
+                    = star['STOCHASTIC_VEL_FILENAME']
+        
         self.setCommandKey('DUST_TO_GAS',star,'DUST_TO_GAS_INITIAL',\
                            self.standard_inputfile['DUST_TO_GAS'])
         

@@ -32,7 +32,9 @@ def driftRPDF(r,a,l,v,mdot,opac,sd,radiance,T=None,P=0,alpha=0.,mu=2.,\
     to the drift. This is only valid in the outer, cool regions of the wind. 
     
     The function integrates the luminosity and the opacity over the wavelength 
-    grid to estimate the component for the radiation pressure.
+    grid to estimate the component for the radiation pressure. Note that the 
+    opacities are assumed to be independent of grain size for this to work, 
+    hence the Rayleigh regime should be applicable.
     
     Inclusion of the thermal velocity requires T profile. Mean molecular weight
     assumed to be one in that case. 
@@ -105,19 +107,22 @@ def driftRPDF(r,a,l,v,mdot,opac,sd,radiance,T=None,P=0,alpha=0.,mu=2.,\
     vi = v.eval(r) if isinstance(v,Velocity) else v
     mdoti = mdot.eval(r) if isinstance(mdot,Mdot.Mdot) else mdot
     mdoti = (mdoti*u.Msun/u.yr).to(u.g/u.s).value
-    
+
     #-- Integrate the opacity and luminosity profiles over wavelength
     #   For this: calculate the emitting surface of the central source
     L = radiance.getLuminosity(l=l,ftype='flambda')
-    OpacL = trapz(x=l,y=opac.eval(l)*L)
-    
+    #Ltot = trapz(x=l,y=L)
+    #Lsun = 3.846e+33
+    #print 'The total stellar luminosity is %f Lsun.'%(Ltot/Lsun)
+    OpacL = trapz(x=l,y=opac.eval(l)*L)#+scat.eval(l)*(1-g)*L)
+
     #-- Calculate the drift for each grain size
     #   1) create the 2d array with r-dependent and a-dependent 1d arrays
     #   2) Then add in anything that's constant
     #   Note that Q(a) = kappa*4/3*a*sd*(1-P)^(2/3)
     arr = np.outer(vi/mdoti,a)
     vK = np.sqrt(arr/(c*(1-alpha))*OpacL*4./3.*sd*(1.-P)**(2./3.))
-    
+
     #-- Calculate the thermal term (see Decin 2006) or return vK (default)
     if not w_thermal in ['kwok','mean','rms','prob','epstein']: 
         return vK
@@ -175,6 +180,30 @@ def vsound(T,gamma,mu):
     return np.sqrt(gamma*k_B*T/mu/m_p)
 
 
+
+def vbeta2D(r,a,*args,**kwargs):
+
+    '''
+    Convenience function for vbeta in 2D. Used by Drift() to calculate a beta 
+    law for a single grain size. 
+    
+    Ignores the grain size array, and passes arguments on to vbeta. 
+    
+    Additional args and kwargs are passed on to vbeta.
+    
+    @param r: The radial points (cm)
+    @type r: array
+    @param a: Grain size (cm), dummy variable that is ignored. 
+    @type a: array
+    
+    @return: The beta law velocity profile (cm/s)
+    @rtype: array
+    
+    '''
+    
+    return vbeta(r,*args,**kwargs)
+        
+    
 
 def vbeta(r,r0,v0,vinf,beta,vi_mode='constant',rstar=0.0,beta_inner=0.5,\
           *args,**kwargs):

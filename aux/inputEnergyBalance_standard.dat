@@ -38,13 +38,15 @@ pe_method = draine Kpe=1e-26
 cr_method = standard
 h2_method = decin
 
-#-- Heating parameters: thermal term in drift (none,kwok,mean,rms,prob,epstein), sticking coefficient
+#-- Drift parameters: thermal term in drift (none,kwok,mean,rms,prob,epstein), sticking coefficient
+w_mode = standard
 w_thermal = epstein
 alpha = 0.0
 
 #-- Line Cooling parameters: Only included if lc in cterms. molecule contains name and abundance info
 rtcode = ali
-molecule = 12C16O np.loadtxt fname=/Users/robinl/Projects/LineCooling/theo_prototype/waql.par usecols=[1,4] skiprows=9 unpack=1
+molecule = 
+#12C16O np.loadtxt fname=/Users/robinl/Projects/LineCooling/theo_prototype/waql.par usecols=[1,4] skiprows=9 unpack=1
 #molecule = 1H1H16O 1e-4
 collis = [/Users/robinl/GASTRoNOoM/data/12C16O_collis.dat]
 pop = [,]

@@ -107,6 +107,12 @@ class Temperature(Profiler.Profiler):
         needed. r0, T0 must be defined in kwargs either for the
         main wind's Teps law, or as an additional argument if a file is read.
         
+        r0 and T0 are usually passed as kwargs for the func. THey are used here
+        explicitly for the inner wind power law. If they are not given, the 
+        defaults are used: r[0] and -- after T has been evaluated -- T[0]. In
+        case the func is interp_file, r0 and T0 can still be passed as kwargs 
+        but they are then removed from the kwargs dict after extraction.
+        
         @param r: The radial points (cm)
         @type r: array
         @param func: The function that describes the temperature profile. Can be 
@@ -149,12 +155,20 @@ class Temperature(Profiler.Profiler):
         @type kwargs: dict
         
         '''
-
+        
+        #-- Check if a file is requested to be interpolated: use r0 and T0 from
+        #   the file
+        if func == 'interp_file' or func == Profiler.interp_file:
+            self.r0 = None
+            self.T0 = None
+        else:
+            self.r0 = kwargs.get('r0')
+            self.T0 = kwargs.get('T0')
+ 
         #-- Do not name func, dfunc, etc in function call, or *args won't work        
         super(Temperature, self).__init__(r,func,dfunc,order,*args,**kwargs)
         
         self.inner = inner
-        self.inner_eps = inner_eps
 
         #-- No extrapolation to the inner wind requested
         if not self.inner: 
@@ -163,19 +177,43 @@ class Temperature(Profiler.Profiler):
             self.dTdr = self.dydx
             return
             
-        #-- Alternatively, a power law extrapolation is requested. Extract r0,T0
-        self.r0 = kwargs.get('r0')
-        self.T0 = kwargs.get('T0')
+        #-- Check if r0 and T0 are set, if not: interpolation of a file was 
+        #   requested, so take first values from file
+        if self.r0 is None: self.r0 = self.xin[0]
+        if self.T0 is None: self.T0 = self.yin[0]
+        
+        #-- Alternatively, a power law extrapolation is requested
+        self.setInnerEps(inner_eps=inner_eps)
+        
     
+    
+    def setInnerEps(self,inner_eps):
+    
+        '''
+        Set the inner wind epsilon for the T law. Only relevant when self.inner
+        is 1. 
+        
+        Changes the standard T law as well, in case inner eps is different from
+        when the instance of the class was created.
+        
+        @param inner_eps: the epsilon of the inner wind power law. 
+        @type inner_eps: float
+        
+        '''
+        
+        self.inner_eps = inner_eps
+        
+        #-- re-initialise some parameters
         self.r = None
         self.T = None
         self.y = None
+        self.dTdr = None
         
-        #-- Run the class' own eval() method, with l=self.x, which will not be 
-        #   equal to the class' self.r attribute, and thus it will evaluated
-        #   properly. Evaluated with inner_eps==0.5. Reevaluated if alpha is
-        #   different upon eval call.
-        self.T = self.eval(self.x,inner_eps=self.inner_eps)
+        #-- Run the class' own eval() method, with r=self.x, which will not be 
+        #   equal to the class' self.r attribute (which is now None), and thus 
+        #   it will evaluated properly. Reevaluated if epsilon is different upon
+        #   eval call.
+        self.T = self.eval(self.x,inner_eps=self.inner_eps,warn=0)
         self.y = self.T
         
         #-- Now also redo the derivative method. Then call diff to set the 
@@ -185,13 +223,13 @@ class Temperature(Profiler.Profiler):
                                   k=self.order)
         
         #-- Evaluate the derivative with the default grid
-        self.dydx = self.diff(self.x,inner_eps=0.5)
+        self.dydx = self.diff(self.x,inner_eps=self.inner_eps,warn=0)
         
-        #-- Now set l, dydl.
+        #-- Now set r and dTdr.
         self.r = self.x
         self.dTdr = self.dydx
         
-
+        
 
     def __call__(self,r=None,warn=1,*args,**kwargs):
     
@@ -254,9 +292,9 @@ class Temperature(Profiler.Profiler):
         @rtype: array/float
         
         '''
-
+        
         #-- First retrieve the original profile. If this is the first call from 
-        #   the __init__ method of Opacity(), this will be the standard grid.        
+        #   the __init__ method of Temperature(), this will be the standard grid
         y = super(Temperature,self).eval(r,warn=warn)
         
         #-- No inner power law requested, just pass on the original 

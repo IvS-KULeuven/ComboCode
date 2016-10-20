@@ -32,18 +32,20 @@ cterms = []
 hterms = []
 heatmode = classical
 gamma = 1.66667
-
-#-- Heating parameters: thermal term in drift (none,kwok,mean,rms,prob), sticking coefficient
-w_thermal = kwok
-alpha = 0.0
 pe_method = bakes abun_c=6e-4 abun_o=4e-4 G0=1. amin_scale=0.2
 cr_method = groenewegen
 h2_method = decin
 
+#-- Drift parameters: thermal term in drift (none,kwok,mean,rms,prob), sticking coefficient
+w_mode = standard
+w_thermal = kwok
+alpha = 0.0
+
 #-- Line Cooling parameters: Only included if lc in cterms. molecule contains name and abundance info
 rtcode = gastronoom
 updateLC = 0
-molecule = 12C16O readFortranFile fname=/Users/robinl/GASTRoNOoM/lineCoolingTest/models/model_2016-07-26h14-37-10/cool1model_2016-07-26h14-37-10_12C16O.dat convert_cols=[0,-1,-4] usecols=[0,-1,-4] skiprows=2 unpack=1
+molecule = 
+#12C16O readFortranFile fname=/Users/robinl/GASTRoNOoM/lineCoolingTest/models/model_2016-07-26h14-37-10/cool1model_2016-07-26h14-37-10_12C16O.dat convert_cols=[0,-1,-4] usecols=[0,-1,-4] skiprows=2 unpack=1
 #molecule = 1H1H16O 1e-4
 collis = []
 pop = []

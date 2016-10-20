@@ -487,7 +487,7 @@ class Profiler(object):
         self.dydx = self.dfunc(x,*self._dargs,**self._dkwargs)
         
         #-- Now set x.
-        self.x = x
+        self.x = Data.arrayify(x)
     
     
     
@@ -705,9 +705,9 @@ class Profiler2D(object):
         self.y = None
         self.z = self.func(x,y,*self._args,**self._kwargs)
         
-        #-- Now set x and y.
-        self.x = x
-        self.y = y 
+        #-- Now set x and y. Make sure they are arrays.
+        self.x = Data.arrayify(x)
+        self.y = Data.arrayify(y) 
         
         
     

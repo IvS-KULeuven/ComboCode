@@ -221,6 +221,7 @@ class Radiance(Profiler.Profiler):
         
         #-- Check if radiance wrt wavelength is requested
         if ftype.lower()[1:] == 'lambda':
+            if f is None: f = self.f
             radiance = radiance*f/l
             
         return radiance

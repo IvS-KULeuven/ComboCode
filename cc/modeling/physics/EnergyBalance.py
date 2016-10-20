@@ -10,7 +10,7 @@ listed here.
 
 """
 
-import os, collections, functools
+import os, collections, functools, copy
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline as spline1d
 from scipy.interpolate import interp1d
@@ -250,7 +250,7 @@ class EnergyBalance(object):
         #-- Read input parameters, set constants, coordinate grids, stellar
         #   properties, basic profiles, adiabatic coefficient, line cooling,
         #   velocity 
-        self.readInputParameters(**kwargs)
+        self.readInputParameters(**copy.deepcopy(kwargs))
         self.setGrids()
         self.setStar()
         self.setProfiles()
@@ -347,7 +347,9 @@ class EnergyBalance(object):
                      for k in ['standard','mcp','gastronoom']}
         self.pars = DataIO.readDict(templates[self.template],convert_lists=1,\
                                     convert_floats=1,multi_keys=['molecule'])
-                
+        if not self.pars.has_key('molecule') or self.pars['molecule'] == ['']:
+            self.pars['molecule'] = []
+            
         #-- Read from the filename if it is given. 
         if not self.fn is None: 
             dd = DataIO.readDict(self.fn,convert_lists=1,convert_floats=1,\
@@ -361,10 +363,6 @@ class EnergyBalance(object):
         if isinstance(m, str): m = [m] 
         self.pars.update(kwargs)
         self.pars['molecule'] += m    
-        
-        #-- Reverse the molecule list, so we take into account the correct 
-        #   molecule information in this order: kwargs > filename > template
-        self.pars['molecule'].reverse()
         
         #-- Format the molecule information, and extract molecule names. 
         self.pars['molecule'] = [mlst.split() for mlst in self.pars['molecule']]
@@ -548,9 +546,8 @@ class EnergyBalance(object):
                             (default: None)
         @type mdot_dust: [func,dict]
         @keyword T: The initial temperature profile (r, K). [func,{pars}]
-                    The first arg is the function, second argument always the 
-                    initial temperature. Can be string Td as well to set it to
-                    the dust temperature.
+                    The first arg is the function, followed by T0 and r0. Can be
+                    string Td as well to set it to the dust temperature.
                     
                     (default: None)
         @type T: [func,dict]
@@ -591,20 +588,23 @@ class EnergyBalance(object):
         #-- Set the dust temperature profile
         self.Td = Temperature.Temperature(self.r,Td[0],**Td[1])
 
-        #-- Determine the T epsilon going from rstar to r0. This is used for the
-        #   inner wind. This can be turned off by setting inner=0 in Tinit
-        self.T0 = T[1]['T0']
-        self.r0 = T[1]['r0']
-        self.inner_eps = -np.log(self.Tstar/self.T0)/np.log(self.rstar/self.r0)
+        #-- Use a power law for T in the inner wind?
         self.inner = T[1]['inner']
 
         #-- Set the initial temperature profile
         if T[0].lower() == 'td':
-            self.T_iter[0] = self.Td
+            self.T_iter[0] = Temperature.Temperature(self.r,Td[0],\
+                                                     inner=self.inner,**Td[1])
         else:
-            self.T_iter[0] = Temperature.Temperature(self.r,T[0],\
-                                                     inner_eps=self.inner_eps,\
-                                                     **T[1])
+            self.T_iter[0] = Temperature.Temperature(self.r,T[0],**T[1])
+        
+        #-- Determine the T epsilon going from rstar to r0. This is used for the
+        #   inner wind. This can be turned off by setting inner=0 in Tinit.
+        #   Reset the inner wind power law for the T profiler as well. 
+        self.T0 = self.T_iter[0].T0
+        self.r0 = self.T_iter[0].r0
+        self.inner_eps = -np.log(self.Tstar/self.T0)/np.log(self.rstar/self.r0)
+        self.T_iter[0].setInnerEps(self.inner_eps)
         
         #-- Set the dust mass-loss rate, and add the inner radius if needed.
         if not mdot_dust[1].has_key('r0'): mdot_dust[1]['r0'] = self.r0
@@ -647,14 +647,16 @@ class EnergyBalance(object):
                 #-- At low T the diatomic molecule H2 (gamma~1.4) loses internal 
                 #   degrees of freedom, and becomes like a mono-atomic gas 
                 #   (gamma~1.67).
-                kwargs = {'x': self.T_iter[0].eval(), 
+                kwargs = {'x': self.T_iter[0].eval(inner_eps=self.inner_eps,\
+                                                   warn=not self.inner), 
                           'func': Profiler.step,
                           'ylow': 5./3., 'yhigh': 7./5., 'xstep': 350. }
                 gamma = Profiler.Profiler(**kwargs)
             #-- Interpolate the adiabatic coefficient taken from NIST database 
             else: 
                 fn = os.path.join(cc.path.aux,'h2_physical_properties.dat')
-                kwargs = {'x': self.T_iter[0].eval(),
+                kwargs = {'x': self.T_iter[0].eval(inner_eps=self.inner_eps,\
+                                                   warn=not self.inner),
                           'func': Profiler.interp_file,
                           'ikwargs': {'ext': 3, 'k': 3}, 
                           'filename': fn, 'ycol': -1}
@@ -663,7 +665,8 @@ class EnergyBalance(object):
         #-- Alternatively, gamma is constant, and gives the value of the 
         #   coefficient
         else: 
-            kwargs = {'x': self.T_iter[0].eval(), \
+            kwargs = {'x': self.T_iter[0].eval(inner_eps=self.inner_eps,\
+                                               warn=not self.inner), \
                       'func': Profiler.constant, 'c': self.pars['gamma']}
             gamma = Profiler.Profiler(**kwargs)
         
@@ -786,7 +789,7 @@ class EnergyBalance(object):
             self.mol[m] = RadiatReader.RadiatReader(fn,ny=ny)
         
         #-- Get T profile and other information
-        T = self.T.eval()
+        T = self.T.eval(inner_eps=self.inner_eps,warn=not self.inner)
         g0 = self.mol[m].getLWeight(1)
         E0 = self.mol[m].getLEnergy(1,unit='erg')
         ny = self.mol[m]['pars']['ny']
@@ -883,8 +886,19 @@ class EnergyBalance(object):
         else:
             #-- Abundance profile for MCP/ALI is in a separate parameter output
             #   file
-            fn = self.pars['pop'][imol].replace('pop','par')                
-            p, abun = np.loadtxt(fn,usecols=[1,4],skiprows=9,unpack=1)
+            fn = self.pars['pop'][imol].replace('pop','log')                
+            
+            #-- Find out number of cells. Note vols 0 and 1 are not used, so -2.
+            nvol = DataIO.getKeyData(filename=fn,incr=0,keyword='nvol')[0]
+            nvol = int([line.split('=')[1] 
+                        for line in nvol 
+                        if 'nvol' in line.lower()][0])
+            
+            #-- Find out where the data start + 2 lines for units and separator
+            data = DataIO.readFile(fn,' ')
+            ixmol = DataIO.findKey(i=0,key='xmol',data=data) + 2
+            p, abun = np.genfromtxt(fn,usecols=[1,4],skip_header=ixmol+1,\
+                                    unpack=1,max_rows=nvol-2)
         
         #-- Constant value is requested
         if len(p) != len(abun):
@@ -1064,26 +1078,67 @@ class EnergyBalance(object):
         wavelength grid is used to integrate Q_l * L_l, thereby interpolating
         the opacity. 
         
+        The two available modes are standard and beta: 
+        - standard: Calculates the drift velocity based on the balance between
+        the radiation pressure and the drag force. 
+        - vbeta: Follows MCP, where the terminal drift velocity is calculated 
+        from the terminal gas velocity, based on the balance between radiation
+        pressure and drag force, with a beta law going to that max velocity.
+        
+        Note that the vbeta mode follows the F mode for dust velocity in MCP. 
+        
+        
         '''
 
         if self.w is None:
             #-- Set density for the mean molecular weight.
             self.setDensity('gas')
-            kwargs = {'r': self.r, 'a': self.a, 'func': Velocity.driftRPDF,
-                      'l': self.l, 'v': self.v, 'mdot': self.mdot,
-                      'P': self.pars['P'], 'sd': self.pars['sd'],
-                      'opac': self.opac, 'radiance': self.rad,
-                      'w_thermal': self.pars['w_thermal'],
-                      'alpha': self.pars['alpha'],
+
+            #-- Define shared input parameters for driftRPDF function
+            kwargs = {'a': self.a, 'l': self.l, 'P': self.pars['P'], 
+                      'sd': self.pars['sd'], 'opac': self.opac, 
+                      'radiance': self.rad, 'alpha': self.pars['alpha'],
                       'mu': self.gdens.getMeanMolecularWeight()}
+
+            #-- Check if the MCP method is requested, otherwise do 'standard'
+            method = self.formatInput(self.pars['w_mode'])
+            if method[0] == 'vbeta2D':
+                #-- Calculates the terminal drift velocity from the terminal gas
+                #   velocity, and sets a beta law for the inner wind up to it
+                #-- For this the terminal gas velocity is needed, and the mdot
+                #   at the inner radius (no variable mass loss or thermal comp)
+                kwargs['v'] = max(self.v.eval())
+                kwargs['mdot'] = self.mdot.eval(self.r0)
+                kwargs['w_thermal'] = 'none'
+                wmax = Velocity.driftRPDF(r=self.r0,**kwargs)[0]
+
+                #-- Set the drift as a beta law with sensible values, unless 
+                #   they were defined in the w_mode key. Even the max velocity
+                #   can be fixed in the input through vinf.
+                v0 = method[1].get('v0',self.v.eval(self.r0))
+                r0 = method[1].get('r0',self.r0)
+                beta = method[1].get('beta',1.0)
+                wmax = method[1].get('vinf',wmax)
+                self.w = Velocity.Drift(r=self.r,a=self.a,\
+                                        func=Velocity.vbeta2D,\
+                                        r0=r0,v0=v0,vinf=wmax,beta=beta)
             
-            #-- Include T if a thermal velocity term is needed
-            vtherm_types = ['kwok','mean','rms','prob','epstein']
-            if self.pars['w_thermal'].lower() in vtherm_types:
-                #-- T is always set upon initialisation
-                kwargs['T'] = self.T
+            else:
+                #-- If standard, add the relevant driftRPDF keywords and set the
+                #   profile
+                kwargs['w_thermal'] = self.pars['w_thermal']
+                kwargs['v'] = self.v
+                kwargs['r'] = self.r
+                kwargs['mdot'] = self.mdot 
+                kwargs['func'] = Velocity.driftRPDF
                 
-            self.w = Velocity.Drift(**kwargs)
+                #-- Include T if a thermal velocity term is needed
+                vtherm_types = ['kwok','mean','rms','prob','epstein']
+                if self.pars['w_thermal'].lower() in vtherm_types:
+                    #-- T is always set upon initialisation
+                    kwargs['T'] = self.T
+                
+                self.w = Velocity.Drift(**kwargs)
         
         
     
@@ -1173,7 +1228,7 @@ class EnergyBalance(object):
         @type m: str
         
         @keyword fn: The filename of a populations file, in case it changes or 
-                     is added new after default populations have been used. 
+                     is added anew after default populations have been used. 
                      Ignored if the file does not exist. 
                      
                      (default: '')
@@ -1185,7 +1240,7 @@ class EnergyBalance(object):
                            upon function call, tells calcClc the LC term must be
                            calculated anew regardless of reading new pops (and 
                            thus uses the old pops with the new T profile of this
-                           iteration). This key can be set in the inpurfile.
+                           iteration). This key can be set in the inputfile.
                            
                            (default: 0)
         @type updateLC: bool
@@ -1215,7 +1270,7 @@ class EnergyBalance(object):
                 updateLC = 1
                 
         #-- Tell calcClc to recalculate the cooling term for this molecule
-        if updateLC or self.pars['updateLC']:
+        if updateLC or self.pars.get('updateLC',0):
             #-- If there's a key for this iteration index already, the cooling
             #   term was already calculated, so set the index for the update to
             #   the next iteration.
@@ -1241,7 +1296,7 @@ class EnergyBalance(object):
         
         
     
-    def iterT(self,conv=0.01,imax=50,step_size=0.05,dTmax=0.20,warn=1,\
+    def iterT(self,conv=0.01,imax=50,step_size=0.,dTmax=0.10,warn=1,\
               *args,**kwargs):
     
         '''
@@ -1263,16 +1318,20 @@ class EnergyBalance(object):
                             temperature change. The code decides dynamically 
                             based on how close the iteration is to convergence
                             which multiple of this step size the next iteration
-                            allows.
+                            allows. If T change percentage grows to fast, 
+                            decrease this number. Default is 0, in which case 
+                            the maximum allowed T change is kept constant at
+                            dTmax.
                             
-                            (default: 0.05)
+                            (default: 0)
         @type step_size: float
         @keyword dTmax: The starting value for the maximum allowed relative
                         temperature change between iterations. This maximum 
                         increases as the code reaches convergences, through a 
-                        set multiple of step_size.
+                        set multiple of step_size. If step_size is 0, dTmax 
+                        stays constant
                             
-                        (default: 0.20)
+                        (default: 0.10)
         @type dTmax: float
         @keyword warn: Warn when extrapolation occurs.
         
@@ -1282,19 +1341,20 @@ class EnergyBalance(object):
         '''
         
         print('-- Iterating T(r) now.')
-        dTnsteps = (1.-dTmax)/step_size
+        dTnsteps = (1.-dTmax)/step_size if step_size else 0.
         steps = 0.
         
-        #-- If first iteration, calculate one step in any case
-        if self.i == 0:
-            print('Iteration 1 for T(r)...')
-            self.calcT(dTmax,warn=warn,*args,**kwargs)
+        #-- If first iteration in this call of iterT, calculate it in any case
+        #   This is not necessarily iteration 0! The pops may have been updated.
+        print('Iteration {} for T(r)...'.format(self.i+1))
+        self.calcT(dTmax,warn=warn,*args,**kwargs)
         
         #-- Then continue iterating until the relative difference between this 
         #   and the previous result is smaller than convergence criterion in all
         #   radial points, or when the maximum number of iterations is reached
         while True:
-            dTdiff = np.abs(1.-self.T.eval()/self.T_iter[self.i-1].eval())
+            dTdiff = np.abs(1.-self.T.eval(warn=not self.inner)\
+                          /self.T_iter[self.i-1].eval(warn=not self.inner))
             if (np.all(dTdiff<conv) and steps == dTnsteps) or self.i == imax: 
                 break
             if np.all(dTdiff<(dTnsteps-steps)*conv):
@@ -1303,8 +1363,9 @@ class EnergyBalance(object):
                 else: steps += 1.
             print('Iteration {} for T(r)...'.format(self.i+1))
             self.calcT(dTmax+step_size*steps,warn=warn,*args,**kwargs)
-            if not np.all(np.isfinite(self.T.eval())):
-                print('nans found in T-profile. Breaking off iteration.')
+            if not np.all(np.isfinite(self.T.eval(inner_eps=self.inner_eps,\
+                                                  warn=not self.inner))):
+                print('NaNs found in T-profile. Breaking off iteration.')
                 break
     
     
@@ -1399,7 +1460,7 @@ class EnergyBalance(object):
         if self.i < 0: 
             dTmax = self.pars['dTmax']
         print('Changing T by {:.1f}%.'.format(dTmax*100.))
-        Ti = self.T.eval()        
+        Ti = self.T.eval(inner_eps=self.inner_eps,warn=not self.inner)        
         Tr = np.where(Tr<=0.,np.ones_like(Tr),Tr)
         Tr = Ti + dTmax*(Tr-Ti)
         
@@ -1438,7 +1499,8 @@ class EnergyBalance(object):
         
         #-- Set the gamma-based factor evaluated at the new T profile
         #   calculated.
-        gamma = self.gamma.eval(self.T.eval(),warn=0)
+        gamma = self.gamma.eval(self.T.eval(inner_eps=self.inner_eps,\
+                                            warn=not self.inner),warn=0)
         
         #-- Makes the rate negative, in accordance with -C in the second term of
         #   the diff eq.
@@ -1459,7 +1521,9 @@ class EnergyBalance(object):
         conversion = nh2 * k_b * vi * ascale / factor2
         
         #-- Calculate the temperature dependent term
-        main_term = (1./self.r + 0.5*1./vi*dvi) * self.T.eval()
+        main_term = (1./self.r + 0.5*1./vi*dvi) \
+                        * self.T.eval(inner_eps=self.inner_eps,\
+                                      warn=not self.inner)
         
         #-- Calculate the rate. Multiply by -1 to have positive cooling rate.
         #   [erg/s/cm3]
@@ -1521,7 +1585,9 @@ class EnergyBalance(object):
         #-- Hdg according to Gail & Sedlmayr
         if mode == 'gs2014':
             #-- The thermal velocity and factor 4/3. for specular reflection: 
-            vT = 4./3.*np.sqrt(8.*k_b*self.T.eval()/(self.gdens.mu*np.pi*mh))
+            vT = 4./3.*np.sqrt(8.*k_b*self.T.eval(inner_eps=self.inner_eps,\
+                                                  warn=not self.inner)\
+                             /(self.gdens.mu*np.pi*mh))
             
         #-- Hdg according to Decin et al. 2006: extra factor 0.5 for Ekin, no
         #   thermal component.
@@ -1608,7 +1674,7 @@ class EnergyBalance(object):
         
         #-- Extract the dust and gas temperatures
         td = self.Td.eval()
-        t = self.T.eval()
+        t = self.T.eval(inner_eps=self.inner_eps,warn=not self.inner)
         
         #-- Calculate the average accommodation coefficient
         accom = 0.35*np.exp(-np.sqrt((td+t)*0.002))+0.1
@@ -1647,7 +1713,9 @@ class EnergyBalance(object):
             drift = self.w.avgDrift(norm_type='collisional',nd=self.nd)
             
             #-- fg/2. based on gamma, with fg = 2/(gamma-1)
-            fg = 1./(self.gamma.eval(self.T.eval(),warn=0)-1.)
+            fg = 1./(self.gamma.eval(self.T.eval(inner_eps=self.inner_eps,\
+                                                 warn=not self.inner),\
+                                     warn=0)-1.)
             
             #-- Velocity factor 
             vfac = (8.*vT**2+drift**2)**0.5
@@ -1714,7 +1782,7 @@ class EnergyBalance(object):
         #   caution is advised due to the uncertainties in quite a few of the
         #   assumptions.
         elif method[0].lower() == 'bakes':
-            T = self.T.eval()
+            T = self.T.eval(inner_eps=self.inner_eps,warn=not self.inner)
             G0 = method[1].get('G0',1.)
             amin_scale = method[1].get('amin_scale',0.2)
             d2g = self.ddens.eval()/self.gdens.eval()
@@ -1823,7 +1891,7 @@ class EnergyBalance(object):
         #-- Initialise density
         self.setDensity('gas')
         nh2 = self.gdens.eval(dtype='nh2')
-        T = self.T.eval()
+        T = self.T.eval(inner_eps=self.inner_eps,warn=not self.inner)
         
         #-- Method by Groenewegen 1994
         if self.pars['h2_method'].lower() == 'groenewegen':
@@ -2001,7 +2069,9 @@ class EnergyBalance(object):
         llows = self.pop[m].getLI()
         LCterm = np.empty(shape=(len(self.r),len(llows)))
         for i in llows: 
-            LCterm[:,i-1] = calcLevelLC(i,self.r,self.T.eval())
+            LCterm[:,i-1] = calcLevelLC(i,self.r,\
+                                        self.T.eval(inner_eps=self.inner_eps,\
+                                                    warn=not self.inner))
         LCtotal = nh2*nh2*amol*np.sum(LCterm,axis=1)
         
         #-- Do NOT Multiply by -1. This already gives the net energy lost
@@ -2064,7 +2134,7 @@ class EnergyBalance(object):
             
         #-- Make sure we have a list, and proper input format. Adapt filename
         iterations = Data.arrayify(iterations)
-        if 0 in iterations: iterations = [i for i in iterations if i!=0]
+        #if 0 in iterations: iterations = [i for i in iterations if i!=0]
         dTsign = dTsign[0].upper()
         if not fn is None:
             fn += '_{}{}'.format(dTsign,mechanism)
@@ -2104,7 +2174,7 @@ class EnergyBalance(object):
             iy = getattr(self,mtype)[mechanism][i][isel]*sign
             if scale: iy = iy*(ix*1e-14)**4
             ddict['y'].append(iy)
-        
+
         #-- Add in other parameters
         if abs(min([min(yi) for yi in ddict['y']])) < 1e-20: 
             ddict['ymin'] = 1e-20
@@ -2220,7 +2290,7 @@ class EnergyBalance(object):
                 ddict['line_types'].append(lts[term])
 
             #-- Add in other parameters
-            if abs(min([min(yi) for yi in ddict['y']])) < 1e-20: 
+            if abs(min([min(yi) for yi in ddict['y'] if yi.size])) < 1e-20: 
                 ddict['ymin'] = 1e-20
             ddict.update(pars)
             ifn = Plotting2.plotCols(**ddict)
@@ -2291,7 +2361,9 @@ class EnergyBalance(object):
         pars.update(kwargs)
         
         #-- Set the T-profiles and plot
-        y = [self.Td.eval()]+[self.T_iter[i].eval() for i in iterations]
+        y = [self.Td.eval()]+[self.T_iter[i].eval(inner_eps=self.inner_eps,\
+                                                  warn=not self.inner) 
+                              for i in iterations]
         pfn = Plotting2.plotCols(x=self.r,y=y,**pars)
         
         #-- Print the plotted filename
@@ -2459,7 +2531,7 @@ class EnergyBalance(object):
         p = self.pop[m].getP()
         
         #-- Get kinetic T profile and the excitation temperatures
-        T = self.T.eval(p)
+        T = self.T.eval(p,inner_eps=self.inner_eps,warn=not self.inner)
         Texc = self.getTexc(m=m,indices=indices)
                 
         #-- Set parameters. kwargs > cfg > locally defined

@@ -29,6 +29,9 @@ mobs=MCMax/Observation_Files
 #-- Dust opacities home folder. Can contain subfolders (see Dust.dat)
 mopac=MCMax/Opacities
 
+#-- ALI home folder
+ali=ALI/src/ali
+
 #-- Data home folder
 data=Data
 #-- Radio data folder. See cc.data.Radio. Folder requires radio_data.db

@@ -284,6 +284,7 @@ class PopReader(Reader):
         p.xlim(xmin=self.getP()[0])
         p.xlim(xmax=self.getP()[-1])
         if not fn is None:
+            if not os.path.splitext(fn)[1]: fn += '.pdf'
             p.savefig(fn,bbox_inches='tight')
         else:
             p.show()
