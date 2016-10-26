@@ -17,7 +17,7 @@ from cc.modeling.physics import EnergyBalance as EB
 
 
 def runEB_ALI(afn,ai=0,ei=0,iTmax=200,iter_conv=0,ALI_args=[],iterT_kwargs={},\
-              runALIinit=0,*args,**kwargs):
+              runALIinit=0,iter_texguess=0.9,eb=None,*args,**kwargs):
 
     '''
     Run the energy balance module concurrently with the ALI RT code. 
@@ -41,7 +41,7 @@ def runEB_ALI(afn,ai=0,ei=0,iTmax=200,iter_conv=0,ALI_args=[],iterT_kwargs={},\
     (that doesn't change name at all). They should give the same populations 
     between iterations. The .popiter file is the one given in the ALI inputfile,
     while the .pop file is based on the inputfilename and is created at the end
-    of an ALI run. The .pop filenames (one for every molecule)are the input for 
+    of an ALI run. The .pop filenames (one for every molecule) are the input for 
     EB's pop keyword and must be set by the user in either an EB inputfile or as
     keyword in kwargs.
     
@@ -63,6 +63,15 @@ def runEB_ALI(afn,ai=0,ei=0,iTmax=200,iter_conv=0,ALI_args=[],iterT_kwargs={},\
     returned in case you want to use it to check the different iterations after
     the calculation is done, including temperature, level populations, heating 
     and cooling terms, etc.
+    
+    In terms of initial populations, the user can specify whether to use 
+    TexGuess = -1 or TexGuess = 0.9, i.e. start from the pops calculated in the 
+    previous iteration (keep_pop on), or start from the standard initial 
+    conditions.
+    
+    If you have an EnergyBalance object from a previous iteration or call to 
+    this function, you can also pass this, and the method will continue with 
+    that object instead. Make sure to adapt your iTmax and such to this object.
     
     @param afn: The inputfile name for ALI. One filename given as a string in 
                 case of one molecule, multiple filenames given as strings in a 
@@ -109,6 +118,15 @@ def runEB_ALI(afn,ai=0,ei=0,iTmax=200,iter_conv=0,ALI_args=[],iterT_kwargs={},\
                          
                          (default: 0)
     @type runALIinit: bool
+    @keyword iter_texguess: The TexGuess value for the iterations (ie not the 
+                            first calculation, in which case the value is given
+                            in the inputfile). Typically this is 0.9 for 
+                            standard initial conditions, but alternative could 
+                            be -1 to start off from the populations calculated 
+                            in the previous iteration.
+                       
+                            (default: 0.9)
+    @type iter_texguess: float
     @keyword ALI_args: Additional arguments that are appended to the execute
                        command separated by spaces. If a single string is given,
                        only that string is added to the command. Default if no 
@@ -122,6 +140,12 @@ def runEB_ALI(afn,ai=0,ei=0,iTmax=200,iter_conv=0,ALI_args=[],iterT_kwargs={},\
     
                            (default: {})
     @type iterT_kwargs: dict
+    @keyword eb: An EnergyBalance object from a previous call. The method will
+                 simply continue with this object rather than making a new one.
+                 By default runALIinit will be off. 
+                 
+                 (default: None)
+    @type eb: EnergyBalance()
     
     @return: The EnergyBalance object is returned with all its properties.
     @rtype: EnergyBalance()
@@ -136,6 +160,7 @@ def runEB_ALI(afn,ai=0,ei=0,iTmax=200,iter_conv=0,ALI_args=[],iterT_kwargs={},\
     
     #-- Step 1: Calculate ALI given the pre-defined inputfile for all molecules
     if isinstance(afn,str): afn = [afn]
+    if not eb is None: runALIinit = 0
     if runALIinit:
         print('--------------------------------------------')
         print('Running first guess for ALI.')
@@ -143,13 +168,24 @@ def runEB_ALI(afn,ai=0,ei=0,iTmax=200,iter_conv=0,ALI_args=[],iterT_kwargs={},\
         for ifn in afn: execALI(ifn,args=ALI_args)
     
     #-- Step 2: Set up the EnergyBalance object. 
-    pars = {'template': 'mcp'}
-    pars.update(kwargs)
-    eb = EB.EnergyBalance(*args,**pars)
+    if eb is None:
+        pars = {'template': 'mcp'}
+        pars.update(kwargs)
+        eb = EB.EnergyBalance(*args,**pars)
+            
+    #-- Remember the maximum requested iterations if it is present. Otherwise, 
+    #   set it to the default in the EnergyBalance. 
+    ei = int(ei)
+    imax = iterT_kwargs['imax'] if iterT_kwargs.has_key('imax') else 50
+    if eb is None:
+        iterT_kwargs['imax'] = ei if int(ei) else imax
+    else: 
+        iterT_kwargs['imax'] = eb.i + ei if int(ei) else eb.i+imax
     
     #-- Step 3: Run the EnergyBalance
+    m = 'next' if not eb is None else 'first'
     print('--------------------------------------------')
-    print('Running first guess of EnergyBalance (EB).')
+    print('Running {} guess of EnergyBalance (EB).'.format(m))
     print('--------------------------------------------')
     eb.iterT(**iterT_kwargs)
     
@@ -157,15 +193,11 @@ def runEB_ALI(afn,ai=0,ei=0,iTmax=200,iter_conv=0,ALI_args=[],iterT_kwargs={},\
     fnT = afn[0].replace('.inp','_iter.temp')
     fn_new = [ifn.replace('.inp','_iter.inp') for ifn in afn]
     
-    #-- Remember the maximum requested iterations if it is present. Otherwise, 
-    #   set it to the default in the EnergyBalance.
-    imax = iterT_kwargs['imax'] if iterT_kwargs.has_key('imax') else 50
-    
     #-- Step 4: Iterate between steps 2 and 3 until the temperature iteration
     #           needs only 1 step to converge. Note that ei cannot be 1 for this
     #           to work.
-    ei = 2 if int(ei) == 1 else int(ei)
-    i, iT = 1, -2
+    ei = 2 if int(ei) == 1 else int(ei)    
+    i, iT, iter_texguess = 1, -2, float(iter_texguess)
     while eb.i != iT + 1 and eb.i <= iTmax:
         print('--------------------------------------------')
         print('Running iteration {} of ALI + EB. Current EB'.format(i) + \
@@ -183,8 +215,8 @@ def runEB_ALI(afn,ai=0,ei=0,iTmax=200,iter_conv=0,ALI_args=[],iterT_kwargs={},\
         #   Tkin/pop filename, and TexGuess to -1.
         DataIO.writeCols(filename=fnT,cols=[eb.r,eb.T.eval()])
         for ifn,ifn_new in zip(afn,fn_new):
-            updateInputfile(fn=ifn,fnT=fnT,ai=ai,iter_conv=iter_conv,
-                            fn_new=ifn_new)
+            updateInputfile(fn=ifn,fnT=fnT,ai=ai,conv=iter_conv,\
+                            texguess=iter_texguess,fn_new=ifn_new)
             execALI(ifn_new,args=ALI_args)
         
         #-- Step 3':
@@ -209,14 +241,14 @@ def runEB_ALI(afn,ai=0,ei=0,iTmax=200,iter_conv=0,ALI_args=[],iterT_kwargs={},\
     print('--------------------------------------------')
     DataIO.writeCols(filename=fnT,cols=[eb.r,eb.T.eval()])
     for ifn,ifn_new in zip(afn,fn_new):
-        updateInputfile(fn=ifn,fnT=fnT,fn_new=ifn_new)
+        updateInputfile(fn=ifn,fnT=fnT,texguess=iter_texguess,fn_new=ifn_new)
         execALI(ifn_new,args=ALI_args)
 
     return eb
     
     
     
-def updateInputfile(fn,fnT,ai=0,iter_conv=0,fn_new=None):
+def updateInputfile(fn,fnT,ai=0,conv=0,texguess=0.9,fn_new=None):
 
     '''
     Update the ALI inputfile with new information for the next iteration. 
@@ -233,16 +265,22 @@ def updateInputfile(fn,fnT,ai=0,iter_conv=0,fn_new=None):
                  
                  (default: 0)
     @type ai: int
-    @keyword iter_conv: The convergence criterion to use in ALI during iteration
-                        with the energy balance. Reverts to the requested value
-                        in the ALI inputfile at the end of the iteration. If 
-                        more strict than the criterion given in the ALI 
-                        inputfile this keyword is ignored. Default in case the
-                        same convergence criterion should be used as in the ALI
-                        inputfile during the iteration.
-                        
-                        (default: 0)
-    @type iter_conv: float 
+    @keyword conv: The convergence criterion to use in ALI during iteration
+                   with the energy balance. If 
+                   more strict than the criterion given in the ALI 
+                   inputfile this keyword is ignored. Default in case the
+                   same convergence criterion should be used as in the ALI
+                   inputfile during the iteration.
+                   
+                   (default: 0)
+    @type conv: float 
+    @keyword texguess: The TexGuess value for the iterations. Typically this is 
+                       0.9 for standard initial conditions, but alternative 
+                       could be -1 to start off from the populations calculated 
+                       in the previous iteration.
+                       
+                       (default: 0.9)
+    @type texguess: float    
     @keyword fn_new: The new (full) ALI inputfile name. Default if original is
                      to be updated.
                      
@@ -251,23 +289,22 @@ def updateInputfile(fn,fnT,ai=0,iter_conv=0,fn_new=None):
     
     '''
     
+    ai, conv, tex_guess = int(ai), float(conv), float(texguess)
+    
     #-- Change T and pop filenames
     data = changeKey(fn=fn,k='Tkin',v='I {} 1.0'.format(fnT))
 
     #-- Set the TexGuess to -1 so ALI reads the population filename
-    tex_guess = getKey(data=data,k='PassBand').split()
-    tex_guess[1] = '-1'
-    data = changeKey(data=data,k='PassBand',v=' '.join(tex_guess))
+    tex_line = getKey(data=data,k='PassBand').split()
+    tex_line[1] = str(texguess)
+    data = changeKey(data=data,k='PassBand',v=' '.join(tex_line))
     
     #-- Set the number of maximum iterations if full convergence is not needed,
     #   or alternatively change the convergence criterion
-    ai, iter_conv = int(ai), float(iter_conv)
-    if ai or iter_conv: 
+    if ai or conv: 
         conv_line = getKey(data=data,k='MaxIter').split()
-    if ai:
-        conv_line[0] = str(ai)
-    if iter_conv and float(conv_line[5]) < iter_conv:
-        conv_line[5] = str(iter_conv)
+        if ai: conv_line[0] = str(ai)
+        if conv and float(conv_line[5]) < conv: conv_line[5] = str(conv)
         data = changeKey(data=data,k='MaxIter',v=' '.join(conv_line))
     
     #-- Save the inputfile

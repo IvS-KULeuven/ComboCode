@@ -28,8 +28,11 @@ Developers:
 For the use of the EnergyBalance module, please contact one of the three authors listed here.
 
 ### Table of Contents
+1. <a href="Manual.md#introduction">Introduction</a>
+2. <a href="Manual.md#goals">Goals</a>
+3. <a href="Manual.md#setting-up-combocode">Setting up ComboCode</a>
 
-## 2. Goals of the ComboCode package
+## 2. Goals
 ComboCode is a Python based package designed to work with radiative-transfer codes and the data they are meant to model. 
 The radiative transfer is usually calculated for cool stellar winds of evolved stars, such as AGB stars.
 The functionality includes:
