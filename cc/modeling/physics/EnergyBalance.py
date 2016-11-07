@@ -123,9 +123,7 @@ class EnergyBalance(object):
     
     For now limited to the energy balance from the dust formation radius up to
     the outer radius.
-    
-    NYI: line cooling/heating, comisc ray heating, photoelectric heating.
-    
+        
     An example for calculating the energy balance (see the respective functions
     for in-depth information): 
     >>> from cc.modeling.physics import EnergyBalance as EB
@@ -844,7 +842,8 @@ class EnergyBalance(object):
         
         #-- Check if level pops are given (those files contain an abundance 
         #   profile as well). If not, use the molecule definition. 
-        if not self.pars['pop'][imol]: 
+        if not self.pars['pop'] or len(self.pars['pop']) <= imol \
+                or not self.pars['pop'][imol]: 
             mlst = self.pars['molecule'][imol]
             #-- Run a check if an abundance is actually given. 
             if not mlst[0]: 
@@ -1880,7 +1879,7 @@ class EnergyBalance(object):
         2) Following Decin et al 2006, based on GS1976, Hollenbach & McKee
         1979 and Hollenbach & McKee 1989.
         
-        The keyword h2_method (groenewegen, or gs1976) determines which of the 
+        The keyword h2_method (groenewegen, or decin) determines which of the 
         two is used. 
         
         '''

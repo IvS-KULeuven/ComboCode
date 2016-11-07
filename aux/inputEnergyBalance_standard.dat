@@ -1,7 +1,6 @@
 #-- radius, grain size (can be single value), wavelength. (See cc.tools.numerical.Gridding.makeGrid)
 r = [1e14,1e17,1000,1]
 a = [0.005e-4,0.25e-4,200,1]
-#a = 0.01e-4
 l = [0.1e-4,1000e-4,1000,1]
 
 #-- Set basic profiles: gas velocity, initial temperature, opacity, mass loss, dust temperature
@@ -26,12 +25,10 @@ fHe = 0.0
 sd  = 1.8
 P   = 0.0
 GSD = MRN
-w_sputter = 20e5
 
 #-- Cooling and heating terms. Adiabatic/Line cooling always included. Hdt/Hdg heating mode (gs2014 or Classical). adiabatic coefficient (value, h2, or h2_mcp)
-cterms = []
-#hterms = [dg,dt]
-hterms = []
+cterms = [h2]
+hterms = [dg,dt,pe,cr]
 heatmode = classical
 gamma = h2
 pe_method = draine Kpe=1e-26
@@ -41,12 +38,13 @@ h2_method = decin
 #-- Drift parameters: thermal term in drift (none,kwok,mean,rms,prob,epstein), sticking coefficient
 w_mode = standard
 w_thermal = epstein
+w_sputter = 20e5
 alpha = 0.0
 
 #-- Line Cooling parameters: Only included if lc in cterms. molecule contains name and abundance info
 rtcode = ali
-molecule = 
+molecule = 12C16O 2e-4
 #12C16O np.loadtxt fname=/Users/robinl/Projects/LineCooling/theo_prototype/waql.par usecols=[1,4] skiprows=9 unpack=1
 #molecule = 1H1H16O 1e-4
-collis = [/Users/robinl/GASTRoNOoM/data/12C16O_collis.dat]
-pop = [,]
+collis = []
+pop = []

@@ -24,11 +24,11 @@ fHe = 0.0
 sd  = 1.8
 P   = 0.0
 GSD = MRN
-w_sputter = 0
+
 
 #-- Cooling and heating terms. Adiabatic cooling always included. Hdt/Hdg heating mode (gs2014 or Classical). adiabatic coefficient (value, h2, or h2_mcp)
-cterms = []
-hterms = []
+cterms = [h2]
+hterms = [dg,dt,pe]
 heatmode = classical
 gamma = h2_mcp
 pe_method = draine Kpe=1e-26
@@ -38,12 +38,11 @@ h2_method = groenewegen
 #-- Drift parameters: thermal term in drift (none,kwok,mean,rms,prob), sticking coefficient
 w_mode = vbeta2D beta=1.0
 w_thermal = none
+w_sputter = 0
 alpha = 0.0
 
 #-- Line Cooling parameters: Only included if lc in cterms. molecule contains name and abundance info
 rtcode = ali
-molecule =
-#molecule = 12C16O np.loadtxt fname=/Users/robinl/Projects/LineCooling/theo_prototype/waql.par usecols=[1,4] skiprows=9 unpack=1
-#molecule = 1H1H16O 1e-4
+molecule = 12C16O 2e-4
 collis = []
 pop = []

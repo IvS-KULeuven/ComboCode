@@ -1,13 +1,17 @@
 # Welcome to the ComboCode User Manual
 ## 1. Introduction
+<a name="what">
 ### What is this manual?
+</a>
 This manual is meant as a guide to running ComboCode and its two numerical codes. This is not an all-inclusive, comprehensive manual for the ComboCode capabilities. However, in-depth, up-to-date documentation for the Python package is available on <a href="https://robinlombaert.github.io/ComboCode">on GitHub</a>, as a collection of doc-strings. The source code is also available there. Together with the in-depth documentation and the cookbooks provided in this manual for extracting information and using the additional modules, you should be able to use the package to its full extent. For additional questions or remarks, please <a href="https://github.com/robinlombaert">contact me</a>. 
 
 For best results, it is recommended to use both radiative-transfer (RT) codes embedded in ComboCode: GASTRoNOoM (line RT) and MCMax (continuum RT), authored and maintained by L. Decin and M. Min, respectively. Both authors have to be contacted for use of the RT codes, also as part of ComboCode, and their contact details can be requested <a href="https://github.com/robinlombaert">from me</a>. A current work-in-progress is the implementation of the MCP & ALI codes used at Chalmers University of Technology, Sweden, currently maintained by H. Olofsson & M. Maercker.
 
 This manual has been written by Robin Lombaert and revised by Marie Van de Sande.
 
-### Is this manual finished?
+<a name="finished">
+### Is this manual finished ?
+</a>
 No! This is very much a work in progress. Any comments, questions or clarifications can be requested <a href="https://github.com/robinlombaert">by contacting me</a>. We will try to keep the manual as up-to-date as possible, but for a while yet, it will not be complete. Bear with us!
 
 ### Acknowledgments
@@ -22,15 +26,54 @@ Developers:
 * <b> MCMax:</b> M. Min (UvA, the Netherlands)
 * <b> MCP & ALI:</b> H. Olofsson & M. Maercker (Chalmers, Sweden) -- WiP 
 
-### The numerical modules written in ComboCode:
+### The numerical modules written in ComboCode
 * <b> EnergyBalance: </b> R. Lombaert, H. Olofsson & M. Maercker (Chalmers, Sweden)
 
 For the use of the EnergyBalance module, please contact one of the three authors listed here.
 
 ### Table of Contents
-1. <a href="Manual.md#introduction">Introduction</a>
-2. <a href="Manual.md#goals">Goals</a>
-3. <a href="Manual.md#setting-up-combocode">Setting up ComboCode</a>
+1. <a href="Manual.md#1-introduction">Introduction</a>
+    - <a href="Manual.md#what">What is this manual?</a>
+    - <a href="Manual.md#finished">Is this manual finished?</a>
+    - <a href="Manual.md#acknowledgments">Acknowledgments</a>
+    - <a href="Manual.md#the-numerical-codes-currently-included-in-combocode">The numerical codes currently included in ComboCode</a>
+    - <a href="Manual.md#the-numerical-modules-written-in-combocode">The numerical modules written in ComboCode</a>
+2. <a href="Manual.md#2-goals">Goals</a>
+3. <a href="Manual.md#3-setting-up-combocode">Setting up ComboCode</a>
+    - <a href="Manual.md#folder-setup">Folder setup</a>
+    - <a href="Manual.md#userfiles">User files in cc/usr</a>
+4. <a href="Manual.md#4-running-combocode">Running ComboCode</a>
+    - <a href="Manual.md#inputfile">The ComboCode inputfile</a>    
+    - <a href="Manual.md#how">How do I run ComboCode?</a>
+    - <a href="Manual.md#object">The ComboCode object and its model contents</a>
+5. <a href="Manual.md#5-data-management">Data Management</a>
+    - <a href="Manual.md#resolved">Resolved molecular emission (radio)</a>    
+    - <a href="Manual.md#unresolved">Unresolved molecular emission (infrared)</a>
+    - <a href="Manual.md#spectral-energy-distribution">Spectral energy distribution</a>
+6. <a href="Manual.md#6-model-management">Model Management</a>
+    - <a href="Manual.md#combined-dust-and-gas-radiative-transfer">Combined dust and gas radiative transfer</a>
+    - <a href="Manual.md#reading-and-using-model-output">Reading and using model output</a>
+        1. <a href="Manual.md#spec">Molecular spectroscopy and radiative-transfer output</a>
+        2. <a href="Manual.md#raytrace">Modeled line profiles and ray-tracing output for GASTRoNOoM</a>
+        3. <a href="Manual.md#dust">Dust opacities for MCMax</a>
+        4. <a href="Manual.md#general">General model input/output for GASTRoNOoM and MCMax</a>
+    - <a href="Manual.md#plotting-model-output">Plotting model output</a>
+7. <a href="Manual.md#7-database-management">Database Management</a>
+    - <a href="Manual.md#types-of-databases">Types of databases</a>
+    - <a href="Manual.md#database-locking">Database locking</a>
+    - <a href="Manual.md#cleaning-your-databases">Cleaning your databases</a>
+8. <a href="Manual.md#8-the-energybalance">The EnergyBalance</a>
+    - <a href="Manual.md#setting-up-and-running-the-energybalance">Setting up and running the EnergyBalance</a>
+        1. <a href="Manual.md#EBinput">Defining input for the EnergyBalance</a>
+        2. <a href="Manual.md#EBiter">Iterating the EnergyBalance</a>
+    - <a href="Manual.md#profilers">Profilers</a>
+    - <a href="Manual.md#iteration-with-ali">Iteration with ALI</a>
+9. <a href="Manual.md#9-statistical-methods">Statistical Methods</a>
+    - <a href="Manual.md#measuring-goodness-of-fit">Measuring goodness of fit</a>
+    - <a href="Manual.md#trend-analysis">Trend analysis</a>
+10. <a href="Manual.md#10-additional-modules">Additional Modules</a>
+    - <a href="Manual.md#line-profile-fitting">Line profile fitting</a>
+    - <a href="Manual.md#plotting-line-lists">Plotting line lists</a>
 
 ## 2. Goals
 ComboCode is a Python based package designed to work with radiative-transfer codes and the data they are meant to model. 
@@ -44,13 +87,17 @@ The functionality includes:
     - Interaction with a supercomputer cluster built into the databases
     - Reading and using molecular spectroscopy, collision rates and level populations
     
+* <b> Theory</b>:
+    - Independent calculation of the energy balance of a stellar wind
+    - Iteration with the ALI numerical radiative-transfer code for consistent molecular level populations
+    
 * <b>Data</b>: 
     - Management of data files associated with radio data, SEDs and spectroscopic data
     - Fitting routines for resolved emission lines
     - Statistical analysis for samples and individual sources, and both resolved and unresolved emission lines
 
 ## 3. Setting up ComboCode
-In what follows, you will set up your folder structure first (much of which is done automatically). 
+In what follows, you will set up your folder structure first (much of which is done automatically). This concerns the entire ComboCode package, including the ComboCode and EnergyBalance classes.
 
 ### Folder setup
 The folder setup for running ComboCode can be split up into three parts: the folders specific to ComboCode, and the two folders for the GASTRoNOoM and MCMax RT codes that must be installed separately. 
@@ -76,7 +123,9 @@ Some of the folders contain data and files that must be provided for you by eith
 <li>dphot -- The output folder for raw photometric data automatically downloaded by ComboCode when asking for data type 'Photometric_IvS' in Sed.dat, see below.</li>
 </ol>
 
+<a name="userfiles">
 ### User files in cc/usr
+</a>
 The contents of the cc/usr.dist folder must be copied to cc/usr/. The default settings will work fine, but can be changed depending on the needs of the user.
 
 <ol>
@@ -91,12 +140,21 @@ The contents of the cc/usr.dist folder must be copied to cc/usr/. The default se
 </ol>
 
 ## 4. Running ComboCode
-In this section, the ComboCode inputfile is described, and a few simple steps to run a model are given.
+In this section, the ComboCode inputfile is described, and a few simple steps to run a model are given. Note that this concerns the ComboCode class, which runs the dust and gas radiative-transfer codes iteratively. If you are interested in the EnergyBalance class, which runs independently from the ComboCode class, you can skip this section.
 
+### Combined dust and gas radiative transfer
+The ComboCode class is an interface that provides access to two numerical RT codes for dust and gas respectively. The way these codes are linked through ComboCode is illustrated in the schematic below. Note that this schematic currently does not include iteration between energy balance and line RT in GASTRoNOoM, as this functionality is not yet implemented in ComboCode. Currently, the EnergyBalance class implemented in the ComboCode package is also not included as part of the ComboCode class.
+
+![](https://github.com/robinlombaert/ComboCode/blob/master/aux/flow_chart_codes.png?raw=true)
+
+<a name="inputfile">
 ### The ComboCode inputfile
-WiP. See the inputfile for detailed description of the input parameters.
+</a>
+WiP. See the inputfile for detailed description of the input parameters. A limited overview of the syntax is given in <a href="https://github.com/robinlombaert/ComboCode/blob/master/aux/info_inputComboCode.dat">the info_inputComboCode.dat</a> document.
 
+<a name="how">
 ### How do I run ComboCode?
+</a>
 ComboCode is ran easily from a Python or iPython shell. Open one, and take the following steps, for an arbitrary input filename: 
 
     >>> #-- Import ComboCode into the Python shell:
@@ -117,7 +175,9 @@ Note that ComboCode, GASTRoNOoM and MCMax all print output to the shell. ComboCo
 
 Running the same ComboCode inputfile again after successful calculation will reload the models without calculating them, in which case no GASTRoNOoM or MCMax output will be printed to the shell. Whenever a model is calculated or is found in the database, the model ID is printed out. These IDs can differ between the MCMax and the three subcodes of GASTRoNOoM, so make sure you are working with the correct model output. Using these IDs you can retrieve your model output from the PATH\_GASTRONOOM and PATH\_MCMAX subfolders. Several methods and classes are available and described in Section 6 to read and use this information.
 
+<a name="object">
 ### The ComboCode object and its model contents
+</a>
 The ComboCode object contains all of the information used when setting up and calculating models, as well loading data and doing the statistical analysis. All of these are accessible through properties of the ComboCode object. Below follow some examples, assuming that c1m is the ComboCode object, and the c1m.startSession() call has finished.
 
 First, the model information is contained in a list of Star() objects. These objects essentially function as a dictionary, and contain keyword-based information about the models. Not only information given in the inputfile can be retrieved this way, but also information derived from it. So in case a keyword is not present in the dictionary, the Star() object will attempt to create it first, and return the value if successful. Otherwise, Star() objects will behave as a dictionary. 
@@ -221,19 +281,20 @@ Finally, the ComboCode object also contains multiple dictionaries for each of th
 Note that the data and statistics objects are usually prepared with some basic form of data and statistics settings as long as the respective keywords in the inputComboCode.dat file are turned on (such as PACS=1, STATISTICS=1). For more details on what is possible, check the <a href="http://robinlombaert.github.io/ComboCode/">online documentation</a> for ComboCode.py, and the respective data and statistics objects. 
 
 ## 5. Data management
+Filename conventions!
 
-### Resolved Molecular emission (Radio)
+<a name="resolved">
+### Resolved molecular emission (radio)
+</a>
 
-### Unresolved molecular emission (Infrared)
+<a name="unresolved">
+### Unresolved molecular emission (infrared)
+</a>
 
 ### Spectral energy distribution
-Filename convention.
 
 ## 6. Model management
-### Combined dust and gas radiative transfer
-ComboCode is an interface that provides access to two numerical RT codes for dust and gas respectively. The way these codes are linked through ComboCode is illustrated in the schematic below. Note that this schematic currently does not include iteration between energy balance and line RT, as this functionality is not yet implemented in ComboCode. 
-
-![](https://github.com/robinlombaert/ComboCode/blob/master/aux/flow_chart_codes.png?raw=true)
+Most of what is described here concerns the I/O output used in the entire package of ComboCode. As an example, the independent EnergyBalance module makes use of several of the spectroscopy readers described in this section.
 
 ### Reading and using model output
 ComboCode includes several tools to read and use model input and output data, depending on the involved numerical codes (GASTRoNOoM mostly, but some functionality for MCP/ALI is given as well). All of the so-called **Reader** objects are found in the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.tools.readers-module.html">cc.tools.readers module</a>. This includes: 
@@ -256,7 +317,9 @@ With the exception of KappaReader and LineList (entirely stand-alone), all class
 
 Several helper functions are available for each class to retrieve specific information and create plots. Moreover, classes that read the same information for different codes (such as molecular spectroscopy for GASTRoNOoM and the Lamda format) employ the same syntax and methods to retrieve that information regardless of source, so they can be used interchangeably. 
 
+<a name="spec">
 #### 1. Molecular spectroscopy and radiative-transfer output
+</a>
 Molecular spectroscopy files are used in two formats: one for GASTRoNOoM (nonstandard format) and one for MCP/ALI (which is in the format of the Leiden Atomic and Molecular Database: <a href="http://home.strw.leidenuniv.nl/~moldata/">Lamda</a>). Most of the spectroscopy information is also contained in the mline output for GASTRoNOoM (this excludes collision rates).
     
 RadiatReader, MlineReader and LamdaReader all inherit from SpectroscopyReader and MolReader, and thus share its methods. CollisReader also inherits from SpectropscopyReader, sharing the transition index methods. MlineReader inherits the capabilities of PopReader for level populations. LamdaReader inherits from CollisReader for collision rates. A few examples: 
@@ -334,7 +397,9 @@ This module does not inherit from the Reader base class and has its own function
     
 Line lists from the Lamda online database can of course be read with the LamdaReader. 
 
+<a name="raytrace">
 #### 2. Modeled line profiles and ray-tracing output for GASTRoNOoM
+</a>
 The third subcode of GASTRoNOoM, named sphinx, provides the ray tracing and calculated the line emission profiles. The output consists of two files: sph1 and sph2, the former giving intensities as a function of impact parameter, the latter giving the intrinsic and beam-convolved line profiles in several units as a function of velocity. It doesn't matter which of the two filenames are passed to SphinxReader; both files will be read. Several methods are available to return the information. 
 
     >>> #-- Import and read
@@ -356,7 +421,9 @@ The third subcode of GASTRoNOoM, named sphinx, provides the ray tracing and calc
         
 Other methods are available for other types of information. The sph object also functions as a dictionary, so can be easily checked. 
 
+<a name="dust">
 #### 3. Dust opacities for MCMax
+</a>
 The MCMax dust opacities can be read with the KappaReader. This is the only Reader object that doesn't inherit from the Reader base class and has its own functionality. It depends heavily on the usr/Dust.dat file, that contains all the dust information associated with the opacity files and their name tags. 
 
     >>> #-- Create a KappaReader object.
@@ -377,7 +444,9 @@ The MCMax dust opacities can be read with the KappaReader. This is the only Read
         
 The opacity files contain three types of information as a function of wavelength, given by the index: 0: extinction, 1: absorption, 2: scattering.
 
+<a name="general">
 #### 4. General model input/output for GASTRoNOoM and MCMax
+</a>
 Some information is available through general methods that retrieve specifically requested information, rather than working through a Reader object. Several methods are available to read any type of multiple-column-based or 1-column-based model input/output. Examples are getGastronoomOutput, getInputData and getKeyData in the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.tools.io.DataIO-module.html">cc.tools.io.DataIO module</a>. See link for more information on the methods and how to use them. Some examples. 
 
     >>> #-- Import modules
@@ -413,7 +482,7 @@ An example cfg file is available in cc/aux/plot\_config\_example.cfg. Any argume
 
 An overview of all possible plot settings is available at <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.plotting.Plotting2-module.html#plotCols"> Plotting2.plotCols</a> and at <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.plotting.Plotting2-module.html#plotTiles"> Plotting2.plotTiles</a>.
 
-## 7. Database management
+## 7. Database Management
 ComboCode provides basic database functionality to track and book-keep modeling output and data files. Any model that is calculated successfully is listed in the appropriate model database with its parameters and is assigned a model ID. Whenever ComboCode is ran, and requested models are found in the database, the model ID is returned instead of calculating the model anew. 
 
 ### Types of databases
@@ -439,16 +508,167 @@ Note that older versions of the databases may sometimes contain model\_ids for m
     KeyError: 'Empty molec id found in the database. This should not be possible.'
     KeyError: 'Empty trans id found in the database. This should not be possible.'
 
-## 8. Statistical methods
+## 8. The EnergyBalance
+The <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.physics.EnergyBalance-module.html">EnergyBalance module</a> is a standalone numerical implementation of the energy balance in stellar winds, written entirely in Python. The module consists of the differential equation dTdr and the class EnergyBalance, which is what you will use in practice. 
 
-### Measuring goodness-of-fit
+This section includes:
+- an overview of how to set up the EnergyBalance (EB) class with input, how to run the EnergyBalance and solve the differential equation, and how to use and plot the results. 
+- the class makes heavy use of the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.profilers-module.html">profilers module</a>, warranting an in-depth discussion of how the Profiler and its inheriting classes work. 
+- the EnergyBalance can run iteratively with the radiative-transfer code ALI. The <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.codes.ALI-module.html">ALI module</a> provides a method to do this for you, and shows how you can set up your own script as well.
+
+Note that the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.tests-module.html">tests module</a> contains a lot of examples regarding profilers, the EnergyBalance class, etc. with examples.
+
+### Setting up and running the EnergyBalance
+When calculating the energy balance using EB, you essentially take two steps, in addition to whatever plotting you want to do. This example uses the default settings (with exception of imax=10, the maximum amount of iterations allowed).
+
+1) Create the EB object with the necessary input
+    >>> from cc.modeling.physics import EnergyBalance as EB
+    >>> eb = EB.EnergyBalance()
+2) Iterate the temperature profile until convergence or until 10 iterations have been done
+    >>> eb.iterT(imax=10,warn=0)
+3) Plot, e.g., the temperature profiles of all iterations, and the cooling and heating rates of the final iteration
+    >>> eb.plotT()
+    >>> eb.plotRates()
+
+If the T calculation did not yet converge in the 10 iterations calculated in the above example (imax can be defined as whatever you want), you can continue iterating by calling the iterT method again with a larger imax. EB leaves off from the last result, and simply continues. This means that you can also update the level populations at this stage for the next set of iterations. 
+    
+    >>> eb.updatePop(m='12C16O',fn='new_CO_populations.pop')
+    >>> eb.iterT(imax=20)
+    
+The <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.physics.EnergyBalance.EnergyBalance-class.html">online documentation</a> gives an overview of all the class methods of EB. Most of these methods are called when needed by the class itself, and you need not bother with it, unless you want to extract specific information. The only methods you will use in practice are iterT, calcT (if you only wish one single iteration), updatePop, and the plot methods listed at the end. For detailed information on the different keywords for each class method, I refer to the online documentation.
+
+<a name="EBinput">
+#### 1. Defining input for the EnergyBalance
+</a>
+All the static model settings (numerical as well as physical) are provided when the EB class is called. There are three instances that provide input for the EB class when it is created. 
+    
+1) Three templates comes with ComboCode: standard (standard), gastronoom, and mcp. The standard template gives the most generalised settings possible, while gastronoom and mcp mimic the settings of the respective codes exactly. For MCP, note that not all its options are available in EB, e.g., for the drift velocity, only the power law option can currently be used. A template can be chosen by setting template='mcp'. The templates are available in the aux/inputEnergyBalance_\***.dat files, and give an example for the next option. The templates should not be changed! 
+
+2) A filename can be given to the EnergyBalance as fn='filename.dat'. The structure of the file follows that of the templates, but does not have to include all the keywords in the template. You can define your keywords there at will. Note that the template (standard, if it has not been specified) will always be read. The options in the file that you specify will then overwrite the template settings. 
+
+3) You can pass any of the keywords given in the templates explicitly to the EnergyBalance class. They will overwrite both the template as well as the file if it was specified. As an example, a=[0.005e-4,0.25e-4,100,1] sets the grain size grid with minimum and maximum sizes 0.005 and 0.25 micron, and 100 points distributed in logarithmic scale. 
+    
+The following example creates an EB based on the MCP template, adjusting for keywords in your own inputfile, and setting the grain size to a single value of 0.01 micron, and including only two heating terms: dust-gas collisions and thermal accommodation.
+
+    >>> eb = EB.EnergyBalance(template='mcp',fn='my_own_inputfile.dat',a=0.01e-4,hterms=['dg','dt'])
+
+Going through the standard inputfile template you will find several blocks of input. We consider here each block.
+
+1) The first block gives the coordinate grids for the radius (r, in cm), the grain  size (a, in cm), and the wavelength (l, in cm). They are defined as a list, giving the input for the method <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.tools.numerical.Gridding-module.html">Gridding.makeGrid</a> in a fixed order: [min value, max value, number of points, linear (0) or logarithmic (1) distribution, floats (0) or integers (1)]. Only the first three values are mandatory. The last two values are 0 by default. Note that the grain size can be given as a single value (without brackets), in which case EB treats it as an average grain size much the same way as MCP. 
+
+    r = [1e14,1e17,1000,1]
+    a = [0.005e-4,0.25e-4,200,1]
+    l = [0.1e-4,1000e-4,1000,1]
+
+2) The second block defines the different relevant profiles for the gas expansion velocity, the initial kinetic gas temperature, the opacity, the gas and dust mass-loss rates, and the dust temperature. These profiles are defined through the use of the Profiler class, and are discussed in <a href="Manual.md#profilers">the next section</a>. Note that the velocity and the two mass-loss rate values can be given as a single value as well, in which case they are kept constant throughout the entire stellar wind. 
+
+    v         = vbeta r0=1e14 v0=vs vinf=10e5 beta=1 vi_mode=beta rstar=3.32475e13 beta_inner=0.5
+    Tinit     = Teps T0=1443. r0=1e14 epsilon=0.5 inner=1
+    opac      = read_opacity species=AMCDHSPREI index=1 k=5 ext=3
+    mdot      = 1e-7
+    mdot_dust = 2e-10
+    Td        = Tdust T0=2500. r0=1.3e13 s=1
+
+3) The third block defines the stellar temperature and radius, and the type of stellar spectrum. Ltype also makes use of the Profiler class, but typically is set by a single function name. The function should be present in the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.profilers.Radiance-module.html">Radiance module</a>, where you will currently only find 'blackbody' as an option. Not to worry, profilers can always read files as well, so that is an option as well. 
+
+    Tstar = 2500.
+    rstar = 1e13
+    Ltype = blackbody
+
+4) The fractional atomic hydrogen and helium abundances are defined next. Based on these values the mean molecular weight is calculated. If you want the mean molecular weight to be different from what fH and fHe would result in, you can define mu=1.4 in the inputfile or in the EB.EnergyBalance() call, for instance.
+
+    fH  = 0.0
+    fHe = 0.0
+
+5) The next block concerns dust properties, specifically the average specific density, the porosity, and the grain size distribution. For GSD currently only MRN is available. The function should be defined in the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.profilers.Grainsize-module.html">Grainsize module</a>. GSD is ignored if the variable **a** is a single value. 
+
+    sd  = 1.8
+    P   = 0.0
+    GSD = MRN
+
+6) The sixth block sets the heating and cooling terms: cterms can include line cooling (lc), and h2 cooling (h2); hterms can include dust-gas collisions (dg), thermal accommodation (dt), photoelectric heating (pe), and cosmic rays (cr). The adiabatic coefficient gamma can be set to a single value, or be determined by the code based on H2 properties (h2, makes use of the data in aux/h2\_physical\_properties.dat) depending on the temperature of each iteration (since gamma technically depends on T). The option gamma=h2_mcp is also available, which sets the adiabatic coefficient to two different values based on the T regime: 5/3 at T < 350K, 7/5 otherwise. 
+
+Lastly, the method used for some of the heating and cooling terms can be specified. 
+    
+   a) Photoelectric heating (pe_method, see the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.physics.EnergyBalance.EnergyBalance-class.html#Hpe">Hpe method</a> for more details): Either bakes or draine. For bakes, G0 factor, and minimum grain size scaling, and the C and O abundances with respect to H have to be specified. See the gastronoom template for an example. For draine the Kpe factor has to be speciefied. See the mcp template for an example.
+
+   b) Cosmic ray heating (cr_method, see the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.physics.EnergyBalance.EnergyBalance-class.html#Hcr">Hcr method</a> for more details): Either groenewegen or standard. The method is that of Goldsmith and Langer 1978 in the standard case. The same applies to the groenewegen case, but then all gas mass is places into H2 even if fH or fHe are non-zero. 
+
+   c) H2 cooling (he_method, see the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.physics.EnergyBalance.EnergyBalance-class.html#Ch2">Ch2 method</a> for more details): Either groenewegen or decin. 
+
+   d) Dust-gas collisional and thermal accommodation heating (heatmode, see the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.physics.EnergyBalance.EnergyBalance-class.html#Hdg">Hdg method</a> and the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.physics.EnergyBalance.EnergyBalance-class.html#Hdt">Hdt method</a> for more details): Either classical or gs2014. Currently, only classical is fully implemented, while gs2014 will only use the Gail & Sedlmayr 2014 equations for dust-gas collisions and thermal accommodation. The differential equation dTdr and all other heating and cooling terms are treated the same as in classical mode. 
+
+    cterms = [lc,h2]
+    hterms = [dg,dt,pe,cr]
+    heatmode = classical
+    gamma = h2
+    pe_method = draine Kpe=1e-26
+    cr_method = standard
+    h2_method = decin
+
+7) The next block deals with all the gas-dust drift parameters: w_mode is either standard (derives the drift velocity profile based on the balance between radiation pressure and drag force), or vbeta2D (derives the terminal drift the same way as the standard mode, but uses a power law for the inner wind, requiring a beta to be defined as well, see the mcp template). When w\_mode is standard, the thermal component can be chosen, see the w\_thermal variable in the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.profilers.Velocity-module.html#driftRPDF">driftRPDF method</a> (where epstein is the recommended mode, note that kwok is actually incorrect). Finally, the maximum drift velocity above which dust grains sputter and are destroyed can be given as w\_sputter, and the sticking coefficient is given as alpha.
+
+    w_mode = standard
+    w_thermal = epstein
+    w_sputter = 20e5
+    alpha = 0.0
+    
+8) Finally, the last block defines the radiative-transfer code from which level populations are used, the molecules included, and their respective collision rates and level populations. These are only used if lc is included in cterms in block 6. 
+
+When defining the molecule key(s), give one line for each molecule you wish to include. The line gives the name of the molecule first (free to choose whatever name you wish, except for CO which should always be 12C16O), then the input for the abundance profiler (a single value for a constant abundance, or a function). This is in case lc is NOT included in cterms in block 6: the CO abundance must be provided, because it is required information for the photoelectric heating term in case of pe_method=bakes.
+
+The inputfile may look something like this for the last block, if lc is NOT included in cterms: 
+
+    #-- Line Cooling parameters not required. Still, give molecule with name and abundance info for 12C16O
+    rtcode = gastronoom  # Not used if lc is not included
+    molecule = 12C16O np.loadtxt fname=CO_abundance.dat usecols=[1,2] skiprows=9 unpack=1
+    collis = []
+    pop = []
+
+When lc is included in the cterms in block 6, level populations must be given, and the abundance information from the radiative-transfer output is extracted instead. Then no abundance information has to be given on the molecule line. The order in which the molecule keys are given is important, as that associates the molecules with their respective collision rate files (given as a list in collis) and the level population files (given as a list in pop).
+
+The inputfile may look something like this for the last block, if lc is included in cterms: 
+    
+    #-- Line Cooling parameters: Only included if lc in cterms. molecule contains name and abundance info
+    rtcode = ali
+    molecule = 12C16O 
+    molecule = 1H1H16O
+    collis = [co@rovib-yang.dat,o-h2o@faure2008.dat]
+    pop = [my_CO_model.pop,my_H2O_model.pop]
+    
+In practice, you will very often define your molecules and molecular data in-line when calling the EnergyBalance. In the above examples, your call would look something like this: 
+    
+    >>> #-- No line cooling included
+    >>> molecule = '12C16O np.loadtxt fname=CO_abundance.dat usecols=[1,2] skiprows=9 unpack=1'
+    >>> eb = EB.EnergyBalance(template='mcp',molecule=molecule,cterms=[h2])
+    >>> 
+    >>> #-- Line cooling included, with two molecules (note that the filenames should include the full path): 
+    >>> collis = ['co@rovib-yang.dat','o-h2o@faure2008.dat']
+    >>> pop = ['my_CO_model.pop','my_H2O_model.pop']
+    >>> eb = EB.EnergyBalance(template='mcp',molecule=['12C16O','1H1H16O'],cterms=[h2,lc],pop=pop,collis=collis)
+    
+<a name="EBiter">
+#### 2. Iterating the EnergyBalance
+</a>
+
+
+Any iteration specifications (such as number of iterations, convergence criterion, etc.) are given to the iterT method. 
+
+### Profilers
+
+### Iteration with ALI
+
+
+## 9. Statistical methods
+
+### Measuring goodness of fit
 
 ### Trend analysis
 
 
 
 
-## 9. Additional modules
+## 10. Additional modules
 
 ### Line profile fitting
 
