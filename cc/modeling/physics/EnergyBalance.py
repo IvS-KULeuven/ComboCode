@@ -1078,11 +1078,11 @@ class EnergyBalance(object):
         the opacity. 
         
         The two available modes are standard and beta: 
-        - standard: Calculates the drift velocity based on the balance between
-        the radiation pressure and the drag force. 
-        - vbeta: Follows MCP, where the terminal drift velocity is calculated 
-        from the terminal gas velocity, based on the balance between radiation
-        pressure and drag force, with a beta law going to that max velocity.
+          - standard: Calculates the drift velocity based on the balance between
+          the radiation pressure and the drag force. 
+          - vbeta: Follows MCP, where the terminal drift velocity is calculated 
+          from the terminal gas velocity, based on the balance between radiation
+          pressure and drag force, with a beta law going to that max velocity.
         
         Note that the vbeta mode follows the F mode for dust velocity in MCP. 
         

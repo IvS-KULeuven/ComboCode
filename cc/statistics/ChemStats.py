@@ -93,10 +93,10 @@ class ChemStats(object):
         @keyword star: Star object containing the chemistry model
         @type star: Star()
         
-        @return analyse: Dictionary containing the analyse output for every
+        @return: Dictionary containing the analyse output for every
                          molecule, eg analyse['SiO']. The analyse radius is 
                          also included (analyse['radius']).
-        @rtype anaylse: dict()
+        @rtype: dict()
         
         '''
         

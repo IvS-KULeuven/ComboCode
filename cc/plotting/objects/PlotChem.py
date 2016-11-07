@@ -533,7 +533,7 @@ class PlotChem(PlottingSession):
         @type fn_plt: string
         @keyword molecules: Molecules to be plotted.
         
-                               (default: [])
+                            (default: [])
         @type molecules: bool
         @keyword per_molecule: Plot one molecule for all models in one figure.
         
@@ -541,12 +541,13 @@ class PlotChem(PlottingSession):
         @type per_molecule: bool
         @keyword per_model: Plot all molecules for one model in one figure.
         
-                               (default: 0)
+                            (default: 0)
         @type per_model: bool
         @keyword frac: Plot the fractional abundances. If not frac, plot number
                        densities.
                        
-                                (default: 1)
+                       (default: 1)
+        @type frac: bool
 
         
         '''

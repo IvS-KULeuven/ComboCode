@@ -650,9 +650,9 @@ In practice, you will very often define your molecules and molecular data in-lin
 <a name="EBiter">
 #### 2. Iterating the EnergyBalance
 </a>
+Any iteration specifications (such as number of iterations, convergence criterion, etc.) are given to the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.physics.EnergyBalance.EnergyBalance-class.html#iterT">iterT method</a>. The method dynamically changes the maximum allowed temperature change (*dTmax*) per iteration step based on how close to convergence the code has come. The scaling of the maximum allowed temperature change typically happens in multiples of *step\_size*. The default of *step\_size* is 0, in which case the maximum allowed temperature change is kept constant. A typical value to use is 0.05. Moreover, the maximum amount of allowed iterations (*imax*) can also be specified, at which point the iteration is ended regardless of convergence. Finally, convergence is reached when the relative temperature change between the previous and the current iteration is less than the value given by *conv*.
 
-
-Any iteration specifications (such as number of iterations, convergence criterion, etc.) are given to the iterT method. 
+The Profiler-class objects print a warning when (and where) extrapolation happens with respect to the default coordinate grid (or the range defined by an inputfile). This is to avoid unwanted extrapolation. Extrapolation also often occurs when the scipy ODE solver tries values slightly beyond the maximum radial point. In these situations, the prints are mostly unnecessary, so they can be turned off with the *warn* boolean keyword argument when calling either iterT or calcT. Any additional arguments to iterT are passed on to the calcT method.
 
 ### Profilers
 

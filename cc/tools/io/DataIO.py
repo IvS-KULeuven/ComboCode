@@ -1355,7 +1355,7 @@ def getChemistrySpecies(filename,parents=1):
                       If parents=0, all species are given.
                       (default: 1)
     
-    @return species: (Parent) species included in the Chemistry code.
+    @return: (Parent) species included in the Chemistry code.
     @rtype: list
     
     '''

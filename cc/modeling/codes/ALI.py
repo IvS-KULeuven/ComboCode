@@ -322,8 +322,8 @@ def execALI(fn,args=[]):
     
     This method changes the working directory to the ALI home folder.
     
-    @param afn: The full ALI inputfilename.
-    @type afn: str
+    @param fn: The full ALI inputfilename.
+    @type fn: str
     
     @keyword args: Additional arguments that are appended to the execute command
                    separated by spaces. If a single string is given, only that
@@ -357,7 +357,7 @@ def getKey(k,data=None,fn=None):
                    A filename must be given if data is None.
                    
                    (default: None)
-    @type : list[str]
+    @type data: list[str]
     @keyword fn: The ALI input filename. Only used if data is None.
     
                  (default: None)
@@ -396,11 +396,14 @@ def changeKey(k,v,data=None,fn=None):
                    A filename must be given if data is None.
                    
                    (default: None)
-    @type : list[str]
+    @type data: list[str]
     @keyword fn: The ALI input filename. Only used if data is None.
     
                  (default: None)
     @type fn: str
+    
+    @return: The data as read from a file or as adapted from the original 
+    @rtype: list[str]
     
     '''
     

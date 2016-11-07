@@ -1550,6 +1550,15 @@ class ResoStats(Statistics):
         Calculate the (reduced) chi squared of the integrated 
         main beam intensities.
         
+        Output can be found in:
+         - list chiSquared: Chi squared values of each model
+         - list redChiSquared: Reduced chi squared values of each model
+         - float errRedChiSquared: Error on reduced chi squared
+         - list redChiSquaredWithinThreeSigma: Models that have a reduced chi 
+                                               squared within three sigma of the
+                                               best model (ie the model with the
+                                               lowest reduced chi squared)
+        
         @keyword P: Degrees of freedom = len(data) - P
         @type P: int
         
@@ -1566,15 +1575,6 @@ class ResoStats(Statistics):
         
         @keyword err_noisy: Uncertainty on noisy lines
         @type err_noisy: float 
-        
-        Output can be found in:
-        * List chiSquared: Chi squared values of each model
-        * list redChiSquared: Reduced chi squared values of each model
-        * float errRedChiSquared: Error on reduced chi squared
-        * list redChiSquaredWithinThreeSigma:
-            Models that have a reduced chi squared within
-            three sigma of the best model (ie the model with
-            the lowest reduced chi squared)
         
         '''
         
