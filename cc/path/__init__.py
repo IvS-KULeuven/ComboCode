@@ -40,8 +40,10 @@ def __readPaths():
 
 
 
-#-- Define the home, usr and aux paths for ComboCode
+#-- Define the home, usr and aux paths for ComboCode. If working folder is the
+#   CC home folder itself, make sure home is not just an empty string.
 home = os.path.dirname(__file__).replace('cc/path','')
+if not home: home = os.getcwd()
 usr = os.path.join(home,'usr')
 aux = os.path.join(home,'aux')
 
