@@ -657,7 +657,31 @@ The Profiler-class objects print a warning when (and where) extrapolation happen
 ### Profilers
 
 ### Iteration with ALI
+Currently iteration is only possible with the ALI radiative-transfer code via the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.codes.ALI-module.html#runEB_ALI">runEB_ALI method</a>. The method follows five steps: 
+ 1. Calculate the zeroth ALI iteration for the initial level populations
+ 2. Set up the EnergyBalance object
+ 3. Calculate the first EB iteration and create new input for ALI
+ 4. Run ALI with the new input
+ 5. Rinse and repeat until converged.
+ 
+The most technical part of running the code is setting up the input. You need:
+ 1. An ALI inputfile, which includes an initial temperature profile that matches that of the EnergyBalance, a proper level populations filename to use during in-ALI iteration (i.e. not inputfile.pop, which gives the final level populations!), and the preferred final convergence criteria
+ 2. An EB inputfile (or set of keyword arguments to use in a python session) that includes the proper (final, i.e. .pop!) level populations filename and collision rates filename (lamda format for ALI) that match with the ALI inputfile
+ 
+Typical pitfalls in setting up these files: 
+ - The ALI input level-populations filename must be different from the input filename itself, replace .inp with .pop
+ - Initial temperature, final_populations.pop, collision rates, and velocity profiles have to match between the ALI and EB inputfiles (the code does NOT run a check for this)
+ - The dust opacities for ALI have to be given in a 2-column format, while for the EB this can be given either as a 2-column format (using, e.g., np.readtxt or DataIO.readCols as read function) or as an MCMax-format opacity file (using read\_opacity as read function, which refers to the method in Opacity.py and makes use of the KappaReader). Make sure that the opacities in both formats are actually the same
+ - You do not need to define the EB input template. This is automatically set to mcp. Any input given there can be changed in your own inputfile or set of input arguments
 
+When you run the iteration, you must pass the ALI inputfilename as key *afn* to the runEB_ALI method. In addition, you must pass the input for the EB as well, either via a filename (*fn*) or as a series of arguments and keyword-value pairs (*args* and *kwargs*) following the initialisation of the EB as described <a href="Manual.md#EBinput">above</a>. Additional keywords are optional and described in the documentation for the method. 
+
+In short, the keyword arguments for the <href="Manual.md#EBiter">iterT method</a> can be passed as a dictionary to runEB_ALI (*iterT\_kwargs*). If additional arguments are needed for the ./ali executable call, they can be passed as a list of strings (*ALI\_args*). The iteration between ALI and EB runs automatically, and the maximum number of iterations for the ALI and EB calculations can be defined separately (*ai* and *ei*, respectively), or left as 0 if you prefer both codes to converge before swapping codes. The total number of EB iterations (i.e. the sum of all separate EB calculations across all swaps to ALI, given as *iTmax*) can be set as well, and if reached, the ALI\_EB iteration stops and returns the EB object. If needed, the convergence criterion for ALI during iteration with EB can be changed (*iter\_conv*), but the last iteration always uses the original criterion defined in the inputfile. Similarly, the TexGuess value can be changed after the initial ALI run, but this value is then also used for the final iteration (*iter\_texguess*). 
+
+The code returns the resulting EnergyBalance object, and it is therefore recommended to run the iteration in a python shell, so the results can be examined more detail. The EB object includes the temperature profiles and cooling/heating rates of all iterations, as well as all other information expected for the EnergyBalance. It also keeps track of when the level populations were changed last, and what the last set of level populations was. A typical call to run the ALI\_EB iteration would look something like this: 
+
+    >>> from cc.modeling.codes import ALI
+    >>> eb = ALI.runALI_EB(afn=,fn='my_own_inputfile.dat',a=0.01e-4,hterms=['dg','dt'])
 
 ## 9. Statistical methods
 
