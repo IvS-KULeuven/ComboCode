@@ -423,6 +423,10 @@ class EnergyBalance(object):
             else:
                 self.colread = LamdaReader.LamdaReader
                 self.popread = PopReader.PopReader
+        
+        #-- If no line cooling is requested, remove any and all population files
+        else: 
+            self.pars['pop'] = []
             
     
     

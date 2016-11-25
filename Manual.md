@@ -655,6 +655,53 @@ Any iteration specifications (such as number of iterations, convergence criterio
 The Profiler-class objects print a warning when (and where) extrapolation happens with respect to the default coordinate grid (or the range defined by an inputfile). This is to avoid unwanted extrapolation. Extrapolation also often occurs when the scipy ODE solver tries values slightly beyond the maximum radial point. In these situations, the prints are mostly unnecessary, so they can be turned off with the *warn* boolean keyword argument when calling either iterT or calcT. Any additional arguments to iterT are passed on to the calcT method.
 
 ### Profilers
+The <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.profilers.Profiler.Profiler-class.html">Profiler</a> and <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.profilers.Profiler.Profiler2D-class.html">Profiler2D</a> classes provide a flexible tool to perform in-situ function evaluation as well as interpolation of files within a single framework. As an example, the ODE solver for the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.physics.EnergyBalance.html#dTdr">dTdr</a> differential equation has to evaluate the velocity function at the radial points where it wants to solve the equation iteratively. However, if the velocity profile is defined from a file, this has to be an interpolation instead. Allowing both options in the dTdr method slows things down significantly. The Profiler, Profiler2D and their inheriting daughter classes aim to solve this issue. 
+
+In what follows, the base classes as well as all classes inheriting from them are discussed. There are classes for 1D function (with one independent variable x) and for 2D functions (with two independent variables). 
+
+#### 1. Profiler and Profiler2D
+When creating a Profiler object, all that is needed is a coordinate grid and a function that can evaluate said grid following a prescription. The function can also be an interpolation object, or a function that returns an interpolation object. Numerous example functions are given in the modules that contain the classes discussed below. New functions can always be added to them. Creating a profiler could look something like this:
+
+    >>> from cc.modeling.profilers import Profiler
+    >>> from cc.tools.numerical import Gridding
+    >>> x = Gridding.makeGrid(1,1000,1000,1)
+    >>> prf = Profiler.Profiler(x=x,func='step',ylow=1,yhigh=2,xstep=500)
+    >>> y = prf.eval()
+    >>> x2 = Gridding.makeGrid(2,2000,100,1)
+    >>> y2 = prf.eval(x=x2)
+    
+In the above example, the function is defined by a string. The code looks for the function in the parent module of the class, e.g. for Profiler functions it will look in the Profiler module, for Velocity functions it will look in the Velocity module, etc. If not found, it will always check the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.profilers.Profiler.html">Profiler module</a> as well, followed by checking the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.tools.io.DataIO.html">DataIO module</a> when reader functions are concerned. Of course, a function object itself can be passed. 
+
+The Profiler object will use the input coordinate grid as the standard grid. When object's eval method is called without an argument (or with *x == None*), the standard grid is returned (also found as *prf.y*). Alternatively, a different grid for *x* can be passed to eval to evaluate at different coordinates. If the input grid *x2* contains values outside the standard input coordinate grid *x*, a warning for extrapolation is printed. This warning can be turned off by passing **warn=0** to the eval method.
+
+    >>> from cc.tools.io import DataIO
+    >>> x = Gridding.makeGrid(1,1000,1000,1)
+    >>> prf = Profiler.Profiler(x=x,func=Profiler.interp_file,read_func=DataIO.readCols,itype='spline',ycol=2)
+    >>> y = prf.eval()
+    >>> y2 = prf.eval(x=x2)
+
+In this example, an interpolation object is returned by the function. Profiler.interp_file is the general method to use for reading a file directly, and making use of the interpolation of the file's data when evaluating. The standard coordinate grid *x* method is the general 
+
+def interp_file(x=None,read_func=DataIO.readCols,xcol=0,ycol=1,itype='spline',\
+                ikwargs={'ext': 3,'k': 3},*args,**kwargs):
+#### 2. Temperature(Profiler)
+
+#### 3. Velocity(Profiler)
+
+#### 4. Opacity(Profiler)
+
+#### 5. Radiance(Profiler)
+
+#### 6. Density(Profiler)
+
+#### 7. Mdot(Profiler) and DustToGas(Profiler)
+The <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.profilers.Mdot.Mdot-class.html">Mdot</a> and <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.profilers.Density.DustToGas-class.html">DustToGas</a> profilers do not offer any additional functionality at this point, and only inherit from the Profiler class for its base functionality. However, the classes are available if any additional functionality is desired for them. 
+
+#### 7. Distribution(Profiler2D) 
+
+#### 8. Drift(Profiler2D)
+
+
 
 ### Iteration with ALI
 Currently iteration is only possible with the ALI radiative-transfer code via the <a href="http://robinlombaert.github.io/ComboCode/ComboCode.cc.modeling.codes.ALI-module.html#runEB_ALI">runEB_ALI method</a>. The method follows five steps: 
@@ -676,12 +723,14 @@ Typical pitfalls in setting up these files:
 
 When you run the iteration, you must pass the ALI inputfilename as key *afn* to the runEB_ALI method. In addition, you must pass the input for the EB as well, either via a filename (*fn*) or as a series of arguments and keyword-value pairs (*args* and *kwargs*) following the initialisation of the EB as described <a href="Manual.md#EBinput">above</a>. Additional keywords are optional and described in the documentation for the method. 
 
-In short, the keyword arguments for the <href="Manual.md#EBiter">iterT method</a> can be passed as a dictionary to runEB_ALI (*iterT\_kwargs*). If additional arguments are needed for the ./ali executable call, they can be passed as a list of strings (*ALI\_args*). The iteration between ALI and EB runs automatically, and the maximum number of iterations for the ALI and EB calculations can be defined separately (*ai* and *ei*, respectively), or left as 0 if you prefer both codes to converge before swapping codes. The total number of EB iterations (i.e. the sum of all separate EB calculations across all swaps to ALI, given as *iTmax*) can be set as well, and if reached, the ALI\_EB iteration stops and returns the EB object. If needed, the convergence criterion for ALI during iteration with EB can be changed (*iter\_conv*), but the last iteration always uses the original criterion defined in the inputfile. Similarly, the TexGuess value can be changed after the initial ALI run, but this value is then also used for the final iteration (*iter\_texguess*). 
+In short, the keyword arguments for the <href="Manual.md#EBiter">iterT method</a> can be passed as a dictionary to runEB_ALI (*iterT\_kwargs*). If additional arguments are needed for the ./ali executable call, they can be passed as a list of strings (*ALI\_args*). The iteration between ALI and EB runs automatically, and the maximum number of iterations for the ALI and EB calculations can be defined separately (*ai* and *ei*, respectively), or left as 0 if you prefer both codes to converge before swapping codes. The total number of EB iterations (i.e. the sum of all separate EB calculations across all swaps to ALI, given as *iTmax*, different from the *imax* keyword for EB().iterT which gives the maximum iteration for a single EB calculation) can be set as well, and if reached, the ALI\_EB iteration stops and returns the EB object. If needed, the convergence criterion for ALI during iteration with EB can be changed (*iter\_conv*), but the last iteration always uses the original criterion defined in the inputfile. Similarly, the TexGuess value can be changed after the initial ALI run, but this value is then also used for the final iteration (*iter\_texguess*). 
 
 The code returns the resulting EnergyBalance object, and it is therefore recommended to run the iteration in a python shell, so the results can be examined more detail. The EB object includes the temperature profiles and cooling/heating rates of all iterations, as well as all other information expected for the EnergyBalance. It also keeps track of when the level populations were changed last, and what the last set of level populations was. A typical call to run the ALI\_EB iteration would look something like this: 
 
     >>> from cc.modeling.codes import ALI
-    >>> eb = ALI.runALI_EB(afn=,fn='my_own_inputfile.dat',a=0.01e-4,hterms=['dg','dt'])
+    >>> eb = ALI.runALI_EB(afn='my_ALI_inputfile.inp',fn='my_EB_inputfile.dat',iterT_kwargs={'warn':0,'dTmax':0.05,'imax':10},iTmax=30,iter_conv=0.01,runALIinit=1,iter_texguess=-1)
+    
+Note that you can continue where you left off with the returned EnergyBalance object **eb**, by passing it to a new ALI.runALI_EB call as *eb*. The keyword *iTmax* takes into account the previously calculated iterations in EB as well as the new ones. 
 
 ## 9. Statistical methods
 
