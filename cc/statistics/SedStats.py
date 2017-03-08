@@ -247,6 +247,7 @@ class SedStats(Statistics):
         
         if fns is None:
             fns = self.dphot_other.keys()
+            print('No phot files for chi2 given. Using files in usr/Sed.dat.')
         else:
             fns = [fn if os.path.split(fn)[0] else os.path.join(cc.path.dsed,fn)
                    for fn in fns]
@@ -255,6 +256,8 @@ class SedStats(Statistics):
         #-- When no valid filenames are given, and IvS phot is not requested, 
         #   just forget the filename selection. 
         if not fns and not phot_ivs: 
+            print('No valid phot files given. Make sure to include them in '+\
+                  'usr/Sed.dat! Taking files from usr/Sed.dat now instead.')
             fns = self.dphot_other.keys()
             
         for fn in fns:
